@@ -11,6 +11,7 @@ import pytest
 import numpy as np
 from astropy.constants.si import G
 import astropy.units as u
+import matplotlib.pyplot as plt
 
 from ..core import Potential
 
@@ -47,6 +48,11 @@ class TestPotentialCreation():
         r_positions = np.array([6.E11, 8E11, 24E11])
         c2 = potential.value_at(r_positions)
 
+        potential.plot(np.logspace(7, 11, 100))
+        plt.xscale("log")
+        plt.yscale("symlog")
+        #plt.show()
+
     def test_miyamoto_nagai_2d(self):
         G = 4.5E-12 # kpc^3 / M_sun / Myr
 
@@ -81,12 +87,58 @@ class TestPotentialCreation():
         c2 = miya_potential.value_at(R_positions, z_positions)
 
         acc = miya_potential.acceleration_at(R_positions, z_positions)
-        assert acc.shape == c2.shape
+        assert acc.shape == positions.shape
 
         assert (c1 == c2).all()
 
         with pytest.raises(ValueError):
             miya_potential.value_at(R_positions, z_positions[:-1])
+
+        miya_potential.plot(np.linspace(-5., 5., 100), np.linspace(-5., 5., 100))
+        #plt.show()
+
+    def test_composite_galaxy_3d(self):
+        G = 4.5E-12 # kpc^3 / M_sun / Myr
+
+        def miyamoto_nagai(params): return lambda x,y,z: -G * params["M"] / np.sqrt(x**2 + y**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)
+        def d_miyamoto_nagai_dx(params): return lambda x,y,z: G * params["M"]*x / ((x**2 + y**2) + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
+        def d_miyamoto_nagai_dy(params): return lambda x,y,z: G * params["M"]*y / ((x**2 + y**2) + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
+        def d_miyamoto_nagai_dz(params): return lambda x,y,z: G * params["M"]*z*(1 + params["a"]/np.sqrt(z**2 + params["b"]**2)) / ((x**2 + y**2) + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
+
+        def log_halo(params): return lambda x,y,z: params["v_circ"]**2 / 2. * np.log(x**2 + y**2/params["p"]**2 + z**2/params["q"]**2 + params["d"]**2)
+        def d_log_halo_dx(params): return lambda x,y,z: params["v_circ"]**2 * x / (x**2 + y**2/params["p"]**2 + z**2/params["q"]**2 + params["d"]**2)
+        def d_log_halo_dy(params): return lambda x,y,z: params["v_circ"]**2 * y / (x**2 + y**2/params["p"]**2 + z**2/params["q"]**2 + params["d"]**2) / params["p"]**2
+        def d_log_halo_dz(params): return  lambda x,y,z: params["v_circ"]**2 * z / (x**2 + y**2/params["p"]**2 + z**2/params["q"]**2 + params["d"]**2) / params["q"]**2
+
+        disk_params = {"M" : 1E11, "a" : 6.5, "b" : 0.26}
+        halo_params = {"v_circ" : (181.*u.km/u.s).to(u.kpc/u.Myr).value, "p" : 1., "q" : 1., "d" : 12.}
+
+        potential = Potential()
+        potential.add_component("disk", miyamoto_nagai(disk_params), derivs=(d_miyamoto_nagai_dx(disk_params), d_miyamoto_nagai_dy(disk_params), d_miyamoto_nagai_dz(disk_params)))
+        potential.add_component("halo", log_halo(halo_params), derivs=(d_log_halo_dx(halo_params),d_log_halo_dy(halo_params),d_log_halo_dz(halo_params)))
+
+        assert potential.ndim == 3
+
+        # Test with two coordinates
+        potential.value_at(6., 0., 1.1) # kpc
+
+        # Test with one single coordinate array
+        positions = np.array([[6., 0.1, 1.1], [8., 0.4, 10.], [24., 1., 11.2]]) # kpc
+        c1 = potential.value_at(positions)
+
+        # Test with individual coordinate arrays
+        x_positions = np.array([6., 8., 24])
+        y_positions = np.array([0.1, 0.4, 1.])
+        z_positions = np.array([1.1, 10., 11.2]) # kpc
+        c2 = potential.value_at(x_positions, y_positions, z_positions)
+
+        acc = potential.acceleration_at(x_positions, y_positions, z_positions)
+        assert acc.shape == positions.shape
+
+        assert (c1 == c2).all()
+
+        potential.plot(np.linspace(-5., 5., 100), np.linspace(-5., 5., 100), np.linspace(-5., 5., 100))
+        #plt.show()
 
     def test_failure(self):
 
@@ -100,4 +152,7 @@ class TestPotentialCreation():
 
         with pytest.raises(ValueError):
             potential.add_component("point mass flerg", lambda x: x, derivs=(5., lambda x: x))
+
+
+
 

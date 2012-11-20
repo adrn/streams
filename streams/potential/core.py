@@ -16,6 +16,8 @@ import inspect
 # Third-party
 import numpy as np
 from astropy.utils.misc import isiterable
+import matplotlib.pyplot as plt
+from matplotlib import cm
 
 def _validate_coord(x):
     if isiterable(x):
@@ -111,7 +113,7 @@ class Potential(object):
         for component_funcs in self._potential_component_derivs.values():
             for ii,potential_derivative in enumerate(component_funcs):
                 accelerations[:,ii] += - potential_derivative(*coord_array.T)
-        print(accelerations.shape)
+
         return accelerations
 
     def _repr_latex_(self):
@@ -150,3 +152,50 @@ class Potential(object):
             raise ValueError("You must supply either a single position as a list of arguments, or an array where axis 0 has length 'self.ndim'.")
 
         return coord_array
+
+    def plot(self, *args, **kwargs):
+        ''' Plot equipotentials lines. Must pass in coordinate arrays to evaluate the
+            potential over (positional args). Any keyword arguments are passed to the
+            matplotlib.pyplot.contourf() function call
+
+        '''
+
+        coord_array = self._args_to_coords(args)
+
+        if self.ndim > 1:
+            fig, axes = plt.subplots(self.ndim-1, self.ndim-1, sharex=True, sharey=True, figsize=(12,12))
+        else:
+            fig, axes = plt.subplots(1, 1, figsize=(12,12))
+
+        if self.ndim > 2:
+            for ii in range(self.ndim):
+                for jj in range(self.ndim):
+                    if jj > ii or jj==2:
+                        try:
+                            axes[ii,jj].set_visible(False)
+                        except:
+                            pass
+                        continue
+
+                    bottom = coord_array[:, jj]
+                    side = coord_array[:, ii]
+                    X1, X2 = np.meshgrid(bottom,side)
+
+                    args = [np.zeros_like(X1.ravel()) for xx in range(self.ndim)]
+                    args[jj] = X1.ravel()
+                    args[ii] = X2.ravel()
+
+                    axes[ii-1,jj].contourf(X1, X2, self.value_at(*args).reshape(X1.shape), cmap=cm.Blues, **kwargs)
+
+        elif self.ndim == 2:
+            bottom = coord_array[:, 0]
+            side = coord_array[:, 1]
+            X, Y = np.meshgrid(bottom,side)
+            axes.contourf(X, Y, self.value_at(X.ravel(),Y.ravel()).reshape(X.shape), cmap=cm.Blues, **kwargs)
+        elif self.ndim == 1:
+            axes.plot(coord_array, self.value_at(coord_array))
+
+        fig.subplots_adjust(hspace=0.1, wspace=0.1)
+
+        return fig, axes
+
