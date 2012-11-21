@@ -6,6 +6,8 @@ from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
+__all__ = ["Potential"]
+
 # Standard library
 import os
 import sys
@@ -15,15 +17,11 @@ import inspect
 
 # Third-party
 import numpy as np
-from astropy.utils.misc import isiterable
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from astropy.utils.misc import isiterable
 
-def _validate_coord(x):
-    if isiterable(x):
-        return np.array(x, copy=True)
-    else:
-        return np.array([x])
+from ..util import _validate_coord
 
 class Potential(object):
 
@@ -31,6 +29,7 @@ class Potential(object):
         self._potential_components = dict()
         self._potential_component_derivs = dict()
         self._latex = dict()
+        self._coord_sys = None
 
     def add_component(self, name, func, derivs=None, latex=None):
         ''' Add a component to the potential. The component must have a name, and
@@ -112,9 +111,27 @@ class Potential(object):
 
         for component_funcs in self._potential_component_derivs.values():
             for ii,potential_derivative in enumerate(component_funcs):
-                accelerations[:,ii] += - potential_derivative(*coord_array.T)
+                accelerations[:,ii] -= potential_derivative(*coord_array.T)
 
         return accelerations
+
+    def energy_at(self, position, velocity):
+        """ Compute the total energy for an array of particles. """
+
+        if self._coord_sys == "cartesian":
+            kinetic = 0.5*np.sum(velocity**2, axis=2)
+
+        elif self._coord_sys == "spherical":
+            kinetic = 0.5*(self.vel[:,:,0]**2 + self.pos[:,:,0]**2*sin(self.vel[:,:,2])**2*self.vel[:,:,1] + self.pos[:,:,0]**2*self.vel[:,:,2]**2)
+
+        elif self._coord_sys == "cylindrical":
+            kinetic = 0.5*(self.vel[:,:,0]**2 + self.pos[:,:,0]**2 * self.vel[:,:,1]**2 + self.vel[:,:,2]**2)
+
+        else:
+            raise ValueError("Unknown potential coordinate system '{0}'".format(potential._coord_sys))
+
+        potential_energy = self.value_at(position)
+        return kinetic + potential_energy.T
 
     def _repr_latex_(self):
         ''' Generate a latex representation of the potential. This is used by the
@@ -136,7 +153,7 @@ class Potential(object):
             if len(coord_array.shape) == 1:
                 coord_array = coord_array[:,np.newaxis]
 
-            if not coord_array.shape[1] == self.ndim:
+            if not coord_array.shape[-1] == self.ndim:
                 raise ValueError("Array of shape '{0}' does not match potential of {1} dimensions along axis 1.".format(coord_array.shape, self.ndim))
 
         elif len(args) == self.ndim:
@@ -185,17 +202,45 @@ class Potential(object):
                     args[jj] = X1.ravel()
                     args[ii] = X2.ravel()
 
-                    axes[ii-1,jj].contourf(X1, X2, self.value_at(*args).reshape(X1.shape), cmap=cm.Blues, **kwargs)
+                    cs = axes[ii-1,jj].contourf(X1, X2, self.value_at(*args).reshape(X1.shape), cmap=cm.Blues, **kwargs)
+
+            cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
+            fig.colorbar(cs, cax=cax)
 
         elif self.ndim == 2:
             bottom = coord_array[:, 0]
             side = coord_array[:, 1]
             X, Y = np.meshgrid(bottom,side)
-            axes.contourf(X, Y, self.value_at(X.ravel(),Y.ravel()).reshape(X.shape), cmap=cm.Blues, **kwargs)
+            cs = axes.contourf(X, Y, self.value_at(X.ravel(),Y.ravel()).reshape(X.shape), cmap=cm.Blues, **kwargs)
+            fig.colorbar(cs, shrink=0.9)
         elif self.ndim == 1:
             axes.plot(coord_array, self.value_at(coord_array))
 
-        fig.subplots_adjust(hspace=0.1, wspace=0.1)
+        fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
+        fig.suptitle(self._repr_latex_(), fontsize=24)
+
+        if self._coord_sys == "cartesian":
+            axes[0,0].set_ylabel("Y [{0}]".format(self.length_unit))
+
+            axes[1,0].set_xlabel("X [{0}]".format(self.length_unit))
+            axes[1,0].set_ylabel("Z [{0}]".format(self.length_unit))
+
+            axes[1,1].set_xlabel("Y [{0}]".format(self.length_unit))
+
+        elif self._coord_sys == "cylindrical":
+            axes[0,0].set_ylabel(r"$\phi$ [{0}]".format(self.length_unit))
+
+            axes[1,0].set_xlabel("R [{0}]".format(self.length_unit))
+            axes[1,0].set_ylabel("Z [{0}]".format(self.length_unit))
+
+            axes[1,1].set_xlabel(r"$\phi$ [{0}]".format(self.length_unit))
+
+        elif self._coord_sys == "spherical":
+            axes[0,0].set_ylabel(r"$\phi$ [{0}]".format(self.length_unit))
+
+            axes[1,0].set_xlabel("r [{0}]".format(self.length_unit))
+            axes[1,0].set_ylabel(r"$\theta$ [{0}]".format(self.length_unit))
+
+            axes[1,1].set_xlabel(r"$\phi$ [{0}]".format(self.length_unit))
 
         return fig, axes
-
