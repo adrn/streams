@@ -14,6 +14,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from ..core import Potential
+from ..common import *
 
 #with pytest.raises(TypeError):
 #    quantity = 182.234 + u.meter
@@ -52,6 +53,26 @@ class TestPotentialCreation():
         plt.xscale("log")
         plt.yscale("symlog")
         #plt.show()
+
+    def test_point_mass_3d(self):
+        # Create a 3D cartesian point mass potential
+
+        params = {"M" : 2E30, "location" : {"x0" : 0., "y0" : 0., "z0" : 0.}}
+        potential = PointMassPotential(length_unit=u.au, time_unit=u.year, **params)
+        assert potential.ndim == 3
+
+        # Test with one coordinates
+        c1 = potential.value_at(1., 0., 0.) # au
+
+        # Test with individual coordinate arrays
+        r_positions = np.array([[1., 0., 0.]])
+        c2 = potential.value_at(r_positions)
+
+        assert (c1 == c2).all()
+
+        grid = np.linspace(-5, 5., 100)
+        potential.plot(grid,grid,grid)
+        plt.show()
 
     def test_miyamoto_nagai_2d(self):
         G = 4.5E-12 # kpc^3 / M_sun / Myr
@@ -95,9 +116,10 @@ class TestPotentialCreation():
             miya_potential.value_at(R_positions, z_positions[:-1])
 
         miya_potential.plot(np.linspace(-5., 5., 100), np.linspace(-5., 5., 100))
-        #plt.show()
+        plt.show()
 
     def test_composite_galaxy_3d(self):
+        return
         G = 4.5E-12 # kpc^3 / M_sun / Myr
 
         def miyamoto_nagai(params): return lambda x,y,z: -G * params["M"] / np.sqrt(x**2 + y**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)
@@ -153,6 +175,75 @@ class TestPotentialCreation():
         with pytest.raises(ValueError):
             potential.add_component("point mass flerg", lambda x: x, derivs=(5., lambda x: x))
 
+class TestPotentialAdd(object):
 
+    def test_point_mass(self):
+        params1 = {"M" : 1., "location" : {"x0" : -2., "y0" : 0., "z0" : 1.}}
+        potential1 = PointMassPotential(length_unit=u.au, time_unit=u.year, **params1)
+        params2 = {"M" : 1., "location" : {"x0" : 2., "y0" : 0., "z0" : 2.}}
+        potential2 = PointMassPotential(length_unit=u.au, time_unit=u.year, **params2)
 
+        new_potential = potential1 + potential2
 
+        grid = np.linspace(-5, 5., 100)
+
+        #otential1.plot(grid,grid,grid)
+        #potential2.plot(grid,grid,grid)
+        new_potential.plot(grid,grid,grid)
+        plt.show()
+        assert False
+
+        #print(new_potential._potential_components)
+        print(potential1.value_at(0.1, 0.1, 0.1))
+        print(potential2.value_at(1.9, 1.9, 1.9))
+        print(new_potential.value_at(0.1, 0.1, 0.1))
+        print(new_potential.value_at(1.9, 1.9, 1.9))
+        assert False
+
+        # Test with one coordinates
+        c1 = new_potential.value_at(1., 0., 0.) # au
+
+        # Test with individual coordinate arrays
+        r_positions = np.array([[1., 0., 0.]])
+        c2 = new_potential.value_at(r_positions)
+
+        assert (c1 == c2).all()
+
+        grid = np.linspace(-5, 5., 100)
+        new_potential.plot(grid,grid,grid)
+        assert False
+        plt.show()
+
+    def test_composite_galaxy(self):
+        # Define galaxy model parameters for potential
+
+        disk_potential = MiyamotoNagaiPotential(M=1E11*u.solMass, a=6.5, b=0.26)
+        bulge_potential = HernquistPotential(M=3.4E10*u.solMass, c=0.7)
+        halo_potential = LogarithmicPotential(v_circ=(181.*u.km/u.s).to(u.kpc/u.Myr).value, p=1., q=0.75, c=12.)
+        galaxy_potential = disk_potential + bulge_potential + halo_potential
+
+        grid = np.linspace(-20, 20., 100)
+        galaxy_potential.plot(grid,grid,grid)
+        plt.show()
+        assert False
+
+        #print(new_potential._potential_components)
+        print(potential1.value_at(0.1, 0.1, 0.1))
+        print(potential2.value_at(1.9, 1.9, 1.9))
+        print(new_potential.value_at(0.1, 0.1, 0.1))
+        print(new_potential.value_at(1.9, 1.9, 1.9))
+        assert False
+
+        # Test with one coordinates
+        c1 = new_potential.value_at(1., 0., 0.) # au
+
+        # Test with individual coordinate arrays
+        r_positions = np.array([[1., 0., 0.]])
+        c2 = new_potential.value_at(r_positions)
+
+        assert (c1 == c2).all()
+
+        grid = np.linspace(-5, 5., 100)
+        new_potential.plot(grid,grid,grid)
+        assert False
+        plt.show()

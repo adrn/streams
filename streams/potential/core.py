@@ -20,16 +20,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from astropy.utils.misc import isiterable
+import astropy.units as u
 
-from ..util import _validate_coord
+from ..util import *
 
 class Potential(object):
 
-    def __init__(self):
+    def __init__(self, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
+        self.length_unit = u.Unit(length_unit)
+        self.time_unit = u.Unit(time_unit)
+        self.mass_unit = u.Unit(mass_unit)
+
         self._potential_components = dict()
         self._potential_component_derivs = dict()
         self._latex = dict()
-        self._coord_sys = None
+        self.coordinate_system = None
 
     def add_component(self, name, func, derivs=None, latex=None):
         ''' Add a component to the potential. The component must have a name, and
@@ -118,17 +123,18 @@ class Potential(object):
     def energy_at(self, position, velocity):
         """ Compute the total energy for an array of particles. """
 
-        if self._coord_sys == "cartesian":
+        # Coordinate systems imported from ..utils
+        if self.coordinate_system == cartesian3D:
             kinetic = 0.5*np.sum(velocity**2, axis=2)
 
-        elif self._coord_sys == "spherical":
+        elif self.coordinate_system == spherical3D:
             kinetic = 0.5*(self.vel[:,:,0]**2 + self.pos[:,:,0]**2*sin(self.vel[:,:,2])**2*self.vel[:,:,1] + self.pos[:,:,0]**2*self.vel[:,:,2]**2)
 
-        elif self._coord_sys == "cylindrical":
+        elif self.coordinate_system == cylindrical3D:
             kinetic = 0.5*(self.vel[:,:,0]**2 + self.pos[:,:,0]**2 * self.vel[:,:,1]**2 + self.vel[:,:,2]**2)
 
         else:
-            raise ValueError("Unknown potential coordinate system '{0}'".format(potential._coord_sys))
+            raise ValueError("Unknown potential coordinate system '{0}'".format(potential.coordinate_system))
 
         potential_energy = self.value_at(position)
         return kinetic + potential_energy.T
@@ -141,6 +147,9 @@ class Potential(object):
         ltx_str = ""
         for name,latex in self._latex.items():
             ltx_str += "\\textit{{{0}}}: {1}\\\\".format(name, latex)
+
+        if ltx_str == "":
+            return ""
 
         return u'Components: ${0}$'.format(ltx_str)
 
@@ -207,6 +216,14 @@ class Potential(object):
             cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
             fig.colorbar(cs, cax=cax)
 
+            # Label the axes
+            if self.coordinate_system != None:
+                axis_names = self.coordinate_system.axis_names
+                axes[0,0].set_ylabel("{1} [{0}]".format(self.length_unit, axis_names[1]))
+                axes[1,0].set_xlabel("{1} [{0}]".format(self.length_unit, axis_names[0]))
+                axes[1,0].set_ylabel("{1} [{0}]".format(self.length_unit, axis_names[2]))
+                axes[1,1].set_xlabel("{1} [{0}]".format(self.length_unit, axis_names[1]))
+
         elif self.ndim == 2:
             bottom = coord_array[:, 0]
             side = coord_array[:, 1]
@@ -219,28 +236,23 @@ class Potential(object):
         fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
         fig.suptitle(self._repr_latex_(), fontsize=24)
 
-        if self._coord_sys == "cartesian":
-            axes[0,0].set_ylabel("Y [{0}]".format(self.length_unit))
-
-            axes[1,0].set_xlabel("X [{0}]".format(self.length_unit))
-            axes[1,0].set_ylabel("Z [{0}]".format(self.length_unit))
-
-            axes[1,1].set_xlabel("Y [{0}]".format(self.length_unit))
-
-        elif self._coord_sys == "cylindrical":
-            axes[0,0].set_ylabel(r"$\phi$ [{0}]".format(self.length_unit))
-
-            axes[1,0].set_xlabel("R [{0}]".format(self.length_unit))
-            axes[1,0].set_ylabel("Z [{0}]".format(self.length_unit))
-
-            axes[1,1].set_xlabel(r"$\phi$ [{0}]".format(self.length_unit))
-
-        elif self._coord_sys == "spherical":
-            axes[0,0].set_ylabel(r"$\phi$ [{0}]".format(self.length_unit))
-
-            axes[1,0].set_xlabel("r [{0}]".format(self.length_unit))
-            axes[1,0].set_ylabel(r"$\theta$ [{0}]".format(self.length_unit))
-
-            axes[1,1].set_xlabel(r"$\phi$ [{0}]".format(self.length_unit))
-
         return fig, axes
+
+    def __add__(self, other):
+        """ Allow adding two potentials """
+
+        if not isinstance(other, Potential):
+            raise TypeError("Addition is only supported between two Potential objects!")
+
+        if other.coordinate_system != self.coordinate_system:
+            raise ValueError("Potentials must have same coordinate system.")
+
+        new_potential = Potential()
+        for key in self._potential_components.keys():
+            new_potential.add_component(key, self._potential_components[key], derivs=self._potential_component_derivs[key])
+
+        for key in other._potential_components.keys():
+            new_potential.add_component(key, other._potential_components[key], derivs=other._potential_component_derivs[key])
+
+        new_potential.coordinate_system = self.coordinate_system
+        return new_potential
