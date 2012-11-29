@@ -17,9 +17,11 @@ from astropy.constants.si import G as _G
 
 from .core import Potential
 from ..util import *
+from ..coordinates import CartesianCoordinates, SphericalCoordinates, CylindricalCoordinates
+
 #import _common # minimal gains from using Cython
 
-__all__ = ["MiyamotoNagaiPotential", "HernquistPotential", "LogarithmicPotential", "LogarithmicPotentialJZSH", "LogarithmicPotentialJHB", "PointMassPotential"]
+__all__ = ["MiyamotoNagaiPotential", "HernquistPotential", "LogarithmicPotentialLJ", "LogarithmicPotentialJZSH", "LogarithmicPotentialJHB", "PointMassPotential"]
 
 def _raise(ex):
     raise ex
@@ -41,7 +43,7 @@ def _point_mass_model_cartesian(params):
 
 class PointMassPotential(Potential):
 
-    def __init__(self, M, location, coord_sys=cartesian3D, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
+    def __init__(self, M, location, coord_sys=CartesianCoordinates, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
         ''' Represents a point-mass potential at the given origin.
 
             $\Phi = -\frac{GM}{r-r_0}$
@@ -73,11 +75,11 @@ class PointMassPotential(Potential):
         for key,val in location.items():
             self.params[key] = val
 
-        if coord_sys == cartesian3D:
-            self.coordinate_system = cartesian3D
+        if coord_sys == CartesianCoordinates:
+            self.coordinate_system = CartesianCoordinates
             f_derivs = _point_mass_model_cartesian(self.params)
         else:
-            raise ValueError("'coord_sys' can be util.cartesian3D.")
+            raise ValueError("'coord_sys' can be CartesianCoordinates.")
 
         self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
         self.add_component = lambda *args: _raise(AttributeError("'add_component' is only available for the base Potential class."))
@@ -119,7 +121,7 @@ def _miyamoto_nagai_model_cylindrical(params):
 
 class MiyamotoNagaiPotential(Potential):
 
-    def __init__(self, M, a, b, coord_sys=cartesian3D, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
+    def __init__(self, M, a, b, coord_sys=CartesianCoordinates, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
         ''' Represents the Miyamoto-Nagai potential (1975) for a disk-like potential.
 
             $\Phi_{disk} = -\frac{GM_{disk}}{\sqrt{R^2 + (a + sqrt{z^2 + b^2})^2}}$
@@ -141,14 +143,14 @@ class MiyamotoNagaiPotential(Potential):
                        "M" : float(M_val),
                        "_G" : u.Quantity(_G, u.m**3 / u.kg / u.s**2).to(self.length_unit**3 / self.mass_unit / self.time_unit**2).value}
 
-        if coord_sys == cartesian3D:
-            self.coordinate_system = cartesian3D
+        if coord_sys == CartesianCoordinates:
+            self.coordinate_system = CartesianCoordinates
             f_derivs = _miyamoto_nagai_model_cartesian(self.params)
-        elif coord_sys == cylindrical3D:
-            self.coordinate_system = cylindrical3D
+        elif coord_sys == CylindricalCoordinates:
+            self.coordinate_system = CylindricalCoordinates
             f_derivs = _miyamoto_nagai_model_cylindrical(self.params)
         else:
-            raise ValueError("'coord_sys' can be util.cartesian3D or util.cylindrical3D.")
+            raise ValueError("'coord_sys' can be util.CartesianCoordinates or util.CylindricalCoordinates.")
 
         self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
         self.add_component = lambda *args: _raise(AttributeError("'add_component' is only available for the base Potential class."))
@@ -186,7 +188,7 @@ def _hernquist_model_spherical(params):
 
 class HernquistPotential(Potential):
 
-    def __init__(self, M, c, coord_sys=cartesian3D, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
+    def __init__(self, M, c, coord_sys=CartesianCoordinates, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
         ''' Represents the Hernquist potential (1990) for a spheroid (bulge).
 
             $\Phi_{spher} = -\frac{GM_{spher}}{r + c}$
@@ -207,11 +209,11 @@ class HernquistPotential(Potential):
                        "M" : float(M_val),
                        "_G" : u.Quantity(_G, u.m**3 / u.kg / u.s**2).to(self.length_unit**3 / self.mass_unit / self.time_unit**2).value}
 
-        if coord_sys == cartesian3D:
-            self.coordinate_system = cartesian3D
+        if coord_sys == CartesianCoordinates:
+            self.coordinate_system = CartesianCoordinates
             f_derivs = _hernquist_model_cartesian(self.params)
-        elif coord_sys == spherical3D:
-            self.coordinate_system = spherical3D
+        elif coord_sys == SphericalCoordinates:
+            self.coordinate_system = SphericalCoordinates
             f_derivs = _hernquist_model_spherical(self.params)
         else:
             raise ValueError("'coord_sys' can be cartesian or spherical.")
@@ -228,6 +230,63 @@ class HernquistPotential(Potential):
 #    http://adsabs.harvard.edu/abs/1999ApJ...512L.109J
 ####################################################################################
 
+def _logarithmic_model_cartesian_lj(params):
+    ''' A function that accepts model parameters, and returns a tuple of functions that accept
+        coordinates and evaluates this component of the potential and its derivatives for cartesian
+        coordinates.
+
+        Potential from David Law's paper?
+    '''
+    C1 = (np.cos(params["phi"])/params["q1"])**2+(np.sin(params["phi"])/params["q2"])**2
+    C2 = (np.cos(params["phi"])/params["q2"])**2+(np.sin(params["phi"])/params["q1"])**2
+    C3 = 2.*np.sin(params["phi"])*np.cos(params["phi"])*(1./params["q1"]**2-1./params["q2"]**2)
+
+    f = lambda x,y,z: params["v_halo"]**2 * np.log(C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["c"]**2)
+    df_dx = lambda x,y,z: params["v_halo"]**2 * (2.*C1*x + C3*y) / (C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["c"]**2)
+    df_dy = lambda x,y,z: params["v_halo"]**2 * (2.*C2*y + C3*x) / (C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["c"]**2)
+    df_dz = lambda x,y,z: 2. * params["v_halo"]**2 * z / (C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["c"]**2) / params["qz"]**2
+    return (f, df_dx, df_dy, df_dz)
+
+class LogarithmicPotentialLJ(Potential):
+
+    def __init__(self, v_halo, q1, q2, qz, phi, c, coord_sys=CartesianCoordinates, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
+        ''' Represents a triaxial Logarithmic potential (e.g. triaxial halo).
+
+            $\Phi_{halo} = v_{halo}^2\ln(C1x^2 + C2y^2 + C3xy + z^2/q_z^2 + c^2)$
+
+        '''
+        super(LogarithmicPotentialLJ, self).__init__()
+        self.length_unit = u.Unit(length_unit)
+        self.time_unit = u.Unit(time_unit)
+        self.mass_unit = u.Unit(mass_unit)
+
+        # First see if v_halo is a Quantity-like object
+        if hasattr(v_halo, 'to'):
+            v_halo_val = v_halo.to(self.length_unit / self.time_unit).value
+        else:
+            v_halo_val = float(v_halo)
+
+        self.params = {"q1" : float(q1),
+                       "q2" : float(q2),
+                       "qz" : float(qz),
+                       "phi" : float(phi),
+                       "c" : float(c),
+                       "v_halo" : float(v_halo_val)}
+
+        if coord_sys == CartesianCoordinates:
+            self.coordinate_system = CartesianCoordinates
+            f_derivs = _logarithmic_model_cartesian_lj(self.params)
+        else:
+            raise ValueError("'coord_sys' can only be cartesian.")
+
+        self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
+        self.add_component = lambda *args: _raise(AttributeError("'add_component' is only available for the base Potential class."))
+
+    def _repr_latex_(self):
+        ''' Custom latex representation for IPython Notebook '''
+        return "$\\Phi_{halo} = v_{halo}^2\\ln(C1x^2 + C2y^2 + C3xy + z^2/q_z^2 + c^2)$"
+
+
 def _logarithmic_model_cartesian_jzsh(params):
     ''' A function that accepts model parameters, and returns a tuple of functions that accept
         coordinates and evaluates this component of the potential and its derivatives for cartesian
@@ -241,7 +300,7 @@ def _logarithmic_model_cartesian_jzsh(params):
 
 class LogarithmicPotentialJZSH(Potential):
 
-    def __init__(self, v_circ, c, p, q, coord_sys=cartesian3D, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
+    def __init__(self, v_circ, c, p, q, coord_sys=CartesianCoordinates, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
         ''' Represents a triaxial Logarithmic potential (e.g. triaxial halo).
 
             $\Phi_{halo} = \frac{v_{circ}^2}{2}\ln(x^2 + y^2/p^2 + z^2/q^2 + c^2)$
@@ -263,8 +322,8 @@ class LogarithmicPotentialJZSH(Potential):
                        "q" : float(q),
                        "v_circ" : float(v_circ_val)}
 
-        if coord_sys == cartesian3D:
-            self.coordinate_system = cartesian3D
+        if coord_sys == CartesianCoordinates:
+            self.coordinate_system = CartesianCoordinates
             f_derivs = _logarithmic_model_cartesian(self.params)
         else:
             raise ValueError("'coord_sys' can only be cartesian.")
@@ -291,10 +350,10 @@ def _logarithmic_model_cartesian_jhb(params):
 
 class LogarithmicPotentialJHB(Potential):
 
-    def __init__(self, v_halo, d, coord_sys=cartesian3D, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
+    def __init__(self, v_halo, d, coord_sys=CartesianCoordinates, length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
         ''' Represents a triaxial Logarithmic potential (e.g. triaxial halo).
 
-            $\Phi_{halo} = \frac{v_{circ}^2}{2}\ln(x^2 + y^2/p^2 + z^2/q^2 + c^2)$
+            $\Phi_{halo} = v_{halo}^2\ln(x^2 + y^2/p^2 + z^2/q^2 + c^2)$
 
         '''
         super(LogarithmicPotentialJHB, self).__init__()
@@ -311,8 +370,8 @@ class LogarithmicPotentialJHB(Potential):
         self.params = {"d" : float(d),
                        "v_halo" : float(v_halo_val)}
 
-        if coord_sys == cartesian3D:
-            self.coordinate_system = cartesian3D
+        if coord_sys == CartesianCoordinates:
+            self.coordinate_system = CartesianCoordinates
             f_derivs = _logarithmic_model_cartesian_jhb(self.params)
         else:
             raise ValueError("'coord_sys' can only be cartesian.")

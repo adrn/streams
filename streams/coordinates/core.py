@@ -29,7 +29,6 @@ def _coords_property_factory(self, key):
     """
     return lambda self: self._coords[key]
 
-# TODO: Make this a meta class
 class Coordinates(object):
     __metaclass__ = abc.ABCMeta
 
@@ -70,16 +69,23 @@ class Coordinates(object):
 
 class CartesianCoordinates(Coordinates):
     _transforms = dict()
+    _axis_names = ["X", "Y", "Z"]
+
     def __repr__(self):
         return "<CartesianCoordinates: " + ", ".join(["{0}={1}".format(k,v) for k,v in self._coords.items()]) + ">"
 
+
 class SphericalCoordinates(Coordinates):
     _transforms = dict()
+    _axis_names = ["r", "phi", "theta"]
+
     def __repr__(self):
         return "<SphericalCoordinates: " + ", ".join(["{0}={1}".format(k,v) for k,v in self._coords.items()]) + ">"
 
 class CylindricalCoordinates(Coordinates):
     _transforms = dict()
+    _axis_names = ["R", "phi", "Z"]
+
     def __repr__(self):
         return "<CylindricalCoordinates: " + ", ".join(["{0}={1}".format(k,v) for k,v in self._coords.items()]) + ">"
 

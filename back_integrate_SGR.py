@@ -24,6 +24,94 @@ import numpy as np
 
 from streams.potential import *
 from streams.integrate import leapfrog
+from streams.simulation import Particle, ParticleSimulation
+
+def back_integrate_stars(num=1000):
+    # Read in Kathryn's simulated data of the Sgr Dwarf center position / velocity
+    sgr_cen_data = ascii.read("data/SGR_CEN", data_start=1, names=["t", "dt", "x", "y", "z", "vx", "vy", "vz"])
+
+    # Scalings to bring to physical units
+    ru = 0.63
+    vu = (41.27781037*u.km/u.s).to(u.kpc/u.Myr).value
+    tu = 0.0149238134129*1000.
+
+    sgr_x, sgr_y, sgr_z = np.array(ru*sgr_cen_data["x"]), np.array(ru*sgr_cen_data["y"]), np.array(ru*sgr_cen_data["z"])
+    sgr_vx, sgr_vy, sgr_vz = np.array(vu*sgr_cen_data["vx"]), np.array(vu*sgr_cen_data["vy"]), np.array(vu*sgr_cen_data["vz"])
+    sgr_t, dt = tu*sgr_cen_data["t"], tu*sgr_cen_data["dt"][0]
+
+    t1, t2 = (min(sgr_t), max(sgr_t))
+
+    disk_potential = MiyamotoNagaiPotential(M=1E11*u.solMass, a=6.5, b=0.26)
+    bulge_potential = HernquistPotential(M=3.4E10*u.solMass, c=0.7)
+    halo_potential = LogarithmicPotentialLJ(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value, q1=1.38, q2=1.0, qz=1.36, phi=1.692969, c=12.)
+    galaxy_potential = disk_potential + bulge_potential + halo_potential
+    simulation = ParticleSimulation(potential=galaxy_potential)
+
+    # Read in Kathryn's simulated data of the Sgr Dwarf stellar positions / velocities
+    sgr_star_data = ascii.read("data/SGR_SNAP", data_start=1, data_end=num, names=["m","x","y","z","vx","vy","vz","s1", "s2", "tub"])
+    print(sgr_star_data["tub"])
+    return
+    star_x, star_y, star_z = np.array(ru*sgr_star_data["x"]), np.array(ru*sgr_star_data["y"]), np.array(ru*sgr_star_data["z"])
+    star_vx, star_vy, star_vz = np.array(vu*sgr_star_data["vx"]), np.array(vu*sgr_star_data["vy"]), np.array(vu*sgr_star_data["vz"])
+
+    print("done reading in")
+
+    for ii in range(len(star_x)):
+        p = Particle(position=(star_x[ii], star_y[ii], star_z[ii]), # kpc
+                     velocity=( (star_vx[ii]*u.km/u.s).to(u.kpc/u.Myr).value, (star_vy[ii]*u.km/u.s).to(u.kpc/u.Myr).value, (star_vz[ii]*u.km/u.s).to(u.kpc/u.Myr).value), # kpc/Myr
+                     mass=1.) # M_sol
+        simulation.add_particle(p)
+
+    ts, xs, vs = simulation.run(t1=0., t2=-t2, dt=-1.)
+
+    print("simulation done")
+
+    import time
+
+    plt.clf()
+    fig, axes = plt.subplots(2,2, figsize=(12,12), sharex=True, sharey=True)
+    axes[0,1].set_visible(False)
+    axes[0,0].set_xlim(-50, 50)
+    axes[0,0].set_ylim(-50, 50)
+    fig.subplots_adjust(hspace=0.0, wspace=0.0)
+
+    circlesXY = axes[0,0].scatter(xs[0,:num,0], xs[0,:num,1], marker='o', s=2., c='k', alpha=0.5)
+    circlesXZ = axes[1,0].scatter(xs[0,:num,0], xs[0,:num,2], marker='o', s=2., c='k', alpha=0.5)
+    circlesYZ = axes[1,1].scatter(xs[0,:num,1], xs[0,:num,2], marker='o', s=2., c='k', alpha=0.5)
+
+    for ii,t in enumerate(ts):
+        circlesXY.set_offsets(xs[ii, :num, :2])
+        circlesXZ.set_offsets(np.vstack((xs[ii, :num, 0], xs[ii, :num, 2])).T)
+        circlesYZ.set_offsets(xs[ii, :num, 1:])
+
+        #circles.set_facecolors(colors)
+        plt.draw()
+        time.sleep(0.02)
+
+    return
+
+    pos_units = "kpc"
+    # Position plots
+    fig, axes = plt.subplots(2,2,sharex=True, sharey=True, figsize=(12,12))
+    axes[0,0].scatter(xs[0,:,0], xs[0,:,1], color='k', alpha=0.5, s=4)
+    axes[0,0].scatter(xs[-1,:,0], xs[-1,:,1], color='r', alpha=0.5, s=4)
+    axes[0,0].set_ylabel("y [{0}]".format(pos_units))
+
+    axes[0,1].set_visible(False)
+
+    axes[1,0].scatter(xs[0,:,0], xs[0,:,2], color='k', alpha=0.5, s=4)
+    axes[1,0].scatter(xs[-1,:,0], xs[-1,:,2], color='r', alpha=0.5, s=4)
+    axes[1,0].set_xlabel("x [{0}]".format(pos_units))
+    axes[1,0].set_ylabel("z [{0}]".format(pos_units))
+
+    axes[1,1].scatter(xs[0,:,1], xs[0,:,2], color='k', alpha=0.5, s=4)
+    axes[1,1].scatter(xs[-1,:,1], xs[-1,:,2], color='r', alpha=0.5, s=4)
+    axes[1,1].set_xlabel("y [{0}]".format(pos_units))
+
+    fig.subplots_adjust(hspace=0, wspace=0)
+
+    plt.show()
+
 
 def main():
     # Read in Kathryn's simulated data of the Sgr Dwarf center position / velocity
@@ -44,20 +132,27 @@ def main():
     t1, t2 = (min(sgr_t), max(sgr_t))
 
     disk_potential = MiyamotoNagaiPotential(M=1E11*u.solMass, a=6.5, b=0.26)
-    bulge_potential = HernquistPotential(M=3.37509E10*u.solMass, c=0.7)
-    halo_potential = LogarithmicPotentialJHB(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value, d=12.)
+    bulge_potential = HernquistPotential(M=3.4E10*u.solMass, c=0.7)
+    halo_potential = LogarithmicPotentialLJ(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value, q1=1.38, q2=1.0, qz=1.36, phi=1.692969, c=12.)
     galaxy_potential = disk_potential + bulge_potential + halo_potential
 
     initial_position = [sgr_x[0], sgr_y[0], sgr_z[0]]
     initial_velocity = [sgr_vx[0], sgr_vy[0], sgr_vz[0]]
     ts, xs, vs = leapfrog(galaxy_potential.acceleration_at, initial_position, initial_velocity, t1, t2, dt)
 
-    '''
+    # Compute energy and plot
     E_kin = 0.5*np.sum(vs**2, axis=2)
     E_pot = galaxy_potential.value_at(xs)
 
     energies = galaxy_potential.energy_at(xs, vs)
+    delta_E = (energies - energies[0]) / energies[0]
+    print(sum(delta_E))
+    plt.figure()
+    plt.semilogy(ts, delta_E, 'k.')
+    plt.ylabel(r"$\Delta E/E$")
+    plt.show()
 
+    """
     fig, axes = plt.subplots(3,1,sharex=True,sharey=True)
     axes[0].plot(ts, E_kin)
     axes[0].set_ylabel(r"$E_{kin}$")
@@ -65,12 +160,12 @@ def main():
     axes[1].plot(ts, E_pot.T)
     axes[1].set_ylabel(r"$E_{pot}$")
 
-    axes[2].plot(ts, (E_kin + E_pot.T), 'k.')
-    axes[2].set_ylabel(r"$E_{tot}$")
+    axes[2].plot(ts, delta_E, 'k.')
+    axes[2].set_ylabel(r"$\Delta E/E$")
 
     plt.show()
     sys.exit(0)
-    '''
+    """
 
     pos_units = "kpc"
     time_units = "Myr"
@@ -110,7 +205,7 @@ def main():
     axes3[2].plot(ts, xs[:,0,2])
     axes3[2].plot(sgr_t, sgr_z, 'r-', alpha=0.5, color='b')
     axes3[2].set_ylabel("z [{0}]".format("kpc"))
-    axes3[2].set_xlabel("time [{0}/{1}]".format("kpc", "Myr"))
+    axes3[2].set_xlabel("time [{0}]".format("Myr"))
 
     # Position plots
     fig, axes = plt.subplots(2,2,sharex=True, sharey=True, figsize=(12,12))
@@ -148,4 +243,5 @@ def main():
     plt.show()
 
 if __name__ == "__main__":
-    main()
+    #main()
+    back_integrate_stars()

@@ -23,6 +23,7 @@ from astropy.utils.misc import isiterable
 import astropy.units as u
 
 from ..util import *
+from ..coordinates import CartesianCoordinates, SphericalCoordinates, CylindricalCoordinates
 
 class Potential(object):
 
@@ -124,17 +125,17 @@ class Potential(object):
         """ Compute the total energy for an array of particles. """
 
         # Coordinate systems imported from ..utils
-        if self.coordinate_system == cartesian3D:
+        if self.coordinate_system == CartesianCoordinates:
             kinetic = 0.5*np.sum(velocity**2, axis=2)
 
-        elif self.coordinate_system == spherical3D:
+        elif self.coordinate_system == SphericalCoordinates:
             kinetic = 0.5*(self.vel[:,:,0]**2 + self.pos[:,:,0]**2*sin(self.vel[:,:,2])**2*self.vel[:,:,1] + self.pos[:,:,0]**2*self.vel[:,:,2]**2)
 
-        elif self.coordinate_system == cylindrical3D:
+        elif self.coordinate_system == CylindricalCoordinates:
             kinetic = 0.5*(self.vel[:,:,0]**2 + self.pos[:,:,0]**2 * self.vel[:,:,1]**2 + self.vel[:,:,2]**2)
 
         else:
-            raise ValueError("Unknown potential coordinate system '{0}'".format(potential.coordinate_system))
+            raise ValueError("Unknown potential coordinate system '{0}'".format(self.coordinate_system))
 
         potential_energy = self.value_at(position)
         return kinetic + potential_energy.T
@@ -218,7 +219,7 @@ class Potential(object):
 
             # Label the axes
             if self.coordinate_system != None:
-                axis_names = self.coordinate_system.axis_names
+                axis_names = self.coordinate_system._axis_names
                 axes[0,0].set_ylabel("{1} [{0}]".format(self.length_unit, axis_names[1]))
                 axes[1,0].set_xlabel("{1} [{0}]".format(self.length_unit, axis_names[0]))
                 axes[1,0].set_ylabel("{1} [{0}]".format(self.length_unit, axis_names[2]))
