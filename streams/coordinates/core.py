@@ -14,7 +14,6 @@ import inspect
 # Third-party
 import numpy as np
 from astropy.utils.misc import isiterable
-from ..util import frozendict
 
 __all__ = ["Coordinates", "CartesianCoordinates", "CylindricalCoordinates", "SphericalCoordinates", "register_transform"]
 
