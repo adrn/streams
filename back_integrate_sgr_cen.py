@@ -12,7 +12,9 @@ import os, sys
 # Third-party
 import numpy as np
 import matplotlib.pyplot as plt
+import astropy.units as u
 
+# streams
 from streams.util import SGRData
 from streams.potential import *
 from streams.integrate import leapfrog
