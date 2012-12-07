@@ -15,10 +15,10 @@ from __future__ import division, print_function
 import os
 import sys
 import copy
+import time
 
 # Third-party
 import matplotlib.pyplot as plt
-from astropy.io import ascii
 import astropy.units as u
 import numpy as np
 
@@ -27,66 +27,102 @@ from streams.integrate import leapfrog
 from streams.simulation import Particle, ParticleSimulation
 
 def back_integrate_stars(num=1000):
-    # Read in Kathryn's simulated data of the Sgr Dwarf center position / velocity
-    sgr_cen_data = ascii.read("data/SGR_CEN", data_start=1, names=["t", "dt", "x", "y", "z", "vx", "vy", "vz"])
-
-    # Scalings to bring to physical units
-    ru = 0.63
-    vu = (41.27781037*u.km/u.s).to(u.kpc/u.Myr).value
-    tu = 0.0149238134129*1000.
-
-    sgr_x, sgr_y, sgr_z = np.array(ru*sgr_cen_data["x"]), np.array(ru*sgr_cen_data["y"]), np.array(ru*sgr_cen_data["z"])
-    sgr_vx, sgr_vy, sgr_vz = np.array(vu*sgr_cen_data["vx"]), np.array(vu*sgr_cen_data["vy"]), np.array(vu*sgr_cen_data["vz"])
-    sgr_t, dt = tu*sgr_cen_data["t"], tu*sgr_cen_data["dt"][0]
-
-    t1, t2 = (min(sgr_t), max(sgr_t))
-
+    # Define potential as 3-component, bulge-disk-halo model
     disk_potential = MiyamotoNagaiPotential(M=1E11*u.solMass, a=6.5, b=0.26)
     bulge_potential = HernquistPotential(M=3.4E10*u.solMass, c=0.7)
     halo_potential = LogarithmicPotentialLJ(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value, q1=1.38, q2=1.0, qz=1.36, phi=1.692969, c=12.)
     galaxy_potential = disk_potential + bulge_potential + halo_potential
+
+    # Read in Kathryn's simulated data
+    sgrdata = SGRData(num_stars=num)
+    t1, t2 = (min(sgrdata.satellite_center["t"]), max(sgrdata.satellite_center["t"]))
+    dt = sgrdata.satellite_center["dt"]
+
+    # Initialize simulation
     simulation = ParticleSimulation(potential=galaxy_potential)
 
-    # Read in Kathryn's simulated data of the Sgr Dwarf stellar positions / velocities
-    sgr_star_data = ascii.read("data/SGR_SNAP", data_start=1, data_end=num, names=["m","x","y","z","vx","vy","vz","s1", "s2", "tub"])
-    print(sgr_star_data["tub"])
-    return
-    star_x, star_y, star_z = np.array(ru*sgr_star_data["x"]), np.array(ru*sgr_star_data["y"]), np.array(ru*sgr_star_data["z"])
-    star_vx, star_vy, star_vz = np.array(vu*sgr_star_data["vx"]), np.array(vu*sgr_star_data["vy"]), np.array(vu*sgr_star_data["vz"])
-
-    print("done reading in")
-
-    for ii in range(len(star_x)):
-        p = Particle(position=(star_x[ii], star_y[ii], star_z[ii]), # kpc
-                     velocity=( (star_vx[ii]*u.km/u.s).to(u.kpc/u.Myr).value, (star_vy[ii]*u.km/u.s).to(u.kpc/u.Myr).value, (star_vz[ii]*u.km/u.s).to(u.kpc/u.Myr).value), # kpc/Myr
+    for ii in range(len(sgrdata.star_snapshot["x"])):
+        p = Particle(position=(sgrdata.star_snapshot["x"][ii], sgrdata.star_snapshot["y"][ii], sgrdata.star_snapshot["z"][ii]), # kpc
+                     velocity=(sgrdata.star_snapshot["vx"][ii], sgrdata.star_snapshot["vy"][ii], sgrdata.star_snapshot["vz"][ii]), # kpc/Myr
                      mass=1.) # M_sol
         simulation.add_particle(p)
 
-    ts, xs, vs = simulation.run(t1=0., t2=-t2, dt=-1.)
+    # The data in SGR_CEN is only printed every 25 steps!
+    ts, xs, vs = simulation.run(t1=t2, t2=t1, dt=-dt)
+    ts = ts[::-25]
+    xs = xs[::-25,:,:]
+    vs = vs[::-25,:,:]
 
-    print("simulation done")
+    # Define tidal radius, escape velocity for satellite
+    msat = 2.5E8
+    cen_rs = np.sqrt(sgrdata.satellite_center["x"]**2 + sgrdata.satellite_center["y"]**2 + sgrdata.satellite_center["z"]**2)
+    m_halo = halo_potential.params["v_halo"]**2*cen_rs/bulge_potential.params["_G"]
+    mr = disk_potential.params["M"] + bulge_potential.params["M"] + m_halo
+    r_tides = (cen_rs * (msat / mr)**(1./3))
+    v_escs = np.sqrt(2 * bulge_potential.params["_G"] * msat / r_tides)
 
-    import time
+    # Escape velocity, distance per particle, looped over each timestep
+    #particle_dists = np.ones(xs.shape[:2])
+    captured = np.zeros(xs.shape[1], dtype=int)
+    for ii in range(len(ts)):
+        # Distance to satellite center and total velocity
+        d = np.sqrt((xs[ii,:,0] - sgrdata.satellite_center["x"][ii])**2 + (xs[ii,:,1] - sgrdata.satellite_center["y"][ii])**2 + (xs[ii,:,2] - sgrdata.satellite_center["z"][ii])**2)
+        v = np.sqrt(vs[ii,:,0]**2 + vs[ii,:,1]**2 + vs[ii,:,2]**2)
+        #particle_dists[ii] = np.sqrt((d/r_tide)**2 + (v/v_esc)**2)
 
-    plt.clf()
+        idx = (d < r_tides[ii]) & (v < v_escs[ii]) & np.logical_not(captured.astype(bool))
+        captured[idx] = 1
+
+    print(sum(captured))
+    return
+
+    min_indices = particle_dists.argmin(axis=0)
+    min_times = ts[min_indices]
+    min_particle_dists = np.min(particle_dists, axis=0)
+
     fig, axes = plt.subplots(2,2, figsize=(12,12), sharex=True, sharey=True)
     axes[0,1].set_visible(False)
-    axes[0,0].set_xlim(-50, 50)
-    axes[0,0].set_ylim(-50, 50)
+    axes[0,0].set_xlim(-60, 60)
+    axes[0,0].set_ylim(-60, 60)
     fig.subplots_adjust(hspace=0.0, wspace=0.0)
 
-    circlesXY = axes[0,0].scatter(xs[0,:num,0], xs[0,:num,1], marker='o', s=2., c='k', alpha=0.5)
-    circlesXZ = axes[1,0].scatter(xs[0,:num,0], xs[0,:num,2], marker='o', s=2., c='k', alpha=0.5)
-    circlesYZ = axes[1,1].scatter(xs[0,:num,1], xs[0,:num,2], marker='o', s=2., c='k', alpha=0.5)
+    # Create circles to represent the tidal radius of the satellite
+    x0, y0, z0 = sgrdata.satellite_center["x"][0],sgrdata.satellite_center["z"][0],sgrdata.satellite_center["z"][0]
+    cenXY = plt.Circle((x0, y0), r_tides[0], facecolor='none',
+                edgecolor='r', linewidth=2, alpha=0.75)
+    axes[0,0].add_patch(cenXY)
+    cenXZ = plt.Circle((x0, z0), r_tides[0], facecolor='none',
+                edgecolor='r', linewidth=2, alpha=0.75)
+    axes[1,0].add_patch(cenXZ)
+    cenYZ = plt.Circle((y0, z0), r_tides[0], facecolor='none',
+                edgecolor='r', linewidth=2, alpha=0.75)
+    axes[1,1].add_patch(cenYZ)
+
+    # Create circles for the stars
+    circlesXY = axes[0,0].scatter(xs[0,:num,0], xs[0,:num,1], marker='o', s=2., c='k', alpha=0.5, zorder=100)
+    circlesXZ = axes[1,0].scatter(xs[0,:num,0], xs[0,:num,2], marker='o', s=2., c='k', alpha=0.5, zorder=100)
+    circlesYZ = axes[1,1].scatter(xs[0,:num,1], xs[0,:num,2], marker='o', s=2., c='k', alpha=0.5, zorder=100)
+
+    # Draw the potential
+    grid = np.linspace(-60., 60., 100)
+    galaxy_potential.plot(grid, grid, grid, axes=axes)
 
     for ii,t in enumerate(ts):
         circlesXY.set_offsets(xs[ii, :num, :2])
         circlesXZ.set_offsets(np.vstack((xs[ii, :num, 0], xs[ii, :num, 2])).T)
         circlesYZ.set_offsets(xs[ii, :num, 1:])
 
+        cenXY.center = (sgrdata.satellite_center["x"][ii],sgrdata.satellite_center["y"][ii])
+        cenXY.set_radius(r_tides[ii])
+        cenXZ.center = (sgrdata.satellite_center["x"][ii],sgrdata.satellite_center["z"][ii])
+        cenXZ.set_radius(r_tides[ii])
+        cenYZ.center = (sgrdata.satellite_center["y"][ii],sgrdata.satellite_center["z"][ii])
+        cenYZ.set_radius(r_tides[ii])
+
         #circles.set_facecolors(colors)
         plt.draw()
-        time.sleep(0.02)
+        #time.sleep(0.01)
+        plt.savefig("plots/sgr/sgr_{0:03d}.png".format(ii))
 
     return
 
@@ -112,10 +148,69 @@ def back_integrate_stars(num=1000):
 
     plt.show()
 
+def diagnostic_figures():
+    fig = plt.figure(figsize=(14,11))
+    ax = fig.add_subplot(111)
+    ax.plot(ts, particle_dists[:,0], 'k-')
+    ax.axvline(min_times[0], color='k', linestyle="--", linewidth=2)
+    ax.axvline(sgrdata.star_snapshot["tub"][0], color='k', linestyle="-.", linewidth=2)
+
+    ax.plot(ts, particle_dists[:,1], 'b-')
+    ax.axvline(min_times[1], color='b', linestyle="--", linewidth=2)
+    ax.axvline(sgrdata.star_snapshot["tub"][1], color='b', linestyle="-.", linewidth=2)
+
+    plt.show()
+    return
+
+    plt.figure(figsize=(14,11))
+    plt.subplot(311)
+    plt.plot(ts, sgrdata.satellite_center["x"], 'r-', label="Center")
+    plt.plot(ts, sgrdata.satellite_center["x"] - (cen_rs * (msat / mr)**(1./3)), 'r--')
+    plt.plot(ts, sgrdata.satellite_center["x"] + (cen_rs * (msat / mr)**(1./3)), 'r--')
+    plt.plot(ts, xs[:,0,0], 'k-', label="Star1")
+    plt.axvline(min_times[0], color='k', linestyle="--", linewidth=3)
+    plt.plot(ts, xs[:,1,0], 'b-', label="Star2")
+    plt.axvline(min_times[1], color='b', linestyle="--", linewidth=3)
+    plt.ylabel("x")
+    plt.legend(loc="upper left",prop={'size':12})
+
+    plt.subplot(312)
+    plt.plot(ts, sgrdata.satellite_center["y"], 'r-')
+    plt.plot(ts, sgrdata.satellite_center["y"] - (cen_rs * (msat / mr)**(1./3)), 'r--')
+    plt.plot(ts, sgrdata.satellite_center["y"] + (cen_rs * (msat / mr)**(1./3)), 'r--')
+    plt.plot(ts, xs[:,0,1], 'k-')
+    plt.axvline(min_times[0], color='k', linestyle="--", linewidth=3)
+    plt.plot(ts, xs[:,1,1], 'b-')
+    plt.axvline(min_times[1], color='b', linestyle="--", linewidth=3)
+    plt.ylabel("y")
+
+    plt.subplot(313)
+    plt.plot(ts, sgrdata.satellite_center["z"], 'r-')
+    plt.plot(ts, sgrdata.satellite_center["z"] - (cen_rs * (msat / mr)**(1./3)), 'r--')
+    plt.plot(ts, sgrdata.satellite_center["z"] + (cen_rs * (msat / mr)**(1./3)), 'r--')
+    plt.plot(ts, xs[:,0,2], 'k-')
+    plt.axvline(min_times[0], color='k', linestyle="--", linewidth=3)
+    plt.plot(ts, xs[:,1,2], 'b-')
+    plt.axvline(min_times[1], color='b', linestyle="--", linewidth=3)
+    plt.xlabel("t")
+    plt.ylabel("z")
+
+    plt.show()
+    return
+
+    plt.subplot(211)
+    plt.hist(min_particle_dists, bins=50)
+
+    plt.subplot(212)
+    plt.hist(min_times[min_times<0], bins=50)
+    plt.show()
+
+    return
+
 
 def main():
     # Read in Kathryn's simulated data of the Sgr Dwarf center position / velocity
-    sgr_cen_data = ascii.read("data/SGR_CEN", data_start=1, names=["t", "dt", "x", "y", "z", "vx", "vy", "vz"])
+    sgrself._cen_data = ascii.read("data/SGR_CEN", data_start=1, names=["t", "dt", "x", "y", "z", "vx", "vy", "vz"])
 
     # Scalings to bring to physical units
     ru = 0.63
@@ -244,4 +339,4 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    back_integrate_stars()
+    back_integrate_stars(5)
