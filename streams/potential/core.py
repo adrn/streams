@@ -189,21 +189,29 @@ class Potential(object):
 
         coord_array = self._args_to_coords(args)
 
-        if self.ndim > 1:
-            fig, axes = plt.subplots(self.ndim-1, self.ndim-1, sharex=True, sharey=True, figsize=(12,12))
+        if not kwargs.has_key("axes"):
+            if self.ndim > 1:
+                fig, axes = plt.subplots(self.ndim-1, self.ndim-1, sharex=True, sharey=True, figsize=(12,12))
+            else:
+                fig, axes = plt.subplots(1, 1, figsize=(12,12))
         else:
-            fig, axes = plt.subplots(1, 1, figsize=(12,12))
+            axes = kwargs["axes"]
+            if self.ndim > 1:
+                fig = axes[0,0].figure
+            else:
+                fig = axes.figure
 
         if self.ndim > 2:
             for ii in range(self.ndim):
                 for jj in range(self.ndim):
-                    if jj > ii or jj==2:
+                    if jj > ii or jj == 2:
                         try:
                             axes[ii,jj].set_visible(False)
                         except:
                             pass
                         continue
 
+                    print("axes[{0},{1}] <= x:{2}, y:{3}".format(ii-1,jj,jj,ii))
                     bottom = coord_array[:, jj]
                     side = coord_array[:, ii]
                     X1, X2 = np.meshgrid(bottom,side)

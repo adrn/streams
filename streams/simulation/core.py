@@ -65,7 +65,6 @@ class ParticleSimulation(object):
         """ Get a list of Particle objects at the given time step """
 
 
-
 class Particle(object):
 
     def __init__(self, position, velocity, mass=1.0):
