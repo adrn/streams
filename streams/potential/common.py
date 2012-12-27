@@ -13,7 +13,7 @@ import uuid
 # Third-party
 import numpy as np
 import astropy.units as u
-from astropy.constants.si import G as _G
+from astropy.constants.si import G
 
 from .core import Potential
 from ..util import *
@@ -69,7 +69,7 @@ class PointMassPotential(Potential):
             M_val = float(M)
 
         self.params = {"M" : float(M_val),
-                       "_G" : u.Quantity(_G, u.m**3 / u.kg / u.s**2).to(self.length_unit**3 / self.mass_unit / self.time_unit**2).value}
+                       "_G" : G.to(self.length_unit**3 / self.mass_unit / self.time_unit**2).value}
 
         # Trust that the user knows what they are doing with 'origin'
         for key,val in location.items():
@@ -141,7 +141,7 @@ class MiyamotoNagaiPotential(Potential):
         self.params = {"a" : float(a),
                        "b" : float(b),
                        "M" : float(M_val),
-                       "_G" : u.Quantity(_G, u.m**3 / u.kg / u.s**2).to(self.length_unit**3 / self.mass_unit / self.time_unit**2).value}
+                       "_G" : G.to(self.length_unit**3 / self.mass_unit / self.time_unit**2).value}
 
         if coord_sys == CartesianCoordinates:
             self.coordinate_system = CartesianCoordinates
@@ -207,7 +207,7 @@ class HernquistPotential(Potential):
 
         self.params = {"c" : float(c),
                        "M" : float(M_val),
-                       "_G" : u.Quantity(_G, u.m**3 / u.kg / u.s**2).to(self.length_unit**3 / self.mass_unit / self.time_unit**2).value}
+                       "_G" : G.to(self.length_unit**3 / self.mass_unit / self.time_unit**2).value}
 
         if coord_sys == CartesianCoordinates:
             self.coordinate_system = CartesianCoordinates
