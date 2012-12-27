@@ -19,7 +19,6 @@ from astropy.coordinates import transformations
 
 __all__ = ["SgrCoordinates"]
 
-@transformations.coordinate_alias('sgr')
 class SgrCoordinates(coord.SphericalCoordinatesBase):
     """
     A spherical coordinate system defined by the orbit of the Sagittarius dwarf galaxy, as described in
@@ -37,7 +36,7 @@ class SgrCoordinates(coord.SphericalCoordinatesBase):
             self.Beta = newcoord.Beta
             self._distance = newcoord._distance
         else:
-            super(SgrCoordinates, self)._initialize_latlon('Lambda', 'Beta', False, args, kwargs)
+            super(SgrCoordinates, self)._initialize_latlon('Lambda', 'Beta', False, args, kwargs, anglebounds=((0, 360), (-90,90)))
 
     def __repr__(self):
         if self.distance is not None:
@@ -56,6 +55,7 @@ class SgrCoordinates(coord.SphericalCoordinatesBase):
     @property
     def latangle(self):
         return self.Beta
+
 
 # Galactic to Sgr coordinates
 @transformations.static_transform_matrix(coord.GalacticCoordinates, SgrCoordinates)

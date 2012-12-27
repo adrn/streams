@@ -45,7 +45,7 @@ def test_against_David_Law():
         c = coord.GalacticCoordinates(coord.Angle(row["l"], u.degree),
                                       coord.Angle(row["b"], u.degree))
         sgr_coords = c.transform_to(SgrCoordinates)
-        print(sgr_coords.Lambda.degrees, row["lambda"])
+        print(sgr_coords.Lambda.degrees, row["lambda"], sgr_coords.Beta.degrees, row["beta"])
 
     assert False
 
