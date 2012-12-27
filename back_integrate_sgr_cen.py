@@ -82,4 +82,58 @@ ax3.plot(ts_forward, delta_E_forward, color='r', alpha=0.75, label="forward")
 ax3.plot(ts_back, delta_E_back, color='b', alpha=0.75, label="back")
 ax3.legend()
 
+# Phase-space plots
+fig2, axes2 = plt.subplots(3, 1, figsize=(14,10))
+axes2[0].plot(xs[:,0,0], vs[:,0,0], color='k')
+axes2[0].plot(sgr_x, sgr_vx, color='b')
+axes2[0].set_xlabel("x [{0}]".format(pos_units))
+axes2[0].set_ylabel(r"$v_x$ [{0}/{1}]".format(pos_units, time_units))
+
+axes2[1].plot(xs[:,0,1], vs[:,0,1])
+axes2[1].plot(sgr_y, sgr_vy, color='b')
+axes2[1].set_xlabel("y [{0}]".format(pos_units))
+axes2[1].set_ylabel(r"$v_y$ [{0}/{1}]".format(pos_units, time_units))
+
+axes2[2].plot(xs[:,0,2], vs[:,0,2])
+axes2[2].plot(sgr_z, sgr_vz, color='b')
+axes2[2].set_xlabel("z [{0}]".format(pos_units))
+axes2[2].set_ylabel(r"$v_z$ [{0}/{1}]".format(pos_units, time_units))
+
+# Position vs. Time
+fig3, axes3 = plt.subplots(3, 1, figsize=(14,10))
+axes3[0].plot(ts, xs[:,0,0])
+axes3[0].plot(sgr_t, sgr_x, 'r-', alpha=0.5, color='b')
+axes3[0].set_ylabel("x [{0}]".format(pos_units))
+
+axes3[1].plot(ts, xs[:,0,1])
+axes3[1].plot(sgr_t, sgr_y, 'r-', alpha=0.5, color='b')
+axes3[1].set_ylabel("y [{0}]".format("kpc"))
+
+axes3[2].plot(ts, xs[:,0,2])
+axes3[2].plot(sgr_t, sgr_z, 'r-', alpha=0.5, color='b')
+axes3[2].set_ylabel("z [{0}]".format("kpc"))
+axes3[2].set_xlabel("time [{0}]".format("Myr"))
+
+# Position plots
+fig, axes = plt.subplots(2,2,sharex=True, sharey=True, figsize=(12,12))
+axes[0,0].plot(xs[:,0,0], xs[:,0,1], linewidth=0.5, alpha=0.6)
+axes[0,0].plot(sgr_x, sgr_y, alpha=0.5, color='b')
+axes[0,0].set_ylabel("y [{0}]".format(pos_units))
+axes[0,0].plot(xs[0,0,0], xs[0,0,1], color='r', marker='o')
+
+axes[0,1].set_visible(False)
+
+axes[1,0].plot(xs[:,0,0], xs[:,0,2], linewidth=0.5, alpha=0.6)
+axes[1,0].plot(sgr_x, sgr_z, alpha=0.5, color='b')
+axes[1,0].set_xlabel("x [{0}]".format(pos_units))
+axes[1,0].set_ylabel("z [{0}]".format(pos_units))
+axes[1,0].plot(xs[0,0,0], xs[0,0,2], color='r', marker='o')
+
+axes[1,1].plot(xs[:,0,1], xs[:,0,2], linewidth=0.5, alpha=0.6)
+axes[1,1].plot(sgr_y, sgr_z, alpha=0.5, color='b')
+axes[1,1].plot(xs[0,0,1], xs[0,0,2], color='r', marker='o')
+axes[1,1].set_xlabel("y [{0}]".format(pos_units))
+
+fig.subplots_adjust(hspace=0, wspace=0)
+
 plt.show()
