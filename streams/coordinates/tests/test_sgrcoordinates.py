@@ -1,6 +1,6 @@
 # coding: utf-8
 """
-    Test the ...
+    Test the coordinates class that represents the plane of orbit of the Sgr dwarf galaxy.
 """
 
 from __future__ import absolute_import, unicode_literals, division, print_function
@@ -45,7 +45,30 @@ def test_against_David_Law():
         c = coord.GalacticCoordinates(coord.Angle(row["l"], u.degree),
                                       coord.Angle(row["b"], u.degree))
         sgr_coords = c.transform_to(SgrCoordinates)
-        print(sgr_coords.Lambda.degrees, row["lambda"], sgr_coords.Beta.degrees, row["beta"])
+        law_sgr_coords = SgrCoordinates(row["lambda"], row["beta"], unit=(u.degree, u.degree))
+        print(sgr_coords,law_sgr_coords)
+        #print(sgr_coords.separation(law_sgr_coords))
+
+    assert False
+
+def test_against_David_Law():
+    """ Test my code against an output file from using David Law's cpp code. Do:
+
+            g++ SgrCoord.cpp; ./a.out
+
+        to generate the data file, SgrCoord_data.
+
+    """
+
+    law_data = np.genfromtxt("streams/coordinates/tests/SgrCoord_data", names=True, delimiter=",")
+
+    for row in law_data:
+        c = coord.GalacticCoordinates(coord.Angle(row["l"], u.degree),
+                                      coord.Angle(row["b"], u.degree))
+
+        law_sgr_coords = SgrCoordinates(row["lambda"], row["beta"], unit=(u.degree, u.degree))
+        print(c,law_sgr_coords.transform_to(coord.GalacticCoordinates))
+        #print(sgr_coords.separation(law_sgr_coords))
 
     assert False
 
