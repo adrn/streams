@@ -57,8 +57,6 @@ class SgrCoordinates(coord.SphericalCoordinatesBase):
     def latangle(self):
         return self.Beta
 
-Xsun = 8. # kpc
-
 # Define the Euler angles
 phi = radians(180+3.75)
 theta = radians(90-13.46)
