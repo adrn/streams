@@ -11,3 +11,12 @@ TODO
               for a given RA, Dec, and heliocentric distance, I can select PTF RR Lyrae stars that may be associated
               with Sgr.
  * Email Carl Grillmair Distance vs. RA for the nearest wrap of the SGR simulation data from Law & Majewski 2010
+ * Check Catalina and PTF for RR Lyrae in TriAnd -> Email Andrew Drake
+
+Also, plot microlensing event candidates on the sky!
+
+2013-01-16
+ * Make 2D histogram of stellar density of Sgr, not including satellite itself
+ * Make some proper motion plot
+ * See if A. Drake has a table of distance, l, b, ra, dec
+ * Compare how we can do with just Pan-STARRs (2 wraps) vs. those data + a wrap further in orbital phase
