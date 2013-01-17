@@ -1,0 +1,304 @@
+%\documentclass{emulateapj}
+%\documentclass[preprint]{aastex}
+\documentclass{aastex}
+%\usepackage{emulateapj5}
+\usepackage{lscape}
+\usepackage{natbib}
+
+\begin{document}
+
+\title{Spitzer, Gaia and the Potential of the Milky Way}
+
+\author{Johnston, Price-Whelan, Madore, Majewski}
+
+\begin{abstract}
+sdfsdf
+\end{abstract}
+
+
+\section{Introduction}
+\label{intro.sec}
+ The existence of vast halos of unseen {\it dark} matter surrounding each galaxy has long been proposed \citep[e.g.,][]{zwicky37,rubin70} to explain the surprisingly large motions of the {\it baryonic} matter (i.e. stars, gas and dust) that we can see.
+Dark-matter-only simulations of structure formation lead us to expect that these  halos should have a density distribution that can simply be described with a universal profile \citep{nfw96} with a variety of triaxial shapes \citep{jing02}.
+The inclusion of baryons in the simulations tends to soften the triaxiality of the dark matter in the inner regions of the halo \citep[as the disk forms, see e.g.,][]{bailin05}, and can potentially alter the radial profile through a combination of adiabatic contraction and energetic feedback \citep[see recent discussion by][]{pontzen12}.
+Hence, measurements of the shape, orientation, radial profile and extent of dark matter halos can shed light both on the formation of these vast structures and the role that the messy baryonic processes of gas inflow, star formation and feedback  have played in shaping them. 
+
+The  extent of the bulk of the visible matter in galaxies is roughly 10\% of that of the host dark matter halo. Hence the major components of a galaxy can be used to  trace the inner portion of its host halo's mass distribution.
+The rotation curves of disk galaxies are particularly sensitive probes since matter in disks can be assumed to move on near circular orbits. 
+This knowledge gives us extra information about the orbital distribution of the visible matter within the dark matter halo, which allows a more precise tracing of the potential than is feasible for objects such as elliptical galaxies where orbits are assumed to be random.
+For example, rotation curves of low-surface-brightness galaxies can be used to examine whether dark matter halos have a cusped, power-law density profile in their centers as predicted by purely dark matter simulations of structure formation, or a constant density core perhaps induced by the influence of baryonic processes \citep[e.g.][]{kuzio09}.
+
+
+% Quote recent Binney/McMillan and Bovy/Rix work here? In longer paper…. Really about large disk samples and disk df's?
+% McMillan & Binney Tori work - but again assume fully populated DF
+
+Around external galaxies, the  dark matter distribution  at larger radii has been explored using a variety of approaches \citep[see][for a a complete and detailed review]{courteau12}.
+For example, the kinematics of tracers populations such as globular clusters or planetary nebulae  can be used to derive mass estimates under the assumptions that these satellite systems are relaxed and well-mixed \citep[early investigations include][]{cote03,mendez01}. 
+The level of detail in these estimates is necessarily limited by the number of objects bright enough for spectroscopic measurements. The largest samples to date have of order several hundred members probing out to several 10's of kpc,  and allowing simple, parameterized models of the mass and orbit distribution to be simultaneously constrained \citep[e.g.][]{napolitano11,deason12a}. 
+%\citep{romanowsky03,douglas07,romanowsky09,napolitano11,lee11}
+Alternatively, the properties of gravitationally lensed background sources around a galaxy can be used to map the shape, orientation and radial profile of the projected mass distribution \citep[as done by the Lens Structure and Dynamics Survey described in][]{koopmans02}. 
+The level of detail in these two-dimensional reconstructions is impressive:
+recent work has even found some systems sensitive to the position and mass of a major subhalo orbiting with the main halo \citep[e.g.][]{vegetti10}.
+Of course, lensing reconstructions can only be performed for galaxies which closely intersect our line of sight to background sources, but the advent of large photometric catalogues has allowed automatic searches for such chance alignments and significant increases in the number of objects studied \citep[e.g. the Sloan Lens ACS Survey, see][]{bolton06}.
+
+The one place in the Universe where we might hope to dissect a dark matter halo in even more detail is locally for our own Milky Way Galaxy. 
+Our proximity means that we can use individual stars as tracer populations and hence build much larger samples that probe deeper into the halo than the globular cluster and planetary nebula studies of external galaxies.
+Moreover, our internal perspective allows us to build a three-dimensional picture of the mass distribution rather than measuring its two-dimensional projection, as is the case for gravitational lensing.
+Hence we can hope to reconstruct not only the density, but also the shape and orientation of the dark matter halo as function of radius well beyond the disk.
+For example, to date thousands of blue-horizontal-branch stars selected from the Sloan Digital Sky Survey \citep[SDSS][]{} have been used to probe mass out to tens of kpc \citep{deason12,kafle12}, and estimates with combined tracers extend to 150kpc \citep{deason12b}. 
+\citet{loebman12} demonstrates how even larger stellar samples from current (i.e. SDSS) and future  (Gaia and LSST) stellar surveys will also be sensitive to any asphericity of the halo.
+
+There is a caveat to this work using tracer populations: these studies all rely on the assumptions that the tracers  represent a random sampling of orbits drawn from a smooth distribution function and are well-mixed in orbital phase. 
+However, the same surveys that provide large samples of tracers have also revealed the existence of large-scale spatial inhomogeneities in the form of giant stellar streams and clouds\citep{newberg01,majewski03,belokurov05}, clearly demonstrating that  a significant fraction of the stellar halo is neither randomly sampling a smooth orbit distribution nor is fully phase-mixed. 
+The degree of substructure increases with Galactocentric radius \citep{bell08} in agreement with models where the stellar halo is formed purely from accretion events \citep{bullock05,cooper10,rashkov12}.
+Moreover, even in the smoother, inner halo which is likely to be phase-mixed, significant clumpings in velocity \citep{schlauffman10} and orbital properties \citep{helmi99} have been observed, which indicate a non-smooth component to the orbit distribution.
+By ``observing'' particles in a sample of simulated stellar halos, \citet{yencho06} showed that, if stellar halos are indeed entirely formed via accretion events, then the expected degree of non-randomness  could lead to systematic biases in mass estimates of order several tens of percent.
+This encouraging result suggests that, if our expectations for the typical number and size of accretion events contributing to the stellar halo are correct, then the number of orbits effectively explored is sufficiently large that the assumption of random, fully phase-mixed orbits is reasonable for the current samples.
+
+A complimentary method to measure the mass distribution is to instead take full advantage of the {\it non}-random nature of the stellar distribution in our stellar halo --- analogous to our exploitation of matter in disks moving on near-circular orbits.
+While we do not know the exact orbits of  stellar debris from satellite destruction \citep[although][proposes a method of orbit reconstruction from limited dimensions of observations]{eyre08}, we do know something more about stars in a debris structure than in a random sample: we know that these stars were once all part of the same object.
+This approach is very promising --- because tidal streams are dynamically cold systems, it requires orders of magnitude fewer tracers than a random sample to get constraints of comparable accuracy.
+In the simplest case, we might {\it assume} that debris stars are actually still on the same orbit as their progenitor system.
+Then we can imagine that measuring the full-space velocities ${\bf v}$ at different points ${\bf x}$ in the structure (e.g. along a stream) would actually give us a direct measure of differences in potential $\Phi$ (i.e. $\Phi({\bf x}_1)-\Phi({\bf x}_2)=(v_2^2-v_1^2)/2$).
+In reality, we usually know at most four of the six phase-space co-ordinates for debris stars, often with significant error bars and potential measurements are made by fitting orbits to streams \citep[e.g.,][]{helmi05,johnston05,koposov10,law10,lux12}.
+Moreover, our assumption of debris tracing a single orbit is actually incorrect \citep[see][for discussions of the orbit distribution in tidal debris]{johnston98,helmi99}, with systematic changes in orbital energy along debris streams that can lead to systematic biases in our measurements of the Galactic potential \citep{eyre09,varghese11}.
+
+One way to address these systematic biases is to run fully self-consistent N-body simulations of satellite destruction in a variety of potentials (which naturally generate a distribution of orbital properties in the debris and along tidal streams) with the aim of simultaneously constraining both the properties of the satellite and the Milky Way. 
+Many studies of the Sagittarius debris system (hereafter Sgr)  --- whose tidal streams entirely encircle the Milky Way --- have adopted this approach \citep[e.g.][]{law05,fellhauer06} with the most recent work for the first time attempting to place constraints on the triaxiality and orientation of the Milky Way's matter distribution \citep{law11}.
+Studies which first fit the Sgr stream to a single orbit \citep{johnston05,law09} and were subsequently followed up with full N-body simulations \citep{law05,law12} offer another demonstration of the limitation of the former approach as potential parameters are revised when moving to the N-body approach.
+
+Other approaches have been proposed that avoid the cost of full N-body simulations yet recognize the limitations of single orbit integration.
+For example, using the results of N-body simulations as a guide, simple corrections around a single orbit can be adopted to make model predictions that more closely mimic expected debris behavior \citep[e.g.][]{johnston99a,varghese2011}.
+
+The promise of near-future data sets including full (or nearly full) phase-space information has also inspired discussions that move beyond fitting observables along a stream. 
+\citet{binney08} and \citet{penarrubia12} demonstrate conceptually that the distribution of energy and entropy (respectively) in debris will be minimized only for a correct assumption of the form of the Galactic potential (although neither tests their method with realistic observational errors???).
+\citet{johnston99} (hereafter JZSH) showed that backwards integration of the positions of stars and their parent satellite could be used to distinguish Milky Way mass models: only in the correct potential would the stars' and satellite's  path coincide within a Hubble time.
+The JZSH method was designed and tested for the proposed characteristics of the Space Interferometry Mission \citep{}, which was expected to be able to measure proper motions with $\mu$as/year accuracy for stars as faint as $V=20$.
+Distances to stream members would only be poorly known and were estimated using anticipated properties of tidal debris.
+
+In this paper we re-examine and update  the JZSH  in the context of current and near-future observational capabilities, and illustrates its power with the example of Sgr.
+In Section \ref{context.sec} we outline the observational prospects and Sgr properties that motivated this re-examination.
+In Section \ref{measure.sec} we present the updated potential measure and test it with synthetic observations of simulated Sgr debris.
+In Section \ref{summary.sec} we summarize our results and outline prospects for combining constraints from Sgr with those from other debris systems.
+
+\section{Context for the study}
+
+The method  in Section \ref{measure.sec} takes advantage of three distinct developments in the observations of tidal streams: 
+(i) the demonstration of a technique for deriving distances to individual RR Lyrae stars with 2\% accuracies (see Section \ref{spitzer.sec}); 
+(ii) the prospect of proper motion measurements of the same stars with $\sim$10 mas/year  precision (see Section  \ref{gaia.sec});
+and (iii) the tracing of debris associated with Sgr  entirely around the Galaxy (see Section \ref{sgr.sec})
+
+
+\subsection{Spitzer RR Lyraes}
+
+\label{spitzer.sec}
+
+%WISE: benedict11? 'precision of spritzer will far exceed these' also 'serendipi…
+%Text 'stolen' from proposal 1: the Carnegie RR Lyrae Program 
+
+Over twenty-five years ago Longmore, Fernley & Jameson (1986, MNRAS, 220, 279) demonstrated the existence of a near-infrared period-luminosity (PL) relation for RR Lyrae stars, using K-band observations of these stars in Galactic globular clusters. Catelan, Pritzl & Smith (2004, ApJS, 154, 633) showed that a PL relation for RR Lyrae stars is to be “expected” in the infrared (but vanishingly so in the optical), explained primarily by the changing bolometric correction for these stars as a function of the observed wavelength. Later, Madore & Freedman (2011, ApJ, 744, 132) demonstrated the inevitability of decreasing intrinsic scatter with increasing wavelength (and slope) of PL relations both for Cepheids and for RR Lyrae stars.
+Moreover, both reddening effects and metallicity dependencies also decrease significantly for observations further into the IR.
+
+Taken together, these studies suggest observations of RR Lyrae variables by NASA's Spitzer mission could provide us with a stellar distance indicator of unprecedented accuracy and precision. 
+\citet{madore13} have demonstrated \citep[using 5 stars with trigonometric parallaxes measured by Hubble][]{benedict11} that the dispersion in the mid-IR PL relation at Spitzer wavelengths, is on the order of ±0.03 mag. The immediate implication is that it is now possible to determine individual distances that are good to better than ±2\% for single RR Lyrae stars, out to the limits of Spitzer's ability to detect and measure RR Lyrae variables (which is at least 80 kpc, for modest integration times).
+
+\subsection{Gaia and Spitzer}
+\label{gaia.sec}
+
+ESA's Gaia satellite, planned for launch in June 2013, is an astrometric mission which aims to measure the positions of billions of stars with 10-100$\mu$as accuracies (depending on the color and magnitude of each star), scanning the entire sky multiple times over its 5-year lifetime \citep{perryman01}.
+Gaia will revolutionize the field of Galactic Astronomy with sufficient accuracy to create full, 6-dimensional phase-space maps for distances of up to $\sim 10$kpc from the Sun \citep[see][for discussion]{}.
+
+The left-hand panel of Figure \ref{data.fig} show Gaia's end-of-mission anticipated errors on the distance to  of an individual RR Lyrae star at different distances $d$ from the Sun.
+\footnote{Taken from WWW site?.}
+Note that within 2kpc of the Sun, Gaia will be able to measure distances to these stars to better than 2\%: RR Lyraes in this volume will be used to test and calibrate the Spitzer PL relation. 
+Beyond 2kpc, the IR PL relation for RR Lyraes will provide more accurate distance estimates than Gaia. 
+
+The remaining panels of Figure \ref{data.fig} demonstrate that Gaia's anticipated proper motions errors for RR Lyraes (middle) are sufficiently accurate to distinguish tangential motions with better than $\sim$10 km/s precision out to many tens of kpc (right-panel).
+Hence, the combination of Spitzer and Gaia data offers the exciting prospect of extending the ``horizon'' of where full six-dimensional phase-space maps of our Galaxy are possible from 10kpc to 80kpc.
+
+\begin{figure}
+\plotone{figs/data.eps}
+\caption{Summary of data sensitivity: $\Delta d$, $\Delta \mu$ and $\Delta v_{\rm tan}$ as function of $d$.
+{\it Also put Sgr and Orphan characteristics on this plot?}
+\label{data.fig}
+}
+\end{figure}
+
+\subsection{The Sagittarius debris system}
+
+The Sagittarius Dwarf Galaxy (hereafter Sgr) was discovered
+serendipitously during a radial velocity survey of the Galactic bulge
+(Ibata et al. 1994, Nature, 370, 194). While the number of known MW
+satellites has more than doubled recently (e.g.,
+McConnachie, 2012, AJ, 144, 4), in many ways Sgr remains the most
+studied and most intriguing --- it is the closest satellite, among the
+largest (only the LMC and SMC are more luminous), and has the most
+prominent tidal tails.
+From the first maps of the Sgr core (Ibata et al. 1994; Ibata et
+al. 1995, MNRAS, 277, 781) its elongated morphology suggested
+destruction by tidal forces, as might be anticipated
+from its proximity to the Galaxy.  Subsequent N-body models confirmed
+the validity of this interpretation (Velazquez \& White, 1995, MNRAS,
+275, L23) and showed that debris from Sgr should
+form coherent streams of stars encircling our Galaxy (Johnston et
+al. 1995, ApJ, 451, 598). Signatures of these giant star streams have
+since been discovered in many studies, and comprehensively mapped
+across the sky in carbon stars (Totten \& Irwin, 1998, MNRAS, 294, 1)
+M giant stars selected from the Two Micron All Sky Survey (Majewski et
+al.  2003, ApJ, 599, 1082) and main sequence turnoff stars selected
+from the Sloan Digital Sky Survey (Belokurov et al. 2006, ApJ Lett, 642, L137). 
+%\citep{belokurov06}.
+%Distance estimates along the tail have been derived from these photometric surveys (e.g., Mart{\'{\i}}nez-Delgado et al. 2004, ApJ, 601, 241) and gradients in radial velocities and stellar populations measured with follow-up spectroscopy (e.g., Keller et al. 2010, ApJ, 720, 940).
+%\citep{majewski04,martinez04,bellazzini06,chou07,chou10,keller10,carlin12}.
+%These rich data sets have inspired equally rich interpretations of Sgr debris
+% (e.g.,  Johnston et al. 1999, AJ, 118, 1719; Helmi, 2004, ApJL, 610, L97; Law et al. 2005, ApJ, 619, 807; Fellhauer et al. 2006, ApJ, 651, 167; Law \& Majewski, 2010, ApJ, 714, 229).
+%(e.g.,  Law \& Majewski, 2010, ApJ, 714, 229 -- hereafter LM10).
+
+Figure
+\ref{sgr.fig}  illustrates results from LM10's N-body
+simulation of dwarf satellite disruption along the expected Sgr orbit, with particles projected onto the plane perpendicular to the
+Galactic disk containing both the Sun and Galactic center.
+The simulation was run in a potential…..
+
+LM10 demonstrate how a comparison of such simulations with the
+observed debris enables a detailed reconstruction of Sgr's history ---
+it's mass and stellar content, orbit, rate of destruction and even
+original distribution in populations.  
+(See also other refs ????)
+Moreover, the phase-space
+distribution of the debris offers a unique probe of the depth, shape
+and extent of the Milky Way's dark matter halo that cannot be matched
+using other techniques on our own or other galaxies (e.g., Ibata et
+al. 2001, ApJ, 551, 294).  Most recently, LM10 have combined all
+current data on Sgr debris to assess the triaxiality and orientation
+of the outer Galaxy --- the first time that such a reconstruction of
+the 3-dimensional mass distribution of a dark matter halo has been
+feasible.  These constraints on Sgr's mass and orbit have
+invigorated discussions of Sgr in a more cosmological context, the
+mass and extent of the original dark matter halo that hosted it as well
+as its effect on the MW itself (e.g., Michel-Dansac et
+al. 2011, MNRAS, 414, L1).
+%\citep{bailin03,purcell11,michel11,gomez12}.
+
+The promise of the combined Spitzer and Gaia measurements of the distances to and proper motions of RR Lyraes in the Sgr debris opens up new approaches to interpretation.
+With 2\% distances measurements, the thickness of Sgr's stream is actually greater
+than the uncertainty.  Moreover,
+with Gaia's final data release, there will be proper motion
+measurements of accuracies less than the intrinsic velocity dispersion for much
+of the stream (e.g., corresponding to a tangential velocity accuracy
+of 10 km/s for an RR Lyrae at 35kpc) and ground-based radial
+velocities of few km/s accuracies can easily be added. 
+Hence, for the first time, the measured phase-space position of each individual RR Lyrae
+relative to the stream is actually physically meaningful.
+The next section outlines a method to take full advantage of this accuracy and use each RR Lyrae individually as a potential measure.
+
+\begin{figure}
+\plotone{figs/sgr.eps}
+\caption{
+\label{sgr.fig}
+}
+\end{figure}
+
+\section{Proposed potential measure}
+
+\subsection{Method}
+
+Once the full
+phase-space positions of these stars are known there is no need to
+build a sophisticated model of the entire stream system to interpret
+the data.  Instead, the knowledge that these stars were once part of
+Sgr allows them each to be exploited as individual potential measurers.
+If the orbits of an RR Lyrae and Sgr are simultaneously integrated
+backwards in a potential that correctly models the MW, then
+their orbits must intersect at some point within the last few Gyrs; in an
+incorrect potential this will not happen.
+This approach was first described by JZSH in anticipation of the
+SIM survey.
+The original algorithm does not assume that the distances to the debris stars are known, 
+and instead estimates them using the expected properties for the debris.
+A Spitzer survey of RR Lyraes would allow us to drop this approximate approach in favor of using the  measured distances.
+
+At any point during the backwards integration, the proximity of a debris particle to the parent satellite is defined by the normalized phase-space distance, 
+\begin{equation}
+       D_{\rm ps}=\left[\left({d \over r_{\rm tide}}\right)^2+\left({v \over v_{\rm esc}}\right)^2\right],
+\end{equation}
+where $d$ and $v$ are the distance and speed separation between the star
+and the parent respectively.  The one assumption in this method is what value to adopt for the satellite mass, $m_{\rm \sat}$,which sets the instantaneous tidal radius, $r_{\rm tide}=                                                                      
+R (m_{\rm sat}/M_{\rm Gal})^{1/3}$ and escape velocity, $v_{\rm esc} =                                                               
+G m_{\rm sat}/r_{\rm tide}$. The mass of the
+Galaxy $M_{\rm Gal}$ enclosed within radius $R$ is calculated directly from the
+assumed potential which is being tested.  The ``best'' potential parameters are those that
+minimize the average $D_{\rm ps}$ for all stars.
+{\it Or we could come up with some other statistic.}
+
+\subsection{Test of method on synthetic Sgr data}
+
+Figure \ref{boots.fig} illustrates potential power of the method for
+particles from the Sgr disruption N-body simulation
+ chosen to represent our proposed
+RR Lyrae survey (yellow crosses in left panel).  The 53 particles within 35 kpc of
+the Sun were ``observed'' with appropriate distance (assuming 2\%
+accuracy), proper motion (assuming Gaia accuracies)\footnote{see
+ http://www.rssd.esa.int/index.php?project=GAIA} and radial velocity
+(assuming 5 km/s) errors.  The ``observed'' phase-space positions were
+then integrated backwards in model potentials with axis ratios
+($q_1/q_2$ and $q_z/q_2$) and orientation ($\phi$) of the dark matter
+component systematically varied.  Sgr's phase space coordinates
+%(whose position and motion were                                                                                                                         
+(assumed to be exactly known, along with the distance to the Galactic
+center) were simultaneously integrated backwards in the same
+potentials, and the minimum normalized phase-space distance, $D_{\rm                                                              
+ ps}$, between Sgr and each particle recorded.
+he ``best'' potential parameters were those that
+minimized the average $D_{\rm ps}$ for all stars.
+
+
+Figure
+\ref{boots.fig} contours confidence levels for the recovered parameters
+(with a bold cross marking the true values used in the original
+simulation), with levels estimated by repeating the analysis using
+samples bootstrapped from our ``observations''.  The contours
+demonstrate the power of this combination of Spitzer and Gaia data:
+This small sample alone can broadly rule out significant areas of
+parameter space.  Combining the constraints from these samples with
+the extensive ground-based data sets already available would allow
+quite clear measurements of the shape and strength of the Milky Way
+potential.
+
+
+\begin{figure}
+\plotone{figs/boots.eps}
+\caption{
+\label{boots.fig}
+}
+\end{figure}
+
+\subsection{Future prospects}
+
+The great strength of the  JZSH ({\it can we come up with a catchy name?}) method is its simplicity:
+it requires only the assumption a satellite mass $m_{\rm sat}$ and  backwards integration of orbits. 
+There are no assumptions made about or N-body modeling required to follow the internal distribution of satellite stars or accurately assess the degree of alignment of debris with a single orbit.
+In fact, the method relies on the ability to measure {\it differences} in orbital properties --- these differences result in different orbital time periods for the debris and the satellite which leads to their paths intersecting during the backwards integration.
+
+There are two other apparent strengths of the method which require further investigation.
+First it appears applicable to any debris that is known to come from a single object, and not restricted only to the very coldest tidal streams. For example, in principle the method could  applied to the vast debris {\it clouds} that have been discovered subtending hundreds-thousands square degrees \citep[e.g. the Triangulum Andromeda and Hercules-Aquila clouds]{rochapinto04,belokurov06}, or even stars that have only associations in orbital properties and do not form a coherent spatial structure \citep[such as the angular momentum groupings in local giants found by][]{helmi99}.
+Second, it appears trivial to combine constraints from multiple debris systems at once by simply integrating all debris from several satellites simultaneously with $D_{\rm ps}$ defined appropriately for each star separately. 
+
+The limitations of the method also need to be understood. In particular, for the RR Lyraes associated with  the very coldest streams \citep[e.g. the globular clusters Pal5 and GD1][]{odenkirchen02,koposov10} the measurement errors are unlikely to be small enough for the 
+the differences in orbital properties to between debris and satellite to be detected, and the method should fail. 
+
+Lastly, the current version of the algorithm relies on accurate knowledge of the phase-space position of the parent satellite, which may not be available in some cases \citep[for example, for the Orphan Stream][]{belokurov07}. Given sufficient data, position and motion of the original host could be solved for as additional free parameters, but the effectiveness of this approach has yet to be investigated.
+
+
+
+\section{Summary}
+
+This paper outlines an algorithm to measure the Galactic potential that takes maximal advantage of a combination of possible data from the Spitzer and Gaia satellite missions that, when combined,  promise full phase-space measurements of RR Lyrae stars around our Galaxy.
+When applied to a synthetic data set generated from debris in an N-body simulation of the destruction of Sgr the method recovers the shape and orientation of the dark matter halo component of the potential with ??? accuracy using a sample of ??? stars.
+This success provides strong motivation for: (i) further theoretical work to investigate the power of multiple debris structures with different morphologies and orientations in building a comprehensive picture of the Galactic mass distribution; and (ii) a  Spitzer survey of RR Lyrae stars in debris structures around the Milky Way as a ``legacy'' sample to combine with near-future Gaia data.
+
+
+\bibliography{spitzer}
+\bibliographystyle{apj}
+
+\end{document}
