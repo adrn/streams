@@ -72,7 +72,7 @@ rot31 = sin(theta)*sin(phi)
 rot32 = -sin(theta)*cos(phi)
 rot33 = cos(theta)
 
-m = np.array([[rot11, rot12, rot13], [rot21, rot22, rot23], [rot31, rot32, rot33]])
+rotation_matrix = np.array([[rot11, rot12, rot13], [rot21, rot22, rot23], [rot31, rot32, rot33]])
 
 # Galactic to Sgr coordinates
 @transformations.transform_function(coord.GalacticCoordinates, SgrCoordinates)
@@ -81,18 +81,13 @@ def galactic_to_sgr(galactic_coord):
 
     l = galactic_coord.l.radians
     b = galactic_coord.b.radians
-    try:
-        r = galactic_coord.distance.kpc
-    except:
-        r = 1.
 
-    X = r*cos(b)*cos(l)
-    Y = r*cos(b)*sin(l)
-    Z = r*sin(b)
+    X = cos(b)*cos(l)
+    Y = cos(b)*sin(l)
+    Z = sin(b)
 
     # Calculate X,Y,Z,distance in the Sgr system
-    Xs, Ys, Zs = m.dot(np.array([X, Y, Z]))
-    r = np.sqrt(Xs*Xs+Ys*Ys+Zs*Zs)
+    Xs, Ys, Zs = rotation_matrix.dot(np.array([X, Y, Z]))
 
     Zs = -Zs
 
@@ -120,7 +115,7 @@ def sgr_to_galactic(sgr_coord):
 
     Zs = -Zs
 
-    X, Y, Z = m.T.dot(np.array([Xs, Ys, Zs]))
+    X, Y, Z = rotation_matrix.T.dot(np.array([Xs, Ys, Zs]))
 
     l = degrees(np.arctan2(Y,X))
     b = degrees(np.arcsin(Z/np.sqrt(X*X+Y*Y+Z*Z)))

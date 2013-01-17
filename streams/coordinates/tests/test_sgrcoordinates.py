@@ -14,7 +14,7 @@ import astropy.coordinates as coord
 import astropy.units as u
 
 from ..sgr import SgrCoordinates
-from ...util import SGRData
+#from ...util import SGRData
 
 def test_simple():
     c = coord.ICRSCoordinates(coord.Angle(217.2141, u.degree),
