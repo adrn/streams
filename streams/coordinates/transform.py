@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" """
+""" Transformations between coordinate systems. """
 
 from __future__ import division, print_function
 

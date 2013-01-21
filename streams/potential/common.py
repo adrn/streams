@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" """
+""" Common Galactic potential components. """
 
 from __future__ import division, print_function
 
