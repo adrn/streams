@@ -2,6 +2,10 @@
 
 """ A function that computes the distance to the midplane of the Sagittarius orbit plane given an
     RA, Dec, and heliocentric distance.
+    
+    Note: This is the standalone script I sent to Branimir! Not meant for use
+          in my own analysis.
+    
 """
 
 from __future__ import division, print_function
@@ -33,13 +37,15 @@ class SgrCoordinates(coord.SphericalCoordinatesBase):
     def __init__(self, *args, **kwargs):
         super(SgrCoordinates, self).__init__()
 
-        if len(args) == 1 and len(kwargs) == 0 and isinstance(args[0], coord.SphericalCoordinatesBase):
+        if len(args) == 1 and len(kwargs) == 0 and \
+            isinstance(args[0], coord.SphericalCoordinatesBase):
             newcoord = args[0].transform_to(self.__class__)
             self.Lambda = newcoord.Lambda
             self.Beta = newcoord.Beta
             self._distance = newcoord._distance
         else:
-            super(SgrCoordinates, self)._initialize_latlon('Lambda', 'Beta', False, args, kwargs, anglebounds=((0, 360), (-90,90)))
+            super(SgrCoordinates, self)._initialize_latlon('Lambda', 'Beta', \
+                False, args, kwargs, anglebounds=((0, 360), (-90,90)))
 
     def __repr__(self):
         if self.distance is not None:
