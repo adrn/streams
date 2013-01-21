@@ -12,17 +12,13 @@ import re
 
 # Third-party
 from astropy.utils.misc import isiterable
-from astropy.io import ascii
 import astropy.units as u
 import numpy as np
 
-__all__ = ["_validate_coord", "pwd"]
+__all__ = ["_validate_coord", "project_root"]
 
-pattr = re.compile("(.*)\/streams")
-try:
-    pwd = pattr.search(os.getcwd()).groups()[0]
-except:
-    pwd = ""
+_pattr = re.compile("(.*)\/streams")
+project_root = _pattr.search(os.getcwd()).groups()[0]
 
 def _validate_coord(x):
     if isiterable(x):
