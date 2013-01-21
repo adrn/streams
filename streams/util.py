@@ -18,7 +18,7 @@ import numpy as np
 __all__ = ["_validate_coord", "project_root"]
 
 _pattr = re.compile("(.*)\/streams")
-project_root = _pattr.search(os.getcwd()).groups()[0]
+project_root = os.path.join(_pattr.search(os.getcwd()).groups()[0], "streams")
 
 def _validate_coord(x):
     if isiterable(x):

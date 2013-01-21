@@ -12,9 +12,10 @@ import os, sys
 # Third-party
 import numpy as np
 import pyfits as pf
+import astropy.io.ascii as ascii
 
 # Project
-from ...util import project_root
+from ..util import project_root
 
 __all__ = ["LM10", "LINEAR", "QUEST"]
 
@@ -40,7 +41,7 @@ def _make_npy_file(ascii_file, overwrite=False, ascii_kwargs=dict()):
     elif os.path.exists(npy_filename) and not overwrite:
         return npy_filename
     
-    data = ascii.read(dat_filename, **ascii_kwargs)
+    data = ascii.read(ascii_file, **ascii_kwargs)
     np.save(npy_filename, np.array(data))
     return npy_filename
 
