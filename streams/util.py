@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" """
+""" Utilities for the streams project. """
 
 from __future__ import division, print_function
 
