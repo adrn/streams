@@ -73,7 +73,6 @@ class CartesianCoordinates(Coordinates):
     def __repr__(self):
         return "<CartesianCoordinates: " + ", ".join(["{0}={1}".format(k,v) for k,v in self._coords.items()]) + ">"
 
-
 class SphericalCoordinates(Coordinates):
     _transforms = dict()
     _axis_names = ["r", "phi", "theta"]
