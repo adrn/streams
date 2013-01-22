@@ -18,7 +18,15 @@ import numpy as np
 __all__ = ["_validate_coord", "project_root"]
 
 _pattr = re.compile("(.*)\/streams")
-project_root = os.path.join(_pattr.search(os.getcwd()).groups()[0], "streams")
+try:
+    matched_path = _pattr.search(os.getcwd()).groups()[0]
+except AttributeError: # match not found, try __file__ instead
+    matched_path = _pattr.search(__file__).groups()[0]
+
+if os.path.basename(matched_path) == "streams":
+    project_root = matched_path
+else:
+    project_root = os.path.join(matched_path, "streams")
 
 def _validate_coord(x):
     if isiterable(x):
