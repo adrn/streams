@@ -13,6 +13,8 @@ import os, sys
 import numpy as np
 import pyfits as pf
 import astropy.io.ascii as ascii
+import astropy.coordinates as coord
+import astropy.units as u
 
 # Project
 from ..util import project_root
@@ -45,7 +47,22 @@ def _make_npy_file(ascii_file, overwrite=False, ascii_kwargs=dict()):
     np.save(npy_filename, np.array(data))
     return npy_filename
 
-class LM10(object):
+class StreamData(object):
+    
+    def _set_coordinates(self, ra_name, dec_name):
+        """ Given the name of the right ascension column and the name of the
+            declination column, set the 'ra' and 'dec' attributes as astropy
+            coordinates objects.
+        """
+        icrs = [coord.ICRSCoordinates(ra,dec,unit=(u.degree,u.degree)) \
+                for ra,dec in zip(self.data[ra_name], self.data[dec_name])]
+        
+        self.ra = [c.ra for c in icrs]
+        self.dec = [c.dec for c in icrs]
+
+class LM10(StreamData):
+    
+    data = None
     
     def __init__(self, overwrite=False):
         """ Read in simulation data from Law & Majewski 2010. 
@@ -57,28 +74,45 @@ class LM10(object):
                 using the latest ascii data.
         """
         
-        dat_filename = os.path.join(project_root, "data", "simulation", \
-                                "SgrTriax_DYN.dat")
+        if LM10.data == None:
+            dat_filename = os.path.join(project_root, "data", "simulation", \
+                                    "SgrTriax_DYN.dat")
+            
+            npy_filename = _make_npy_file(dat_filename, overwrite=overwrite)
+            LM10.data = np.load(npy_filename)
         
-        npy_filename = _make_npy_file(dat_filename, overwrite=overwrite)
-        self.data = np.load(npy_filename)
+        self._set_coordinates("ra", "dec")
 
-class LINEAR(object):
+class LINEAR(StreamData):
+    
+    data = None
     
     def __init__(self, overwrite=False):
         """ Read in LINEAR RR Lyrae catalog from Branimir. """
-        txt_filename = os.path.join(project_root, "data", "catalog", \
-                                    "LINEAR_RRab.txt")
-                                    
-        npy_filename = _make_npy_file(txt_filename, overwrite=overwrite)
-        self.data = np.load(npy_filename)
+        
+        if LINEAR.data == None:
+            txt_filename = os.path.join(project_root, "data", "catalog", \
+                                        "LINEAR_RRab.txt")
+                                        
+            npy_filename = _make_npy_file(txt_filename, overwrite=overwrite)
+            LINEAR.data = np.load(npy_filename)
+        
+        self._set_coordinates("ra", "dec")
 
-class QUEST(object):
+class QUEST(StreamData):
+    
+    data = None
+    
     def __init__(self, overwrite=False):
         """ Read in QUEST RR Lyrae from Vivas et al. 2004 """
-        fits_filename = os.path.join(project_root, "data", "catalog", \
-                                    "quest_vivas2004_RRL.fits")
         
-        hdulist = pf.open(fits_filename)
-        self.data = hdulist[1].data
+        if QUEST.data == None:
+            fits_filename = os.path.join(project_root, "data", "catalog", \
+                                        "quest_vivas2004_RRL.fits")
+            
+            hdulist = pf.open(fits_filename)
+            QUEST.data = hdulist[1].data
+        
+        self._set_coordinates("RAJ2000", "DEJ2000")
+
         
