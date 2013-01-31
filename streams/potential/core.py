@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" Base class for handling analytic representations of scalar gravitational 
+""" Base class for handling analytic representations of scalar gravitational
     potentials.
 """
 
@@ -19,7 +19,7 @@ import inspect
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from astropy.utils.misc import isiterable
+from astropy.utils import isiterable
 import astropy.units as u
 
 from ..util import *
@@ -28,32 +28,32 @@ from ..coordinates import Coordinates, CartesianCoordinates, \
 
 class Potential(object):
 
-    def __init__(self, coordinate_system, length_unit=u.kpc, 
+    def __init__(self, coordinate_system, length_unit=u.kpc,
                                           mass_unit=u.solMass):
-        ''' A Potential object or baseclass represents an analytic form of a 
+        ''' A Potential object or baseclass represents an analytic form of a
             gravitational potential.
-            
+
             Parameters
             ----------
             coordinate_system : streams.coordinates.Coordinates
-                A Coordinates object that represents the type of coordinate 
+                A Coordinates object that represents the type of coordinate
                 system this potential is expressed in.
             length_unit : astropy.units.Unit, str (optional)
                 The unit of length. Defaults to kiloparsec (kpc).
             mass_unit : astropy.units.Unit, str (optional)
                 The unit of mass. Defaults to solar masses (solMass).
         '''
-        
+
         if not issubclass(coordinate_system, Coordinates):
             raise ValueError("The specified coordinate_system must be a "
                              " subclass of streams.coordinates.Coordinates.")
         else:
             self.coordinate_system = coordinate_system
-        
+
         # Make sure these units are both astropy.units.Unit objects
         self.length_unit = u.Unit(length_unit)
         self.mass_unit = u.Unit(mass_unit)
-        
+
         # Initialize empty containers for potential components and their
         #   derivatives.
         self._potential_components = dict()
@@ -62,9 +62,9 @@ class Potential(object):
         self.ndim = None
 
     def add_component(self, name, func, derivs=None, latex=None):
-        ''' Add a component to the potential. The component must have a name, 
+        ''' Add a component to the potential. The component must have a name,
             and you must specify the functional form of the potential component.
-            You may also optionally add derivatives using the 'derivs' 
+            You may also optionally add derivatives using the 'derivs'
             parameter.
 
             Parameters
@@ -72,13 +72,13 @@ class Potential(object):
             name : str, hashable
                 The name of the potential component, e.g. 'halo'
             func : function
-                The functional form of the potential component. This must be a 
+                The functional form of the potential component. This must be a
                 function that accepts N arguments where N is the dimensionality
             derivs : tuple
-                A tuple of functions representing the derivatives of the 
+                A tuple of functions representing the derivatives of the
                 potential.
             latex : str (optional)
-                The latex representation of this potential component. Will be 
+                The latex representation of this potential component. Will be
                 used to make sexy output in iPython Notebook.
 
         '''
@@ -94,7 +94,7 @@ class Potential(object):
                              format(name))
 
         self._potential_components[name] = func
-        
+
         ndim_this_p = len(inspect.getargspec(func).args)
         if self.ndim == None:
             self.ndim = ndim_this_p
@@ -103,8 +103,8 @@ class Potential(object):
                              "{0} dimensional. You attempted to add a component"
                              " with only {1} dimensions".\
                              format(self.ndim, ndim_this_p))
-            
-        # If the user passes the potential derivatives, make sure it is an 
+
+        # If the user passes the potential derivatives, make sure it is an
         #   iterable of functions
         if derivs is not None:
             if not isiterable(derivs):
@@ -114,7 +114,7 @@ class Potential(object):
 
             derivs = tuple(derivs)
 
-            # Number of derivative functions should be equal to the 
+            # Number of derivative functions should be equal to the
             #   dimensionality of the potential
             if len(derivs) != self.ndim:
                 raise ValueError("Number of derivative functions should equal "
@@ -153,8 +153,8 @@ class Potential(object):
         return potential_value
 
     def acceleration_at(self, *args):
-        ''' Compute the acceleration due to the potential at the given 
-            position(s) 
+        ''' Compute the acceleration due to the potential at the given
+            position(s)
         '''
 
         coord_array = self._args_to_coords(args)
@@ -196,7 +196,7 @@ class Potential(object):
         return kinetic + potential_energy.T
 
     def _repr_latex_(self):
-        ''' Generate a latex representation of the potential. This is used by 
+        ''' Generate a latex representation of the potential. This is used by
             the IPython notebook to render nice latex equations.
         '''
 

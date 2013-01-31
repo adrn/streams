@@ -24,7 +24,8 @@ from ..coordinates import CartesianCoordinates, SphericalCoordinates, \
 
 __all__ = ["MiyamotoNagaiPotential", "HernquistPotential", \
            "LogarithmicPotentialLJ", "LogarithmicPotentialJZSH", \
-           "LogarithmicPotentialJHB", "PointMassPotential"]
+           "LogarithmicPotentialJHB", "LogarithmicPotential", \
+           "PointMassPotential"]
 
 def _raise(ex):
     raise ex
@@ -34,8 +35,8 @@ def _raise(ex):
 ####################################################################################
 
 def _point_mass_model_cartesian(params):
-    ''' A function that accepts model parameters, and returns a tuple of 
-        functions that accept coordinates and evaluates this component of the 
+    ''' A function that accepts model parameters, and returns a tuple of
+        functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cartesian coordinates.
     '''
     f = lambda x,y,z: -params["_G"] * params["M"] / np.sqrt((x-params["x0"])**2 + (y-params["y0"])**2 + (z-params["z0"])**2)
@@ -58,7 +59,7 @@ class PointMassPotential(Potential):
                 Mass.
             location : dict
                 Must be a dictionary specifying the location of the point mass.
-                For example, in cartesian, it should look like 
+                For example, in cartesian, it should look like
                 origin={'x0' : 5.}.
 
         '''
@@ -81,7 +82,7 @@ class PointMassPotential(Potential):
         # Trust that the user knows what they are doing with 'origin'
         for key,val in location.items():
             self.params[key] = val
-        
+
         f_derivs = _point_mass_model_cartesian(self.params)
         self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
         self.add_component = lambda *args: \
@@ -98,8 +99,8 @@ class PointMassPotential(Potential):
 ####################################################################################
 
 def _miyamoto_nagai_model_cartesian(params):
-    ''' A function that accepts model parameters, and returns a tuple of 
-        functions that accept coordinates and evaluates this component of the 
+    ''' A function that accepts model parameters, and returns a tuple of
+        functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cartesian coordinates.
     '''
     f = lambda x,y,z: -params["_G"] * params["M"] / np.sqrt(x**2 + y**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)
@@ -113,8 +114,8 @@ def _miyamoto_nagai_model_cartesian(params):
     return (f, df_dx, df_dy, df_dz)
 
 def _miyamoto_nagai_model_cylindrical(params):
-    ''' A function that accepts model parameters, and returns a tuple of 
-        functions that accept coordinates and evaluates this component of the 
+    ''' A function that accepts model parameters, and returns a tuple of
+        functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cylindrical coordinates.
     '''
     f = lambda R, phi, z: -params["_G"] * params["M"] / np.sqrt(R**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)
@@ -127,7 +128,7 @@ class MiyamotoNagaiPotential(Potential):
 
     def __init__(self, M, a, b, coordinate_system=CartesianCoordinates, \
                  length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
-        ''' Represents the Miyamoto-Nagai potential (1975) for a disk-like 
+        ''' Represents the Miyamoto-Nagai potential (1975) for a disk-like
             potential.
 
             $\Phi_{disk} = -\frac{GM_{disk}}{\sqrt{R^2 + (a + sqrt{z^2 + b^2})^2}}$
@@ -159,7 +160,7 @@ class MiyamotoNagaiPotential(Potential):
             raise ValueError("'coordinate_system' can be "
                              "util.CartesianCoordinates or "
                              "util.CylindricalCoordinates.")
-        
+
         self.coordinate_system = coordinate_system
         self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
         self.add_component = lambda *args: \
@@ -176,19 +177,19 @@ class MiyamotoNagaiPotential(Potential):
 ####################################################################################
 
 def _hernquist_model_cartesian(params):
-    ''' A function that accepts model parameters, and returns a tuple of 
-        functions that accept coordinates and evaluates this component of the 
+    ''' A function that accepts model parameters, and returns a tuple of
+        functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cartesian coordinates.
     '''
-    f = lambda x,y,z: - params["_G"]*params["M"] / (np.sqrt(x**2 + y**2 + z**2) + params["c"])
+    f = lambda x,y,z: -params["_G"]*params["M"] / (np.sqrt(x**2 + y**2 + z**2) + params["c"])
     df_dx = lambda x,y,z: params["_G"]*params["M"]*x / (np.sqrt(x**2 + y**2 + z**2) + params["c"])**2 / np.sqrt(x**2 + y**2 + z**2)
     df_dy = lambda x,y,z: params["_G"]*params["M"]*y / (np.sqrt(x**2 + y**2 + z**2) + params["c"])**2 / np.sqrt(x**2 + y**2 + z**2)
     df_dz = lambda x,y,z: params["_G"]*params["M"]*z / (np.sqrt(x**2 + y**2 + z**2) + params["c"])**2 / np.sqrt(x**2 + y**2 + z**2)
     return (f, df_dx, df_dy, df_dz)
 
 def _hernquist_model_spherical(params):
-    ''' A function that accepts model parameters, and returns a tuple of 
-        functions that accept coordinates and evaluates this component of the 
+    ''' A function that accepts model parameters, and returns a tuple of
+        functions that accept coordinates and evaluates this component of the
         potential and its derivatives for spherical coordinates.
     '''
     f = lambda r,phi,theta: - params["_G"]*params["M"] / (r + params["c"])
@@ -228,7 +229,7 @@ class HernquistPotential(Potential):
             f_derivs = _hernquist_model_spherical(self.params)
         else:
             raise ValueError("'coordinate_system' can be cartesian or spherical.")
-        
+
         self.coordinate_system = coordinate_system
         self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
         self.add_component = lambda *args: \
@@ -245,8 +246,8 @@ class HernquistPotential(Potential):
 ####################################################################################
 
 def _logarithmic_model_cartesian_lj(params):
-    ''' A function that accepts model parameters, and returns a tuple of 
-        functions that accept coordinates and evaluates this component of the 
+    ''' A function that accepts model parameters, and returns a tuple of
+        functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cartesian coordinates.
 
         Potential from David Law's paper?
@@ -294,7 +295,7 @@ class LogarithmicPotentialLJ(Potential):
             f_derivs = _logarithmic_model_cartesian_lj(self.params)
         else:
             raise ValueError("'coordinate_system' can only be cartesian.")
-        
+
         self.coordinate_system = coordinate_system
         self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
         self.add_component = lambda *args: \
@@ -307,8 +308,8 @@ class LogarithmicPotentialLJ(Potential):
 
 
 def _logarithmic_model_cartesian_jzsh(params):
-    ''' A function that accepts model parameters, and returns a tuple of 
-        functions that accept coordinates and evaluates this component of the 
+    ''' A function that accepts model parameters, and returns a tuple of
+        functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cartesian coordinates.
     '''
     f = lambda x,y,z: params["v_circ"]**2 / 2. * np.log(x**2 + y**2/params["p"]**2 + z**2/params["q"]**2 + params["c"]**2)
@@ -347,7 +348,7 @@ class LogarithmicPotentialJZSH(Potential):
             f_derivs = _logarithmic_model_cartesian_jzsh(self.params)
         else:
             raise ValueError("'coordinate_system' can only be cartesian.")
-        
+
         self.coordinate_system = coordinate_system
         self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
         self.add_component = lambda *args: \
@@ -358,9 +359,11 @@ class LogarithmicPotentialJZSH(Potential):
         ''' Custom latex representation for IPython Notebook '''
         return "$\\Phi_{halo} = \\frac{v_{circ}^2}{2}\\ln(x^2 + y^2/p^2 + z^2/q^2 + c^2)$"
 
+LogarithmicPotential = LogarithmicPotentialJZSH
+
 def _logarithmic_model_cartesian_jhb(params):
-    ''' A function that accepts model parameters, and returns a tuple of 
-        functions that accept coordinates and evaluates this component of the 
+    ''' A function that accepts model parameters, and returns a tuple of
+        functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cartesian coordinates.
     '''
     f = lambda x,y,z: params["v_halo"]**2 * np.log(x**2 + y**2 + z**2 + params["d"]**2)
@@ -397,7 +400,7 @@ class LogarithmicPotentialJHB(Potential):
             f_derivs = _logarithmic_model_cartesian_jhb(self.params)
         else:
             raise ValueError("'coordinate_system' can only be cartesian.")
-        
+
         self.coordinate_system = coordinate_system
         self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
         self.add_component = lambda *args: \
