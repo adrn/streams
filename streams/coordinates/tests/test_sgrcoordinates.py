@@ -14,7 +14,7 @@ import astropy.coordinates as coord
 import astropy.units as u
 
 from ..sgr import SgrCoordinates
-#from ...util import SGRData
+from ...data import LM10
 
 def test_simple():
     c = coord.ICRSCoordinates(coord.Angle(217.2141, u.degree),
@@ -75,10 +75,10 @@ def test_against_David_Law():
 def test_with_simulation_data():
     import matplotlib.pyplot as plt
 
-    sgr_data = SGRData(num_stars=10000)
-    X = sgr_data.sgr_snap["x"] - 8. #kpc
-    Y = sgr_data.sgr_snap["y"]
-    Z = sgr_data.sgr_snap["z"]
+    lm10_data = LM10().data[::100]
+    X = lm10_data["xsun"] - 8. #kpc
+    Y = lm10_data["ysun"]
+    Z = lm10_data["zsun"]
 
     # Convert XYZ to Galactic latitude, longitude. Then convert to SgrCoordinates
     cps = [coord.CartesianPoints(x=X[ii], y=Y[ii], z=Z[ii], unit=u.kpc) for ii in range(len(X))]

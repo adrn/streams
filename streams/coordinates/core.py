@@ -23,7 +23,6 @@ __all__ = ["Coordinates", "CartesianCoordinates", "CylindricalCoordinates", \
 # Notes
 # -----
 #    - Angular coordinates assume radians, unless you provide an Angle object
-#    -
 
 def _coords_property_factory(self, key):
     """ To get around strange lambda scope issues...
