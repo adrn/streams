@@ -17,6 +17,7 @@ import numpy as np
 
 __all__ = ["_validate_coord", "project_root"]
 
+# This code will find the root directory of the project
 _pattr = re.compile("(.*)\/streams")
 try:
     matched_path = _pattr.search(os.getcwd()).groups()[0]
@@ -28,6 +29,7 @@ if os.path.basename(matched_path) == "streams":
 else:
     project_root = os.path.join(matched_path, "streams")
 
+# 
 def _validate_coord(x):
     if isiterable(x):
         return np.array(x, copy=True)
