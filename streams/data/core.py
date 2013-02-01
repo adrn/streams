@@ -19,7 +19,7 @@ import astropy.units as u
 # Project
 from ..util import project_root
 
-__all__ = ["LM10", "LINEAR", "QUEST", "SgrCen"]
+__all__ = ["LM10", "LINEAR", "QUEST", "SgrCen", "SgrSnapshot"]
 
 def _make_npy_file(ascii_file, overwrite=False, ascii_kwargs=dict()):
     """ Make a .npy version of the given ascii file data.
@@ -145,5 +145,40 @@ class SgrCen(StreamData):
             SgrCen.data["vy"] = SgrCen.data["vy"] * vu
             SgrCen.data["vz"] = SgrCen.data["vz"] * vu
 
+class SgrSnapshot(StreamData):
 
+    def __init__(self, overwrite=False, num=0):
+        """ Read in Sgr simulation snapshop for individual particles
 
+            Parameters
+            ----------
+            num : int
+                If 0, load all stars, otherwise randomly sample 'num' particles from the snapshot data.
+        """
+
+        # Scale Sgr simulation data to physical units
+        ru = 0.63 # kpc
+        vu = (41.27781037*u.km/u.s).to(u.kpc/u.Myr).value # kpc/Myr
+        tu = 14.9238134129 # Myr
+
+        txt_filename = os.path.join(project_root, "data", "simulation", \
+                                    "SGR_SNAP")
+
+        npy_filename = _make_npy_file(txt_filename, overwrite=overwrite, ascii_kwargs=dict(names=["m","x","y","z","vx","vy","vz","s1", "s2", "tub"]))
+        self.data = np.load(npy_filename)
+
+        if num > 0:
+            idx = np.random.randint(0, len(self.data), num)
+            self.data = self.data[idx]
+
+        self.data["m"] = self.data["m"]
+
+        self.data["x"] = self.data["x"] * ru
+        self.data["y"] = self.data["y"] * ru
+        self.data["z"] = self.data["z"] * ru
+
+        self.data["vx"] = self.data["vx"] * vu
+        self.data["vy"] = self.data["vy"] * vu
+        self.data["vz"] = self.data["vz"] * vu
+
+        self.num = len(self.data)
