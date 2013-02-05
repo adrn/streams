@@ -179,7 +179,7 @@ class SgrSnapshot(StreamData):
                 data = self.data
 
             idx = np.random.randint(0, len(data), num)
-            self.data = self.data[idx]
+            self.data = data[idx]
 
         self.data["m"] = self.data["m"]
 
@@ -190,5 +190,7 @@ class SgrSnapshot(StreamData):
         self.data["vx"] = self.data["vx"] * vu
         self.data["vy"] = self.data["vy"] * vu
         self.data["vz"] = self.data["vz"] * vu
+
+        self.data["tub"] *= tu
 
         self.num = len(self.data)
