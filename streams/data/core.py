@@ -171,7 +171,9 @@ class SgrSnapshot(StreamData):
         self.data = np.load(npy_filename)
 
         if num > 0:
+
             if no_bound:
+                nb_idx = self.data["tub"] > 0.
                 data = self.data[nb_idx]
             else:
                 data = self.data
