@@ -147,13 +147,16 @@ class SgrCen(StreamData):
 
 class SgrSnapshot(StreamData):
 
-    def __init__(self, overwrite=False, num=0):
+    def __init__(self, overwrite=False, num=0, no_bound=False):
         """ Read in Sgr simulation snapshop for individual particles
 
             Parameters
             ----------
             num : int
                 If 0, load all stars, otherwise randomly sample 'num' particles from the snapshot data.
+            no_bound : bool (optional)
+                If True, only randomly select particles from the tidal streams -- *not* particles still
+                bound to the satellite.
         """
 
         # Scale Sgr simulation data to physical units
@@ -168,7 +171,12 @@ class SgrSnapshot(StreamData):
         self.data = np.load(npy_filename)
 
         if num > 0:
-            idx = np.random.randint(0, len(self.data), num)
+            if no_bound:
+                data = self.data[nb_idx]
+            else:
+                data = self.data
+
+            idx = np.random.randint(0, len(data), num)
             self.data = self.data[idx]
 
         self.data["m"] = self.data["m"]
