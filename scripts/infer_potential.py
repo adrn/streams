@@ -51,17 +51,89 @@ def plot_projections(x, y, z, axes=None, **kwargs):
 
     return fig, axes
 
-def run_back_integration(halo_potential, sgr_snap, sgr_cen, dt=None):
+# --------------------------------------------------------------------
+# This could get messy (TM)
+# --------------------------------------------------------------------
+
+# Read in data from Kathryn's SGR_SNAP and SGR_CEN files
+sgr_cen = SgrCen()
+dt = sgr_cen.data["dt"][0]*10.
+np.random.seed(42)
+sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
+
+# Get timestep information from SGR_CEN
+t1 = min(sgr_cen.data["t"])
+t2 = max(sgr_cen.data["t"])
+ts = np.arange(t2, t1, -dt)
+
+true_halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
+                        q1=1.38,
+                        q2=1.0,
+                        qz=1.36,
+                        phi=1.692969,
+                        c=12.)
+
+def ln_p_qz(qz):
+    """ Prior on vertical (z) axis ratio """
+    if u0 <= 1 or u0 >= 2:
+        return -np.inf
+    else:
+        return 0.
+
+def ln_prior(p):
+    qz, = p
+    return ln_p_qz(qz)
+
+def ln_likelihood(p):
+    # sgr_snap are the data!
+
+    halo_params = true_halo_params.copy()
+    halo_params["qz"] = p[0]
+    halo_potential = LogarithmicPotentialLJ(**halo_params)
+
+    energy_distances = run_back_integration(true_halo_potential, sgr_snap, sgr_cen, dt=dt)
+    return -np.mean(energy_distances)
+
+def ln_posterior(p):
+    return ln_prior(p) + ln_likelihood(p)
+
+def infer_potential():
+    nwalkers = 8
+    nburn_in = 10
+    nsamples = 100
+    p0 = np.array([[np.random.uniform(1,2)] for ii in range(nwalkers)])
+    ndim = p0.shape[1]
+
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
+                                    threads=8)
+    pos, prob, state = sampler.run_mcmc(p0, nburn_in)
+    sampler.reset()
+    sampler.run_mcmc(pos, nsamples)
+
+# --------------------------------------------------
+# Define tidal radius, escape velocity for satellite
+# --------------------------------------------------
+
+# First I have to interpolate the SGR_CEN data so we can evaluate the position at each particle timestep
+cen_x = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["x"], kind='cubic')(ts)
+cen_y = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["y"], kind='cubic')(ts)
+cen_z = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["z"], kind='cubic')(ts)
+cen_vx = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vx"], kind='cubic')(ts)
+cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
+cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
+
+msat = 2.5E8 # M_sun
+sgr_orbital_radius = np.sqrt(cen_x**2 + cen_y**2 + cen_z**2)
+m_halo_enclosed = halo_potential.params["v_halo"]**2 * sgr_orbital_radius/bulge_potential.params["_G"]
+mass_enclosed = disk_potential.params["M"] + bulge_potential.params["M"] + m_halo_enclosed
+
+r_tides = sgr_orbital_radius * (msat / mass_enclosed)**(1./3)
+v_escs = np.sqrt(bulge_potential.params["_G"] * msat / r_tides)
+
+def run_back_integration(halo_potential, sgr_snap):
     """ Given the particle snapshot information and a potential, integrate the particles
         backwards and return the minimum energy distances.
     """
-
-    # Get timestep information from SGR_CEN
-    t1 = min(sgr_cen.data["t"])
-    t2 = max(sgr_cen.data["t"])
-
-    if dt == None:
-        dt = sgr_cen.data["dt"][0]
 
     # We use the same disk and bulge potentials for all runs, just vary the halo potential
     disk_potential = MiyamotoNagaiPotential(M=1E11*u.M_sun,
@@ -83,26 +155,6 @@ def run_back_integration(halo_potential, sgr_snap, sgr_cen, dt=None):
     # The data in SGR_CEN is only printed every 25 steps!
     ts, xs, vs = simulation.run(t1=t2, t2=t1, dt=-dt)
 
-    # --------------------------------------------------
-    # Define tidal radius, escape velocity for satellite
-    # --------------------------------------------------
-
-    # First I have to interpolate the SGR_CEN data so we can evaluate the position at each particle timestep
-    cen_x = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["x"], kind='cubic')(ts)
-    cen_y = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["y"], kind='cubic')(ts)
-    cen_z = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["z"], kind='cubic')(ts)
-    cen_vx = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vx"], kind='cubic')(ts)
-    cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
-    cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
-
-    msat = 2.5E8 # M_sun
-    sgr_orbital_radius = np.sqrt(cen_x**2 + cen_y**2 + cen_z**2)
-    m_halo_enclosed = halo_potential.params["v_halo"]**2 * sgr_orbital_radius/bulge_potential.params["_G"]
-    mass_enclosed = disk_potential.params["M"] + bulge_potential.params["M"] + m_halo_enclosed
-
-    r_tides = sgr_orbital_radius * (msat / mass_enclosed)**(1./3)
-    v_escs = np.sqrt(bulge_potential.params["_G"] * msat / r_tides)
-
     closest_distances = []
     for ii in range(sgr_snap.num):
         # Distance to satellite center and total velocity
@@ -118,52 +170,11 @@ def run_back_integration(halo_potential, sgr_snap, sgr_cen, dt=None):
 
     return np.array(closest_distances)
 
-
-# --------------------------------------------------------------------
-# This could get messy (TM)
-# --------------------------------------------------------------------
-
-def ln_p_qz(qz):
-    """ Prior on vertical (z) axis ratio """
-    if u0 <= 1 or u0 >= 2:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_prior(p):
-    qz, = p
-    return ln_p_qz(qz)
-
-# Read in data from Kathryn's SGR_SNAP and SGR_CEN files
-sgr_cen = SgrCen()
-dt = sgr_cen.data["dt"][0]*10.
-np.random.seed(42)
-sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
-
-def ln_likelihood(p, mag, mjd, sigma):
-    energy_distances = run_back_integration(true_halo_potential, sgr_snap, sgr_cen, dt=dt)
-    return -np.mean(energy_distances)
-
-def infer_potential():
-    pass
-
 def main():
-    # Read in data from Kathryn's SGR_SNAP and SGR_CEN files
-    sgr_cen = SgrCen()
-    dt = sgr_cen.data["dt"][0]*10.
-
-    true_halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
-                            q1=1.38,
-                            q2=1.0,
-                            qz=1.36,
-                            phi=1.692969,
-                            c=12.)
     true_halo_potential = LogarithmicPotentialLJ(**true_halo_params)
+    true_energy_distances = run_back_integration(true_halo_potential, sgr_snap)
+    return
 
-    # Get data from Sgr particle snapshot
-    np.random.seed(42)
-    sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
-    true_energy_distances = run_back_integration(true_halo_potential, sgr_snap, sgr_cen, dt=dt)
     #n,bins,patches = plt.hist(true_energy_distances, bins=25, histtype="step", color="k", alpha=0.75, linewidth=2)
 
     for param_name, true_param_value in true_halo_params.items():

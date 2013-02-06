@@ -57,7 +57,7 @@ class ParticleSimulation(object):
 
         if dt == None:
             dt = (t2 - t1) / 100.
-        ts, xs, vs = leapfrog(self.potential.acceleration_at, self._particle_pos_array, self._particle_vel_array, t1, t2, dt)
+        ts, xs, vs = integrator(self.potential.acceleration_at, self._particle_pos_array, self._particle_vel_array, t1, t2, dt)
 
         return ts, xs, vs
 
