@@ -130,6 +130,7 @@ cen_vx = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vx"], kind='cubic
 cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
 cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
 print(time.time()-a)
+sys.exit(0)
 
 def run_back_integration(halo_potential, sgr_snap):
     """ Given the particle snapshot information and a potential, integrate the particles
