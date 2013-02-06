@@ -110,6 +110,12 @@ def infer_potential():
     sampler.reset()
     sampler.run_mcmc(pos, nsamples)
 
+    plt.hist(sampler.flatchain[:,0], bins=25, color="k", histtype="step")
+    plt.axvline(true_halo_params["qz"], color="r")
+    plt.savefig("plots/qz_posterior.png")
+
+    return
+
 # --------------------------------------------------
 # Define tidal radius, escape velocity for satellite
 # --------------------------------------------------
@@ -121,14 +127,6 @@ cen_z = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["z"], kind='cubic')
 cen_vx = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vx"], kind='cubic')(ts)
 cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
 cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
-
-msat = 2.5E8 # M_sun
-sgr_orbital_radius = np.sqrt(cen_x**2 + cen_y**2 + cen_z**2)
-m_halo_enclosed = halo_potential.params["v_halo"]**2 * sgr_orbital_radius/bulge_potential.params["_G"]
-mass_enclosed = disk_potential.params["M"] + bulge_potential.params["M"] + m_halo_enclosed
-
-r_tides = sgr_orbital_radius * (msat / mass_enclosed)**(1./3)
-v_escs = np.sqrt(bulge_potential.params["_G"] * msat / r_tides)
 
 def run_back_integration(halo_potential, sgr_snap):
     """ Given the particle snapshot information and a potential, integrate the particles
@@ -155,6 +153,14 @@ def run_back_integration(halo_potential, sgr_snap):
     # The data in SGR_CEN is only printed every 25 steps!
     ts, xs, vs = simulation.run(t1=t2, t2=t1, dt=-dt)
 
+    msat = 2.5E8 # M_sun
+    sgr_orbital_radius = np.sqrt(cen_x**2 + cen_y**2 + cen_z**2)
+    m_halo_enclosed = halo_potential.params["v_halo"]**2 * sgr_orbital_radius/bulge_potential.params["_G"]
+    mass_enclosed = disk_potential.params["M"] + bulge_potential.params["M"] + m_halo_enclosed
+
+    r_tides = sgr_orbital_radius * (msat / mass_enclosed)**(1./3)
+    v_escs = np.sqrt(bulge_potential.params["_G"] * msat / r_tides)
+
     closest_distances = []
     for ii in range(sgr_snap.num):
         # Distance to satellite center and total velocity
@@ -170,37 +176,5 @@ def run_back_integration(halo_potential, sgr_snap):
 
     return np.array(closest_distances)
 
-def main():
-    true_halo_potential = LogarithmicPotentialLJ(**true_halo_params)
-    true_energy_distances = run_back_integration(true_halo_potential, sgr_snap)
-    return
-
-    #n,bins,patches = plt.hist(true_energy_distances, bins=25, histtype="step", color="k", alpha=0.75, linewidth=2)
-
-    for param_name, true_param_value in true_halo_params.items():
-        distance_info = dict(mean=[], stddev=[])
-        param_values = np.linspace(true_param_value*0.5, true_param_value*1.5, 10)
-        for new_param_value in param_values:
-            halo_params = dict([x for x in true_halo_params.items()])
-            halo_params[param_name] = new_param_value
-
-            halo_potential = LogarithmicPotentialLJ(**halo_params)
-            energy_distances = run_back_integration(halo_potential, sgr_snap, sgr_cen, dt=dt)
-
-            distance_info["mean"].append(np.mean(energy_distances))
-            distance_info["stddev"].append(np.std(energy_distances))
-
-        #plt.hist(energy_distances, bins=bins, histtype="step", alpha=0.5, linewidth=1, label="qz={0}".format(qz))
-        plt.clf()
-        plt.plot(param_values, distance_info["mean"], "k-")
-        plt.axvline(true_halo_params[param_name], color="r")
-        plt.xlabel(param_name)
-        plt.ylabel(r"$\mathrm{mean}(\left\{D_{ps,i}\right\})$")
-        plt.savefig("plots/sgr_infer_potential/{0}.png".format(param_name))
-
-    #plt.legend()
-    #plt.xlabel("Phase-space Distance")
-
 if __name__ == "__main__":
-    main()
-    #verify_energy_distance_dist_bump()
+    infer_potential()
