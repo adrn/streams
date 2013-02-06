@@ -9,11 +9,7 @@ TODO
  * Email Carl Grillmair Distance vs. RA for the nearest wrap of the SGR simulation data from Law & Majewski 2010
  * Check Catalina and PTF for RR Lyrae in TriAnd -> Email Andrew Drake
 
-2013-01-30
+2013-02-06
  * Make some proper motion plot
  * See if A. Drake has a table of distance, l, b, ra, dec
  * Compare how we can do with just Pan-STARRs (2 wraps) vs. those data + a wrap further in orbital phase
- * Wrap -> Debris ID
- * Make analogous plots with Lmflag
- * In backwards integration code, save closest "distance" in r_tidal and v_esc
-     * Vary potential parameters, and see which one does best
