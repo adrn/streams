@@ -20,6 +20,7 @@ scipy.seterr(all="ignore")
 from scipy import interpolate
 import matplotlib.pyplot as plt
 import astropy.units as u
+import emcee
 
 # Project
 from streams.data import SgrSnapshot, SgrCen
@@ -75,44 +76,97 @@ true_halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
 
 def ln_p_qz(qz):
     """ Prior on vertical (z) axis ratio """
-    if u0 <= 1 or u0 >= 2:
+    if qz <= 1 or qz >= 2:
+        return -np.inf
+    else:
+        return 0.
+
+def ln_p_q1(q1):
+    """ Prior on axis ratio """
+    if q1 <= 1 or q1 >= 2:
+        return -np.inf
+    else:
+        return 0.
+
+def ln_p_q2(q2):
+    """ Prior on axis ratio """
+    if q2 <= 0.5 or q2 >= 2:
+        return -np.inf
+    else:
+        return 0.
+
+def ln_p_v_halo(v):
+    """ Prior on mass of the halo (v_halo). The range imposed is roughly a
+        halo mass between 10^10 and 10^12 M_sun at 200 kpc
+    """
+    if v <= 0.01 or v >= 0.15:
+        return -np.inf
+    else:
+        return 0.
+
+def ln_p_phi(phi):
+    """ Prior on orientation angle between DM halo and disk """
+    if phi < 0. or phi > np.pi:
+        return -np.inf
+    else:
+        return 0.
+
+def ln_p_c(c):
+    """ Prior on halo concentration parameter """
+    if c < 5. or c > 20:
         return -np.inf
     else:
         return 0.
 
 def ln_prior(p):
-    qz, = p
-    return ln_p_qz(qz)
+    return ln_p_qz(p[0]) + ln_p_v_halo(p[1]) + ln_p_c(p[2]) + ln_p_phi(p[3]) #+ ln_p_q2(p[2]) + ln_p_q1(p[1])
 
 def ln_likelihood(p):
     # sgr_snap are the data!
 
     halo_params = true_halo_params.copy()
     halo_params["qz"] = p[0]
+    #halo_params["q1"] = p[1]
+    halo_params["v_halo"] = p[1]
+    halo_params["c"] = p[2]
+    halo_params["phi"] = p[3]
     halo_potential = LogarithmicPotentialLJ(**halo_params)
 
-    energy_distances = run_back_integration(true_halo_potential, sgr_snap, sgr_cen, dt=dt)
+    energy_distances = run_back_integration(halo_potential, sgr_snap)
     return -np.mean(energy_distances)
 
 def ln_posterior(p):
     return ln_prior(p) + ln_likelihood(p)
 
 def infer_potential():
-    nwalkers = 8
-    nburn_in = 10
-    nsamples = 100
-    p0 = np.array([[np.random.uniform(1,2)] for ii in range(nwalkers)])
+    nwalkers = 12
+    param_names = ["qz", "v_halo", "c", "phi"]
+    p0 = np.array([[np.random.uniform(1,2),
+                    np.random.uniform(0.01,0.15),
+                    np.random.uniform(5,20),
+                    np.random.uniform(0., np.pi)] for ii in range(nwalkers)])
     ndim = p0.shape[1]
 
+    nthreads = 4
+    nburn_in = 100
+    nsamples = 1000
+
     sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
-                                    threads=8)
+                                    threads=nthreads)
     pos, prob, state = sampler.run_mcmc(p0, nburn_in)
+    print("Burn in complete...")
     sampler.reset()
     sampler.run_mcmc(pos, nsamples)
+    print("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.acceptance_fraction)))
 
-    plt.hist(sampler.flatchain[:,0], bins=25, color="k", histtype="step")
-    plt.axvline(true_halo_params["qz"], color="r")
-    plt.savefig("plots/qz_posterior.png")
+    fig,axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
+    fig.suptitle("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.acceptance_fraction)))
+    for ii in range(ndim):
+        axes[ii].set_title(param_names[ii])
+        axes[ii].hist(sampler.flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
+        axes[ii].axvline(true_halo_params[param_names[ii]], color="k", linestyle="--", linewidth=2)
+
+    plt.savefig("plots/posterior.png")
 
     return
 
@@ -121,16 +175,12 @@ def infer_potential():
 # --------------------------------------------------
 
 # First I have to interpolate the SGR_CEN data so we can evaluate the position at each particle timestep
-import time
-a = time.time()
 cen_x = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["x"], kind='cubic')(ts)
 cen_y = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["y"], kind='cubic')(ts)
 cen_z = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["z"], kind='cubic')(ts)
 cen_vx = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vx"], kind='cubic')(ts)
 cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
 cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
-print(time.time()-a)
-sys.exit(0)
 
 def run_back_integration(halo_potential, sgr_snap):
     """ Given the particle snapshot information and a potential, integrate the particles
