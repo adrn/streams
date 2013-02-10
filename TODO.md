@@ -13,3 +13,12 @@ TODO
  * Make some proper motion plot
  * See if A. Drake has a table of distance, l, b, ra, dec
  * Compare how we can do with just Pan-STARRs (2 wraps) vs. those data + a wrap further in orbital phase
+
+2013-02-08
+ * We don't have a generative model for our data -- e.g. the likelihood function I wrote down is
+     some heuristic that I pulled out of my ass. The right way to do it would be to write down a
+     model that can reproduce the density of observed data points along the stream -- Dan mentioned
+     doing this and using a KDE + a convolution.
+ * Really I just wrote down an arbitrary scalar objective function that I want to minimize, so using
+     MCMC is probably wrong -- I can just do an optimization and Monte Carlo dat shit with observational
+     errors?
