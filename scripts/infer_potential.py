@@ -1,3 +1,4 @@
+#!/hpc/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
 """ In this module, I'll test how the distribution of 'energy distance' changes as I tweak
@@ -119,17 +120,18 @@ def ln_p_c(c):
         return 0.
 
 def ln_prior(p):
-    return ln_p_qz(p[0]) + ln_p_v_halo(p[1]) + ln_p_c(p[2]) + ln_p_phi(p[3]) #+ ln_p_q2(p[2]) + ln_p_q1(p[1])
+    return ln_p_qz(p[0]) + ln_p_q1(p[1]) + ln_p_q2(p[2]) + ln_p_v_halo(p[3]) + ln_p_phi(p[4])
 
 def ln_likelihood(p):
     # sgr_snap are the data!
 
     halo_params = true_halo_params.copy()
     halo_params["qz"] = p[0]
-    #halo_params["q1"] = p[1]
-    halo_params["v_halo"] = p[1]
-    halo_params["c"] = p[2]
-    halo_params["phi"] = p[3]
+    halo_params["q1"] = p[1]
+    halo_params["q2"] = p[2]
+    halo_params["v_halo"] = p[3]
+    halo_params["phi"] = p[4]
+    #halo_params["c"] = p[5]
     halo_potential = LogarithmicPotentialLJ(**halo_params)
 
     energy_distances = run_back_integration(halo_potential, sgr_snap)
@@ -139,17 +141,24 @@ def ln_posterior(p):
     return ln_prior(p) + ln_likelihood(p)
 
 def infer_potential():
-    nwalkers = 12
+    nwalkers = 32
     param_names = ["qz", "v_halo", "c", "phi"]
     p0 = np.array([[np.random.uniform(1,2),
+                    np.random.uniform(1,2),
+                    np.random.uniform(1,2),
                     np.random.uniform(0.01,0.15),
-                    np.random.uniform(5,20),
-                    np.random.uniform(0., np.pi)] for ii in range(nwalkers)])
+                    np.random.uniform(1., 2.5)] for ii in range(nwalkers)])
     ndim = p0.shape[1]
 
-    nthreads = 4
-    nburn_in = 100
-    nsamples = 1000
+    """
+    nthreads = 32
+    nburn_in = 300
+    nsamples = 2000
+    """
+    nthreads = 1
+    nburn_in = 1
+    nsamples = 1
+    
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
                                     threads=nthreads)
@@ -166,7 +175,7 @@ def infer_potential():
         axes[ii].hist(sampler.flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
         axes[ii].axvline(true_halo_params[param_names[ii]], color="k", linestyle="--", linewidth=2)
 
-    plt.savefig("plots/posterior.png")
+    plt.savefig("posterior.png")
 
     return
 
