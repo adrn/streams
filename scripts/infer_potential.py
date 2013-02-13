@@ -142,7 +142,7 @@ def ln_posterior(p):
 
 def infer_potential():
     nwalkers = 32
-    param_names = ["qz", "v_halo", "c", "phi"]
+    param_names = ["qz", "q1", "q2", "v_halo", "phi"]
     p0 = np.array([[np.random.uniform(1,2),
                     np.random.uniform(1,2),
                     np.random.uniform(1,2),
