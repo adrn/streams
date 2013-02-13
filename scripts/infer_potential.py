@@ -141,7 +141,7 @@ def ln_posterior(p):
     return ln_prior(p) + ln_likelihood(p)
 
 def infer_potential():
-    nwalkers = 32
+    nwalkers = 10
     param_names = ["qz", "q1", "q2", "v_halo", "phi"]
     p0 = np.array([[np.random.uniform(1,2),
                     np.random.uniform(1,2),
@@ -155,7 +155,7 @@ def infer_potential():
     nburn_in = 300
     nsamples = 2000
     """
-    nthreads = 1
+    nthreads = 4
     nburn_in = 1
     nsamples = 1
     
