@@ -91,18 +91,22 @@ def infer_potential(param_names):
     param_map = dict(enumerate(param_names))
 
     def objective(params):
-        # sgr_snap are the data!
-
         halo_params = true_halo_params.copy()
         for ii,p in enumerate(params):
-            halo_params[param_map[ii]] = p[ii]
+            halo_params[param_map[ii]] = p
         halo_potential = LogarithmicPotentialLJ(**halo_params)
 
         energy_distances = run_back_integration(halo_potential, sgr_snap)
-        return np.median(energy_distances)
+        med = 10**np.median(energy_distances)
+        
+        print("step", params, med)
+        return med
 
-    p0 = np.array([np.random.uniform(param_ranges[p][0],param_ranges[p][1]) for p in param_names])
-    popt = optimize.leastsq(objective, x0=p0, maxfev=1)
+    #p0 = np.array([np.random.uniform(param_ranges[p][0],param_ranges[p][1]) for p in param_names])
+    p0 = np.array([1., 1., 0.1, 1.5])
+    popt = optimize.fmin(objective, x0=p0)
+    
+    return
 
     fig,axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
     fig.suptitle("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.acceptance_fraction)))
@@ -151,7 +155,7 @@ def run_back_integration(halo_potential, sgr_snap):
         simulation.add_particle(p)
 
     # The data in SGR_CEN is only printed every 25 steps!
-    ts, xs, vs = simulation.run(t1=t2, t2=t1, dt=-dt)
+    ts, xs, vs = simulation.run(t1=t2, t2=t1+dt, dt=-dt)
 
     msat = 2.5E8 # M_sun
     sgr_orbital_radius = np.sqrt(cen_x**2 + cen_y**2 + cen_z**2)
@@ -177,4 +181,4 @@ def run_back_integration(halo_potential, sgr_snap):
     return np.array(closest_distances)
 
 if __name__ == "__main__":
-    infer_potential()
+    infer_potential(["qz", "q1", "v_halo", "phi"])
