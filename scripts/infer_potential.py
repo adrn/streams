@@ -12,6 +12,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import datetime
 
 # Third-party
 import numpy as np
@@ -19,6 +20,8 @@ np.seterr(all="ignore")
 import scipy
 scipy.seterr(all="ignore")
 from scipy import interpolate
+import matplotlib
+matplotlib.use("agg")
 import matplotlib.pyplot as plt
 import astropy.units as u
 import emcee
@@ -107,58 +110,52 @@ def ln_p_v_halo(v):
 
 def ln_p_phi(phi):
     """ Prior on orientation angle between DM halo and disk """
-    if phi < 0. or phi > np.pi:
+    if phi < 1. or phi > 2.5:
         return -np.inf
     else:
         return 0.
 
 def ln_p_c(c):
     """ Prior on halo concentration parameter """
-    if c < 5. or c > 20:
+    if c < 8. or c > 14:
         return -np.inf
     else:
         return 0.
 
 def ln_prior(p):
-    return ln_p_qz(p[0]) + ln_p_q1(p[1]) + ln_p_q2(p[2]) + ln_p_v_halo(p[3]) + ln_p_phi(p[4])
+    return ln_p_qz(p[0]) + ln_p_q2(p[1]) + ln_p_v_halo(p[2]) + ln_p_phi(p[3]) +  ln_p_c(p[4])
 
 def ln_likelihood(p):
     # sgr_snap are the data!
 
     halo_params = true_halo_params.copy()
     halo_params["qz"] = p[0]
-    halo_params["q1"] = p[1]
-    halo_params["q2"] = p[2]
-    halo_params["v_halo"] = p[3]
-    halo_params["phi"] = p[4]
-    #halo_params["c"] = p[5]
+    #halo_params["q1"] = p[1]
+    halo_params["q2"] = p[1]
+    halo_params["v_halo"] = p[2]
+    halo_params["phi"] = p[3]
+    halo_params["c"] = p[4]
     halo_potential = LogarithmicPotentialLJ(**halo_params)
 
     energy_distances = run_back_integration(halo_potential, sgr_snap)
-    return -np.mean(energy_distances)
+    return -np.mean(energy_distances)*np.std(energy_distances)
 
 def ln_posterior(p):
     return ln_prior(p) + ln_likelihood(p)
 
 def infer_potential():
-    nwalkers = 10
-    param_names = ["qz", "q1", "q2", "v_halo", "phi"]
+    nwalkers = 128
+    param_names = ["qz", "q2", "v_halo", "phi", "c"]
     p0 = np.array([[np.random.uniform(1,2),
                     np.random.uniform(1,2),
-                    np.random.uniform(1,2),
                     np.random.uniform(0.01,0.15),
-                    np.random.uniform(1., 2.5)] for ii in range(nwalkers)])
+                    np.random.uniform(1., 2.5),
+                    np.random.uniform(8, 14)] for ii in range(nwalkers)])
     ndim = p0.shape[1]
 
-    """
-    nthreads = 32
-    nburn_in = 300
-    nsamples = 2000
-    """
-    nthreads = 4
-    nburn_in = 1
-    nsamples = 1
-    
+    nthreads = 128
+    nburn_in = 100
+    nsamples = 1000
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
                                     threads=nthreads)
@@ -166,16 +163,17 @@ def infer_potential():
     print("Burn in complete...")
     sampler.reset()
     sampler.run_mcmc(pos, nsamples)
-    print("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.acceptance_fraction)))
+    print("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
 
     fig,axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
-    fig.suptitle("Mean acceptance fraction: {0:.3f}".format(np.mean(sampler.acceptance_fraction)))
+    fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
     for ii in range(ndim):
         axes[ii].set_title(param_names[ii])
         axes[ii].hist(sampler.flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
         axes[ii].axvline(true_halo_params[param_names[ii]], color="k", linestyle="--", linewidth=2)
 
-    plt.savefig("posterior.png")
+    # HACk
+    plt.savefig("/u/10/a/amp2217/public_html/plots/posterior_{0}.png".format(datetime.datetime.now().date()))
 
     return
 
