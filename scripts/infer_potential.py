@@ -220,13 +220,13 @@ if __name__ == "__main__":
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False,
                     help="Be quiet! (default = False)")
     
-    parser.add_argument("--walkers", dest="walkers", default=100, type=int,
+    parser.add_argument("--walkers", dest="nwalkers", default=100, type=int,
                     help="Number of walkers")
-    parser.add_argument("--steps", dest="steps", default=1000, type=int,
+    parser.add_argument("--steps", dest="nsamples", default=1000, type=int,
                     help="Number of steps to take")
-    parser.add_argument("--burn-in", dest="burn_in", default=100, type=int,
+    parser.add_argument("--burn-in", dest="nburn_in", default=100, type=int,
                     help="Number of steps to burn in")
-    parser.add_argument("--threads", dest="threads", default=1, type=int,
+    parser.add_argument("--threads", dest="nthreads", default=1, type=int,
                     help="Number of threads to run (multiprocessing)")
     
     args = parser.parse_args()
@@ -272,4 +272,4 @@ if __name__ == "__main__":
     cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
     cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
     
-    infer_potential(**dict(args))
+    infer_potential(**args.__dict__)
