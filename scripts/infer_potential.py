@@ -13,6 +13,14 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import datetime
+import logging
+    
+# Create logger
+logger = logging.getLogger(__name__)
+ch = logging.StreamHandler()
+formatter = logging.Formatter("%(name)s / %(levelname)s / %(message)s")
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 # Third-party
 import numpy as np
@@ -55,28 +63,6 @@ def plot_projections(x, y, z, axes=None, **kwargs):
     axes[1,0].set_xlabel("Y [kpc]")
 
     return fig, axes
-
-# --------------------------------------------------------------------
-# This could get messy (TM)
-# --------------------------------------------------------------------
-
-# Read in data from Kathryn's SGR_SNAP and SGR_CEN files
-sgr_cen = SgrCen()
-dt = sgr_cen.data["dt"][0]*10.
-np.random.seed(42)
-sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
-
-# Get timestep information from SGR_CEN
-t1 = min(sgr_cen.data["t"])
-t2 = max(sgr_cen.data["t"])
-ts = np.arange(t2, t1, -dt)
-
-true_halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
-                        q1=1.38,
-                        q2=1.0,
-                        qz=1.36,
-                        phi=1.692969,
-                        c=12.)
 
 def ln_p_qz(qz):
     """ Prior on vertical (z) axis ratio """
@@ -143,8 +129,12 @@ def ln_likelihood(p):
 def ln_posterior(p):
     return ln_prior(p) + ln_likelihood(p)
 
-def infer_potential():
-    nwalkers = 128
+def infer_potential(**config):
+    nwalkers = config.get("nwalkers", 100)
+    nthreads = config.get("nthreads", 1)
+    nsamples = config.get("nsamples", 1000)
+    nburn_in = config.get("nburn_in", nsamples//10)
+    
     param_names = ["qz", "q2", "v_halo", "phi", "c"]
     p0 = np.array([[np.random.uniform(1,2),
                     np.random.uniform(1,2),
@@ -152,10 +142,6 @@ def infer_potential():
                     np.random.uniform(1., 2.5),
                     np.random.uniform(8, 14)] for ii in range(nwalkers)])
     ndim = p0.shape[1]
-
-    nthreads = 128
-    nburn_in = 100
-    nsamples = 1000
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
                                     threads=nthreads)
@@ -176,18 +162,6 @@ def infer_potential():
     plt.savefig("/u/10/a/amp2217/public_html/plots/posterior_{0}.png".format(datetime.datetime.now().date()))
 
     return
-
-# --------------------------------------------------
-# Define tidal radius, escape velocity for satellite
-# --------------------------------------------------
-
-# First I have to interpolate the SGR_CEN data so we can evaluate the position at each particle timestep
-cen_x = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["x"], kind='cubic')(ts)
-cen_y = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["y"], kind='cubic')(ts)
-cen_z = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["z"], kind='cubic')(ts)
-cen_vx = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vx"], kind='cubic')(ts)
-cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
-cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
 
 def run_back_integration(halo_potential, sgr_snap):
     """ Given the particle snapshot information and a potential, integrate the particles
@@ -238,4 +212,64 @@ def run_back_integration(halo_potential, sgr_snap):
     return np.array(closest_distances)
 
 if __name__ == "__main__":
-    infer_potential()
+    from argparse import ArgumentParser
+    
+    parser = ArgumentParser(description="")
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
+                    help="Be chatty! (default = False)")
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False,
+                    help="Be quiet! (default = False)")
+    
+    parser.add_argument("--walkers", dest="walkers", default=100, type=int,
+                    help="Number of walkers")
+    parser.add_argument("--steps", dest="steps", default=1000, type=int,
+                    help="Number of steps to take")
+    parser.add_argument("--burn-in", dest="burn_in", default=100, type=int,
+                    help="Number of steps to burn in")
+    parser.add_argument("--threads", dest="threads", default=1, type=int,
+                    help="Number of threads to run (multiprocessing)")
+    
+    args = parser.parse_args()
+    
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    elif args.quiet:
+        logger.setLevel(logging.ERROR)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    # --------------------------------------------------------------------
+    # This could get messy (TM)
+    # --------------------------------------------------------------------
+    
+    # Read in data from Kathryn's SGR_SNAP and SGR_CEN files
+    sgr_cen = SgrCen()
+    dt = sgr_cen.data["dt"][0]*10.
+    np.random.seed(42)
+    sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
+    
+    # Get timestep information from SGR_CEN
+    t1 = min(sgr_cen.data["t"])
+    t2 = max(sgr_cen.data["t"])
+    ts = np.arange(t2, t1, -dt)
+    
+    true_halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
+                            q1=1.38,
+                            q2=1.0,
+                            qz=1.36,
+                            phi=1.692969,
+                            c=12.)
+                            
+    # --------------------------------------------------
+    # Define tidal radius, escape velocity for satellite
+    # --------------------------------------------------
+    
+    # First I have to interpolate the SGR_CEN data so we can evaluate the position at each particle timestep
+    cen_x = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["x"], kind='cubic')(ts)
+    cen_y = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["y"], kind='cubic')(ts)
+    cen_z = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["z"], kind='cubic')(ts)
+    cen_vx = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vx"], kind='cubic')(ts)
+    cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
+    cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
+    
+    infer_potential(**dict(args))
