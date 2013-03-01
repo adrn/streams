@@ -135,6 +135,9 @@ def infer_potential(**config):
     nsamples = config.get("nsamples", 1000)
     nburn_in = config.get("nburn_in", nsamples//10)
     
+    logger.info("Starting simulation with {0} walkers on {1} threads.".format(nwalkers, nthreads))
+    logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
+    
     param_names = ["qz", "q2", "v_halo", "phi", "c"]
     p0 = np.array([[np.random.uniform(1,2),
                     np.random.uniform(1,2),
@@ -220,13 +223,13 @@ if __name__ == "__main__":
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False,
                     help="Be quiet! (default = False)")
     
-    parser.add_argument("--walkers", dest="nwalkers", default=100, type=int,
+    parser.add_argument("--walkers", dest="walkers", default=100, type=int,
                     help="Number of walkers")
-    parser.add_argument("--steps", dest="nsamples", default=1000, type=int,
+    parser.add_argument("--steps", dest="steps", default=1000, type=int,
                     help="Number of steps to take")
-    parser.add_argument("--burn-in", dest="nburn_in", default=100, type=int,
+    parser.add_argument("--burn-in", dest="burn_in", default=100, type=int,
                     help="Number of steps to burn in")
-    parser.add_argument("--threads", dest="nthreads", default=1, type=int,
+    parser.add_argument("--threads", dest="threads", default=1, type=int,
                     help="Number of threads to run (multiprocessing)")
     
     args = parser.parse_args()
