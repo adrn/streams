@@ -14,8 +14,14 @@ import os, sys
 
 # Third-party
 import numpy as np
+import astropy.units as u
+from astropy.io.misc import fnpickle, fnunpickle
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
-from streams.simulation.back_integrate import run_back_integration
+from streams.potential import *
+from streams.simulation import run_back_integration
+from streams.data import SgrSnapshot, SgrCen
 
 true_halo_params = dict(v_halo=(115.7651*u.km/u.s).to(u.kpc/u.Myr).value,
                         q1=1.38,
@@ -61,36 +67,52 @@ def vary_one_parameter():
         plt.ylabel("Median of minimum energy distance distribution")
         
 def vary_two_parameters(param_pair, grid_size=10):
-
+    
+    sgr_snap = SgrSnapshot(num=100, no_bound=True)
+    sgr_cen = SgrCen()
+    
     param1,param2 = param_pair
     
     stats_for_param_pair = dict()
     p1_vals = np.linspace(param_ranges[param1][0], param_ranges[param1][1], grid_size)
     p2_vals = np.linspace(param_ranges[param2][0], param_ranges[param2][1], grid_size)
     
-    for p1_val in p1_vals:
-        for p2_val in p2_vals:
+    X,Y = np.meshgrid(p1_vals, p2_vals)
+    Z = np.zeros_like(X)
+    
+    for ii,p1_val in enumerate(p1_vals):
+        for jj,p2_val in enumerate(p2_vals):
             halo_params = true_halo_params.copy()
             halo_params[param1] = p1_val
             halo_params[param2] = p2_val
             halo_potential = LogarithmicPotentialLJ(**halo_params)
         
             dist = run_back_integration(halo_potential, sgr_snap, sgr_cen)
-            
-            stats = dict()
-            stats["mean"] = np.mean(dist)
-            stats["std"] = np.std(dist)
-            stats["median"] = np.median(dist)
-            stats_for_param_pair[(p1_val,p2_val)] = stats
+            Z[ii,jj] = np.median(dist)
     
-    return stats_for_param_pair
+    return X,Y,Z
 
-def plotstuff():    
-    for param in ["qz", "q1", "q2", "v_halo", "phi", "c"]:
-        vals = np.linspace(param_ranges[param][0], param_ranges[param][1], 20)
+def main():
+
+    # q2 qz phi v_halo c
+    for params in [("qz", "phi"), ("v_halo","c"), ("q2","c"), ("q2", "qz"), 
+                   ("q2", "q1"), ("q2", "v_halo"), ("v_halo", "qz"), ("phi", "v_halo")]:
+        print(params)
+        pickle_filename = "data/grid_search/{0}_{1}.pickle".format(*params)
         
-        plt.figure(figsize=(12,8))
-        plt.plot(vals, np.array(stats_for_param[param]["median"]), color="k", marker="o", linestyle="none")
-        plt.axvline(true_halo_params[param])
-        plt.xlabel(param)
-        plt.ylabel("Median of minimum energy distance distribution")
+        if not os.path.exists(pickle_filename):
+            X,Y,Z = vary_two_parameters(params, grid_size=10)
+            fnpickle((X,Y,Z), pickle_filename)
+        
+        (X,Y,Z) = fnunpickle(pickle_filename)
+        
+        plt.figure(figsize=(12,12))
+        plt.pcolor(X, Y, Z, cmap=cm.Greys)
+        plt.axvline(true_halo_params[params[0]])
+        plt.axhline(true_halo_params[params[1]])
+        plt.xlabel(params[0])
+        plt.ylabel(params[1])
+        plt.savefig("plots/grid_search/{0}_{1}.png".format(*params))
+
+if __name__ == "__main__":
+    main()
