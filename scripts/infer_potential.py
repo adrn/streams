@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #!/hpc/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
@@ -39,7 +38,7 @@ import emcee
 from streams.data import SgrSnapshot, SgrCen
 from streams.potential import *
 from streams.integrate import leapfrog
-from streams.simulation import Particle, ParticleSimulation
+from streams.simulation import Particle, ParticleSimulation, run_back_integration
 
 def plot_projections(x, y, z, axes=None, **kwargs):
     """ Make a scatter plot of particles in projections of the supplied coordinates.
@@ -109,9 +108,6 @@ def ln_p_c(c):
     else:
         return 0.
 
-def ln_prior(p):
-    return ln_p_qz(p[0]) + ln_p_q2(p[1]) + ln_p_v_halo(p[2]) + ln_p_phi(p[3]) +  ln_p_c(p[4])
-
 def ln_likelihood(p):
     # sgr_snap are the data!
 
@@ -121,11 +117,10 @@ def ln_likelihood(p):
     halo_params["q2"] = p[1]
     halo_params["v_halo"] = p[2]
     halo_params["phi"] = p[3]
-    halo_params["c"] = p[4]
+    #halo_params["c"] = p[4]
     halo_potential = LogarithmicPotentialLJ(**halo_params)
 
-    energy_distances = run_back_integration(halo_potential, sgr_snap)
-    return -np.mean(energy_distances)*np.std(energy_distances)
+    return -run_back_integration(halo_potential, sgr_snap)
 
 def ln_posterior(p):
     return ln_prior(p) + ln_likelihood(p)
@@ -139,12 +134,10 @@ def infer_potential(**config):
     logger.info("Starting simulation with {0} walkers on {1} threads.".format(nwalkers, nthreads))
     logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
     
-    param_names = ["qz", "q2", "v_halo", "phi", "c"]
+    param_names = ["qz", "q2", "v_halo"]
     p0 = np.array([[np.random.uniform(1,2),
                     np.random.uniform(1,2),
-                    np.random.uniform(0.01,0.15),
-                    np.random.uniform(1., 2.5),
-                    np.random.uniform(8, 14)] for ii in range(nwalkers)])
+                    np.random.uniform(0.01,0.15)] for ii in range(nwalkers)])
     ndim = p0.shape[1]
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
@@ -167,54 +160,6 @@ def infer_potential(**config):
 
     return
 
-def run_back_integration(halo_potential, sgr_snap):
-    """ Given the particle snapshot information and a potential, integrate the particles
-        backwards and return the minimum energy distances.
-    """
-
-    # We use the same disk and bulge potentials for all runs, just vary the halo potential
-    disk_potential = MiyamotoNagaiPotential(M=1E11*u.M_sun,
-                                            a=6.5,
-                                            b=0.26)
-    bulge_potential = HernquistPotential(M=3.4E10*u.M_sun,
-                                         c=0.7)
-    potential = disk_potential + bulge_potential + halo_potential
-
-    # Initialize particle simulation with full potential
-    simulation = ParticleSimulation(potential=potential)
-
-    for ii in range(sgr_snap.num):
-        p = Particle(position=(sgr_snap.data["x"][ii], sgr_snap.data["y"][ii], sgr_snap.data["z"][ii]), # kpc
-                     velocity=(sgr_snap.data["vx"][ii], sgr_snap.data["vy"][ii], sgr_snap.data["vz"][ii]), # kpc/Myr
-                     mass=1.) # M_sol
-        simulation.add_particle(p)
-
-    # The data in SGR_CEN is only printed every 25 steps!
-    ts, xs, vs = simulation.run(t1=t2, t2=t1, dt=-dt)
-
-    msat = 2.5E8 # M_sun
-    sgr_orbital_radius = np.sqrt(cen_x**2 + cen_y**2 + cen_z**2)
-    m_halo_enclosed = halo_potential.params["v_halo"]**2 * sgr_orbital_radius/bulge_potential.params["_G"]
-    mass_enclosed = disk_potential.params["M"] + bulge_potential.params["M"] + m_halo_enclosed
-
-    r_tides = sgr_orbital_radius * (msat / mass_enclosed)**(1./3)
-    v_escs = np.sqrt(bulge_potential.params["_G"] * msat / r_tides)
-
-    closest_distances = []
-    for ii in range(sgr_snap.num):
-        # Distance to satellite center and total velocity
-        d = np.sqrt((xs[:,ii,0] - cen_x)**2 +
-                    (xs[:,ii,1] - cen_y)**2 +
-                    (xs[:,ii,2] - cen_z)**2)
-        v = np.sqrt((vs[:,ii,0] - cen_vx)**2 +
-                    (vs[:,ii,1] - cen_vy)**2 +
-                    (vs[:,ii,2] - cen_vz)**2)
-
-        energy_distances = np.sqrt((d/r_tides)**2 + (v/v_escs)**2)
-        closest_distances.append(min(energy_distances))
-
-    return np.array(closest_distances)
-
 if __name__ == "__main__":
     from argparse import ArgumentParser
     
@@ -232,6 +177,9 @@ if __name__ == "__main__":
                     help="Number of steps to burn in")
     parser.add_argument("--threads", dest="nthreads", default=1, type=int,
                     help="Number of threads to run (multiprocessing)")
+    
+    parser.add_argument("--params", dest="params", default=[], nargs='+',
+                    action='store', help="The halo parameters to vary.")
     
     args = parser.parse_args()
     
@@ -275,6 +223,14 @@ if __name__ == "__main__":
     cen_vx = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vx"], kind='cubic')(ts)
     cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
     cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
-
+    
+    # Define a mapping from parameter name to index
+    param_map = dict(zip(range(len(args.params)), args.params))
+    
+    # Construct the prior based on the requested parameters
+    prior_map = dict(qz=ln_p_qz, q1=ln_p_q1, q2=ln_p_q2, v_halo=ln_p_v_halo, phi=ln_p_phi, c=ln_p_c)
+    def ln_prior(p):
+        return ln_p_qz(p[0]) + ln_p_q2(p[1]) + ln_p_v_halo(p[2]) #+ ln_p_phi(p[3]) # +  ln_p_c(p[4])
+    
     infer_potential(**args.__dict__)
     
