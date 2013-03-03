@@ -108,20 +108,6 @@ def ln_p_c(c):
     else:
         return 0.
 
-def ln_likelihood(p):
-    # sgr_snap are the data!
-
-    halo_params = true_halo_params.copy()
-    halo_params["qz"] = p[0]
-    #halo_params["q1"] = p[1]
-    halo_params["q2"] = p[1]
-    halo_params["v_halo"] = p[2]
-    halo_params["phi"] = p[3]
-    #halo_params["c"] = p[4]
-    halo_potential = LogarithmicPotentialLJ(**halo_params)
-
-    return -run_back_integration(halo_potential, sgr_snap)
-
 def ln_posterior(p):
     return ln_prior(p) + ln_likelihood(p)
 
@@ -130,33 +116,40 @@ def infer_potential(**config):
     nthreads = config.get("nthreads", 1)
     nsamples = config.get("nsamples", 1000)
     nburn_in = config.get("nburn_in", nsamples//10)
+    param_names = config.get("params", [])
+    plot_path = config.get("plot_path", "plots")
     
-    logger.info("Starting simulation with {0} walkers on {1} threads.".format(nwalkers, nthreads))
+    if len(param_names) == 0:
+        raise ValueError("No parameters specified!")
+    
+    logger.info("Inferring halo parameters: {0}".format(",".join(param_names)))
+    logger.info("--> Starting simulation with {0} walkers on {1} threads.".format(nwalkers, nthreads))
     logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
     
-    param_names = ["qz", "q2", "v_halo"]
-    p0 = np.array([[np.random.uniform(1,2),
-                    np.random.uniform(1,2),
-                    np.random.uniform(0.01,0.15)] for ii in range(nwalkers)])
+    p0 = []
+    for ii in range(nwalkers):
+        p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
+                    for p_name in param_names])
+    p0 = np.array(p0)
     ndim = p0.shape[1]
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
                                     threads=nthreads)
     pos, prob, state = sampler.run_mcmc(p0, nburn_in)
-    print("Burn in complete...")
+    logger.debug("Burn in complete...")
     sampler.reset()
     sampler.run_mcmc(pos, nsamples)
-    print("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
+    logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
 
     fig,axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
     fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
     for ii in range(ndim):
         axes[ii].set_title(param_names[ii])
         axes[ii].hist(sampler.flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
-        axes[ii].axvline(true_halo_params[param_names[ii]], color="k", linestyle="--", linewidth=2)
+        axes[ii].axvline(true_halo_params[param_names[ii]], color="r", linestyle="--", linewidth=2)
 
-    # HACk
-    plt.savefig("/u/10/a/amp2217/public_html/plots/posterior_{0}.png".format(datetime.datetime.now().date()))
+    #plt.savefig("/u/10/a/amp2217/public_html/plots/posterior_{0}.png".format(datetime.datetime.now().date()))
+    plt.savefig(os.path.join(plot_path, "posterior_{0}.png".format(datetime.datetime.now().date())))
 
     return
 
@@ -226,11 +219,29 @@ if __name__ == "__main__":
     
     # Define a mapping from parameter name to index
     param_map = dict(zip(range(len(args.params)), args.params))
+    param_ranges = dict(qz=(0.5,2),
+                        q1=(0.5,2),
+                        q2=(0.5,2),
+                        v_halo=((100*u.km/u.s).to(u.kpc/u.Myr).value, (200*u.km/u.s).to(u.kpc/u.Myr).value),
+                        phi=(1, 2.5),
+                        c=(5,20))
     
     # Construct the prior based on the requested parameters
     prior_map = dict(qz=ln_p_qz, q1=ln_p_q1, q2=ln_p_q2, v_halo=ln_p_v_halo, phi=ln_p_phi, c=ln_p_c)
+    
     def ln_prior(p):
-        return ln_p_qz(p[0]) + ln_p_q2(p[1]) + ln_p_v_halo(p[2]) #+ ln_p_phi(p[3]) # +  ln_p_c(p[4])
+        sum = 0
+        for ii in range(len(p)):
+            sum += prior_map[param_map[ii]](p[ii])
+        return sum
+    
+    def ln_likelihood(p):    
+        halo_params = true_halo_params.copy()
+        for ii in range(len(p)):
+            halo_params[param_map[ii]] = p[ii]
+        halo_potential = LogarithmicPotentialLJ(**halo_params)
+    
+        return -run_back_integration(halo_potential, sgr_snap, sgr_cen)
     
     infer_potential(**args.__dict__)
     
