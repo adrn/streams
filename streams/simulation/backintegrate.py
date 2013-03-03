@@ -58,17 +58,14 @@ def run_back_integration(halo_potential, sgr_snap, sgr_cen):
     r_tides = sgr_orbital_radius * (msat / mass_enclosed)**(1./3)
     v_escs = np.sqrt(bulge_potential.params["_G"] * msat / r_tides)
 
-    closest_distances = []
-    for ii in range(sgr_snap.num):
-        # Distance to satellite center and total velocity
-        d = np.sqrt((xs[:,ii,0] - sgr_cen.data["x"])**2 +
-                    (xs[:,ii,1] - sgr_cen.data["y"])**2 +
-                    (xs[:,ii,2] - sgr_cen.data["z"])**2)
-        v = np.sqrt((vs[:,ii,0] - sgr_cen.data["vx"])**2 +
-                    (vs[:,ii,1] - sgr_cen.data["vy"])**2 +
-                    (vs[:,ii,2] - sgr_cen.data["vz"])**2)
-
-        energy_distances = np.sqrt((d/r_tides)**2 + (v/v_escs)**2)
-        closest_distances.append(min(energy_distances))
-
-    return np.array(closest_distances)
+    # Distance to satellite center and total velocity
+    d = np.min(np.sqrt((xs[:,:,0] - sgr_cen.data["x"][:,np.newaxis].repeat(sgr_snap.num, axis=1))**2 +
+                       (xs[:,:,1] - sgr_cen.data["y"][:,np.newaxis].repeat(sgr_snap.num, axis=1))**2 + 
+                       (xs[:,:,2] - sgr_cen.data["z"][:,np.newaxis].repeat(sgr_snap.num, axis=1))**2) / r_tides[:,np.newaxis].repeat(sgr_snap.num, axis=1), axis=1)
+    
+    v = np.min(np.sqrt((vs[:,:,0] - sgr_cen.data["vx"][:,np.newaxis].repeat(sgr_snap.num, axis=1))**2 +
+                       (vs[:,:,1] - sgr_cen.data["vy"][:,np.newaxis].repeat(sgr_snap.num, axis=1))**2 +
+                       (vs[:,:,2] - sgr_cen.data["vz"][:,np.newaxis].repeat(sgr_snap.num, axis=1))**2) / v_escs[:,np.newaxis].repeat(sgr_snap.num, axis=1), axis=1)
+    
+    energy_trace = np.var(d) + np.var(v)
+    return energy_trace
