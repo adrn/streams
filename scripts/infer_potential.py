@@ -173,6 +173,8 @@ if __name__ == "__main__":
     
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
+    parser.add_argument("--plot-path", dest="plot_path", default="plots",
+                    help="The path to store plots.")
     
     args = parser.parse_args()
     
