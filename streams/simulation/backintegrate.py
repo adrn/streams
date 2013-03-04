@@ -43,7 +43,6 @@ def run_back_integration(halo_potential, sgr_snap, sgr_cen, dt):
 
     # The data in SGR_CEN is only printed every 25 steps!
     ts, xs, vs = simulation.run(t1=t2, t2=t1, dt=-dt)
-    print(ts)
 
     # Define tidal radius, escape velocity for satellite
     msat = 2.5E8 # M_sun
