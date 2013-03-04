@@ -191,14 +191,18 @@ if __name__ == "__main__":
     
     # Read in data from Kathryn's SGR_SNAP and SGR_CEN files
     sgr_cen = SgrCen()
-    dt = sgr_cen.data["dt"][0]*10.
-    np.random.seed(42)
-    sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
     
     # Get timestep information from SGR_CEN
     t1 = min(sgr_cen.data["t"])
     t2 = max(sgr_cen.data["t"])
+    dt = sgr_cen.data["dt"][0]*10
+    
+    # Interpolate SgrCen data onto new times
     ts = np.arange(t2, t1, -dt)
+    sgr_cen.interpolate(ts)
+    
+    np.random.seed(42)
+    sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
     
     true_halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
                             q1=1.38,
@@ -206,18 +210,6 @@ if __name__ == "__main__":
                             qz=1.36,
                             phi=1.692969,
                             c=12.)
-                            
-    # --------------------------------------------------
-    # Define tidal radius, escape velocity for satellite
-    # --------------------------------------------------
-    
-    # First I have to interpolate the SGR_CEN data so we can evaluate the position at each particle timestep
-    cen_x = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["x"], kind='cubic')(ts)
-    cen_y = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["y"], kind='cubic')(ts)
-    cen_z = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["z"], kind='cubic')(ts)
-    cen_vx = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vx"], kind='cubic')(ts)
-    cen_vy = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vy"], kind='cubic')(ts)
-    cen_vz = interpolate.interp1d(sgr_cen.data["t"], sgr_cen.data["vz"], kind='cubic')(ts)
     
     # Define a mapping from parameter name to index
     param_map = dict(zip(range(len(args.params)), args.params))
@@ -243,7 +235,7 @@ if __name__ == "__main__":
             halo_params[param_map[ii]] = p[ii]
         halo_potential = LogarithmicPotentialLJ(**halo_params)
     
-        return -run_back_integration(halo_potential, sgr_snap, sgr_cen)
+        return -run_back_integration(halo_potential, sgr_snap, sgr_cen, t1, t2, dt)
     
     infer_potential(**args.__dict__)
     
