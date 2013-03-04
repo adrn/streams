@@ -15,6 +15,7 @@ import astropy.io.fits as fits
 import astropy.io.ascii as ascii
 import astropy.coordinates as coord
 import astropy.units as u
+from scipy import interpolate
 
 # Project
 from ..util import project_root
@@ -144,7 +145,23 @@ class SgrCen(StreamData):
             SgrCen.data["vx"] = SgrCen.data["vx"] * vu
             SgrCen.data["vy"] = SgrCen.data["vy"] * vu
             SgrCen.data["vz"] = SgrCen.data["vz"] * vu
-
+        
+        for name in SgrCen.data.dtype.names:
+            setattr(self, name, SgrCen.data[name])
+    
+    def interpolate(self, ts):
+        for name in SgrCen.data.dtype.names:
+            if name == "t":
+                self.t = ts
+                continue
+            elif name == "dt":
+                self.dt = None
+                
+            setattr(self, name, 
+                    interpolate.interp1d(self.data["t"], 
+                                         self.data[name], 
+                                         kind='cubic')(ts))
+    
 class SgrSnapshot(StreamData):
 
     def __init__(self, overwrite=False, num=0, no_bound=False):

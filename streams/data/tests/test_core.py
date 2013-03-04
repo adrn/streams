@@ -15,7 +15,7 @@ import astropy.coordinates as coord
 import numpy as np
 import pytest
 
-from ..core import LM10, LINEAR, QUEST
+from ..core import LM10, LINEAR, QUEST, SgrCen
     
 lm10 = LM10()
 linear = LINEAR()
@@ -30,3 +30,12 @@ def test_coordinates():
     
     assert isinstance(quest.ra[0], coord.RA)
     assert isinstance(quest.dec[0], coord.Dec)
+
+def test_sgrcen_interpolate():
+    sgr_cen = SgrCen()
+    
+    new_ts = np.linspace(0, 500, 100)
+    sgr_cen.interpolate(new_ts)
+    
+    assert (sgr_cen.t == new_ts).all()
+    
