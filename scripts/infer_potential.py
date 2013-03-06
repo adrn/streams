@@ -149,7 +149,7 @@ def infer_potential(**config):
         axes[ii].axvline(true_halo_params[param_names[ii]], color="r", linestyle="--", linewidth=2)
 
     #plt.savefig("/u/10/a/amp2217/public_html/plots/posterior_{0}.png".format(datetime.datetime.now().date()))
-    plt.savefig(os.path.join(plot_path, "posterior_{0}.png".format(datetime.datetime.now().date())))
+    plt.savefig(os.path.join(plot_path, "posterior_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
 
     return
 
@@ -235,7 +235,7 @@ if __name__ == "__main__":
             halo_params[param_map[ii]] = p[ii]
         halo_potential = LogarithmicPotentialLJ(**halo_params)
     
-        return -run_back_integration(halo_potential, sgr_snap, sgr_cen, t1, t2, dt)
+        return -run_back_integration(halo_potential, sgr_snap, sgr_cen, dt)
     
     infer_potential(**args.__dict__)
     
