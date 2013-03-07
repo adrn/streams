@@ -103,7 +103,7 @@ def infer_potential(param_names):
         return med
 
     #p0 = np.array([np.random.uniform(param_ranges[p][0],param_ranges[p][1]) for p in param_names])
-    p0 = np.array([1., 1., 0.1, 1.5])
+    p0 = np.array([1., 1.5, 0.1, 1.5])
     popt = optimize.fmin(objective, x0=p0)
     
     return
