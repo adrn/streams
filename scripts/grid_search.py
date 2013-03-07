@@ -23,19 +23,19 @@ from streams.potential import *
 from streams.simulation import run_back_integration
 from streams.data import SgrSnapshot, SgrCen
 
-true_halo_params = dict(v_halo=(115.7651*u.km/u.s).to(u.kpc/u.Myr).value,
+true_halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
                         q1=1.38,
                         q2=1.0,
                         qz=1.36,
                         phi=1.692969,
                         c=12.)
 
-param_ranges = dict(qz=(0.1,3),
-                    q1=(0.1,3),
-                    q2=(0.1,3),
+param_ranges = dict(qz=(1.,2.),
+                    q1=(1.,2.),
+                    q2=(1.,2.),
                     v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr).value,
                             (150.*u.km/u.s).to(u.kpc/u.Myr).value),
-                    phi=(1,2.5),
+                    phi=(np.pi/4, 3*np.pi/4),
                     c=(8,20))
 
 def vary_one_parameter():
@@ -66,11 +66,7 @@ def vary_one_parameter():
         plt.xlabel(param)
         plt.ylabel("Median of minimum energy distance distribution")
         
-def vary_two_parameters(param_pair, grid_size=10):
-    
-    sgr_snap = SgrSnapshot(num=100, no_bound=True)
-    sgr_cen = SgrCen()
-    
+def vary_two_parameters(param_pair, sgr_snap, sgr_cen, dt, grid_size=10):
     param1,param2 = param_pair
     
     stats_for_param_pair = dict()
@@ -87,21 +83,32 @@ def vary_two_parameters(param_pair, grid_size=10):
             halo_params[param2] = p2_val
             halo_potential = LogarithmicPotentialLJ(**halo_params)
         
-            dist = run_back_integration(halo_potential, sgr_snap, sgr_cen)
-            Z[ii,jj] = np.median(dist)
+            dist = run_back_integration(halo_potential, sgr_snap, sgr_cen, dt)
+            Z[ii,jj] = dist
     
     return X,Y,Z
 
 def main():
+    sgr_snap = SgrSnapshot(num=100, no_bound=True)
+    sgr_cen = SgrCen()
+    
+    # Get timestep information from SGR_CEN
+    t1 = min(sgr_cen.data["t"])
+    t2 = max(sgr_cen.data["t"])
+    dt = sgr_cen.data["dt"][0]*10
+        
+    # Interpolate SgrCen data onto new times
+    ts = np.arange(t2, t1, -dt)
+    sgr_cen.interpolate(ts)
 
     # q2 qz phi v_halo c
-    for params in [("qz", "phi"), ("v_halo","c"), ("q2","c"), ("q2", "qz"), 
-                   ("q2", "q1"), ("q2", "v_halo"), ("v_halo", "qz"), ("phi", "v_halo")]:
+    for params in [("qz", "phi"), ("qz","q1"), ("q1","phi"), 
+                   ("v_halo", "q1"), ("v_halo", "qz"), ("v_halo", "phi")]:
         print(params)
         pickle_filename = "data/grid_search/{0}_{1}.pickle".format(*params)
         
         if not os.path.exists(pickle_filename):
-            X,Y,Z = vary_two_parameters(params, grid_size=10)
+            X,Y,Z = vary_two_parameters(params, sgr_snap, sgr_cen, dt, grid_size=10)
             fnpickle((X,Y,Z), pickle_filename)
         
         (X,Y,Z) = fnunpickle(pickle_filename)
