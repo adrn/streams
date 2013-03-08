@@ -102,7 +102,7 @@ def infer_potential(**config):
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
     
-    if sampler == None:
+    if sampler_file == None:
         logger.info("Inferring halo parameters: {0}".format(",".join(param_names)))
         logger.info("--> Starting simulation with {0} walkers on {1} threads.".format(nwalkers, nthreads))
         logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
