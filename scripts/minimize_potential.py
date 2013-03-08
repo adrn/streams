@@ -32,7 +32,7 @@ import matplotlib
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 import astropy.units as u
-from scipy.optimize import minimize
+from scipy.optimize import fmin_powell
 
 # Project
 from streams.data import SgrSnapshot, SgrCen
@@ -40,24 +40,32 @@ from streams.potential import *
 from streams.integrate import leapfrog
 from streams.simulation import Particle, ParticleSimulation, run_back_integration
 
-def infer_potential(**config):
+def infer_potential(objective, **config):
     maxfev = config.get("maxfev", 10000)
     param_names = config.get("params", [])
     plot_path = config.get("plot_path", "plots")
-    method = config.get("method", "Powell")
+    #method = config.get("method", "Powell")
     
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
     
-    logger.info("Inferring halo parameters using {1}: {0}".format(",".join(param_names), method))
-    
     x0 = [np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
             for p_name in param_names]
     
-    result = minimize(objective, x0=x0, method="BFGS", options=dict(maxiter=maxfev, disp=True))
+    logger.info("Starting at: {0}".format(np.array(x0)))
+    
+    #result = minimize(objective, x0=x0, method=method, options=dict(maxfun=maxfev, disp=True))
+    result = fmin_powell(objective, x0=x0, maxfun=maxfev, disp=True, retall=config["verbose"], full_output=True)
     logger.info("Finished minimizing...")
-    logger.info("Final parameters: {0}".format(result.x))
-    logger.debug("Message: {0}".format(result.message))
+    logger.info("Final parameters: {0}".format(result[0]))
+    
+    allvecs = np.array(result[-1])
+    print(allvecs)
+    plt.plot([true_halo_params[param_names[0]]], [true_halo_params[param_names[0]]], color="r", marker="o")
+    plt.plot(allvecs[:,0], allvecs[:,1], color="k", marker="o", alpha=0.6)
+    plt.savefig(os.path.join(plot_path, "test_minimize_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
+    
+    return
     
     fig,axes = plt.subplots(len(x0), 1, figsize=(14,5*(len(x0)+1)))
     for ii in range(len(x0)):
@@ -141,5 +149,5 @@ if __name__ == "__main__":
     
         return run_back_integration(halo_potential, sgr_snap, sgr_cen, dt)
     
-    infer_potential(**args.__dict__)
+    infer_potential(objective, **args.__dict__)
     
