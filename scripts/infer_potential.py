@@ -32,6 +32,7 @@ import matplotlib
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 import astropy.units as u
+from astropy.io.misc import fnpickle, fnunpickle
 import emcee
 
 # Project
@@ -39,30 +40,6 @@ from streams.data import SgrSnapshot, SgrCen
 from streams.potential import *
 from streams.integrate import leapfrog
 from streams.simulation import Particle, ParticleSimulation, run_back_integration
-
-def plot_projections(x, y, z, axes=None, **kwargs):
-    """ Make a scatter plot of particles in projections of the supplied coordinates.
-        Extra kwargs are passed to matplotlib's scatter() function.
-    """
-
-    if axes == None:
-        fig, axes = plt.subplots(2, 2, sharex=True, sharey=True)
-    else:
-        fig = axes[0,0].figure
-
-    axes[0,1].set_visible(False)
-
-    axes[0,0].scatter(x, y, **kwargs)
-    axes[0,0].set_ylabel("Y [kpc]")
-
-    axes[1,0].scatter(x, z, **kwargs)
-    axes[1,0].set_xlabel("X [kpc]")
-    axes[1,0].set_ylabel("Z [kpc]")
-
-    axes[1,1].scatter(y, z, **kwargs)
-    axes[1,0].set_xlabel("Y [kpc]")
-
-    return fig, axes
 
 def ln_p_qz(qz):
     """ Prior on vertical (z) axis ratio """
@@ -118,38 +95,62 @@ def infer_potential(**config):
     nburn_in = config.get("nburn_in", nsamples//10)
     param_names = config.get("params", [])
     plot_path = config.get("plot_path", "plots")
+    data_path = config.get("data_path", "data")
+    sampler_file = config.get("sampler_file", None)
+    overwrite = config.get("overwrite", False)
     
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
     
-    logger.info("Inferring halo parameters: {0}".format(",".join(param_names)))
-    logger.info("--> Starting simulation with {0} walkers on {1} threads.".format(nwalkers, nthreads))
-    logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
+    if sampler == None:
+        logger.info("Inferring halo parameters: {0}".format(",".join(param_names)))
+        logger.info("--> Starting simulation with {0} walkers on {1} threads.".format(nwalkers, nthreads))
+        logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
+        
+        p0 = []
+        for ii in range(nwalkers):
+            p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
+                        for p_name in param_names])
+        p0 = np.array(p0)
+        ndim = p0.shape[1]
     
-    p0 = []
-    for ii in range(nwalkers):
-        p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
-                    for p_name in param_names])
-    p0 = np.array(p0)
-    ndim = p0.shape[1]
-
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
-                                    threads=nthreads)
-    pos, prob, state = sampler.run_mcmc(p0, nburn_in)
-    logger.debug("Burn in complete...")
-    sampler.reset()
-    sampler.run_mcmc(pos, nsamples)
-    logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
-
-    fig,axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
-    fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
+                                        threads=nthreads)
+        pos, prob, state = sampler.run_mcmc(p0, nburn_in)
+        logger.debug("Burn in complete...")
+        sampler.reset()
+        sampler.run_mcmc(pos, nsamples)
+        logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
+        
+        if os.path.exists(sampler_file) and overwrite:
+            os.remove(sampler_file)
+        elif os.path.exists(sampler_file) and not overwrite:
+            logger.error("{0} already exists!".format(sampler_file))
+            sys.exit(0)
+        
+        fnpickle(sampler, sampler_file)
+        
+    else:
+        logger.info("You passed in a sampler object filename. I'm just going to make plots!")
+        sampler = fnunpickle(sampler_file)
+    
+    posterior_fig,posterior_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
+    trace_fig,trace_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
+    
+    posterior_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
+    trace_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
     for ii in range(ndim):
-        axes[ii].set_title(param_names[ii])
-        axes[ii].hist(sampler.flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
-        axes[ii].axvline(true_halo_params[param_names[ii]], color="r", linestyle="--", linewidth=2)
+        posterior_axes[ii].set_title(param_names[ii])
+        posterior_axes[ii].hist(sampler.flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
+        posterior_axes[ii].axvline(true_halo_params[param_names[ii]], color="r", linestyle="--", linewidth=2)
+        
+        trace_axes[ii].set_title(param_names[ii])
+        for k in range(sampler.chain.shape[0]):
+            trace_axes[ii].plot(np.arange(len(sampler.chain[k,:,ii])),
+                                sampler.chain[k,:,ii], color="k", drawstyle="steps", alpha=0.1)
 
-    #plt.savefig("/u/10/a/amp2217/public_html/plots/posterior_{0}.png".format(datetime.datetime.now().date()))
-    plt.savefig(os.path.join(plot_path, "posterior_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
+    posterior_fig.savefig(os.path.join(plot_path, "posterior_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
+    trace_fig.savefig(os.path.join(plot_path, "trace_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
 
     return
 
@@ -161,20 +162,26 @@ if __name__ == "__main__":
                     help="Be chatty! (default = False)")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False,
                     help="Be quiet! (default = False)")
+    parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite", default=False,
+                    help="Nom nom nom, old files...")
     
     parser.add_argument("--walkers", dest="nwalkers", default=100, type=int,
                     help="Number of walkers")
     parser.add_argument("--steps", dest="nsamples", default=1000, type=int,
                     help="Number of steps to take")
-    parser.add_argument("--burn-in", dest="nburn_in", default=100, type=int,
+    parser.add_argument("--burn-in", dest="nburn_in", type=int,
                     help="Number of steps to burn in")
     parser.add_argument("--threads", dest="nthreads", default=1, type=int,
                     help="Number of threads to run (multiprocessing)")
     
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
-    parser.add_argument("--plot-path", dest="plot_path", default="plots",
+    parser.add_argument("--plot-path", dest="plot_path", 
                     help="The path to store plots.")
+    parser.add_argument("--data-path", dest="data_path", 
+                    help="The path to store data.")
+    parser.add_argument("--sampler-file", dest="sampler_file", 
+                        help="Specify a pickle file containing a pre-pickled sampler object.")
     
     args = parser.parse_args()
     
