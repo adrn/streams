@@ -128,27 +128,28 @@ def infer_potential(**config):
         elif os.path.exists(sampler_file) and not overwrite:
             logger.error("{0} already exists!".format(sampler_file))
             sys.exit(0)
-        
-        fnpickle(sampler, sampler_file)
+            
+        acceptance_fraction,flatchain,chain = (sampler.acceptance_fraction,sampler.flatchain,sampler.chain)
+        fnpickle((acceptance_fraction,flatchain,chain), sampler_file)
         
     else:
         logger.info("You passed in a sampler object filename. I'm just going to make plots!")
-        sampler = fnunpickle(sampler_file)
+        acceptance_fraction,flatchain,chain = fnunpickle(sampler_file)
     
     posterior_fig,posterior_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
     trace_fig,trace_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
     
-    posterior_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
-    trace_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
+    posterior_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(acceptance_fraction)))
+    trace_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(acceptance_fraction)))
     for ii in range(ndim):
         posterior_axes[ii].set_title(param_names[ii])
-        posterior_axes[ii].hist(sampler.flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
+        posterior_axes[ii].hist(flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
         posterior_axes[ii].axvline(true_halo_params[param_names[ii]], color="r", linestyle="--", linewidth=2)
         
         trace_axes[ii].set_title(param_names[ii])
-        for k in range(sampler.chain.shape[0]):
-            trace_axes[ii].plot(np.arange(len(sampler.chain[k,:,ii])),
-                                sampler.chain[k,:,ii], color="k", drawstyle="steps", alpha=0.1)
+        for k in range(chain.shape[0]):
+            trace_axes[ii].plot(np.arange(len(chain[k,:,ii])),
+                                chain[k,:,ii], color="k", drawstyle="steps", alpha=0.1)
 
     posterior_fig.savefig(os.path.join(plot_path, "posterior_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
     trace_fig.savefig(os.path.join(plot_path, "trace_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
@@ -177,9 +178,9 @@ if __name__ == "__main__":
     
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
-    parser.add_argument("--plot-path", dest="plot_path", 
+    parser.add_argument("--plot-path", dest="plot_path", default="plots",
                     help="The path to store plots.")
-    parser.add_argument("--data-path", dest="data_path", 
+    parser.add_argument("--data-path", dest="data_path", default="data",
                     help="The path to store data.")
     parser.add_argument("--sampler-file", dest="sampler_file", 
                         help="Specify a pickle file containing a pre-pickled sampler object.")
