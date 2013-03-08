@@ -122,6 +122,7 @@ def infer_potential(**config):
         sampler.run_mcmc(pos, nsamples)
         logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
         
+        sampler_file = "{0}_w{1}_s{2}.pickle".format("_".join(param_names), nwalkers, nsamples)
         if os.path.exists(sampler_file) and overwrite:
             os.remove(sampler_file)
         elif os.path.exists(sampler_file) and not overwrite:
