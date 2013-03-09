@@ -136,6 +136,12 @@ def infer_potential(**config):
         logger.info("You passed in a sampler object filename. I'm just going to make plots!")
         acceptance_fraction,flatchain,chain = fnunpickle(sampler_file)
     
+    chain = chain[(acceptance_fraction > 0.1) & (acceptance_fraction < 0.6)] # rule of thumb, bitches
+    flatchain = []
+    for walker in chain:
+        flatchain += list(walker)
+    flatchain = np.array(flatchain)    
+    
     posterior_fig,posterior_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
     trace_fig,trace_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
     
