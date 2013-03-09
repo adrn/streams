@@ -55,15 +55,14 @@ def infer_potential(objective, **config):
     logger.info("Starting at: {0}".format(np.array(x0)))
     
     #result = minimize(objective, x0=x0, method=method, options=dict(maxfun=maxfev, disp=True))
-    result = fmin_powell(objective, x0=x0, maxfun=maxfev, disp=True, retall=config["verbose"], full_output=True)
+    result = fmin_powell(objective, x0=x0, maxfun=maxfev, disp=True, retall=True, full_output=True)
     logger.info("Finished minimizing...")
     logger.info("Final parameters: {0}".format(result[0]))
     
-    allvecs = np.array(result[-1])
-    print(allvecs)
-    plt.plot([true_halo_params[param_names[0]]], [true_halo_params[param_names[0]]], color="r", marker="o")
-    plt.plot(allvecs[:,0], allvecs[:,1], color="k", marker="o", alpha=0.6)
-    plt.savefig(os.path.join(plot_path, "test_minimize_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
+    #allvecs = np.array(result[-1])
+    #plt.plot([true_halo_params[param_names[0]]], [true_halo_params[param_names[0]]], color="r", marker="o")
+    #plt.plot(allvecs[:,0], allvecs[:,1], color="k", marker="o", alpha=0.6)
+    #plt.savefig(os.path.join(plot_path, "test_minimize_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
     
     return
     
