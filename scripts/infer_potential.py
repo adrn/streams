@@ -34,6 +34,7 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 from astropy.io.misc import fnpickle, fnunpickle
 import emcee
+from emcee.utils import MPIPool
 
 # Project
 from streams.data import SgrSnapshot, SgrCen
@@ -90,7 +91,6 @@ def ln_posterior(p):
 
 def infer_potential(**config):
     nwalkers = config.get("nwalkers", 100)
-    nthreads = config.get("nthreads", 1)
     nsamples = config.get("nsamples", 1000)
     nburn_in = config.get("nburn_in", nsamples//10)
     param_names = config.get("params", [])
@@ -104,7 +104,7 @@ def infer_potential(**config):
     
     if sampler_file == None:
         logger.info("Inferring halo parameters: {0}".format(",".join(param_names)))
-        logger.info("--> Starting simulation with {0} walkers on {1} threads.".format(nwalkers, nthreads))
+        logger.info("--> Starting simulation with {0} walkers.".format(nwalkers))
         logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
         
         p0 = []
@@ -113,9 +113,16 @@ def infer_potential(**config):
                         for p_name in param_names])
         p0 = np.array(p0)
         ndim = p0.shape[1]
-    
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior,
-                                        threads=nthreads)
+        
+        # Initialize the MPI pool
+        pool = MPIPool()
+        
+        # Make sure the thread we're running on is the master
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
+        
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, pool=pool)
         pos, prob, state = sampler.run_mcmc(p0, nburn_in)
         logger.debug("Burn in complete...")
         sampler.reset()
@@ -179,8 +186,6 @@ if __name__ == "__main__":
                     help="Number of steps to take")
     parser.add_argument("--burn-in", dest="nburn_in", type=int,
                     help="Number of steps to burn in")
-    parser.add_argument("--threads", dest="nthreads", default=1, type=int,
-                    help="Number of threads to run (multiprocessing)")
     
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
