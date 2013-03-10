@@ -14,6 +14,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 import datetime
 import logging
+import multiprocessing
     
 # Create logger
 logger = logging.getLogger(__name__)
@@ -98,6 +99,7 @@ def infer_potential(**config):
     data_path = config.get("data_path", "data")
     sampler_file = config.get("sampler_file", None)
     overwrite = config.get("overwrite", False)
+    mpi = config.get("mpi", False)
     
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
@@ -114,15 +116,19 @@ def infer_potential(**config):
         p0 = np.array(p0)
         ndim = p0.shape[1]
         
-        # Initialize the MPI pool
-        pool = MPIPool()
-        
-        # Make sure the thread we're running on is the master
-        if not pool.is_master():
-            pool.wait()
-            sys.exit(0)
-        
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, pool=pool)
+        if mpi:
+            # Initialize the MPI pool
+            pool = MPIPool()
+            
+            # Make sure the thread we're running on is the master
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
+            
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, pool=pool)
+        else:
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=multiprocessing.cpu_count())
+            
         pos, prob, state = sampler.run_mcmc(p0, nburn_in)
         logger.debug("Burn in complete...")
         sampler.reset()
@@ -179,6 +185,8 @@ if __name__ == "__main__":
                     help="Be quiet! (default = False)")
     parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite", default=False,
                     help="Nom nom nom, old files...")
+    parser.add_argument("--mpi", action="store_true", dest="mpi", default=False,
+                    help="Anticipate being run with MPI.")
     
     parser.add_argument("--walkers", dest="nwalkers", default=100, type=int,
                     help="Number of walkers")
