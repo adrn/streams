@@ -129,7 +129,7 @@ def infer_potential(**config):
         sampler.run_mcmc(pos, nsamples)
         logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
         
-        sampler_file = "{0}_w{1}_s{2}.pickle".format("_".join(param_names), nwalkers, nsamples)
+        sampler_file = os.path.join(data_path,"{0}_w{1}_s{2}.pickle".format("_".join(param_names), nwalkers, nsamples))
         if os.path.exists(sampler_file) and overwrite:
             os.remove(sampler_file)
         elif os.path.exists(sampler_file) and not overwrite:
@@ -184,7 +184,7 @@ if __name__ == "__main__":
                     help="Number of walkers")
     parser.add_argument("--steps", dest="nsamples", default=1000, type=int,
                     help="Number of steps to take")
-    parser.add_argument("--burn-in", dest="nburn_in", type=int,
+    parser.add_argument("--burn-in", dest="nburn_in", type=int, default=100,
                     help="Number of steps to burn in")
     
     parser.add_argument("--params", dest="params", default=[], nargs='+',
