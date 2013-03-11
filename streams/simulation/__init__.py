@@ -1,2 +1,2 @@
 from .core import *
-from .backintegrate import run_back_integration
+from .backintegrate import back_integrate
