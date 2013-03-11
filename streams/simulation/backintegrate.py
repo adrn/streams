@@ -35,11 +35,11 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
     # Define tidal radius, escape velocity for satellite
     msat = 2.5E8 # M_sun
     sgr_orbital_radius = np.sqrt(sgr_cen.x**2 + sgr_cen.y**2 + sgr_cen.z**2)
-    m_halo_enclosed = potential.params["v_halo"]**2 * sgr_orbital_radius/bulge_potential.params["_G"]
+    m_halo_enclosed = potential.params["v_halo"]**2 * sgr_orbital_radius/potential.params["_G"]
     mass_enclosed = potential.params["M_disk"] + potential.params["M_sph"] + m_halo_enclosed
 
     r_tides = sgr_orbital_radius * (msat / mass_enclosed)**(1./3)
-    v_escs = np.sqrt(bulge_potential.params["_G"] * msat / r_tides)
+    v_escs = np.sqrt(potential.params["_G"] * msat / r_tides)
     
     # N = number of particles
     N = sgr_snap.num
