@@ -39,9 +39,10 @@ from emcee.utils import MPIPool
 
 # Project
 from streams.data import SgrSnapshot, SgrCen
-from streams.potential import *
+from streams.potential import LawMajewski2010
+from streams.potential.lm10 import halo_params as true_halo_params
 from streams.integrate import leapfrog
-from streams.simulation import Particle, ParticleSimulation, run_back_integration
+from streams.simulation import Particle, ParticleSimulation, back_integrate
 
 def ln_p_qz(qz):
     """ Prior on vertical (z) axis ratio """
@@ -80,9 +81,9 @@ def ln_p_phi(phi):
     else:
         return 0.
 
-def ln_p_c(c):
+def ln_p_r_halo(r_halo):
     """ Prior on halo concentration parameter """
-    if c < 8. or c > 14:
+    if r_halo < 5. or r_halo > 20:
         return -np.inf
     else:
         return 0.
@@ -243,13 +244,6 @@ if __name__ == "__main__":
     np.random.seed(42)
     sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
     
-    true_halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
-                            q1=1.38,
-                            q2=1.0,
-                            qz=1.36,
-                            phi=1.692969,
-                            c=12.)
-    
     # Define a mapping from parameter name to index
     param_map = dict(zip(range(len(args.params)), args.params))
     param_ranges = dict(qz=(0.5,2),
@@ -257,10 +251,10 @@ if __name__ == "__main__":
                         q2=(0.5,2),
                         v_halo=((100*u.km/u.s).to(u.kpc/u.Myr).value, (200*u.km/u.s).to(u.kpc/u.Myr).value),
                         phi=(1, 2.5),
-                        c=(5,20))
+                        r_halo=(5,20))
     
     # Construct the prior based on the requested parameters
-    prior_map = dict(qz=ln_p_qz, q1=ln_p_q1, q2=ln_p_q2, v_halo=ln_p_v_halo, phi=ln_p_phi, c=ln_p_c)
+    prior_map = dict(qz=ln_p_qz, q1=ln_p_q1, q2=ln_p_q2, v_halo=ln_p_v_halo, phi=ln_p_phi, r_halo=ln_p_r_halo)
     
     def ln_prior(p):
         sum = 0
@@ -272,9 +266,9 @@ if __name__ == "__main__":
         halo_params = true_halo_params.copy()
         for ii in range(len(p)):
             halo_params[param_map[ii]] = p[ii]
-        halo_potential = LogarithmicPotentialLJ(**halo_params)
     
-        return -run_back_integration(halo_potential, sgr_snap, sgr_cen, dt)
+        mw_potential = LawMajewski2010(**halo_params)
+        return -back_integrate(mw_potential, sgr_snap, sgr_cen, dt)
     
     infer_potential(**args.__dict__)
     
