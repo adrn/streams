@@ -33,7 +33,6 @@ import matplotlib
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 import astropy.units as u
-from astropy.io.misc import fnpickle, fnunpickle
 import emcee
 from emcee.utils import MPIPool
 
