@@ -178,8 +178,8 @@ def infer_potential(**config):
             trace_axes[ii].plot(np.arange(len(chain[k,:,ii])),
                                 chain[k,:,ii], color="k", drawstyle="steps", alpha=0.2)
 
-    posterior_fig.savefig(os.path.join(plot_path, "posterior_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
-    trace_fig.savefig(os.path.join(plot_path, "trace_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
+    posterior_fig.savefig(os.path.join(plot_path, "posterior_{0}_{1}_w{2}_s{3}.png".format(datetime.datetime.now().date(), "_".join(param_names), nwalkers, nsamples)))
+    trace_fig.savefig(os.path.join(plot_path, "trace_{0}_{1}_w{2}_s{3}.png".format(datetime.datetime.now().date(), "_".join(param_names), nwalkers, nsamples)))
     
     if mpi: pool.close()
     sys.exit(0)
