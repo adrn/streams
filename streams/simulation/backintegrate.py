@@ -42,7 +42,7 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
     v_escs = np.sqrt(potential.params["_G"] * msat / r_tides)
     
     # N = number of particles
-    N = sgr_snap.num
+    N = xs.shape[1]
     
     # Distance to satellite center and total velocity
     d = np.sqrt((xs[:,:,0] - sgr_cen.x[:,np.newaxis].repeat(N, axis=1))**2 +
