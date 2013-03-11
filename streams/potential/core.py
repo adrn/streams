@@ -14,6 +14,7 @@ __all__ = ["Potential"]
 import os
 import copy
 import inspect
+import logging
 
 # Third-party
 import numpy as np
@@ -60,8 +61,10 @@ class Potential(object):
         self._potential_component_derivs = dict()
         self._latex = dict()
         self.ndim = None
+        
+        self.params = dict()
 
-    def add_component(self, name, func, derivs=None, latex=None):
+    def add_component(self, name, func, derivs=None, latex=None, params=None):
         ''' Add a component to the potential. The component must have a name,
             and you must specify the functional form of the potential component.
             You may also optionally add derivatives using the 'derivs'
@@ -317,5 +320,17 @@ class Potential(object):
 
         for key in other._potential_components.keys():
             new_potential.add_component(key, other._potential_components[key], derivs=other._potential_component_derivs[key])
+        
+        for key,val in self.params.items():
+            if key in new_potential.params.keys():
+                logging.warning("Parameter '{0}' already found in this potential! Overwriting...".format(key))
+                
+            new_potential.params[key] = val
+        
+        for key,val in other.params.items():
+            if key in new_potential.params.keys():
+                logging.warning("Parameter '{0}' already found in this potential! Overwriting...".format(key))
+                
+            new_potential.params[key] = val
 
         return new_potential

@@ -148,7 +148,7 @@ class MiyamotoNagaiPotential(Potential):
 
         self.params = {"a" : float(a),
                        "b" : float(b),
-                       "M" : float(M_val),
+                       "M_disk" : float(M_val),
                        "_G" : G.to(self.length_unit**3 / self.mass_unit \
                                     / self.time_unit**2).value}
 
@@ -220,7 +220,7 @@ class HernquistPotential(Potential):
             M_val = float(M)
 
         self.params = {"c" : float(c),
-                       "M" : float(M_val),
+                       "M_sph" : float(M_val),
                        "_G" : G.to(self.length_unit**3 / self.mass_unit / self.time_unit**2).value}
 
         if coordinate_system == CartesianCoordinates:
@@ -256,20 +256,20 @@ def _logarithmic_model_cartesian_lj(params):
     C2 = (np.cos(params["phi"])/params["q2"])**2+(np.sin(params["phi"])/params["q1"])**2
     C3 = 2.*np.sin(params["phi"])*np.cos(params["phi"])*(1./params["q1"]**2-1./params["q2"]**2)
 
-    f = lambda x,y,z: params["v_halo"]**2 * np.log(C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["c"]**2)
-    df_dx = lambda x,y,z: params["v_halo"]**2 * (2.*C1*x + C3*y) / (C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["c"]**2)
-    df_dy = lambda x,y,z: params["v_halo"]**2 * (2.*C2*y + C3*x) / (C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["c"]**2)
-    df_dz = lambda x,y,z: 2. * params["v_halo"]**2 * z / (C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["c"]**2) / params["qz"]**2
+    f = lambda x,y,z: params["v_halo"]**2 * np.log(C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["r_halo"]**2)
+    df_dx = lambda x,y,z: params["v_halo"]**2 * (2.*C1*x + C3*y) / (C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["r_halo"]**2)
+    df_dy = lambda x,y,z: params["v_halo"]**2 * (2.*C2*y + C3*x) / (C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["r_halo"]**2)
+    df_dz = lambda x,y,z: 2. * params["v_halo"]**2 * z / (C1*x**2 + C2*y**2 + C3*x*y + z**2/params["qz"]**2 + params["r_halo"]**2) / params["qz"]**2
     return (f, df_dx, df_dy, df_dz)
 
 class LogarithmicPotentialLJ(Potential):
 
-    def __init__(self, v_halo, q1, q2, qz, phi, c, \
+    def __init__(self, v_halo, q1, q2, qz, phi, r_halo, \
                  coordinate_system=CartesianCoordinates, length_unit=u.kpc, \
                  time_unit=u.Myr, mass_unit=u.solMass):
         ''' Represents a triaxial Logarithmic potential (e.g. triaxial halo).
 
-            $\Phi_{halo} = v_{halo}^2\ln(C1x^2 + C2y^2 + C3xy + z^2/q_z^2 + c^2)$
+            $\Phi_{halo} = v_{halo}^2\ln(C1x^2 + C2y^2 + C3xy + z^2/q_z^2 + r_halo^2)$
 
         '''
         super(LogarithmicPotentialLJ, self).\
@@ -288,7 +288,7 @@ class LogarithmicPotentialLJ(Potential):
                        "q2" : float(q2),
                        "qz" : float(qz),
                        "phi" : float(phi),
-                       "c" : float(c),
+                       "r_halo" : float(r_halo),
                        "v_halo" : float(v_halo_val)}
 
         if coordinate_system == CartesianCoordinates:
@@ -304,7 +304,7 @@ class LogarithmicPotentialLJ(Potential):
 
     def _repr_latex_(self):
         ''' Custom latex representation for IPython Notebook '''
-        return "$\\Phi_{halo} = v_{halo}^2\\ln(C1x^2 + C2y^2 + C3xy + z^2/q_z^2 + c^2)$"
+        return "$\\Phi_{halo} = v_{halo}^2\\ln(C1x^2 + C2y^2 + C3xy + z^2/q_z^2 + r_halo^2)$"
 
 
 def _logarithmic_model_cartesian_jzsh(params):
