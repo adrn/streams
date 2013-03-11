@@ -17,9 +17,9 @@ from astropy.utils.misc import isiterable
 from ..potential import Potential
 from ..integrate import leapfrog
 
-__all__ = ["Particle", "ParticleSimulation"]
+__all__ = ["Particle", "TestParticleSimulation"]
 
-class ParticleSimulation(object):
+class TestParticleSimulation(object):
 
     def __init__(self, potential):
         """ This is a handy class that will handle integrating a group of particles through a potential. """

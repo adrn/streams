@@ -14,7 +14,7 @@ import numpy as np
 import astropy.units as u
 
 from streams.potential import *
-from streams.simulation import Particle, ParticleSimulation
+from streams.simulation import Particle, TestParticleSimulation
 
 def back_integrate(potential, sgr_snap, sgr_cen, dt):
     """ Given the particle snapshot information and a potential, integrate the particles

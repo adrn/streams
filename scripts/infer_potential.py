@@ -41,8 +41,7 @@ from emcee.utils import MPIPool
 from streams.data import SgrSnapshot, SgrCen
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import halo_params as true_halo_params
-from streams.integrate import leapfrog
-from streams.simulation import Particle, ParticleSimulation, back_integrate
+from streams.simulation import back_integrate
 
 def ln_p_qz(qz):
     """ Prior on vertical (z) axis ratio """
