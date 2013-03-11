@@ -103,10 +103,10 @@ def _miyamoto_nagai_model_cartesian(params):
         functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cartesian coordinates.
     '''
-    f = lambda x,y,z: -params["_G"] * params["M"] / np.sqrt(x**2 + y**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)
-    df_dx = lambda x,y,z: params["_G"] * params["M"]*x / ((x**2 + y**2) + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
-    df_dy = lambda x,y,z: params["_G"] * params["M"]*y / ((x**2 + y**2) + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
-    df_dz = lambda x,y,z: params["_G"] * params["M"]*z*(1 + params["a"]/np.sqrt(z**2 + params["b"]**2)) / ((x**2 + y**2) + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
+    f = lambda x,y,z: -params["_G"] * params["M_disk"] / np.sqrt(x**2 + y**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)
+    df_dx = lambda x,y,z: params["_G"] * params["M_disk"]*x / ((x**2 + y**2) + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
+    df_dy = lambda x,y,z: params["_G"] * params["M_disk"]*y / ((x**2 + y**2) + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
+    df_dz = lambda x,y,z: params["_G"] * params["M_disk"]*z*(1 + params["a"]/np.sqrt(z**2 + params["b"]**2)) / ((x**2 + y**2) + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
 
     #df_dx = lambda x,y,z: _common._miyamoto_nagai_dx(params["_G"], params["M"], params["a"], params["b"], x, y, z, len(x))
     #df_dy = lambda x,y,z: _common._miyamoto_nagai_dy(params["_G"], params["M"], params["a"], params["b"], x, y, z, len(x))
@@ -118,10 +118,10 @@ def _miyamoto_nagai_model_cylindrical(params):
         functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cylindrical coordinates.
     '''
-    f = lambda R, phi, z: -params["_G"] * params["M"] / np.sqrt(R**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)
-    df_dR = lambda R, phi, z: params["_G"] * params["M"]*R / (R**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
+    f = lambda R, phi, z: -params["_G"] * params["M_disk"] / np.sqrt(R**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)
+    df_dR = lambda R, phi, z: params["_G"] * params["M_disk"]*R / (R**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
     df_dphi = lambda R, phi, z: 0.
-    df_dz = lambda R, phi, z: params["_G"] * params["M"]*z*(1 + params["a"]/np.sqrt(z**2 + params["b"]**2)) / (R**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
+    df_dz = lambda R, phi, z: params["_G"] * params["M_disk"]*z*(1 + params["a"]/np.sqrt(z**2 + params["b"]**2)) / (R**2 + (params["a"] + np.sqrt(z**2 + params["b"]**2))**2)**1.5
     return (f, df_dR, df_dphi, df_dz)
 
 class MiyamotoNagaiPotential(Potential):
@@ -181,10 +181,10 @@ def _hernquist_model_cartesian(params):
         functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cartesian coordinates.
     '''
-    f = lambda x,y,z: -params["_G"]*params["M"] / (np.sqrt(x**2 + y**2 + z**2) + params["c"])
-    df_dx = lambda x,y,z: params["_G"]*params["M"]*x / (np.sqrt(x**2 + y**2 + z**2) + params["c"])**2 / np.sqrt(x**2 + y**2 + z**2)
-    df_dy = lambda x,y,z: params["_G"]*params["M"]*y / (np.sqrt(x**2 + y**2 + z**2) + params["c"])**2 / np.sqrt(x**2 + y**2 + z**2)
-    df_dz = lambda x,y,z: params["_G"]*params["M"]*z / (np.sqrt(x**2 + y**2 + z**2) + params["c"])**2 / np.sqrt(x**2 + y**2 + z**2)
+    f = lambda x,y,z: -params["_G"]*params["M_sph"] / (np.sqrt(x**2 + y**2 + z**2) + params["c"])
+    df_dx = lambda x,y,z: params["_G"]*params["M_sph"]*x / (np.sqrt(x**2 + y**2 + z**2) + params["c"])**2 / np.sqrt(x**2 + y**2 + z**2)
+    df_dy = lambda x,y,z: params["_G"]*params["M_sph"]*y / (np.sqrt(x**2 + y**2 + z**2) + params["c"])**2 / np.sqrt(x**2 + y**2 + z**2)
+    df_dz = lambda x,y,z: params["_G"]*params["M_sph"]*z / (np.sqrt(x**2 + y**2 + z**2) + params["c"])**2 / np.sqrt(x**2 + y**2 + z**2)
     return (f, df_dx, df_dy, df_dz)
 
 def _hernquist_model_spherical(params):
@@ -192,8 +192,8 @@ def _hernquist_model_spherical(params):
         functions that accept coordinates and evaluates this component of the
         potential and its derivatives for spherical coordinates.
     '''
-    f = lambda r,phi,theta: - params["_G"]*params["M"] / (r + params["c"])
-    df_dr = lambda r,phi,theta: params["_G"]*params["M"] / (r + params["c"])**2
+    f = lambda r,phi,theta: - params["_G"]*params["M_sph"] / (r + params["c"])
+    df_dr = lambda r,phi,theta: params["_G"]*params["M_sph"] / (r + params["c"])**2
     df_dphi = lambda r,phi,theta: 0.
     df_dtheta = lambda r,phi,theta: 0.
     return (f, df_dr, df_dphi, df_dtheta)
