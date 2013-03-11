@@ -40,7 +40,14 @@ halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
 #halo_potential = LogarithmicPotentialLJ(**halo_params)
 #run_back_integration(halo_potential, sgr_snap, sgr_cen, dt=dt)
 
-for qz in np.linspace(0.5, 1.5, 10):
+import time
+
+times = []
+for qz in np.linspace(0.5, 1.5, 100):
+    a = time.time()
     halo_params["qz"] = qz
     halo_potential = LogarithmicPotentialLJ(**halo_params)
     run_back_integration(halo_potential, sgr_snap, sgr_cen, dt)
+    times.append(time.time()-a)
+
+print("Average time per back integration: {0}".format(np.mean(times)))
