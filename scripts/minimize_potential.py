@@ -40,11 +40,10 @@ from streams.potential import *
 from streams.integrate import leapfrog
 from streams.simulation import Particle, ParticleSimulation, run_back_integration
 
-def infer_potential(objective, **config):
+def minimize_potential(objective, **config):
     maxfev = config.get("maxfev", 10000)
     param_names = config.get("params", [])
     plot_path = config.get("plot_path", "plots")
-    #method = config.get("method", "Powell")
     
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
@@ -54,10 +53,13 @@ def infer_potential(objective, **config):
     
     logger.info("Starting at: {0}".format(np.array(x0)))
     
-    #result = minimize(objective, x0=x0, method=method, options=dict(maxfun=maxfev, disp=True))
     result = fmin_powell(objective, x0=x0, maxfun=maxfev, disp=True, retall=True, full_output=True)
     logger.info("Finished minimizing...")
-    logger.info("Final parameters: {0}".format(result[0]))
+    logger.info("Final parameters:")
+    for ii,param in enumerate(param_names):
+        logger.info("{0}: {1} // True: {2} ({3}% error)".format(param, result[0][ii], 
+                true_halo_params[param], 
+                100*abs(result[0][ii]-true_halo_params[param])/true_halo_params[param]))
     
     #allvecs = np.array(result[-1])
     #plt.plot([true_halo_params[param_names[0]]], [true_halo_params[param_names[0]]], color="r", marker="o")
@@ -88,8 +90,6 @@ if __name__ == "__main__":
 
     parser.add_argument("--maxfev", dest="maxfev", default=10000, type=int,
                     help="Number of function evaluations")
-    parser.add_argument("--method", dest="method", default="Powell", 
-                    help="Minimization algorithm")
     
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
@@ -148,5 +148,5 @@ if __name__ == "__main__":
     
         return run_back_integration(halo_potential, sgr_snap, sgr_cen, dt)
     
-    infer_potential(objective, **args.__dict__)
+    minimize_potential(objective, **args.__dict__)
     
