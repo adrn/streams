@@ -117,6 +117,7 @@ def infer_potential(**config):
         ndim = p0.shape[1]
         
         if mpi:
+            logger.info("Running with MPI!")
             # Initialize the MPI pool
             pool = MPIPool()
             
@@ -127,11 +128,17 @@ def infer_potential(**config):
             
             sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, pool=pool)
         else:
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=multiprocessing.cpu_count())
+            logger.info("Running WITHOUT MPI")
+            #sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=multiprocessing.cpu_count())
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=1)
+        
+        if nburn_in > 0:
+            pos, prob, state = sampler.run_mcmc(p0, nburn_in)
+            logger.debug("Burn in complete...")
+            sampler.reset()
+        else:
+            pos = p0
             
-        pos, prob, state = sampler.run_mcmc(p0, nburn_in)
-        logger.debug("Burn in complete...")
-        sampler.reset()
         sampler.run_mcmc(pos, nsamples)
         logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
         
@@ -140,6 +147,7 @@ def infer_potential(**config):
             os.remove(sampler_file)
         elif os.path.exists(sampler_file) and not overwrite:
             logger.error("{0} already exists!".format(sampler_file))
+            if mpi: pool.close()
             sys.exit(0)
             
         acceptance_fraction,flatchain,chain = (sampler.acceptance_fraction,sampler.flatchain,sampler.chain)
@@ -172,7 +180,10 @@ def infer_potential(**config):
 
     posterior_fig.savefig(os.path.join(plot_path, "posterior_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
     trace_fig.savefig(os.path.join(plot_path, "trace_{0}_{1}.png".format(datetime.datetime.now().date(), "_".join(param_names))))
-
+    
+    if mpi: pool.close()
+    sys.exit(0)
+    
     return
 
 if __name__ == "__main__":
