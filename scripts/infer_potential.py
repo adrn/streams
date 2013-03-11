@@ -41,7 +41,7 @@ from emcee.utils import MPIPool
 from streams.data import SgrSnapshot, SgrCen
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import halo_params as true_halo_params
-from streams.simulation import back_integrate
+from streams.simulation import back_integrate, back_integrate_with_errors
 
 def ln_p_qz(qz):
     """ Prior on vertical (z) axis ratio """
@@ -96,66 +96,50 @@ def infer_potential(**config):
     nburn_in = config.get("nburn_in", nsamples//10)
     param_names = config.get("params", [])
     plot_path = config.get("plot_path", "plots")
-    data_path = config.get("data_path", "data")
-    sampler_file = config.get("sampler_file", None)
     overwrite = config.get("overwrite", False)
+    errors = config.get("errors", False)
     mpi = config.get("mpi", False)
     
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
     
-    if sampler_file == None:
-        logger.info("Inferring halo parameters: {0}".format(",".join(param_names)))
-        logger.info("--> Starting simulation with {0} walkers.".format(nwalkers))
-        logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
+    logger.info("Inferring halo parameters: {0}".format(",".join(param_names)))
+    logger.info("--> Starting simulation with {0} walkers.".format(nwalkers))
+    logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
+    
+    p0 = []
+    for ii in range(nwalkers):
+        p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
+                    for p_name in param_names])
+    p0 = np.array(p0)
+    ndim = p0.shape[1]
+    
+    if mpi:
+        logger.info("Running with MPI!")
+        # Initialize the MPI pool
+        pool = MPIPool()
         
-        p0 = []
-        for ii in range(nwalkers):
-            p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
-                        for p_name in param_names])
-        p0 = np.array(p0)
-        ndim = p0.shape[1]
-        
-        if mpi:
-            logger.info("Running with MPI!")
-            # Initialize the MPI pool
-            pool = MPIPool()
-            
-            # Make sure the thread we're running on is the master
-            if not pool.is_master():
-                pool.wait()
-                sys.exit(0)
-            
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, pool=pool)
-        else:
-            logger.info("Running WITHOUT MPI")
-            #sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=multiprocessing.cpu_count())
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=1)
-        
-        if nburn_in > 0:
-            pos, prob, state = sampler.run_mcmc(p0, nburn_in)
-            logger.debug("Burn in complete...")
-            sampler.reset()
-        else:
-            pos = p0
-            
-        sampler.run_mcmc(pos, nsamples)
-        logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
-        
-        sampler_file = os.path.join(data_path,"{0}_w{1}_s{2}.pickle".format("_".join(param_names), nwalkers, nsamples))
-        if os.path.exists(sampler_file) and overwrite:
-            os.remove(sampler_file)
-        elif os.path.exists(sampler_file) and not overwrite:
-            logger.error("{0} already exists!".format(sampler_file))
-            if mpi: pool.close()
+        # Make sure the thread we're running on is the master
+        if not pool.is_master():
+            pool.wait()
             sys.exit(0)
-            
-        acceptance_fraction,flatchain,chain = (sampler.acceptance_fraction,sampler.flatchain,sampler.chain)
-        fnpickle((acceptance_fraction,flatchain,chain), sampler_file)
         
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, pool=pool)
     else:
-        logger.info("You passed in a sampler object filename. I'm just going to make plots!")
-        acceptance_fraction,flatchain,chain = fnunpickle(sampler_file)
+        logger.info("Running WITHOUT MPI on {0} cores".format(multiprocessing.cpu_count()))
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=multiprocessing.cpu_count())
+    
+    if nburn_in > 0:
+        pos, prob, state = sampler.run_mcmc(p0, nburn_in)
+        logger.debug("Burn in complete...")
+        sampler.reset()
+    else:
+        pos = p0
+        
+    sampler.run_mcmc(pos, nsamples)
+    logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
+        
+    acceptance_fraction,flatchain,chain = (sampler.acceptance_fraction,sampler.flatchain,sampler.chain)
     
     chain = chain[(acceptance_fraction > 0.1) & (acceptance_fraction < 0.6)] # rule of thumb, bitches
     flatchain = []
@@ -177,9 +161,14 @@ def infer_potential(**config):
         for k in range(chain.shape[0]):
             trace_axes[ii].plot(np.arange(len(chain[k,:,ii])),
                                 chain[k,:,ii], color="k", drawstyle="steps", alpha=0.2)
-
-    posterior_fig.savefig(os.path.join(plot_path, "posterior_{0}_{1}_w{2}_s{3}.png".format(datetime.datetime.now().date(), "_".join(param_names), nwalkers, nsamples)))
-    trace_fig.savefig(os.path.join(plot_path, "trace_{0}_{1}_w{2}_s{3}.png".format(datetime.datetime.now().date(), "_".join(param_names), nwalkers, nsamples)))
+    
+    if errors:
+        plot_str = "_{0}_{1}_w{2}_s{3}_errors.png".format(datetime.datetime.now().date(), "_".join(param_names), nwalkers, nsamples)
+    else:
+        plot_str = "_{0}_{1}_w{2}_s{3}.png".format(datetime.datetime.now().date(), "_".join(param_names), nwalkers, nsamples)
+    
+    posterior_fig.savefig(os.path.join(plot_path, "posterior{0}".format(plot_str)))
+    trace_fig.savefig(os.path.join(plot_path, "trace{0}".format(plot_str)))
     
     if mpi: pool.close()
     sys.exit(0)
@@ -198,6 +187,8 @@ if __name__ == "__main__":
                     help="Nom nom nom, old files...")
     parser.add_argument("--mpi", action="store_true", dest="mpi", default=False,
                     help="Anticipate being run with MPI.")
+    parser.add_argument("--errors", action="store_true", dest="errors", default=False,
+                    help="Run with observational errors!")
     
     parser.add_argument("--walkers", dest="nwalkers", default=100, type=int,
                     help="Number of walkers")
@@ -210,8 +201,6 @@ if __name__ == "__main__":
                     action='store', help="The halo parameters to vary.")
     parser.add_argument("--plot-path", dest="plot_path", default="plots",
                     help="The path to store plots.")
-    parser.add_argument("--data-path", dest="data_path", default="data",
-                    help="The path to store data.")
     parser.add_argument("--sampler-file", dest="sampler_file", 
                         help="Specify a pickle file containing a pre-pickled sampler object.")
     
@@ -261,6 +250,9 @@ if __name__ == "__main__":
             sum += prior_map[param_map[ii]](p[ii])
         return sum
     
+    if args.errors:
+        back_integrate = back_integrate_with_errors
+        
     def ln_likelihood(p):    
         halo_params = true_halo_params.copy()
         for ii in range(len(p)):
