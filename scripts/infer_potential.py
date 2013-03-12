@@ -33,6 +33,7 @@ import matplotlib
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
 import astropy.units as u
+from astropy.io.misc import fnpickle, fnunpickle
 import emcee
 from emcee.utils import MPIPool
 
@@ -95,9 +96,17 @@ def infer_potential(**config):
     nburn_in = config.get("nburn_in", nsamples//10)
     param_names = config.get("params", [])
     plot_path = config.get("plot_path", "plots")
+    data_path = config.get("data_path", "data")
     overwrite = config.get("overwrite", False)
     errors = config.get("errors", False)
     mpi = config.get("mpi", False)
+    
+    if errors:
+        file_str = "{0}_{1}_w{2}_s{3}_errors".format(datetime.datetime.now().isoformat("_").replace(":","-"),
+                                   "_".join(param_names), nwalkers, nsamples)
+    else:
+        file_str = "{0}_{1}_w{2}_s{3}".format(datetime.datetime.now().isoformat("_").replace(":","-"),
+                                   "_".join(param_names), nwalkers, nsamples)
     
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
@@ -137,8 +146,14 @@ def infer_potential(**config):
         
     sampler.run_mcmc(pos, nsamples)
     logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
-        
-    acceptance_fraction,flatchain,chain = (sampler.acceptance_fraction,sampler.flatchain,sampler.chain)
+    
+    data_file = os.path.join(data_path, "{0}.pickle".format(file_str))
+    if os.path.exists(data_file):
+        os.remove(data_file)
+    
+    sampler_pickle = (sampler.acceptance_fraction,sampler.flatchain,sampler.chain)
+    fnpickle(sampler_pickle, data_file)
+    acceptance_fraction,flatchain,chain = sampler_pickle
     
     chain = chain[(acceptance_fraction > 0.1) & (acceptance_fraction < 0.6)] # rule of thumb, bitches
     flatchain = []
@@ -161,13 +176,8 @@ def infer_potential(**config):
             trace_axes[ii].plot(np.arange(len(chain[k,:,ii])),
                                 chain[k,:,ii], color="k", drawstyle="steps", alpha=0.2)
     
-    if errors:
-        plot_str = "_{0}_{1}_w{2}_s{3}_errors.png".format(datetime.datetime.now().date(), "_".join(param_names), nwalkers, nsamples)
-    else:
-        plot_str = "_{0}_{1}_w{2}_s{3}.png".format(datetime.datetime.now().date(), "_".join(param_names), nwalkers, nsamples)
-    
-    posterior_fig.savefig(os.path.join(plot_path, "posterior{0}".format(plot_str)))
-    trace_fig.savefig(os.path.join(plot_path, "trace{0}".format(plot_str)))
+    posterior_fig.savefig(os.path.join(plot_path, "posterior_{0}.png".format(file_str)), format="png")
+    trace_fig.savefig(os.path.join(plot_path, "trace_{0}.png".format(file_str)), format="png")
     
     if mpi: pool.close()
     sys.exit(0)
@@ -198,8 +208,10 @@ if __name__ == "__main__":
     
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
-    parser.add_argument("--plot-path", dest="plot_path", default="plots",
+    parser.add_argument("--plot-path", dest="plot_path", default="/u/10/a/amp2217/public_html/plots",
                     help="The path to store plots.")
+    parser.add_argument("--data-path", dest="data_path", default="/hpc/astro/users/amp2217/projects/streams/data",
+                    help="The path to store data files.")
     parser.add_argument("--sampler-file", dest="sampler_file", 
                         help="Specify a pickle file containing a pre-pickled sampler object.")
     
