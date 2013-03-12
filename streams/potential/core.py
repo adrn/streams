@@ -322,14 +322,14 @@ class Potential(object):
             new_potential.add_component(key, other._potential_components[key], derivs=other._potential_component_derivs[key])
         
         for key,val in self.params.items():
-            if key in new_potential.params.keys():
-                logging.warning("Parameter '{0}' already found in this potential! Overwriting...".format(key))
+            #if key in new_potential.params.keys():
+            #    logging.warning("Parameter '{0}' already found in this potential! Overwriting...".format(key))
                 
             new_potential.params[key] = val
         
         for key,val in other.params.items():
-            if key in new_potential.params.keys():
-                logging.warning("Parameter '{0}' already found in this potential! Overwriting...".format(key))
+            #if key in new_potential.params.keys():
+            #    logging.warning("Parameter '{0}' already found in this potential! Overwriting...".format(key))
                 
             new_potential.params[key] = val
 
