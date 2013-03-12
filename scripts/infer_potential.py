@@ -102,10 +102,10 @@ def infer_potential(**config):
     mpi = config.get("mpi", False)
     
     if errors:
-        file_str = "{0}_{1}_w{2}_s{3}_errors".format(datetime.datetime.now().isoformat("_").replace(":","-"),
+        file_str = "{0}_{1}_w{2}_s{3}_errors".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
                                    "_".join(param_names), nwalkers, nsamples)
     else:
-        file_str = "{0}_{1}_w{2}_s{3}".format(datetime.datetime.now().isoformat("_").replace(":","-"),
+        file_str = "{0}_{1}_w{2}_s{3}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
                                    "_".join(param_names), nwalkers, nsamples)
     
     if len(param_names) == 0:
