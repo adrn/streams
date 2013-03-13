@@ -15,6 +15,7 @@ import astropy.units as u
 
 from streams.potential import *
 from streams.simulation import Particle, TestParticleSimulation
+from streams.data.gaia import parallax_error
 
 def _variance_statistic(potential, xs, vs, sgr_cen):
     """ Compute the variance scalar that we will minimize.
@@ -83,20 +84,15 @@ def back_integrate(potential, sgr_snap, sgr_cen, dt):
 
     return _variance_statistic(potential, xs, vs, sgr_cen)
 
-def back_integrate_with_errors(potential, sgr_snap, sgr_cen, dt):
-    """ Given the particle snapshot information and a potential, integrate the particles
-        backwards WITH "realistic" observational uncertainties.
+def add_observational_uncertainty(x,y,z,vx,vy,vz):
+    """ Given 3D galactocentric position and velocity, transform to heliocentric
+        coordinates, apply observational uncertainty estimates, then transform
+        back to galactocentric frame.
     """
-
-    # Initialize particle simulation with full potential
-    simulation = TestParticleSimulation(potential=potential)
-       
     # Transform to heliocentric coordinates
     rsun = 8. # kpc
     
-    # Distances in kpc, velocities in kpc/Myr
-    x, y, z = sgr_snap.data["x"] + rsun, sgr_snap.data["y"], sgr_snap.data["z"]
-    vx, vy, vz = sgr_snap.data["vx"], sgr_snap.data["vy"], sgr_snap.data["vz"]
+    x += rsun
     
     d = np.sqrt(x**2 + y**2 + z**2)
     vr = (x*vx + y*vy + z*vz) / d 
@@ -119,35 +115,7 @@ def back_integrate_with_errors(potential, sgr_snap, sgr_cen, dt):
     # VELOCITY ERROR -- 5 km/s (TODO: ???)
     vr += np.random.normal(0., (5.*u.km/u.s).to(u.kpc/u.Myr).value)
     
-    # PROPER MOTION ERROR -- from GAIA
-    # http://www.rssd.esa.int/index.php?project=GAIA&page=Science_Performance#chapter1
-    #        25 muas at V=15 (RR Lyraes are ~A-F type :between B and G star)
-    #        300 muas at V=20
-    # with THANKS to Horace Smith
-    # V abs mag RR Lyrae's
-    #  M_v = (0.214 +/- 0.047)([Fe/H] + 1.5) + 0.45+/-0.05
-    # Benedict et al. (2011 AJ, 142, 187)
-    # assuming [Fe/H]=-0.5
-    Mabs = 0.65
-    
-    # Johnson/Cousins (V-IC)  
-    # (V-IC) color=vmic
-    # 0.1-0.58
-    # Guldenschuh et al. (2005 PASP 117, 721)
-    vmic = 0.3
-    V = Mabs + 5.*np.log10(d*100.)
-    
-    # GAIA G mag
-    g = V - 0.0257 - 0.0924*vmic- 0.1623*vmic**2 + 0.0090*vmic**3
-    zz = 10**(0.4*(g-15.)) # ???
-    p = g < 12.
-    
-    if sum(p) > 0:
-        zz[p] = 10**(0.4*(12. - 15.))
-    
-    # "end of mission parallax standard"
-    # σπ [μas] = sqrt(9.3 + 658.1 · z + 4.568 · z^2) · [0.986 + (1 - 0.986) · (V-IC)]
-    dp = np.sqrt(9.3 + 658.1*zz + 4.568*zz**2)*(0.986 + (1 - 0.986)*vmic)
+    dp = parallax_error(d)
     
     # assume 5 year baseline, mas/year
     dmu = dp/5.
@@ -159,7 +127,7 @@ def back_integrate_with_errors(potential, sgr_snap, sgr_cen, dt):
     # translate to radians/year
     conv1 = np.pi/180./60./60./1.e6
     # translate to km/s from  kpc/year 
-    kmpkpc =3.085678e16
+    kmpkpc = 3.085678e16
     secperyr = 3.1536e7 
     conv2 = kmpkpc/secperyr
     dmu = dmu*conv1*conv2
@@ -175,6 +143,22 @@ def back_integrate_with_errors(potential, sgr_snap, sgr_cen, dt):
     vx = vr*cosb*cosl - d*mul*sinl - d*mub*sinb*cosl
     vy = vr*cosb*sinl + d*mul*cosl - d*mub*sinb*sinl
     vz = vr*sinb + d*mub*cosb
+    
+    return (x,y,z,vx,vy,vz)
+
+def back_integrate_with_errors(potential, sgr_snap, sgr_cen, dt):
+    """ Given the particle snapshot information and a potential, integrate the particles
+        backwards WITH "realistic" observational uncertainties.
+    """
+
+    # Initialize particle simulation with full potential
+    simulation = TestParticleSimulation(potential=potential)
+    
+    # Distances in kpc, velocities in kpc/Myr
+    x, y, z = sgr_snap.data["x"], sgr_snap.data["y"], sgr_snap.data["z"]
+    vx, vy, vz = sgr_snap.data["vx"], sgr_snap.data["vy"], sgr_snap.data["vz"]
+    
+    x,y,z,vx,vy,vz = add_observational_uncertainty(x,y,z,vx,vy,vz)
     
     for ii in range(sgr_snap.num):
         p = Particle(position=(x[ii], y[ii], z[ii]), # kpc
