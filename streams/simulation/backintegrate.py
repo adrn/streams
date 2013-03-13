@@ -104,8 +104,8 @@ def back_integrate_with_errors(potential, sgr_snap, sgr_cen, dt):
     # proper motions in km/s/kpc
     rad = np.sqrt(x**2 + y**2)
     vrad = (x*vx + y*vy) / rad
-    mu_l = (x*vy - y*vx) / rad / d
-    mu_b = (-z*vrad + rad*vz) / d**2
+    mul = (x*vy - y*vx) / rad / d
+    mub = (-z*vrad + rad*vz) / d**2
     
     # angular position
     sinb = z/d
@@ -164,8 +164,8 @@ def back_integrate_with_errors(potential, sgr_snap, sgr_cen, dt):
     conv2 = kmpkpc/secperyr
     dmu = dmu*conv1*conv2
     
-    mu_l += np.random.normal(0., dmu)
-    mu_b += np.random.normal(0., dmu)
+    mul += np.random.normal(0., dmu)
+    mub += np.random.normal(0., dmu)
     
     # CONVERT BACK
     x = d*cosb*cosl - rsun
