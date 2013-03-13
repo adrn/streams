@@ -146,6 +146,7 @@ def infer_potential(**config):
         
     sampler.run_mcmc(pos, nsamples)
     logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
+    if mpi: pool.close()
     
     data_file = os.path.join(data_path, "{0}.pickle".format(file_str))
     if os.path.exists(data_file):
@@ -161,6 +162,10 @@ def infer_potential(**config):
         flatchain += list(walker)
     flatchain = np.array(flatchain)    
     
+    if len(flatchain) == 0:
+        logger.warning("Not making plots -- no chains converged!")
+        return 
+        
     posterior_fig,posterior_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
     trace_fig,trace_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
     
@@ -178,9 +183,6 @@ def infer_potential(**config):
     
     posterior_fig.savefig(os.path.join(plot_path, "posterior_{0}.png".format(file_str)), format="png")
     trace_fig.savefig(os.path.join(plot_path, "trace_{0}.png".format(file_str)), format="png")
-    
-    if mpi: pool.close()
-    sys.exit(0)
     
     return
 
@@ -273,4 +275,4 @@ if __name__ == "__main__":
         return -back_integrate(mw_potential, sgr_snap, sgr_cen, dt)
     
     infer_potential(**args.__dict__)
-    
+    sys.exit(0)    
