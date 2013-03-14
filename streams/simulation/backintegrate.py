@@ -115,14 +115,7 @@ def add_observational_uncertainty(x,y,z,vx,vy,vz):
     # VELOCITY ERROR -- 5 km/s (TODO: ???)
     vr += np.random.normal(0., (5.*u.km/u.s).to(u.kpc/u.Myr).value)
     
-    dp = parallax_error(d)
-    
-    # assume 5 year baseline, mas/year
-    dmu = dp/5.
-    # too optimistic: following suggests factor 2 more realistic
-    #http://www.astro.utu.fi/~cflynn/galdyn/lecture10.html 
-    # - and Sanjib suggests factor 0.526
-    dmu = 0.526*dp
+    dmu = proper_motion_error(d)
     
     # translate to radians/year
     conv1 = np.pi/180./60./60./1.e6
