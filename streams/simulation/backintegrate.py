@@ -15,7 +15,7 @@ import astropy.units as u
 
 from streams.potential import *
 from streams.simulation import Particle, TestParticleSimulation
-from streams.data.gaia import parallax_error, rr_lyrae_M_V
+from streams.data.gaia import parallax_error, rr_lyrae_M_V, add_observational_uncertainties
 
 def _variance_statistic(potential, xs, vs, sgr_cen):
     """ Compute the variance scalar that we will minimize.

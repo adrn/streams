@@ -41,7 +41,7 @@ from emcee.utils import MPIPool
 from streams.data import SgrSnapshot, SgrCen
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import halo_params as true_halo_params
-from streams.simulation import back_integrate, back_integrate_with_errors
+from streams.simulation import back_integrate
 
 def ln_p_qz(qz):
     """ Prior on vertical (z) axis ratio """
@@ -262,9 +262,6 @@ if __name__ == "__main__":
         for ii in range(len(p)):
             sum += prior_map[param_map[ii]](p[ii])
         return sum
-    
-    if args.errors:
-        back_integrate = back_integrate_with_errors
         
     def ln_likelihood(p):    
         halo_params = true_halo_params.copy()
@@ -272,7 +269,7 @@ if __name__ == "__main__":
             halo_params[param_map[ii]] = p[ii]
     
         mw_potential = LawMajewski2010(**halo_params)
-        return -back_integrate(mw_potential, sgr_snap, sgr_cen, dt)
+        return -back_integrate(mw_potential, sgr_snap, sgr_cen, dt, errors=args.errors)
     
     infer_potential(**args.__dict__)
     sys.exit(0)    
