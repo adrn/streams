@@ -50,3 +50,16 @@ def parallax_error(d):
     dp = np.sqrt(9.3 + 658.1*zz + 4.568*zz**2)*(0.986 + (1 - 0.986)*vmic)*1E-6*u.arcsecond
     
     return dp
+
+def proper_motion_error(d):
+    dp = parallax_error(d)
+    
+    # assume 5 year baseline, µas/year
+    dmu = dp/(5.*u.year)
+    
+    # too optimistic: following suggests factor 2 more realistic
+    #http://www.astro.utu.fi/~cflynn/galdyn/lecture10.html 
+    # - and Sanjib suggests factor 0.526
+    dmu = 0.526*dmu
+
+    return dmu.to(u.radian/u.yr)
