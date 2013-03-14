@@ -15,7 +15,7 @@ import astropy.units as u
 
 from streams.potential import *
 from streams.simulation import Particle, TestParticleSimulation
-from streams.data.gaia import parallax_error
+from streams.data.gaia import parallax_error, rr_lyrae_M_V
 
 def _variance_statistic(potential, xs, vs, sgr_cen):
     """ Compute the variance scalar that we will minimize.
@@ -66,99 +66,27 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
     
     return np.var(min_ds) + np.var(min_vs)
 
-def back_integrate(potential, sgr_snap, sgr_cen, dt):
+def back_integrate(potential, sgr_snap, sgr_cen, dt, errors=False):
     """ Given the particle snapshot information and a potential, integrate the particles
         backwards and return the variance scalar.
     """
 
     # Initialize particle simulation with full potential
     simulation = TestParticleSimulation(potential=potential)
-
-    for ii in range(sgr_snap.num):
-        p = Particle(position=(sgr_snap.data["x"][ii], sgr_snap.data["y"][ii], sgr_snap.data["z"][ii]), # kpc
-                     velocity=(sgr_snap.data["vx"][ii], sgr_snap.data["vy"][ii], sgr_snap.data["vz"][ii]), # kpc/Myr
-                     mass=1.) # M_sol
-        simulation.add_particle(p)
-
-    ts, xs, vs = simulation.run(t1=max(sgr_cen.data["t"]), t2=min(sgr_cen.data["t"]), dt=-dt)
-
-    return _variance_statistic(potential, xs, vs, sgr_cen)
-
-def add_observational_uncertainty(x,y,z,vx,vy,vz):
-    """ Given 3D galactocentric position and velocity, transform to heliocentric
-        coordinates, apply observational uncertainty estimates, then transform
-        back to galactocentric frame.
-    """
-    # Transform to heliocentric coordinates
-    rsun = 8. # kpc
-    
-    x += rsun
-    
-    d = np.sqrt(x**2 + y**2 + z**2)
-    vr = (x*vx + y*vy + z*vz) / d 
-    
-    # proper motions in km/s/kpc
-    rad = np.sqrt(x**2 + y**2)
-    vrad = (x*vx + y*vy) / rad
-    mul = (x*vy - y*vx) / rad / d
-    mub = (-z*vrad + rad*vz) / d**2
-    
-    # angular position
-    sinb = z/d
-    cosb = rad/d
-    cosl = x/rad
-    sinl = y/rad
-    
-    # DISTANCE ERROR -- assuming 2% distances from RR Lyrae mid-IR
-    d += np.random.normal(0., 0.02*d)
-    
-    # VELOCITY ERROR -- 5 km/s (TODO: ???)
-    vr += np.random.normal(0., (5.*u.km/u.s).to(u.kpc/u.Myr).value)
-    
-    dmu = proper_motion_error(d)
-    
-    # translate to radians/year
-    conv1 = np.pi/180./60./60./1.e6
-    # translate to km/s from  kpc/year 
-    kmpkpc = 3.085678e16
-    secperyr = 3.1536e7 
-    conv2 = kmpkpc/secperyr
-    dmu = dmu*conv1*conv2
-    
-    mul += np.random.normal(0., dmu)
-    mub += np.random.normal(0., dmu)
-    
-    # CONVERT BACK
-    x = d*cosb*cosl - rsun
-    y = d*cosb*sinl
-    z = d*sinb
-    
-    vx = vr*cosb*cosl - d*mul*sinl - d*mub*sinb*cosl
-    vy = vr*cosb*sinl + d*mul*cosl - d*mub*sinb*sinl
-    vz = vr*sinb + d*mub*cosb
-    
-    return (x,y,z,vx,vy,vz)
-
-def back_integrate_with_errors(potential, sgr_snap, sgr_cen, dt):
-    """ Given the particle snapshot information and a potential, integrate the particles
-        backwards WITH "realistic" observational uncertainties.
-    """
-
-    # Initialize particle simulation with full potential
-    simulation = TestParticleSimulation(potential=potential)
     
     # Distances in kpc, velocities in kpc/Myr
-    x, y, z = sgr_snap.data["x"], sgr_snap.data["y"], sgr_snap.data["z"]
-    vx, vy, vz = sgr_snap.data["vx"], sgr_snap.data["vy"], sgr_snap.data["vz"]
+    x, y, z = sgr_snap.data["x"]*u.kpc, sgr_snap.data["y"]*u.kpc, sgr_snap.data["z"]*u.kpc
+    vx, vy, vz = sgr_snap.data["vx"]*u.kpc/u.Myr, sgr_snap.data["vy"]*u.kpc/u.Myr, sgr_snap.data["vz"]*u.kpc/u.Myr
     
-    x,y,z,vx,vy,vz = add_observational_uncertainty(x,y,z,vx,vy,vz)
+    if errors:
+        x,y,z,vx,vy,vz = add_observational_uncertainties(x,y,z,vx,vy,vz)
     
     for ii in range(sgr_snap.num):
-        p = Particle(position=(x[ii], y[ii], z[ii]), # kpc
-                     velocity=(vx[ii], vy[ii] ,vz[ii]), # kpc/Myr
+        p = Particle(position=(x[ii].to(u.kpc).value, y[ii].to(u.kpc).value, z[ii].to(u.kpc).value), # kpc
+                     velocity=(vx[ii].to(u.kpc/u.Myr).value, vy[ii].to(u.kpc/u.Myr).value, vz[ii].to(u.kpc/u.Myr).value), # kpc/Myr
                      mass=1.) # M_sol
         simulation.add_particle(p)
-
-    ts, xs, vs = simulation.run(t1=max(sgr_cen.data["t"]), t2=min(sgr_cen.data["t"]), dt=-dt)
     
+    ts, xs, vs = simulation.run(t1=max(sgr_cen.data["t"]), t2=min(sgr_cen.data["t"]), dt=-dt)
+
     return _variance_statistic(potential, xs, vs, sgr_cen)
