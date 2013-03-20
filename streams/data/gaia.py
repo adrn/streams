@@ -59,36 +59,67 @@ def apparent_magnitude(M_V, d):
         
         Parameters
         ----------
+        M_V : numeric or iterable
+            Absolute V-band magnitude of a source.
+        d : astropy.units.Quantity
+            The distance to the source as a Quantity object.
+            
     """
+    
     if not isinstance(d, u.Quantity):
         raise TypeError("Distance must be an Astropy Quantity object!")
-        
-    V = M_V + 5.*np.log10(d.to(u.pc).value)
     
-    return V
+    # Compute the apparent magnitude -- ignores extinction
+    return M_V - 5.*(1. - np.log10(d.to(u.pc).value))
 
 def parallax_error(V, V_minus_I):
-    """ http://www.rssd.esa.int/index.php?project=GAIA&page=Science_Performance#chapter1 """
+    """ Compute the estimated GAIA parallax error as a function of apparent 
+        V-band magnitude and V-I color. All equations are taken from the GAIA
+        science performance book:
+    
+            http://www.rssd.esa.int/index.php?project=GAIA&page=Science_Performance#chapter1 
+    
+        Parameters
+        ----------
+        V : numeric or iterable
+            The V-band apparent magnitude of a source.
+        V_minus_I : numeric or iterable
+            The V-I color of the source.
+    """
     
     # GAIA G mag
     g = V - 0.0257 - 0.0924*V_minus_I- 0.1623*V_minus_I**2 + 0.0090*V_minus_I**3
-    zz = 10**(0.4*(g-15.)) 
-    p = g < 12.
+    z = 10**(0.4*(g-15.)) 
     
+    p = g < 12.
     if isiterable(V):
         if sum(p) > 0:
-            zz[p] = 10**(0.4*(12. - 15.))
+            z[p] = 10**(0.4*(12. - 15.))
     else:
         if p:
-            zz[p] = 10**(0.4*(12. - 15.))
+            z[p] = 10**(0.4*(12. - 15.))
     
     # "end of mission parallax standard"
-    # σπ [μas] = sqrt(9.3 + 658.1 · z + 4.568 · z^2) · [0.986 + (1 - 0.986) · (V-IC)]
-    dp = np.sqrt(9.3 + 658.1*zz + 4.568*zz**2)*(0.986 + (1 - 0.986)*V_minus_I)*1E-6*u.arcsecond
+    # σπ [μas] = (9.3 + 658.1·z + 4.568·z^2)^(1/2) · [0.986 + (1 - 0.986) · (V-IC)]
+    dp = np.sqrt(9.3 + 658.1*z + 4.568*z**2) * (0.986 + (1 - 0.986)*V_minus_I) * 1E-6 * u.arcsecond
     
     return dp
 
 def proper_motion_error(V, V_minus_I):
+    """ Compute the estimated GAIA proper motion error as a function of apparent 
+        V-band magnitude and V-I color. All equations are taken from the GAIA
+        science performance book:
+    
+            http://www.rssd.esa.int/index.php?project=GAIA&page=Science_Performance#chapter1 
+    
+        Parameters
+        ----------
+        V : numeric or iterable
+            The V-band apparent magnitude of a source.
+        V_minus_I : numeric or iterable
+            The V-I color of the source.
+    """
+    
     dp = parallax_error(V, V_minus_I)
     
     # assume 5 year baseline, µas/year
