@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import copy
 
 # Third-party
 import numpy as np
@@ -15,7 +16,12 @@ import astropy.units as u
 from astropy.utils.misc import isiterable
 
 __all__ = ["parallax_error", "proper_motion_error", "rr_lyrae_M_V", \
-           "apparent_magnitude", "add_observational_uncertainties"]
+           "apparent_magnitude", "rr_lyrae_add_observational_uncertainties"]
+
+# Johnson/Cousins (V - I_C) color for RR Lyrae at *minimum*
+# Guldenschuh et al. (2005 PASP 117, 721), pg. 725
+# (V-I)_min = 0.579 +/- 0.006 mag
+rr_lyrae_V_minus_I = 0.579
 
 def rr_lyrae_M_V(fe_h, dfe_h=0.):
     """ Given an RR Lyra metallicity, return the V-band absolute magnitude. 
@@ -132,48 +138,57 @@ def proper_motion_error(V, V_minus_I):
 
     return dmu.to(u.radian/u.yr)
 
-def add_observational_uncertainties(x,y,z,vx,vy,vz):
+def rr_lyrae_add_observational_uncertainties(x, v):
     """ Given 3D galactocentric position and velocity, transform to heliocentric
         coordinates, apply observational uncertainty estimates, then transform
         back to galactocentric frame.
+        
+        TODO: V-I color and metallicity should be *draws* from distributions.
+        
+        Parameters
+        ----------
+        x : astropy.units.Quantity
+            Positions.
+        v : astropy.units.Quantity
+            Velocities.
     """
     
-    if not isinstance(x,u.Quantity) or not isinstance(y,u.Quantity) or not isinstance(z,u.Quantity):
+    if not isinstance(x,u.Quantity):
         raise TypeError("Positions must be Astropy Quantity objects!")
     
-    if not isinstance(vx,u.Quantity) or not isinstance(vy,u.Quantity) or not isinstance(vz,u.Quantity):
+    if not x.unit.is_equivalent(u.kpc):
+        raise ValueError("Invalid distance unit: Distance must have distance-like units.")
+    
+    if not isinstance(v,u.Quantity):
         raise TypeError("Velocities must be Astropy Quantity objects!")
     
-    # Johnson/Cousins (V-I_C)
-    # (V-I_C) color
-    # 0.1-0.58
-    # Guldenschuh et al. (2005 PASP 117, 721)
-    rr_lyrae_V_minus_I = 0.3
+    if not v.unit.is_equivalent(u.km/u.s):
+        raise ValueError("Invalid velocity unit: Velocity must have velocity-like units.")
     
     # assuming [Fe/H] = -0.5 for Sgr
-    M_V = rr_lyrae_M_V(-0.5)
+    M_V, dM_V = rr_lyrae_M_V(-0.5)
     
     # Transform to heliocentric coordinates
     rsun = 8.*u.kpc
     
     x += rsun
     
-    d = np.sqrt(x**2 + y**2 + z**2)*x.unit
+    d = np.sqrt(x[0]**2 + x[1]**2 + x[2]**2)*x.unit
     V = apparent_magnitude(M_V, d)
     
-    vr = (x*vx + y*vy + z*vz) / d 
+    vr = (x[0]*v[0] + x[1]*v[1] + x[2]*v[2]) / d 
     
     # proper motions in km/s/kpc
-    rad = np.sqrt(x**2 + y**2)*x.unit
-    vrad = (x*vx + y*vy) / rad
-    mul = (x*vy - y*vx) / rad / d
-    mub = (-z*vrad + rad*vz) / d**2
+    rad = np.sqrt(x[0]**2 + x[1]**2)*x.unit
+    vrad = (x[0]*v[0] + x[1]*v[1]) / rad
+    mul = (x[0]*v[1] - x[1]*v[0]) / rad / d
+    mub = (-x[2]*vrad + rad*v[2]) / d**2
        
     # angular position
-    sinb = z/d
+    sinb = x[2]/d
     cosb = rad/d
-    cosl = x/rad
-    sinl = y/rad
+    cosl = x[0]/rad
+    sinl = x[1]/rad
     
     # DISTANCE ERROR -- assuming 2% distances from RR Lyrae mid-IR
     d += np.random.normal(0., 0.02*d.value)*d.unit
@@ -196,12 +211,17 @@ def add_observational_uncertainties(x,y,z,vx,vy,vz):
     mub += np.random.normal(0., dmu.value)*dmu.unit
     
     # CONVERT BACK
-    x = d*cosb*cosl - rsun
-    y = d*cosb*sinl
-    z = d*sinb
+    new_x = copy.copy(x.value)
+    new_x_unit = d.unit
+    new_v = copy.copy(v.value)
+    new_v_unit = vr.unit
     
-    vx = vr*cosb*cosl - d*mul*sinl - d*mub*sinb*cosl
-    vy = vr*cosb*sinl + d*mul*cosl - d*mub*sinb*sinl
-    vz = vr*sinb + d*mub*cosb
+    new_x[0] = (d*cosb*cosl - rsun).to(d.unit).value
+    new_x[1] = (d*cosb*sinl).to(d.unit).value
+    new_x[2] = (d*sinb).to(d.unit).value
     
-    return (x,y,z,vx,vy,vz)
+    new_v[0] = (vr*cosb*cosl - d*mul*sinl - d*mub*sinb*cosl).to(vr.unit).value
+    new_v[1] = (vr*cosb*sinl + d*mul*cosl - d*mub*sinb*sinl).to(vr.unit).value
+    new_v[2] = (vr*sinb + d*mub*cosb).to(vr.unit).value
+    
+    return (new_x*d.unit, new_v*vr.unit)
