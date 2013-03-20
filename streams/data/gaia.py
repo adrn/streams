@@ -17,18 +17,48 @@ from astropy.utils.misc import isiterable
 __all__ = ["parallax_error", "proper_motion_error", "rr_lyrae_M_V", \
            "apparent_magnitude", "add_observational_uncertainties"]
 
-def rr_lyrae_M_V(fe_h):
-    """ Given an RR Lyra metallicity, return the V-band absolute magnitude. """
+def rr_lyrae_M_V(fe_h, dfe_h=0.):
+    """ Given an RR Lyra metallicity, return the V-band absolute magnitude. 
+        
+        This expression comes from Benedict et al. 2011 (AJ 142, 187), 
+        equation 14 reads:
+            M_v = (0.214 +/- 0.047)([Fe/H] + 1.5) + a_7
+        
+        where
+            a_7 = 0.45 +/- 0.05
+            
+        From that, we take the absolute V-band magnitude to be:
+            Mabs = 0.214 * ([Fe/H] + 1.5) + 0.45
+            δMabs = sqrt[(0.047*(δ[Fe/H]))**2 + (0.05)**2]
+        
+        Parameters
+        ----------
+        fe_h : numeric or iterable
+            Metallicity.
+        dfe_h : numeric or iterable
+            Uncertainty in the metallicity.
+        
+    """
     
-    # V abs mag RR Lyrae's
-    #  M_v = (0.214 +/- 0.047)([Fe/H] + 1.5) + 0.45+/-0.05
-    # Benedict et al. (2011 AJ, 142, 187)
+    if isiterable(fe_h):
+        fe_h = np.array(fe_h)
+        dfe_h = np.array(dfe_h)
+        
+        if not fe_h.shape == dfe_h.shape:
+            raise ValueError("Shape mismatch: fe_h and dfe_h must have the same shape.")
+    
+    # V abs mag for RR Lyrae
     Mabs = 0.214*(fe_h + 1.5) + 0.45
-    return Mabs
+    dMabs = np.sqrt((0.047*dfe_h)**2 + (0.05)**2)
+    
+    return (Mabs, dMabs)
 
 def apparent_magnitude(M_V, d):
     """ Compute the apparent magnitude of a source given an absolute magnitude
-        and a distance (Quantity).
+        and a distance.
+        
+        Parameters
+        ----------
     """
     if not isinstance(d, u.Quantity):
         raise TypeError("Distance must be an Astropy Quantity object!")
