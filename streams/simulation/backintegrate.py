@@ -15,7 +15,7 @@ import astropy.units as u
 
 from streams.potential import *
 from streams.simulation import Particle, TestParticleSimulation
-from streams.data.gaia import parallax_error, rr_lyrae_M_V, add_observational_uncertainties
+from streams.data.gaia import parallax_error, rr_lyrae_M_V, rr_lyrae_add_observational_uncertainties
 
 def _variance_statistic(potential, xs, vs, sgr_cen):
     """ Compute the variance scalar that we will minimize.
@@ -75,15 +75,15 @@ def back_integrate(potential, sgr_snap, sgr_cen, dt, errors=False):
     simulation = TestParticleSimulation(potential=potential)
     
     # Distances in kpc, velocities in kpc/Myr
-    x, y, z = sgr_snap.data["x"]*u.kpc, sgr_snap.data["y"]*u.kpc, sgr_snap.data["z"]*u.kpc
-    vx, vy, vz = sgr_snap.data["vx"]*u.kpc/u.Myr, sgr_snap.data["vy"]*u.kpc/u.Myr, sgr_snap.data["vz"]*u.kpc/u.Myr
+    xyz = np.array([sgr_snap.data["x"], sgr_snap.data["y"], sgr_snap.data["z"]])*u.kpc
+    vxyz = np.array([sgr_snap.data["vx"], sgr_snap.data["vy"], sgr_snap.data["vz"]])*u.kpc/u.Myr
     
     if errors:
-        x,y,z,vx,vy,vz = add_observational_uncertainties(x,y,z,vx,vy,vz)
+        xyz,vxyz = rr_lyrae_add_observational_uncertainties(xyz,vxyz)
     
     for ii in range(sgr_snap.num):
-        p = Particle(position=(x[ii].to(u.kpc).value, y[ii].to(u.kpc).value, z[ii].to(u.kpc).value), # kpc
-                     velocity=(vx[ii].to(u.kpc/u.Myr).value, vy[ii].to(u.kpc/u.Myr).value, vz[ii].to(u.kpc/u.Myr).value), # kpc/Myr
+        p = Particle(position=(xyz[0,ii].to(u.kpc).value, xyz[1,ii].to(u.kpc).value, xyz[2,ii].to(u.kpc).value), # kpc
+                     velocity=(vxyz[0,ii].to(u.kpc/u.Myr).value, vxyz[1,ii].to(u.kpc/u.Myr).value, vxyz[2,ii].to(u.kpc/u.Myr).value), # kpc/Myr
                      mass=1.) # M_sol
         simulation.add_particle(p)
     
