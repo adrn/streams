@@ -170,10 +170,11 @@ class SgrSnapshot(StreamData):
             Parameters
             ----------
             num : int
-                If 0, load all stars, otherwise randomly sample 'num' particles from the snapshot data.
+                If 0, load all stars, otherwise randomly sample 'num' 
+                particles from the snapshot data.
             no_bound : bool (optional)
-                If True, only randomly select particles from the tidal streams -- *not* particles still
-                bound to the satellite.
+                If True, only randomly select particles from the tidal
+                streams -- *not* particles still bound to the satellite.
         """
 
         # Scale Sgr simulation data to physical units
@@ -184,7 +185,9 @@ class SgrSnapshot(StreamData):
         txt_filename = os.path.join(project_root, "data", "simulation", \
                                     "SGR_SNAP")
 
-        npy_filename = _make_npy_file(txt_filename, overwrite=overwrite, ascii_kwargs=dict(names=["m","x","y","z","vx","vy","vz","s1", "s2", "tub"]))
+        npy_filename = _make_npy_file(txt_filename, \
+                                      overwrite=overwrite, \
+                                      ascii_kwargs=dict(names=["m","x","y","z","vx","vy","vz","s1", "s2", "tub"]))
         self.data = np.load(npy_filename)
 
         if num > 0:

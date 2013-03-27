@@ -1,6 +1,6 @@
 # coding: utf-8
 """
-    Test the ...
+    Test the GAIA observational error estimate functions.
 """
 
 from __future__ import absolute_import, unicode_literals, division, print_function
@@ -37,12 +37,7 @@ def test_against_table():
 def test_add_uncertainties():
     
     N = 20
-    x = np.random.uniform(0., 10., N) * u.kpc
-    y = np.random.uniform(0., 10., N) * u.kpc
-    z = np.random.uniform(0., 10., N) * u.kpc
+    x = np.random.uniform(0., 10., (3,N)) * u.kpc
+    v = np.random.uniform(0., 25., (3,N)) * u.km/u.s
     
-    vx = np.random.uniform(0., 25., N) * u.km/u.s
-    vy = np.random.uniform(0., 25., N) * u.km/u.s
-    vz = np.random.uniform(0., 25., N) * u.km/u.s
-    
-    print(add_observational_uncertainties(x,y,z,vx,vy,vz))
+    new_x, new_v = rr_lyrae_add_observational_uncertainties(x,v)
