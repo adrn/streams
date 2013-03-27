@@ -214,8 +214,6 @@ if __name__ == "__main__":
                     help="The path to store plots.")
     parser.add_argument("--data-path", dest="data_path", default="/hpc/astro/users/amp2217/projects/streams/data",
                     help="The path to store data files.")
-    parser.add_argument("--sampler-file", dest="sampler_file",
-                        help="Specify a pickle file containing a pre-pickled sampler object.")
 
     args = parser.parse_args()
 
@@ -243,7 +241,8 @@ if __name__ == "__main__":
     sgr_cen.interpolate(ts)
 
     np.random.seed(42)
-    sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
+    sgr_snap = SgrSnapshot(num=100, 
+                           expr="(tub.value > 0)")
 
     # Define a mapping from parameter name to index
     param_map = dict(zip(range(len(args.params)), args.params))

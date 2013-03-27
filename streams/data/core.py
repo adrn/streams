@@ -2,7 +2,7 @@
 
 """ Classes for accessing various data related to this project. """
 
-from __future__ import division, print_function
+from __future__ import division, print_function, absolute_import, unicode_literals
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
@@ -11,6 +11,7 @@ import os, sys
 
 # Third-party
 import numpy as np
+import numexpr
 import astropy.io.fits as fits
 import astropy.io.ascii as ascii
 import astropy.coordinates as coord
@@ -116,101 +117,148 @@ class QUEST(StreamData):
 
         self._set_coordinates("RAJ2000", "DEJ2000")
 
-class SgrCen(StreamData):
+class SgrData(StreamData):
+    
+    def __init__(self, overwrite=False):
+        """ Read in Sgr satellite center simulation data from Kathryn 
+            
+            Note that _data is the *unscaled, raw data* from the ASCII
+            file!
+        
+        """
 
-    data = None
+        # Scale Sgr simulation data to physical units
+        self._r_scale = 0.63 # kpc
+        self._v_scale = (41.27781037*u.km/u.s).to(u.kpc/u.Myr).value # kpc/Myr
+        self._t_scale = 14.9238134129 # Myr
+        
+        self._r_unit = u.kpc
+        self._t_unit = u.Myr
+        self._v_unit = self._r_unit / self._t_unit
+    
+    def _name_to_unit(self, name):
+        """ Map a column name to a unit object. """
+        
+        if name in ["t","dt","tub"]:
+            return (self._t_scale, self._t_unit)
+        elif name in ["x","y","z"]:
+            return (self._r_scale, self._r_unit)
+        elif name in ["vx","vy","vz"]:
+            return (self._v_scale, self._v_unit)
+        elif name in ["s1", "s2", "m"]:
+            return (1., 1.)
+        else:
+            raise NameError("Unsure of units for name '{0}'".format(name))
+    
+    def _set_xyz_vxyz(self):
+        self.xyz = np.array([self.x.value,
+                             self.y.value,
+                             self.z.value]) * self._r_unit
+                               
+        self.vxyz = np.array([self.vx.value,
+                              self.vy.value,
+                              self.vz.value]) * self._v_unit
+    
+    def _init_data(self):
+        """ Using a data array (read in from a .npy binary file), create the 
+            aliases .x, .y, etc. for accessing the data.
+        """
+        
+        for name in self._data.dtype.names:
+            scale,unit = self._name_to_unit(name)
+            setattr(self, name, self._data[name]*scale*unit)
+        
+        self._set_xyz_vxyz()
+    
+    def __len__(self):
+        return len(self._data)
+    
+class SgrCen(SgrData):
+
+    _data = None
 
     def __init__(self, overwrite=False):
         """ Read in Sgr satellite center simulation data from Kathryn """
+        super(SgrCen, self).__init__()
 
-        # Scale Sgr simulation data to physical units
-        ru = 0.63 # kpc
-        vu = (41.27781037*u.km/u.s).to(u.kpc/u.Myr).value # kpc/Myr
-        tu = 14.9238134129 # Myr
-
-        if SgrCen.data == None:
-            txt_filename = os.path.join(project_root, "data", "simulation", \
+        if SgrCen._data == None:
+            txt_filename = os.path.join(project_root, 
+                                        "data",
+                                        "simulation", 
                                         "SGR_CEN")
 
-            npy_filename = _make_npy_file(txt_filename, overwrite=overwrite, ascii_kwargs=dict(names=["t","dt","x","y","z","vx","vy","vz"]))
-            SgrCen.data = np.load(npy_filename)
-
-            SgrCen.data["t"] = SgrCen.data["t"] * tu
-            SgrCen.data["dt"] = SgrCen.data["dt"] * tu
-
-            SgrCen.data["x"] = SgrCen.data["x"] * ru
-            SgrCen.data["y"] = SgrCen.data["y"] * ru
-            SgrCen.data["z"] = SgrCen.data["z"] * ru
-
-            SgrCen.data["vx"] = SgrCen.data["vx"] * vu
-            SgrCen.data["vy"] = SgrCen.data["vy"] * vu
-            SgrCen.data["vz"] = SgrCen.data["vz"] * vu
-        
-        for name in SgrCen.data.dtype.names:
-            setattr(self, name, SgrCen.data[name])
+            npy_filename = _make_npy_file(txt_filename, 
+                                          overwrite=overwrite,
+                                          ascii_kwargs=dict(names=["t","dt","x","y","z","vx","vy","vz"]))
+            SgrCen._data = np.load(npy_filename)
+            
+        self._init_data()
     
     def interpolate(self, ts):
-        for name in SgrCen.data.dtype.names:
+        """ Interpolate the SgrCen data onto the specified time grid. 
+            
+            Parameters
+            ----------
+            ts : astropy.units.Quantity
+                The new grid of times to interpolate on to.
+        
+        """
+        
+        if not isinstance(ts, u.Quantity):
+            raise TypeError("New time grid must be an Astropy Quantity object.")
+        
+        for name in SgrCen._data.dtype.names:
             if name == "t":
                 self.t = ts
                 continue
             elif name == "dt":
                 self.dt = None
-                
+            
+            t = self._data["t"]*self._t_scale*self._t_unit
+            
+            scale,unit = self._name_to_unit(name)
+            d = self._data[name]*scale*unit
             setattr(self, name, 
-                    interpolate.interp1d(self.data["t"], 
-                                         self.data[name], 
-                                         kind='cubic')(ts))
+                    interpolate.interp1d(t.to(ts.unit).value, 
+                                         d.value, 
+                                         kind='cubic')(ts.value)*d.unit)
+        
+        self._set_xyz_vxyz()
     
-class SgrSnapshot(StreamData):
+class SgrSnapshot(SgrData):
 
-    def __init__(self, overwrite=False, num=0, no_bound=False):
+    def __init__(self, overwrite=False, num=None, expr=""):
         """ Read in Sgr simulation snapshop for individual particles
 
             Parameters
             ----------
             num : int
-                If 0, load all stars, otherwise randomly sample 'num' 
+                If None, load all stars, otherwise randomly sample 'num' 
                 particles from the snapshot data.
-            no_bound : bool (optional)
-                If True, only randomly select particles from the tidal
-                streams -- *not* particles still bound to the satellite.
+            expr : str (optional)
+                A selection expression to be fed in to numexpr. For
+                example, to select only unbound particles, use 
+                'tub > 0'.
         """
-
-        # Scale Sgr simulation data to physical units
-        ru = 0.63 # kpc
-        vu = (41.27781037*u.km/u.s).to(u.kpc/u.Myr).value # kpc/Myr
-        tu = 14.9238134129 # Myr
-
+        super(SgrSnapshot, self).__init__()
+        
         txt_filename = os.path.join(project_root, "data", "simulation", \
                                     "SGR_SNAP")
 
         npy_filename = _make_npy_file(txt_filename, \
                                       overwrite=overwrite, \
                                       ascii_kwargs=dict(names=["m","x","y","z","vx","vy","vz","s1", "s2", "tub"]))
-        self.data = np.load(npy_filename)
+        self._data = np.load(npy_filename)
+        self._init_data()
 
-        if num > 0:
+        if len(expr.strip()) > 0:
+            idx = numexpr.evaluate(str(expr), self.__dict__)
+            self._data = self._data[idx]
+        
+        if num != None and num > 0:
+            idx = np.random.randint(0, len(self._data), num)
+            self._data = self._data[idx]
+        
+        # Do this again now that we've selected out the rows we want
+        self._init_data()
 
-            if no_bound:
-                nb_idx = self.data["tub"] > 0.
-                data = self.data[nb_idx]
-            else:
-                data = self.data
-
-            idx = np.random.randint(0, len(data), num)
-            self.data = data[idx]
-
-        self.data["m"] = self.data["m"]
-
-        self.data["x"] = self.data["x"] * ru
-        self.data["y"] = self.data["y"] * ru
-        self.data["z"] = self.data["z"] * ru
-
-        self.data["vx"] = self.data["vx"] * vu
-        self.data["vy"] = self.data["vy"] * vu
-        self.data["vz"] = self.data["vz"] * vu
-
-        self.data["tub"] *= tu
-
-        self.num = len(self.data)
