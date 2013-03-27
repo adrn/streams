@@ -75,8 +75,8 @@ def back_integrate(potential, sgr_snap, sgr_cen, dt, errors=False):
     simulation = TestParticleSimulation(potential=potential)
     
     # Distances in kpc, velocities in kpc/Myr
-    xyz = np.array([sgr_snap.data["x"], sgr_snap.data["y"], sgr_snap.data["z"]])*u.kpc
-    vxyz = np.array([sgr_snap.data["vx"], sgr_snap.data["vy"], sgr_snap.data["vz"]])*u.kpc/u.Myr
+    xyz = sgr_snap.xyz
+    vxyz = sgr_snap.vxyz
     
     if errors:
         xyz,vxyz = rr_lyrae_add_observational_uncertainties(xyz,vxyz)
@@ -87,6 +87,6 @@ def back_integrate(potential, sgr_snap, sgr_cen, dt, errors=False):
                      mass=1.) # M_sol
         simulation.add_particle(p)
     
-    ts, xs, vs = simulation.run(t1=max(sgr_cen.data["t"]), t2=min(sgr_cen.data["t"]), dt=-dt)
+    ts, xs, vs = simulation.run(t1=max(sgr_cen.t), t2=min(sgr_cen.t), dt=-dt)
 
     return _variance_statistic(potential, xs, vs, sgr_cen)
