@@ -243,8 +243,8 @@ if __name__ == "__main__":
     sgr_cen.interpolate(ts)
     
     np.random.seed(42)
-    sgr_snap = SgrSnapshot(num=100, no_bound=True) # randomly sample 100 particles
-    
+    sgr_snap = SgrSnapshot(num=1000, no_bound=True) # randomly sample 100 particles
+
     # Define a mapping from parameter name to index
     param_map = dict(zip(range(len(args.params)), args.params))
     param_ranges = dict(qz=(0.5,2),
