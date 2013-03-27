@@ -57,7 +57,7 @@ if __name__ == "__main__":
         M_V, dM_V = rr_lyrae_M_V(fe_h=fe_h, dfe_h=0.)
         
         # Distance from 100pc to ~50kpc
-        D = np.logspace(-1., 1.6, 50)*u.kpc
+        D = np.logspace(0., 2., 50)*u.kpc
         
         # Compute the apparent magnitude as a function of distance
         m_V = apparent_magnitude(M_V, D)
@@ -81,8 +81,8 @@ if __name__ == "__main__":
     axes[2].set_xlabel("Distance [kpc]")
     axes[2].set_ylabel(r"$\sigma_\mu$ [mas/yr]")
     
-    axes[0].set_xlim(0.1, 50.)
-    axes[1].set_xlim(0.1, 50.)
-    axes[2].set_xlim(0.1, 50.)
+    axes[0].set_xlim(1., 100.)
+    axes[1].set_xlim(1., 100.)
+    axes[2].set_xlim(1., 100.)
     
     fig.savefig("plots/figures/gaia_errors.png")
