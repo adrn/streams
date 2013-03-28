@@ -232,9 +232,9 @@ if __name__ == "__main__":
     sgr_cen = SgrCen()
 
     # Get timestep information from SGR_CEN
-    t1 = min(sgr_cen.t.value)
-    t2 = max(sgr_cen.t.value)
-    dt = sgr_cen.dt.value[0]*10
+    t1 = min(sgr_cen.t)
+    t2 = max(sgr_cen.t)
+    dt = sgr_cen.dt[0]*10
     
     # Interpolate SgrCen data onto new times
     ts = np.arange(t2, t1, -dt)*u.Myr
@@ -243,7 +243,7 @@ if __name__ == "__main__":
     np.random.seed(42)
     sgr_snap = SgrSnapshot(num=100, 
                            expr="(sqrt(x**2 + y**2 + z**2) < 20.)"
-                                " & (tub.value > 0)")
+                                " & (tub > 0)")
 
     # Define a mapping from parameter name to index
     param_map = dict(zip(range(len(args.params)), args.params))
