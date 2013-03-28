@@ -186,6 +186,23 @@ def infer_potential(**config):
 
     return
 
+def plot_sgr_snap(sgr_snap):
+    
+    fig, axes = plt.subplots(2,2,figsize=(10,10))
+    
+    axes[0,0].scatter(sgr_snap.x, sgr_snap.y, edgecolor="none", c="k", s=10)
+    axes[1,0].scatter(sgr_snap.x, sgr_snap.z, edgecolor="none", c="k", s=10)
+    axes[1,1].scatter(sgr_snap.y, sgr_snap.z, edgecolor="none", c="k", s=10)
+    
+    axes[0,0].set_ylabel("{0} [{1}]".format("Y", sgr_snap.r_unit))
+    axes[1,0].set_xlabel("{0} [{1}]".format("X", sgr_snap.r_unit))
+    axes[1,0].set_ylabel("{0} [{1}]".format("Z", sgr_snap.r_unit))
+    axes[1,1].set_xlabel("{0} [{1}]".format("Y", sgr_snap.r_unit))
+    
+    axes[0,1].set_visible(False)
+    fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
+    fig.savefig(os.path.join(args.plot_path, "particles.png"))
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
@@ -200,7 +217,9 @@ if __name__ == "__main__":
                     help="Anticipate being run with MPI.")
     parser.add_argument("--errors", action="store_true", dest="errors", default=False,
                     help="Run with observational errors!")
-
+    parser.add_argument("--seed", dest="seed", default=42, type=int,
+                    help="Seed the random number generator.")
+                    
     parser.add_argument("--walkers", dest="nwalkers", default=100, type=int,
                     help="Number of walkers")
     parser.add_argument("--steps", dest="nsamples", default=1000, type=int,
@@ -210,7 +229,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
-    parser.add_argument("--expr", dest="expr", default=[], nargs='*',
+    parser.add_argument("--expr", dest="expr", default=[], 
                     action='append', help="Selection expression for particles.")
                     
     parser.add_argument("--plot-path", dest="plot_path", default="/u/10/a/amp2217/public_html/plots",
@@ -227,10 +246,6 @@ if __name__ == "__main__":
     else:
         logger.setLevel(logging.INFO)
 
-    # --------------------------------------------------------------------
-    # This could get messy (TM)
-    # --------------------------------------------------------------------
-
     # Read in data from Kathryn's SGR_SNAP and SGR_CEN files
     sgr_cen = SgrCen()
 
@@ -243,13 +258,13 @@ if __name__ == "__main__":
     ts = np.arange(t2, t1, -dt)*u.Myr
     sgr_cen.interpolate(ts)
 
-    np.random.seed(42)
+    np.random.seed(args.seed)
     
     # default expression is to only select unbound particles
-    expr = "(tub > 0)"
+    expr = "(tub > 10.)"
     if len(args.expr) > 0:
-        expr += " &" + " & ".join(expr)
-        
+        expr += " & " + " & ".join(["({0})".format(x) for x in args.expr])
+    
     sgr_snap = SgrSnapshot(num=100, 
                            expr=expr)
 
@@ -280,4 +295,5 @@ if __name__ == "__main__":
         return -back_integrate(mw_potential, sgr_snap, sgr_cen, dt, errors=args.errors)
 
     infer_potential(**args.__dict__)
+    plot_sgr_snap(sgr_snap)
     sys.exit(0)
