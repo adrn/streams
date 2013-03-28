@@ -95,18 +95,16 @@ def infer_potential(**config):
     nsamples = config.get("nsamples", 1000)
     nburn_in = config.get("nburn_in", nsamples//10)
     param_names = config.get("params", [])
-    plot_path = config.get("plot_path", "plots")
-    data_path = config.get("data_path", "data")
-    overwrite = config.get("overwrite", False)
+    output_path = config.get("output_path", "/tmp")
     errors = config.get("errors", False)
     mpi = config.get("mpi", False)
-
-    if errors:
-        file_str = "{0}_{1}_w{2}_s{3}_errors".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
-                                   "_".join(param_names), nwalkers, nsamples)
-    else:
-        file_str = "{0}_{1}_w{2}_s{3}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
-                                   "_".join(param_names), nwalkers, nsamples)
+    
+    path = os.path.join(output_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    
+    if os.path.exists(path):
+        raise IOError("Whoa, '{0}' already exists. What did you do, go back in time?".format(path))
+    
+    os.mkdir(path)
 
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
@@ -148,7 +146,7 @@ def infer_potential(**config):
     logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
     if mpi: pool.close()
 
-    data_file = os.path.join(data_path, "{0}.pickle".format(file_str))
+    data_file = os.path.join(path, "{0}.pickle".format(file_str))
     if os.path.exists(data_file):
         os.remove(data_file)
 
@@ -181,12 +179,13 @@ def infer_potential(**config):
             trace_axes[ii].plot(np.arange(len(chain[k,:,ii])),
                                 chain[k,:,ii], color="k", drawstyle="steps", alpha=0.2)
 
-    posterior_fig.savefig(os.path.join(plot_path, "posterior_{0}.png".format(file_str)), format="png")
-    trace_fig.savefig(os.path.join(plot_path, "trace_{0}.png".format(file_str)), format="png")
+    posterior_fig.savefig(os.path.join(path, "mcmc_posterior.png"), format="png")
+    trace_fig.savefig(os.path.join(path, "mcmc_trace.png"), format="png")
 
     return
 
 def plot_sgr_snap(sgr_snap):
+    """ Plot 3 projections of the initial particle positions. """
     
     fig, axes = plt.subplots(2,2,figsize=(10,10))
     
@@ -211,8 +210,7 @@ if __name__ == "__main__":
                     help="Be chatty! (default = False)")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False,
                     help="Be quiet! (default = False)")
-    parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite", default=False,
-                    help="Nom nom nom, old files...")
+                    
     parser.add_argument("--mpi", action="store_true", dest="mpi", default=False,
                     help="Anticipate being run with MPI.")
     parser.add_argument("--errors", action="store_true", dest="errors", default=False,
@@ -232,10 +230,8 @@ if __name__ == "__main__":
     parser.add_argument("--expr", dest="expr", default=[], 
                     action='append', help="Selection expression for particles.")
                     
-    parser.add_argument("--plot-path", dest="plot_path", default="/u/10/a/amp2217/public_html/plots",
-                    help="The path to store plots.")
-    parser.add_argument("--data-path", dest="data_path", default="/hpc/astro/users/amp2217/projects/streams/data",
-                    help="The path to store data files.")
+    parser.add_argument("--output-path", dest="output_path", default="/u/10/a/amp2217/public_html/plots",
+                    help="The path to store output.")
 
     args = parser.parse_args()
 
