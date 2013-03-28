@@ -90,6 +90,27 @@ def ln_p_r_halo(r_halo):
 def ln_posterior(p):
     return ln_prior(p) + ln_likelihood(p)
 
+def plot_mcmc(param_names, acceptance_fraction, flatchain, chain):
+    """ Make MCMC plots: posterior and trace of chains. """
+    
+    ndim = chain.shape[2]
+    posterior_fig,posterior_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
+    trace_fig,trace_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
+
+    posterior_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(acceptance_fraction)))
+    trace_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(acceptance_fraction)))
+    for ii in range(ndim):
+        posterior_axes[ii].set_title(param_names[ii])
+        posterior_axes[ii].hist(flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
+        posterior_axes[ii].axvline(true_halo_params[param_names[ii]], color="r", linestyle="--", linewidth=2)
+
+        trace_axes[ii].set_title(param_names[ii])
+        for k in range(chain.shape[0]):
+            trace_axes[ii].plot(np.arange(len(chain[k,:,ii])),
+                                chain[k,:,ii], color="k", drawstyle="steps", alpha=0.2)
+    
+    return (posterior_fig, trace_fig)
+
 def infer_potential(**config):
     nwalkers = config.get("nwalkers", 100)
     nsamples = config.get("nsamples", 1000)
@@ -99,16 +120,24 @@ def infer_potential(**config):
     errors = config.get("errors", False)
     mpi = config.get("mpi", False)
     
+    if len(param_names) == 0:
+        raise ValueError("No parameters specified!")
+    
+    # Create a new path for the output
     path = os.path.join(output_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
     if os.path.exists(path):
         raise IOError("Whoa, '{0}' already exists. What did you do, go back in time?".format(path))
-    
     os.mkdir(path)
-
-    if len(param_names) == 0:
-        raise ValueError("No parameters specified!")
-
+        
+    # Create list of strings to write to run_parameters file
+    run_parameters.append("walkers: {0}".format(nwalkers))
+    run_parameters.append("burn-in: {0}".format(nburn_in))
+    run_parameters.append("samples: {0}".format(nsamples))
+    run_parameters.append("halo parameters: {0}".format(", ".join(param_names)))
+    run_parameters.append("used mpi? {0}".format(str(mpi)))
+    run_parameters.append("with simulated observational errors? {0}".format(str(errors)))
+    
     logger.info("Inferring halo parameters: {0}".format(",".join(param_names)))
     logger.info("--> Starting simulation with {0} walkers.".format(nwalkers))
     logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
@@ -144,9 +173,10 @@ def infer_potential(**config):
 
     sampler.run_mcmc(pos, nsamples)
     logger.info("Median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
+    run_parameters.append("median acceptance fraction: {0:.3f}".format(np.median(sampler.acceptance_fraction)))
     if mpi: pool.close()
 
-    data_file = os.path.join(path, "{0}.pickle".format(file_str))
+    data_file = os.path.join(path, "sampler_data.pickle")
     if os.path.exists(data_file):
         os.remove(data_file)
 
@@ -154,34 +184,28 @@ def infer_potential(**config):
     fnpickle(sampler_pickle, data_file)
     acceptance_fraction,flatchain,chain = sampler_pickle
 
-    chain = chain[(acceptance_fraction > 0.1) & (acceptance_fraction < 0.6)] # rule of thumb, bitches
+    idx = (acceptance_fraction > 0.1) & (acceptance_fraction < 0.6) # rule of thumb, bitches
+    run_parameters.append("{0} walkers ({1:.1f}%) converged".format(sum(idx), sum(idx)/nwalkers*100))
+    
+    chain = chain[idx] 
     flatchain = []
     for walker in chain:
         flatchain += list(walker)
     flatchain = np.array(flatchain)
 
+    # If chains converged, make mcmc plots
     if len(flatchain) == 0:
         logger.warning("Not making plots -- no chains converged!")
-        return
-
-    posterior_fig,posterior_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
-    trace_fig,trace_axes = plt.subplots(ndim, 1, figsize=(14,5*(ndim+1)))
-
-    posterior_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(acceptance_fraction)))
-    trace_fig.suptitle("Median acceptance fraction: {0:.3f}".format(np.median(acceptance_fraction)))
-    for ii in range(ndim):
-        posterior_axes[ii].set_title(param_names[ii])
-        posterior_axes[ii].hist(flatchain[:,ii], bins=25, color="k", histtype="step", alpha=0.75)
-        posterior_axes[ii].axvline(true_halo_params[param_names[ii]], color="r", linestyle="--", linewidth=2)
-
-        trace_axes[ii].set_title(param_names[ii])
-        for k in range(chain.shape[0]):
-            trace_axes[ii].plot(np.arange(len(chain[k,:,ii])),
-                                chain[k,:,ii], color="k", drawstyle="steps", alpha=0.2)
-
-    posterior_fig.savefig(os.path.join(path, "mcmc_posterior.png"), format="png")
-    trace_fig.savefig(os.path.join(path, "mcmc_trace.png"), format="png")
-
+    else:
+        posterior_fig, trace_fig = plot_mcmc(param_names, acceptance_fraction, flatchain, chain)
+        
+        posterior_fig.savefig(os.path.join(path, "mcmc_posterior.png"), format="png")
+        trace_fig.savefig(os.path.join(path, "mcmc_trace.png"), format="png")
+    
+    # Save the run parameters
+    with open(os.path.join(path, "run_parameters"), "w") as f:
+        f.write("\n".join(run_parameters))
+        
     return
 
 def plot_sgr_snap(sgr_snap):
@@ -200,7 +224,7 @@ def plot_sgr_snap(sgr_snap):
     
     axes[0,1].set_visible(False)
     fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
-    fig.savefig(os.path.join(args.plot_path, "particles.png"))
+    return fig
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -255,11 +279,13 @@ if __name__ == "__main__":
     sgr_cen.interpolate(ts)
 
     np.random.seed(args.seed)
+    run_parameters = []
     
     # default expression is to only select unbound particles
     expr = "(tub > 10.)"
     if len(args.expr) > 0:
         expr += " & " + " & ".join(["({0})".format(x) for x in args.expr])
+    run_parameters.append("particle selection expr: {0}".format(expr))
     
     sgr_snap = SgrSnapshot(num=100, 
                            expr=expr)
@@ -291,5 +317,6 @@ if __name__ == "__main__":
         return -back_integrate(mw_potential, sgr_snap, sgr_cen, dt, errors=args.errors)
 
     infer_potential(**args.__dict__)
-    plot_sgr_snap(sgr_snap)
+    fig = plot_sgr_snap(sgr_snap)
+    fig.savefig(os.path.join(args.output_path, "particles.png"))
     sys.exit(0)
