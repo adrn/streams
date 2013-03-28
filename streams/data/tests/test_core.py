@@ -21,17 +21,8 @@ from ..core import LM10, LINEAR, QUEST, SgrCen, SgrSnapshot
 def test_sgrcen():
     sgr_cen = SgrCen()
     
-    assert isinstance(sgr_cen.x, u.Quantity)
-    assert isinstance(sgr_cen.y, u.Quantity)
-    assert isinstance(sgr_cen.z, u.Quantity)
-    assert isinstance(sgr_cen.xyz, u.Quantity)
-    assert sgr_cen.xyz.value.shape == (3,len(sgr_cen.z))
-    
-    assert isinstance(sgr_cen.vx, u.Quantity)
-    assert isinstance(sgr_cen.vy, u.Quantity)
-    assert isinstance(sgr_cen.vz, u.Quantity)
-    assert isinstance(sgr_cen.vxyz, u.Quantity)
-    assert sgr_cen.vxyz.value.shape == (3,len(sgr_cen.vz))
+    assert sgr_cen.xyz.shape == (3,len(sgr_cen.z))
+    assert sgr_cen.vxyz.shape == (3,len(sgr_cen.vz))
 
 def test_sgrsnap():
     sgr_snap = SgrSnapshot(num=100, 
@@ -41,9 +32,14 @@ def test_sgrsnap():
     assert len(sgr_snap) == 100
     
     sgr_snap = SgrSnapshot(num=100, 
-                           expr="(sqrt(x**2 + y**2 + z**2) < 20.) & (tub.value > 0)")
+                           expr="(sqrt(x**2 + y**2 + z**2) < 20.) & (tub > 0)")
     assert np.max(np.sqrt(sgr_snap.x**2+sgr_snap.y**2+sgr_snap.z**2)) < 20.
-    assert np.all(sgr_snap.tub.value > 0)
+    assert np.all(sgr_snap.tub > 0)
+    assert len(sgr_snap) == 100
+    
+    sgr_snap = SgrSnapshot(num=100, 
+                           expr="(tub > 0)")
+    assert np.all(sgr_snap.tub > 0)
     assert len(sgr_snap) == 100
     
 def test_coordinates():
