@@ -122,13 +122,6 @@ def infer_potential(**config):
     
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
-    
-    # Create a new path for the output
-    path = os.path.join(output_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-    
-    if os.path.exists(path):
-        raise IOError("Whoa, '{0}' already exists. What did you do, go back in time?".format(path))
-    os.mkdir(path)
         
     # Create list of strings to write to run_parameters file
     run_parameters.append("walkers: {0}".format(nwalkers))
@@ -163,7 +156,14 @@ def infer_potential(**config):
     else:
         logger.info("Running WITHOUT MPI on {0} cores".format(multiprocessing.cpu_count()))
         sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=multiprocessing.cpu_count())
-
+    
+    # Create a new path for the output
+    path = os.path.join(output_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    
+    if not os.path.exists(path):
+        #raise IOError("Whoa, '{0}' already exists. What did you do, go back in time?".format(path))
+        os.mkdir(path)
+    
     if nburn_in > 0:
         pos, prob, state = sampler.run_mcmc(p0, nburn_in)
         logger.debug("Burn in complete...")
