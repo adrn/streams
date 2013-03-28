@@ -210,6 +210,9 @@ if __name__ == "__main__":
 
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
+    parser.add_argument("--expr", dest="expr", default=[], nargs='*',
+                    action='append', help="Selection expression for particles.")
+                    
     parser.add_argument("--plot-path", dest="plot_path", default="/u/10/a/amp2217/public_html/plots",
                     help="The path to store plots.")
     parser.add_argument("--data-path", dest="data_path", default="/hpc/astro/users/amp2217/projects/streams/data",
@@ -241,9 +244,14 @@ if __name__ == "__main__":
     sgr_cen.interpolate(ts)
 
     np.random.seed(42)
+    
+    # default expression is to only select unbound particles
+    expr = "(tub > 0)"
+    if len(args.expr) > 0:
+        expr += " &" + " & ".join(expr)
+        
     sgr_snap = SgrSnapshot(num=100, 
-                           expr="(sqrt(x**2 + y**2 + z**2) < 20.)"
-                                " & (tub > 0)")
+                           expr=expr)
 
     # Define a mapping from parameter name to index
     param_map = dict(zip(range(len(args.params)), args.params))
