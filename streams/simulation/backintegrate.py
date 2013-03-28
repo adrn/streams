@@ -46,13 +46,13 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
     N = xs.shape[1]
     
     # Distance to satellite center and total velocity
-    d = np.sqrt((xs[:,:,0] - sgr_cen.x.value[:,np.newaxis].repeat(N, axis=1))**2 +
-                (xs[:,:,1] - sgr_cen.y.value[:,np.newaxis].repeat(N, axis=1))**2 + 
-                (xs[:,:,2] - sgr_cen.z.value[:,np.newaxis].repeat(N, axis=1))**2) / r_tides[:,np.newaxis].repeat(N, axis=1)
+    d = np.sqrt((xs[:,:,0] - sgr_cen.x[:,np.newaxis].repeat(N, axis=1))**2 +
+                (xs[:,:,1] - sgr_cen.y[:,np.newaxis].repeat(N, axis=1))**2 + 
+                (xs[:,:,2] - sgr_cen.z[:,np.newaxis].repeat(N, axis=1))**2) / r_tides[:,np.newaxis].repeat(N, axis=1)
     
-    v = np.sqrt((vs[:,:,0] - sgr_cen.vx.value[:,np.newaxis].repeat(N, axis=1))**2 +
-                (vs[:,:,1] - sgr_cen.vy.value[:,np.newaxis].repeat(N, axis=1))**2 +
-                (vs[:,:,2] - sgr_cen.vz.value[:,np.newaxis].repeat(N, axis=1))**2) / v_escs[:,np.newaxis].repeat(N, axis=1)
+    v = np.sqrt((vs[:,:,0] - sgr_cen.vx[:,np.newaxis].repeat(N, axis=1))**2 +
+                (vs[:,:,1] - sgr_cen.vy[:,np.newaxis].repeat(N, axis=1))**2 +
+                (vs[:,:,2] - sgr_cen.vz[:,np.newaxis].repeat(N, axis=1))**2) / v_escs[:,np.newaxis].repeat(N, axis=1)
     
     idx = np.argmin(d**2 + v**2, axis=0)
     
@@ -87,5 +87,5 @@ def back_integrate(potential, sgr_snap, sgr_cen, dt, errors=False):
                      mass=1.) # M_sol
         simulation.add_particle(p)
     
-    ts, xs, vs = simulation.run(t1=max(sgr_cen.t.value), t2=min(sgr_cen.t.value)-dt, dt=-dt)
+    ts, xs, vs = simulation.run(t1=max(sgr_cen.t), t2=min(sgr_cen.t), dt=-dt)
     return _variance_statistic(potential, xs, vs, sgr_cen)
