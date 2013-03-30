@@ -164,6 +164,9 @@ def infer_potential(**config):
         #raise IOError("Whoa, '{0}' already exists. What did you do, go back in time?".format(path))
         os.mkdir(path)
     
+    fig = plot_sgr_snap(sgr_snap)
+    fig.savefig(os.path.join(path, "particles.png"))
+    
     if nburn_in > 0:
         pos, prob, state = sampler.run_mcmc(p0, nburn_in)
         logger.debug("Burn in complete...")
@@ -289,7 +292,10 @@ if __name__ == "__main__":
     
     sgr_snap = SgrSnapshot(num=100, 
                            expr=expr)
-
+    
+    if args.errors:
+        sgr_snap.add_errors()
+    
     # Define a mapping from parameter name to index
     param_map = dict(zip(range(len(args.params)), args.params))
     param_ranges = dict(qz=(0.5,2),
@@ -314,9 +320,8 @@ if __name__ == "__main__":
             halo_params[param_map[ii]] = p[ii]
 
         mw_potential = LawMajewski2010(**halo_params)
-        return -back_integrate(mw_potential, sgr_snap, sgr_cen, dt, errors=args.errors)
+        return -back_integrate(mw_potential, sgr_snap, sgr_cen, dt)
 
     infer_potential(**args.__dict__)
-    fig = plot_sgr_snap(sgr_snap)
-    fig.savefig(os.path.join(args.output_path, "particles.png"))
+    
     sys.exit(0)

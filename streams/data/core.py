@@ -20,6 +20,7 @@ from scipy import interpolate
 
 # Project
 from ..util import project_root
+from .gaia import rr_lyrae_add_observational_uncertainties
 
 __all__ = ["LM10", "LINEAR", "QUEST", "SgrCen", "SgrSnapshot"]
 
@@ -263,4 +264,17 @@ class SgrSnapshot(SgrData):
         
         # Do this again now that we've selected out the rows we want
         self._init_data()
-
+    
+    def add_errors(self):
+        """ """
+        
+        xyz,vxyz = rr_lyrae_add_observational_uncertainties(self.xyz,self.vxyz)
+        self.x = xyz[0]
+        self.y = xyz[1]
+        self.z = xyz[2]
+        
+        self.vx = vxyz[0]
+        self.vy = vxyz[1]
+        self.vz = vxyz[2]
+        
+        self._set_xyz_vxyz()

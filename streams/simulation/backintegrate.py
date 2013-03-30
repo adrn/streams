@@ -15,7 +15,6 @@ import astropy.units as u
 
 from streams.potential import *
 from streams.simulation import Particle, TestParticleSimulation
-from streams.data.gaia import parallax_error, rr_lyrae_M_V, rr_lyrae_add_observational_uncertainties
 
 def _variance_statistic(potential, xs, vs, sgr_cen):
     """ Compute the variance scalar that we will minimize.
@@ -66,7 +65,7 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
     
     return np.var(min_ds) + np.var(min_vs)
 
-def back_integrate(potential, sgr_snap, sgr_cen, dt, errors=False):
+def back_integrate(potential, sgr_snap, sgr_cen, dt):
     """ Given the particle snapshot information and a potential, integrate the particles
         backwards and return the variance scalar.
     """
@@ -77,9 +76,6 @@ def back_integrate(potential, sgr_snap, sgr_cen, dt, errors=False):
     # Distances in kpc, velocities in kpc/Myr
     xyz = sgr_snap.xyz
     vxyz = sgr_snap.vxyz
-    
-    if errors:
-        xyz,vxyz = rr_lyrae_add_observational_uncertainties(xyz,vxyz)
     
     for ii in range(len(sgr_snap)):
         p = Particle(position=(xyz[0,ii].to(u.kpc).value, xyz[1,ii].to(u.kpc).value, xyz[2,ii].to(u.kpc).value), # kpc
