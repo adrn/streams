@@ -55,10 +55,23 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
     
     idx = np.argmin(d**2 + v**2, axis=0)
     
-    for ii in idx:
+    min_xs = np.zeros((N,3))
+    for ii,jj in enumerate(idx):
         # xs[time, particles, dimension]
-        xs[ii]
-        
+        min_xs[ii] = xs[jj,ii]
+    
+    min_vs = np.zeros((N,3))
+    for ii,jj in enumerate(idx):
+        # vs[time, particles, dimension]
+        min_vs[ii] = vs[jj,ii]
+    
+    min_ps = np.hstack((min_xs, min_vs))
+    # min_ps -> (N x 6) matrix
+    
+    cov_matrix = np.cov(min_ps.T)
+    # cov_matrix -> (6 x 6) covariance matrix for particles
+    
+    return np.linalg.det(cov_matrix)
     
     """ This is when I was doing the sum of the distance + velocity 
     min_ds = []

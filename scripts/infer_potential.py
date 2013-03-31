@@ -119,6 +119,7 @@ def infer_potential(**config):
     output_path = config.get("output_path", "/tmp")
     errors = config.get("errors", False)
     mpi = config.get("mpi", False)
+    nthreads = config.get("nthreads", multiprocessing.cpu_count())
     
     if len(param_names) == 0:
         raise ValueError("No parameters specified!")
@@ -154,8 +155,8 @@ def infer_potential(**config):
 
         sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, pool=pool)
     else:
-        logger.info("Running WITHOUT MPI on {0} cores".format(multiprocessing.cpu_count()))
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=multiprocessing.cpu_count())
+        logger.info("Running WITHOUT MPI on {0} cores".format(nthreads))
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=nthreads)
     
     # Create a new path for the output
     path = os.path.join(output_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
@@ -240,6 +241,8 @@ if __name__ == "__main__":
                     
     parser.add_argument("--mpi", action="store_true", dest="mpi", default=False,
                     help="Anticipate being run with MPI.")
+    parser.add_argument("--threads", dest="nthreads", type=int,
+                    help="If not using MPI, how many threads to spawn.")
     parser.add_argument("--errors", action="store_true", dest="errors", default=False,
                     help="Run with observational errors!")
     parser.add_argument("--seed", dest="seed", default=42, type=int,
