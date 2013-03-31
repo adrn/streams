@@ -55,6 +55,12 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
     
     idx = np.argmin(d**2 + v**2, axis=0)
     
+    for ii in idx:
+        # xs[time, particles, dimension]
+        xs[ii]
+        
+    
+    """ This is when I was doing the sum of the distance + velocity 
     min_ds = []
     for ii,jj in enumerate(idx):
         min_ds.append(d[jj,ii])
@@ -64,6 +70,8 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
         min_vs.append(v[jj,ii])
     
     return np.var(min_ds) + np.var(min_vs)
+    
+    """
 
 def back_integrate(potential, sgr_snap, sgr_cen, dt):
     """ Given the particle snapshot information and a potential, integrate the particles
