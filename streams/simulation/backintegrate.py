@@ -91,8 +91,9 @@ def generalized_variance(potential, xs, vs, sgr_cen):
     
     cov_matrix = np.cov(min_ps.T)
     # cov_matrix -> (6 x 6) covariance matrix for particles
+    w,v = np.linalg.eig(cov_matrix)
     
-    return np.linalg.det(cov_matrix)
+    return np.sum(w)
 
 def back_integrate(potential, sgr_snap, sgr_cen, dt):
     """ Given the particle snapshot information and a potential, integrate the particles
