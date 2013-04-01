@@ -21,6 +21,7 @@ from scipy import interpolate
 # Project
 from ..util import project_root
 from .gaia import rr_lyrae_add_observational_uncertainties
+from ..plot.data import scatter_plot_matrix
 
 __all__ = ["LM10", "LINEAR", "QUEST", "SgrCen", "SgrSnapshot"]
 
@@ -278,3 +279,25 @@ class SgrSnapshot(SgrData):
         self.vz = vxyz[2]
         
         self._set_xyz_vxyz()
+    
+    def plot_positions(self, **kwargs):
+        """ Make a scatter-plot of 3 projections of the positions of the 
+            particles in Galactocentric XYZ coordinates.
+        """   
+        
+        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.r_unit)
+                    for nm in ["X", "Y", "Z"]]
+        
+        fig,axes = scatter_plot_matrix(self.xyz, labels=labels, **kwargs)
+        return fig, axes
+        
+    def plot_velocities(self, **kwargs):
+        """ Make a scatter-plot of 3 projections of the velocities of the 
+            particles. 
+        """
+        
+        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.r_unit)
+                    for nm in ["V^x", "V^y", "V^z"]]
+        
+        fig,axes = scatter_plot_matrix(self.vxyz, labels=labels, **kwargs)
+        return fig, axes

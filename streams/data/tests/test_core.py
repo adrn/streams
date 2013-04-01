@@ -17,12 +17,12 @@ import numpy as np
 import pytest
 
 from ..core import LM10, LINEAR, QUEST, SgrCen, SgrSnapshot
-    
+
 def test_sgrcen():
     sgr_cen = SgrCen()
     
-    assert sgr_cen.xyz.shape == (3,len(sgr_cen.z))
-    assert sgr_cen.vxyz.shape == (3,len(sgr_cen.vz))
+    assert sgr_cen.xyz.value.shape == (3,len(sgr_cen.z))
+    assert sgr_cen.vxyz.value.shape == (3,len(sgr_cen.vz))
 
 def test_sgrsnap():
     sgr_snap = SgrSnapshot(num=100, 
@@ -41,6 +41,23 @@ def test_sgrsnap():
                            expr="(tub > 0)")
     assert np.all(sgr_snap.tub > 0)
     assert len(sgr_snap) == 100
+
+def test_sgrsnap_uncertainties():   
+    sgr_snap = SgrSnapshot(num=100, 
+                           expr="(tub > 0)")
+    
+    
+    fig,axes = sgr_snap.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
+    sgr_snap.add_errors()
+    sgr_snap.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
+    
+    fig.savefig("plots/tests/sgrsnap_uncertainties_position.png")
+    
+    fig,axes = sgr_snap.plot_velocities(subplots_kwargs=dict(figsize=(16,16)))
+    sgr_snap.add_errors()
+    sgr_snap.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
+    
+    fig.savefig("plots/tests/sgrsnap_uncertainties_velocity.png")
     
 def test_coordinates():
     lm10 = LM10()
