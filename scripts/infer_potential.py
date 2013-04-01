@@ -41,7 +41,7 @@ from emcee.utils import MPIPool
 from streams.data import SgrSnapshot, SgrCen
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import halo_params as true_halo_params
-from streams.simulation import back_integrate
+from streams.simulation import back_integrate, generalized_variance
 
 def ln_p_qz(qz):
     """ Prior on vertical (z) axis ratio """
@@ -323,7 +323,8 @@ if __name__ == "__main__":
             halo_params[param_map[ii]] = p[ii]
 
         mw_potential = LawMajewski2010(**halo_params)
-        return -back_integrate(mw_potential, sgr_snap, sgr_cen, dt)
+        ts,xs,vs = back_integrate(mw_potential, sgr_snap, sgr_cen, dt)
+        return -generalized_variance(mw_potential, xs, vs, sgr_cen)
 
     infer_potential(**args.__dict__)
     
