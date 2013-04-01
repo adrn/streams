@@ -23,10 +23,11 @@ from streams.potential import *
 from streams.potential.lm10 import halo_params as true_halo_params
 from streams.potential.lm10 import param_ranges
 
-Nsteps = 10
+Nsteps = 20
 
-@pytest.mark.parametrize(("param_name",), 
-                         ["q1", "q2", "qz", "v_halo", "phi", "r_halo"])
+@pytest.mark.parametrize(("param_name", ), 
+                         [("q1",), ("q2",), ("qz",), ("v_halo",), \
+                            ("phi",), ("r_halo",)])
 def test_parameter(param_name):
     np.random.seed(42)
     sgr_cen = SgrCen()
@@ -46,33 +47,27 @@ def test_parameter(param_name):
     vals = np.linspace(param_ranges[param_name][0], 
                        param_ranges[param_name][1],
                        Nsteps)
+    var_sums = []
     for val in vals:
         # Define potential
-        mw_potential = LawMajewski2010(**halo_params)
+        halo_params[param_name] = val
+        potential = LawMajewski2010(**halo_params)
+        ts, xs, vs = back_integrate(potential, sgr_snap, sgr_cen, dt)
+        min_ps = minimum_distance_matrix(potential, xs, vs, sgr_cen)
 
-        # Initialize particle simulation with full potential
-        simulation = TestParticleSimulation(potential=potential)
+        #var_sums.append(np.sum(np.var(min_ps, axis=0)))
+        cov_matrix = np.cov(min_ps.T)
+        w,v = np.linalg.eig(cov_matrix)
+        print(w)
+        var_sums.append(np.sum(w))
     
-    # Distances in kpc, velocities in kpc/Myr
-    xyz = sgr_snap.xyz
-    vxyz = sgr_snap.vxyz
-    
-    for ii in range(len(sgr_snap)):
-        p = Particle(position=(xyz[0,ii].to(u.kpc).value, xyz[1,ii].to(u.kpc).value, xyz[2,ii].to(u.kpc).value), # kpc
-                     velocity=(vxyz[0,ii].to(u.kpc/u.Myr).value, vxyz[1,ii].to(u.kpc/u.Myr).value, vxyz[2,ii].to(u.kpc/u.Myr).value), # kpc/Myr
-                     mass=1.) # M_sol
-        simulation.add_particle(p)
-    
-    ts, xs, vs = simulation.run(t1=max(sgr_cen.t), t2=min(sgr_cen.t), dt=-dt)
-    min_ps = minimum_distance_matrix(potential, xs, vs, sgr_cen)
-    
-    return min_ps
+    plt.figure(figsize=(8,8))
+    plt.plot(vals, var_sums, color="k", marker="o", linestyle="none")
+    plt.xlabel(param_name)
+    plt.ylabel("Sum of variances")
+    plt.savefig("plots/tests/test_backintegrate_{0}.png".format(param_name))
 
-min_ps_true = run_sim(mw_potential)
-min_ps_wrong = run_sim(wrong_potential)
-
-print(np.sum(min_ps_wrong**2, axis=1).shape)
-
+"""
 n,bins,batches = plt.hist(np.sum(min_ps_wrong**2, axis=1), bins=25, color="r", histtype="step", alpha=1, linewidth=2)
 n,bins,batches = plt.hist(np.sum(min_ps_true**2, axis=1), bins=bins, color="k", histtype="step", alpha=0.75, linewidth=2)
 plt.ylim(0,300)
@@ -101,3 +96,4 @@ def vary_one_parameter(sgr_cen, sgr_snap, dt):
         plt.xlabel(param)
         plt.ylabel("Median of minimum energy distance distribution")
         plt.savefig("plots/grid_search/{0}.png".format(param))     
+"""

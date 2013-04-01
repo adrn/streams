@@ -59,12 +59,12 @@ def minimum_distance_matrix(potential, xs, vs, sgr_cen):
     min_xs = np.zeros((N,3))
     for ii,jj in enumerate(idx):
         # xs[time, particles, dimension]
-        min_xs[ii] = xs[jj,ii]
+        min_xs[ii] = (xs[jj,ii] - sgr_cen.xyz[:,jj]) / r_tides[jj]
     
     min_vs = np.zeros((N,3))
     for ii,jj in enumerate(idx):
         # vs[time, particles, dimension]
-        min_vs[ii] = vs[jj,ii]
+        min_vs[ii] = (vs[jj,ii] - sgr_cen.vxyz[:,jj]) / v_escs[jj]
     
     min_ps = np.hstack((min_xs, min_vs))
     # min_ps -> (N x 6) matrix
@@ -113,5 +113,4 @@ def back_integrate(potential, sgr_snap, sgr_cen, dt):
         simulation.add_particle(p)
     
     ts, xs, vs = simulation.run(t1=max(sgr_cen.t), t2=min(sgr_cen.t), dt=-dt)
-    #return _variance_statistic(potential, xs, vs, sgr_cen)
     return ts, xs, vs
