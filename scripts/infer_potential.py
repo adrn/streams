@@ -262,6 +262,8 @@ if __name__ == "__main__":
                     
     parser.add_argument("--output-path", dest="output_path", default="/u/10/a/amp2217/public_html/plots",
                     help="The path to store output.")
+    parser.add_argument("--desc", dest="description", default="None",
+                    help="An optional description to add to the run_parameters file.")
 
     args = parser.parse_args()
 
@@ -286,6 +288,7 @@ if __name__ == "__main__":
 
     np.random.seed(args.seed)
     run_parameters = []
+    run_parameters.append("Description: {0}".format(args.description))
     
     # default expression is to only select unbound particles
     expr = "(tub > 10.)"
