@@ -171,7 +171,7 @@ def rr_lyrae_add_observational_uncertainties(x, v):
     # Transform to heliocentric coordinates
     rsun = 8.*u.kpc
     
-    x.value[0] += rsun.to(x.unit).value
+    x.value[0] += rsun.to(x.unit).value 
     
     d = np.sqrt(x[0]**2 + x[1]**2 + x[2]**2)*x.unit
     V = apparent_magnitude(M_V, d)
