@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" Plotting utilities for data classes. """
+""" Create a scatter-plot matrix using Matplotlib. """
 
 from __future__ import division, print_function
 

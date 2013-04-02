@@ -98,33 +98,76 @@ def test_covariance():
     
     fig.savefig("plots/tests/6_by_6.png")
 
-"""
-n,bins,batches = plt.hist(np.sum(min_ps_wrong**2, axis=1), bins=25, color="r", histtype="step", alpha=1, linewidth=2)
-n,bins,batches = plt.hist(np.sum(min_ps_true**2, axis=1), bins=bins, color="k", histtype="step", alpha=0.75, linewidth=2)
-plt.ylim(0,300)
-plt.savefig("plots/test.png")
+def test_single_column_distributions():
+    # Define potential
+    potential = LawMajewski2010(**true_halo_params)
+    ts, xs, vs = back_integrate(potential, sgr_snap, sgr_cen, dt)
+    min_ps = minimum_distance_matrix(potential, xs, vs, sgr_cen)
+    
+    true_halo_params["qz"] = true_halo_params["qz"]*1.1
+    potential = LawMajewski2010(**true_halo_params)
+    ts, xs, vs = back_integrate(potential, sgr_snap, sgr_cen, dt)
+    wrong_min_ps = minimum_distance_matrix(potential, xs, vs, sgr_cen)
+    
+    for ii in range(6):
+        fig, ax = plt.subplots(1,1,figsize=(8,8))
+        n,bins,patches = ax.hist(wrong_min_ps[:,ii], bins=25, color="r", \
+                                    histtype="step", alpha=0.75, linewidth=2)
+        n,bins,patches = ax.hist(min_ps[:,ii], bins=bins, color="k", \
+                                    histtype="step", alpha=0.75, linewidth=2)
+    
+        fig.savefig("plots/tests/single_column_distribution_{0}.png".format(ii))
 
-def vary_one_parameter(sgr_cen, sgr_snap, dt):
-
-    stats_for_param = dict()
-    for param in ["qz", "q1", "q2", "v_halo", "phi", "r_halo"]:
-        print(param)
-        gen_variances = []
-        vals = np.linspace(param_ranges[param][0], param_ranges[param][1], 20)
-        for val in vals:
-            halo_params = true_halo_params.copy()
-            halo_params[param] = val
-            potential = LawMajewski2010(**halo_params)
+@pytest.mark.parametrize(("param_name", ), 
+                         [("q1",), ("q2",), ("qz",), ("v_halo",), \
+                            ("phi",), ("r_halo",)])
+def test_covariance_change(param_name):
+    print(param_name)
+    Nsteps = 9
+    halo_params = true_halo_params.copy()
+    
+    vals = np.linspace(param_ranges[param_name][0], 
+                       param_ranges[param_name][1],
+                       Nsteps)
+    
+    # First run with the True parameter value, and then plot the *difference*
+    #   from the true covariance matrix
+    potential = LawMajewski2010(**halo_params)
+    ts, xs, vs = back_integrate(potential, sgr_snap, sgr_cen, dt)
+    min_ps = minimum_distance_matrix(potential, xs, vs, sgr_cen)
+    true_cov_matrix = np.cov(min_ps.T)
+    
+    fig,axes = plt.subplots(int(np.sqrt(Nsteps)),int(np.sqrt(Nsteps)),figsize=(8,8), sharex=True, sharey=True)
+    flat_axes = axes.flat
+    cov_matrices = []
+    for ii,val in enumerate(vals):
+        print("\t {0}".format(val))
+        
+        # Define potential
+        halo_params[param_name] = val
+        potential = LawMajewski2010(**halo_params)
+        ts, xs, vs = back_integrate(potential, sgr_snap, sgr_cen, dt)
+        min_ps = minimum_distance_matrix(potential, xs, vs, sgr_cen)
+        cov_matrix = np.cov(min_ps.T)
+        cov_matrices.append(cov_matrix)
+    
+    vmin = min([cov_matrix.min() for cov_matrix in cov_matrices])
+    vmax = max([cov_matrix.max() for cov_matrix in cov_matrices])
+    
+    for ii,val in enumerate(vals):
+        flat_axes[ii].imshow(cov_matrices[ii], interpolation="nearest", \
+                         cmap=cm.Greys, vmin=vmin, \
+                         vmax=vmax)
+        flat_axes[ii].text(3,1,"{0:.2f}".format(val),fontsize=18, color='red')
+    
+    for ii in range(int(np.sqrt(Nsteps))):
+        for jj in range(int(np.sqrt(Nsteps))):
+            if jj == 0:
+                axes[ii,jj].set_yticklabels(["", "x","y","z","vx","vy","vz"])
             
-            var = back_integrate(potential, sgr_snap, sgr_cen, dt=dt)
-            gen_variances.append(var)
-        
-        stats_for_param[param] = gen_variances
-        
-        plt.figure(figsize=(12,8))    
-        plt.plot(vals, np.array(stats_for_param[param]), color="k", marker="o", linestyle="none")
-        plt.axvline(true_halo_params[param])
-        plt.xlabel(param)
-        plt.ylabel("Median of minimum energy distance distribution")
-        plt.savefig("plots/grid_search/{0}.png".format(param))     
-"""
+            if ii == int(np.sqrt(Nsteps))-1:
+                axes[ii,jj].set_xticklabels(["", "x","y","z","vx","vy","vz"])
+    
+    fig.suptitle("{0}, true value: {1:.3f}".format(param_name, true_halo_params[param_name]))
+    fig.subplots_adjust(hspace=0.0, wspace=0.0, left=0.08, bottom=0.08, top=0.9, right=0.9 )
+    fig.savefig("plots/tests/cov_matrix_vary{0}.png".format(param_name))
