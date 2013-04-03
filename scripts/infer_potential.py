@@ -39,8 +39,6 @@ from emcee.utils import MPIPool
 
 # Project
 from streams.data import SgrSnapshot, SgrCen
-from streams.potential import LawMajewski2010
-from streams.potential.lm10 import halo_params as true_halo_params
 from streams.potential.lm10 import param_ranges
 from streams.simulation import back_integrate, generalized_variance, make_prior
 
@@ -253,20 +251,7 @@ if __name__ == "__main__":
     if args.errors:
         sgr_snap.add_errors()
     
-    ln_prior = make_prior(args.params)
-
-    def ln_likelihood(p):
-        halo_params = true_halo_params.copy()
-        for ii in range(len(p)):
-            halo_params[param_map[ii]] = p[ii]
-
-        mw_potential = LawMajewski2010(**halo_params)
-        ts,xs,vs = back_integrate(mw_potential, sgr_snap, sgr_cen, dt)
-        return -generalized_variance(mw_potential, xs, vs, sgr_cen)
-    
-    def ln_posterior(p):
-        return ln_prior(p) + ln_likelihood(p)
-
+    ln_posterior = make_posterior(args.params, sgr_snap, sgr_cen, dt)
     infer_potential(**args.__dict__)
     
     sys.exit(0)
