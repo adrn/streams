@@ -98,7 +98,7 @@ def simulation_setup():
     sgr_snap = SgrSnapshot(num=args.nparticles, 
                            expr=expr)
     
-    if args.errors:
+    if args.with_errors:
         sgr_snap.add_errors()
     
     config_dict["sgr_snap"] = sgr_snap
