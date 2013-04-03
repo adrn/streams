@@ -206,6 +206,8 @@ if __name__ == "__main__":
                     help="Number of steps to take")
     parser.add_argument("--burn-in", dest="nburn_in", type=int, default=100,
                     help="Number of steps to burn in")
+    parser.add_argument("--particles", dest="nparticles", default=100, type=int,
+                    help="Number of particles")
 
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
@@ -214,6 +216,8 @@ if __name__ == "__main__":
                     
     parser.add_argument("--output-path", dest="output_path", default="/u/10/a/amp2217/public_html/plots",
                     help="The path to store output.")
+    parser.add_argument("--desc", dest="description", default="None",
+                    help="An optional description to add to the run_parameters file.")
 
     args = parser.parse_args()
 
@@ -238,14 +242,16 @@ if __name__ == "__main__":
 
     np.random.seed(args.seed)
     run_parameters = []
+    run_parameters.append("Description: {0}".format(args.description))
     
     # default expression is to only select unbound particles
     expr = "(tub > 10.)"
     if len(args.expr) > 0:
         expr += " & " + " & ".join(["({0})".format(x) for x in args.expr])
     run_parameters.append("particle selection expr: {0}".format(expr))
+    run_parameters.append("particles: {0}".format(args.nparticles))
     
-    sgr_snap = SgrSnapshot(num=100, 
+    sgr_snap = SgrSnapshot(num=args.nparticles, 
                            expr=expr)
     
     if args.errors:
