@@ -18,7 +18,7 @@ from ..potential.lm10 import param_to_latex
 from ..potential.lm10 import halo_params as true_halo_params
 
 # TODO: make this more general...
-def emcee_plot(sampler, params, acceptance_fraction_bounds=(None,None), converged_idx):
+def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,None)):
     """ Plot posterior probability distributions and chain traces from the 
         chains associated with the given sampler. 
         

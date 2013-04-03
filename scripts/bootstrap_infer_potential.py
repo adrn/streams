@@ -15,6 +15,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import copy
 import datetime
 import multiprocessing
 
@@ -33,16 +34,19 @@ import emcee
 from emcee.utils import MPIPool
 
 # Project
-from streams.potential.lm10 import param_ranges
+from streams.potential.lm10 import param_ranges, param_to_latex
 from streams.simulation import make_posterior
 from streams.simulation.setup import simulation_setup
+from streams.plot.data import scatter_plot_matrix
+
+tf_yn = dict(True="yes", False="no")
 
 def max_likelihood_parameters(sampler):
     """ """
     ii = np.argmax(sampler.flatlnprobability)
     return flatchain[ii]
 
-def bootstrap_sgr_snap(num):
+def bootstrap_sgr_snap(sgr_snap, num):
     """ Bootstrap (subsample) with replacement from sgr_snap """
     idx = np.random.randint(0, len(sgr_snap), num)
     
@@ -60,43 +64,58 @@ def bootstrap_sgr_snap(num):
 def test_bootstrap_sgr_snap():
     from streams.data import SgrSnapshot
     
-    sgr_snap = SgrSnapshot(num=100, 
+    np.random.seed(42)
+    sgr_snap = SgrSnapshot(num=100,
                            expr="tub > 0")
                            
     fig,axes = sgr_snap.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
     
-    sgr_snap_bootstrap = bootstrap_sgr_snap(10)
-    sgr_snap_bootstrap.plot_positions(axes=axes, scatter_kwargs={"c":"r"}, alpha=0.5)
+    np.random.seed(401)
+    sgr_snap_bootstrap = bootstrap_sgr_snap(sgr_snap, 25)
+    sgr_snap_bootstrap.plot_positions(axes=axes, scatter_kwargs={"c":"r", "alpha":0.5, "s":40})
     
     fig.savefig("plots/tests/test_bootstrap.png")
 
+def main():
+    config_kwargs = simulation_setup()
+    
+    # 100 different bootstrap resamples
+    B = 100
+    best_parameters = []
+    for b in range(B):
+        sgr_snap = bootstrap_sgr_snap(config_kwargs["sgr_snap"], int(config_kwargs["nparticles"]/10))
+        
+        ln_posterior = make_posterior(config_kwargs["params"], 
+                                      sgr_snap, 
+                                      config_kwargs["sgr_cen"], 
+                                      config_kwargs["dt"])
+        
+        sampler = infer_potential(ln_posterior, **config_kwargs)
+        best_parameters.append(max_likelihood_parameters(sampler))
+    
+    best_parameters = np.array(best_parameters)
+    
+    # Create a new path for the output
+    path = os.path.join(output_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    
+    if not os.path.exists(path):
+        os.mkdir(path)
+    
+    fig, axes = scatter_plot_matrix(best_parameters, 
+                        labels=[param_to_latex(param) for param in config_kwargs["params"]])
+                        
+    fig.savefig(os.path.join(path, "bootstrap.png"))
+    
+    
 def infer_potential(ln_posterior, nwalkers=100, nsamples=100, nburn_in=100, 
                     params=[], output_path="/tmp", with_errors=True, mpi=False, 
                     nthreads=multiprocessing.cpu_count(), logger=None, 
-                    description="", expr="", nparticles=100, sgr_snap=None,
-                    sgr_cen=None, **kwargs):
+                    description="", expr="", **kwargs):
     
     """ Given a log posterior function, infer the parameters for the halo model. """
     
     if len(params) == 0:
         raise ValueError("No parameters specified!")
-    
-    if sgr_cen == None or sgr_snap == None:
-        raise ValueError("You must supply sgr_snap and sgr_cen keywords!")
-    
-    tf_yn = dict(True="yes", False="no")
-    # Create list of strings to write to run_parameters file
-    run_parameters = []
-    run_parameters.append("description: {0}".format(description))
-    run_parameters.append("particle selection expr: {0}".format(expr))
-    run_parameters.append("particles: {0}".format(nparticles))
-    run_parameters.append("walkers: {0}".format(nwalkers))
-    run_parameters.append("burn-in: {0}".format(nburn_in))
-    run_parameters.append("samples: {0}".format(nsamples))
-    run_parameters.append("halo parameters: {0}".format(", ".join(params)))
-    run_parameters.append("use mpi? {0}".format(tf_yn[str(mpi)]))
-    run_parameters.append("with simulated observational errors? {0}".\
-                            format(tf_yn[str(with_errors)]))
     
     # Create the starting points for all walkers
     p0 = []
@@ -119,16 +138,6 @@ def infer_potential(ln_posterior, nwalkers=100, nsamples=100, nburn_in=100,
     else:
         sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=nthreads)
     
-    # Create a new path for the output
-    path = os.path.join(output_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-    
-    if not os.path.exists(path):
-        os.mkdir(path)
-    
-    # Plot the initial positions of the particles in galactic XYZ coordinates
-    fig,axes = sgr_snap.plot_positions()
-    fig.savefig(os.path.join(path, "particles.png"))
-    
     # If a burn-in period is requested, run the sampler for nburn_in steps then
     #   reset the walkers and use the end positions as new initial conditions
     if nburn_in > 0:
@@ -144,43 +153,10 @@ def infer_potential(ln_posterior, nwalkers=100, nsamples=100, nburn_in=100,
     # if we're running with MPI, we have to close the processor pool, otherwise
     #   the script will never finish running until the end of timmmmeeeee (echo)
     if mpi: pool.close()
-
-    data_file = os.path.join(path, "sampler_data.pickle")
-    if os.path.exists(data_file):
-        os.remove(data_file)
     
-    sampler.lnprobfn = None
-    try:
-        sampler.pickle(data_file)
-    except:
-        run_parameters.append("*** Unable to pickle sampler file! ***")
-
-    idx = (sampler.acceptance_fraction > 0.1) & \
-            (sampler.acceptance_fraction < 0.6) # rule of thumb, bitches
-    run_parameters.append("{0} walkers ({1:.1f}%) converged"\
-                            .format(sum(idx), sum(idx)/nwalkers*100))
-
-    # If chains converged, make mcmc plots
-    if len(flatchain) == 0:
-        logger.warning("Not making plots -- no chains converged!")
-    else:
-        fig = emcee_plot(sampler, params=params, converged_idx=100, 
-                         acceptance_fraction_bounds=(0.1, 0.6))
-        fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
-    
-    # Save the run parameters
-    with open(os.path.join(path, "run_parameters"), "w") as f:
-        f.write("\n".join(run_parameters))
-        
-    return
+    return sampler
 
 if __name__ == "__main__":
-    config_kwargs = simulation_setup()
-    
-    ln_posterior = make_posterior(config_kwargs["params"], 
-                                  config_kwargs["sgr_snap"], 
-                                  config_kwargs["sgr_cen"], 
-                                  config_kwargs["dt"])
-    infer_potential(ln_posterior, **config_kwargs)
+    main()
     
     sys.exit(0)

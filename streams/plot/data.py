@@ -44,10 +44,9 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
     
     try:
         M,N = data.shape
-        if M > N: raise ValueError()
     except ValueError: # too many values to unpack
         raise ValueError("Invalid data shape {0}. You must pass in an array of "
-                         "shape (M, N) where N >> M.".format(data.shape))
+                         "shape (M, N) where N should be >> M.".format(data.shape))
     
     if labels == None:
         labels = [None]*M
