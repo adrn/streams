@@ -41,54 +41,8 @@ from emcee.utils import MPIPool
 from streams.data import SgrSnapshot, SgrCen
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import halo_params as true_halo_params
-from streams.simulation import back_integrate, generalized_variance
-
-def ln_p_qz(qz):
-    """ Prior on vertical (z) axis ratio """
-    if qz <= 1 or qz >= 2:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_q1(q1):
-    """ Prior on axis ratio """
-    if q1 <= 1 or q1 >= 2:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_q2(q2):
-    """ Prior on axis ratio """
-    if q2 <= 0.5 or q2 >= 2:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_v_halo(v):
-    """ Prior on mass of the halo (v_halo). The range imposed is roughly a
-        halo mass between 10^10 and 10^12 M_sun at 200 kpc
-    """
-    if v <= 0.01 or v >= 0.15:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_phi(phi):
-    """ Prior on orientation angle between DM halo and disk """
-    if phi < 1. or phi > 2.5:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_r_halo(r_halo):
-    """ Prior on halo concentration parameter """
-    if r_halo < 5. or r_halo > 20:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_posterior(p):
-    return ln_prior(p) + ln_likelihood(p)
+from streams.potential.lm10 import param_ranges
+from streams.simulation import back_integrate, generalized_variance, make_prior
 
 def plot_mcmc(param_names, acceptance_fraction, flatchain, chain):
     """ Make MCMC plots: posterior and trace of chains. """
@@ -299,23 +253,7 @@ if __name__ == "__main__":
     if args.errors:
         sgr_snap.add_errors()
     
-    # Define a mapping from parameter name to index
-    param_map = dict(zip(range(len(args.params)), args.params))
-    param_ranges = dict(qz=(0.5,2),
-                        q1=(0.5,2),
-                        q2=(0.5,2),
-                        v_halo=((100*u.km/u.s).to(u.kpc/u.Myr).value, (200*u.km/u.s).to(u.kpc/u.Myr).value),
-                        phi=(1, 2.5),
-                        r_halo=(5,20))
-
-    # Construct the prior based on the requested parameters
-    prior_map = dict(qz=ln_p_qz, q1=ln_p_q1, q2=ln_p_q2, v_halo=ln_p_v_halo, phi=ln_p_phi, r_halo=ln_p_r_halo)
-
-    def ln_prior(p):
-        sum = 0
-        for ii in range(len(p)):
-            sum += prior_map[param_map[ii]](p[ii])
-        return sum
+    ln_prior = make_prior(args.params)
 
     def ln_likelihood(p):
         halo_params = true_halo_params.copy()
@@ -325,6 +263,9 @@ if __name__ == "__main__":
         mw_potential = LawMajewski2010(**halo_params)
         ts,xs,vs = back_integrate(mw_potential, sgr_snap, sgr_cen, dt)
         return -generalized_variance(mw_potential, xs, vs, sgr_cen)
+    
+    def ln_posterior(p):
+        return ln_prior(p) + ln_likelihood(p)
 
     infer_potential(**args.__dict__)
     
