@@ -14,11 +14,12 @@ import os, sys
 # Third-party
 import numpy as np
 
-from streams.potential import LawMajewski2010
-from streams.potential.lm10 import halo_params as true_halo_params
-from streams.potential.lm10 import param_ranges
+from . import back_integrate, generalized_variance
+from ..potential import LawMajewski2010
+from ..potential.lm10 import halo_params as true_halo_params
+from ..potential.lm10 import param_ranges
 
-__all__ = ["make_prior"]
+__all__ = ["make_posterior"]
 
 def ln_p_qz(qz):
     """ Prior on vertical (z) axis ratio """

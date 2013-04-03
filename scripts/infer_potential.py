@@ -13,15 +13,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import datetime
-import logging
 import multiprocessing
-
-# Create logger
-logger = logging.getLogger(__name__)
-ch = logging.StreamHandler()
-formatter = logging.Formatter("%(name)s / %(levelname)s / %(message)s")
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 
 # Third-party
 import numpy as np
@@ -38,9 +30,9 @@ import emcee
 from emcee.utils import MPIPool
 
 # Project
-from streams.data import SgrSnapshot, SgrCen
 from streams.potential.lm10 import param_ranges
-from streams.simulation import back_integrate, generalized_variance, make_prior
+from streams.simulation import make_posterior
+from streams.simulation.setup import simulation_setup
 
 def plot_mcmc(param_names, acceptance_fraction, flatchain, chain):
     """ Make MCMC plots: posterior and trace of chains. """
@@ -63,40 +55,39 @@ def plot_mcmc(param_names, acceptance_fraction, flatchain, chain):
     
     return (posterior_fig, trace_fig)
 
-def infer_potential(**config):
-    nwalkers = config.get("nwalkers", 100)
-    nsamples = config.get("nsamples", 1000)
-    nburn_in = config.get("nburn_in", nsamples//10)
-    param_names = config.get("params", [])
-    output_path = config.get("output_path", "/tmp")
-    errors = config.get("errors", False)
-    mpi = config.get("mpi", False)
-    nthreads = config.get("nthreads", multiprocessing.cpu_count())
+def infer_potential(ln_posterior, nwalkers=100, nsamples=100, nburn_in=100, 
+                    params=[], output_path="/tmp", with_errors=True, mpi=False, 
+                    nthreads=multiprocessing.cpu_count(), logger=None, 
+                    description="", expr="", nparticles=100):
     
-    if len(param_names) == 0:
+    """ Given a log posterior function, infer the parameters for the halo model. """
+    
+    if len(params) == 0:
         raise ValueError("No parameters specified!")
-        
+    
+    tf_yn = dict(True="yes", False="no")
     # Create list of strings to write to run_parameters file
+    run_parameters = []
+    run_parameters.append("description: {0}".format(description))
+    run_parameters.append("particle selection expr: {0}".format(expr))
+    run_parameters.append("particles: {0}".format(nparticles))
     run_parameters.append("walkers: {0}".format(nwalkers))
     run_parameters.append("burn-in: {0}".format(nburn_in))
     run_parameters.append("samples: {0}".format(nsamples))
-    run_parameters.append("halo parameters: {0}".format(", ".join(param_names)))
-    run_parameters.append("used mpi? {0}".format(str(mpi)))
-    run_parameters.append("with simulated observational errors? {0}".format(str(errors)))
+    run_parameters.append("halo parameters: {0}".format(", ".join(params)))
+    run_parameters.append("use mpi? {0}".format(tf_yn[str(mpi)]))
+    run_parameters.append("with simulated observational errors? {0}".\
+                            format(tf_yn[str(with_errors)]))
     
-    logger.info("Inferring halo parameters: {0}".format(",".join(param_names)))
-    logger.info("--> Starting simulation with {0} walkers.".format(nwalkers))
-    logger.info("--> Will burn in for {0} steps, then take {1} steps.".format(nburn_in, nsamples))
-
+    # Create the starting points for all walkers
     p0 = []
     for ii in range(nwalkers):
         p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
-                    for p_name in param_names])
+                    for p_name in params])
     p0 = np.array(p0)
     ndim = p0.shape[1]
 
     if mpi:
-        logger.info("Running with MPI!")
         # Initialize the MPI pool
         pool = MPIPool()
 
@@ -107,14 +98,12 @@ def infer_potential(**config):
 
         sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, pool=pool)
     else:
-        logger.info("Running WITHOUT MPI on {0} cores".format(nthreads))
         sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=nthreads)
     
     # Create a new path for the output
     path = os.path.join(output_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
     if not os.path.exists(path):
-        #raise IOError("Whoa, '{0}' already exists. What did you do, go back in time?".format(path))
         os.mkdir(path)
     
     fig = plot_sgr_snap(sgr_snap)
@@ -122,7 +111,6 @@ def infer_potential(**config):
     
     if nburn_in > 0:
         pos, prob, state = sampler.run_mcmc(p0, nburn_in)
-        logger.debug("Burn in complete...")
         sampler.reset()
     else:
         pos = p0
@@ -153,7 +141,7 @@ def infer_potential(**config):
     if len(flatchain) == 0:
         logger.warning("Not making plots -- no chains converged!")
     else:
-        posterior_fig, trace_fig = plot_mcmc(param_names, acceptance_fraction, flatchain, chain)
+        posterior_fig, trace_fig = plot_mcmc(params, acceptance_fraction, flatchain, chain)
         
         posterior_fig.savefig(os.path.join(path, "mcmc_posterior.png"), format="png")
         trace_fig.savefig(os.path.join(path, "mcmc_trace.png"), format="png")
@@ -183,81 +171,12 @@ def plot_sgr_snap(sgr_snap):
     return fig
 
 if __name__ == "__main__":
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser(description="")
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False,
-                    help="Be chatty! (default = False)")
-    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", default=False,
-                    help="Be quiet! (default = False)")
-                    
-    parser.add_argument("--mpi", action="store_true", dest="mpi", default=False,
-                    help="Anticipate being run with MPI.")
-    parser.add_argument("--threads", dest="nthreads", type=int,
-                    help="If not using MPI, how many threads to spawn.")
-    parser.add_argument("--errors", action="store_true", dest="errors", default=False,
-                    help="Run with observational errors!")
-    parser.add_argument("--seed", dest="seed", default=42, type=int,
-                    help="Seed the random number generator.")
-                    
-    parser.add_argument("--walkers", dest="nwalkers", default=100, type=int,
-                    help="Number of walkers")
-    parser.add_argument("--steps", dest="nsamples", default=1000, type=int,
-                    help="Number of steps to take")
-    parser.add_argument("--burn-in", dest="nburn_in", type=int, default=100,
-                    help="Number of steps to burn in")
-    parser.add_argument("--particles", dest="nparticles", default=100, type=int,
-                    help="Number of particles")
-
-    parser.add_argument("--params", dest="params", default=[], nargs='+',
-                    action='store', help="The halo parameters to vary.")
-    parser.add_argument("--expr", dest="expr", default=[], 
-                    action='append', help="Selection expression for particles.")
-                    
-    parser.add_argument("--output-path", dest="output_path", default="/u/10/a/amp2217/public_html/plots",
-                    help="The path to store output.")
-    parser.add_argument("--desc", dest="description", default="None",
-                    help="An optional description to add to the run_parameters file.")
-
-    args = parser.parse_args()
-
-    if args.verbose:
-        logger.setLevel(logging.DEBUG)
-    elif args.quiet:
-        logger.setLevel(logging.ERROR)
-    else:
-        logger.setLevel(logging.INFO)
-
-    # Read in data from Kathryn's SGR_SNAP and SGR_CEN files
-    sgr_cen = SgrCen()
-
-    # Get timestep information from SGR_CEN
-    t1 = min(sgr_cen.t)
-    t2 = max(sgr_cen.t)
-    dt = sgr_cen.dt[0]*10
+    config_kwargs = simulation_setup()
     
-    # Interpolate SgrCen data onto new times
-    ts = np.arange(t2, t1, -dt)*u.Myr
-    sgr_cen.interpolate(ts)
-
-    np.random.seed(args.seed)
-    run_parameters = []
-    run_parameters.append("Description: {0}".format(args.description))
-    
-    # default expression is to only select unbound particles
-    expr = "(tub > 10.)"
-    if len(args.expr) > 0:
-        expr += " & " + " & ".join(["({0})".format(x) for x in args.expr])
-    run_parameters.append("particle selection expr: {0}".format(expr))
-    run_parameters.append("particles: {0}".format(args.nparticles))
-    
-    sgr_snap = SgrSnapshot(num=args.nparticles, 
-                           expr=expr)
-    
-    if args.errors:
-        sgr_snap.add_errors()
-    
-    ln_posterior = make_posterior(args.params, sgr_snap, sgr_cen, dt)
-    infer_potential(**args.__dict__)
+    ln_posterior = make_posterior(config_kwargs["params"], 
+                                  config_kwargs["sgr_snap"], 
+                                  config_kwargs["sgr_cen"], 
+                                  config_kwargs["dt"])
+    infer_potential(ln_posterior, **config_kwargs)
     
     sys.exit(0)
