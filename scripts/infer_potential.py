@@ -254,6 +254,8 @@ if __name__ == "__main__":
                     help="Number of steps to take")
     parser.add_argument("--burn-in", dest="nburn_in", type=int, default=100,
                     help="Number of steps to burn in")
+    parser.add_argument("--particles", dest="nparticles", default=100, type=int,
+                    help="Number of particles")
 
     parser.add_argument("--params", dest="params", default=[], nargs='+',
                     action='store', help="The halo parameters to vary.")
@@ -295,8 +297,9 @@ if __name__ == "__main__":
     if len(args.expr) > 0:
         expr += " & " + " & ".join(["({0})".format(x) for x in args.expr])
     run_parameters.append("particle selection expr: {0}".format(expr))
+    run_parameters.append("particles: {0}".format(args.nparticles))
     
-    sgr_snap = SgrSnapshot(num=100, 
+    sgr_snap = SgrSnapshot(num=args.nparticles, 
                            expr=expr)
     
     if args.errors:
