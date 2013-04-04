@@ -14,6 +14,7 @@ import numpy as np
 import numexpr
 import astropy.io.fits as fits
 import astropy.io.ascii as ascii
+from astropy.table import Table, Column
 import astropy.coordinates as coord
 import astropy.units as u
 from scipy import interpolate
@@ -22,7 +23,7 @@ from scipy import interpolate
 from ..util import project_root
 from .gaia import rr_lyrae_add_observational_uncertainties
 from ..plot.data import scatter_plot_matrix
-from . import StreamData
+from .core import StreamData, _make_npy_file
 
 __all__ = ["LM10", "SgrCen", "SgrSnapshot"]
 
@@ -49,82 +50,88 @@ class LM10(StreamData):
 
         self._set_coordinates("ra", "dec")
 
-class SgrData(StreamData):
+class KVJSgrData(Table):
     
-    def __init__(self, overwrite=False):
-        """ Read in Sgr satellite center simulation data from Kathryn 
+    def __init__(self, filename, column_names, overwrite_npy=False, 
+                 mask_expr=None, N=None):
+        """ Read in Sgr satellite center simulation data from Kathryn. 
+            Relevant for either SGR_CEN or SGR_SNAP.
             
-            Note that _data is the *unscaled, raw data* from the ASCII
-            file!
-        
+            Parameters
+            ----------
         """
-
-        # Scale Sgr simulation data to physical units
-        self._r_scale = 0.63 # kpc
-        self._v_scale = (41.27781037*u.km/u.s).to(u.kpc/u.Myr).value # kpc/Myr
-        self._t_scale = 14.9238134129 # Myr
         
+        # If it doesn't already exist, create a .npy binary version of the
+        #   ascii data -- loads much faster
+        npy_filename = _make_npy_file(filename, 
+                                      overwrite=overwrite_npy,
+                                      ascii_kwargs=dict(names=column_names))
+        data = np.load(npy_filename)
+        
+        if mask_expr != None and len(mask_expr.strip()) > 0:
+            idx = numexpr.evaluate(str(mask_expr), data)
+            data = data[idx]
+        
+        if N != None and N > 0:
+            idx = np.random.randint(0, len(data), N)
+            data = data[idx]
+            
+        super(KVJSgrData, self).__init__(data)
+                
         self.r_unit = u.kpc
         self.t_unit = u.Myr
         self.v_unit = self.r_unit / self.t_unit
-    
+        
+        for colname in self.colnames:
+            scale,unit = self._name_to_unit(colname)
+            self[colname] *= scale
+            self[colname].units = unit
+        
     def _name_to_unit(self, name):
         """ Map a column name to a unit object. """
         
+        # Scale Sgr simulation data to physical units       
+        r_scale = 0.63
+        v_scale = (41.27781037*u.km/u.s).to(u.kpc/u.Myr).value
+        t_scale = 14.9238134129
+        
         if name in ["t","dt","tub"]:
-            return (self._t_scale, self.t_unit)
+            return (t_scale, self.t_unit)
         elif name in ["x","y","z"]:
-            return (self._r_scale, self.r_unit)
+            return (r_scale, self.r_unit)
         elif name in ["vx","vy","vz"]:
-            return (self._v_scale, self.v_unit)
+            return (v_scale, self.v_unit)
         elif name in ["s1", "s2", "m"]:
-            return (1., 1.)
+            return (1, None)
         else:
             raise NameError("Unsure of units for name '{0}'".format(name))
     
-    def _set_xyz_vxyz(self):
-        self.xyz = np.array([self.x,
-                             self.y,
-                             self.z])*self.r_unit
-                               
-        self.vxyz = np.array([self.vx,
-                              self.vy,
-                              self.vz])*self.v_unit
+    @property
+    def xyz(self):
+        return np.array([np.array(self["x"]),
+                         np.array(self["y"]),
+                         np.array(self["z"])])*self.r_unit
     
-    def _init_data(self):
-        """ Using a data array (read in from a .npy binary file), create the 
-            aliases .x, .y, etc. for accessing the data.
-        """
+    @property
+    def vxyz(self):
+        return np.array([np.array(self["vx"]),
+                         np.array(self["vy"]),
+                         np.array(self["vz"])])*self.v_unit
+
+class SgrCen(KVJSgrData):
+    
+    def __init__(self, overwrite_npy=False):
         
-        for name in self._data.dtype.names:
-            scale,unit = self._name_to_unit(name)
-            setattr(self, name, self._data[name]*scale)
+        # Find and read in text file
+        txt_filename = os.path.join(project_root, 
+                                    "data",
+                                    "simulation", 
+                                    "SGR_CEN")
+        colnames = ["t","dt","x","y","z","vx","vy","vz"]
         
-        self._set_xyz_vxyz()
-    
-    def __len__(self):
-        return len(self._data)
-    
-class SgrCen(SgrData):
-
-    _data = None
-
-    def __init__(self, overwrite=False):
-        """ Read in Sgr satellite center simulation data from Kathryn """
-        super(SgrCen, self).__init__()
-
-        if SgrCen._data == None:
-            txt_filename = os.path.join(project_root, 
-                                        "data",
-                                        "simulation", 
-                                        "SGR_CEN")
-
-            npy_filename = _make_npy_file(txt_filename, 
-                                          overwrite=overwrite,
-                                          ascii_kwargs=dict(names=["t","dt","x","y","z","vx","vy","vz"]))
-            SgrCen._data = np.load(npy_filename)
-            
-        self._init_data()
+        super(SgrCen, self).__init__(filename=txt_filename, 
+                                     column_names=colnames,
+                                     overwrite_npy=overwrite_npy)
     
     def interpolate(self, ts):
         """ Interpolate the SgrCen data onto the specified time grid. 
@@ -141,27 +148,23 @@ class SgrCen(SgrData):
         
         ts = ts.to(self.t_unit).value
         
-        for name in SgrCen._data.dtype.names:
+        columns = []
+        for name in self.colnames:
             if name == "t":
-                self.t = ts
+                columns.append(Column(data=ts, units=self.t_unit, name=name))
                 continue
-            elif name == "dt":
-                self.dt = None
-            
-            t = self._data["t"]*self._t_scale
-            
-            scale,unit = self._name_to_unit(name)
-            d = self._data[name]*scale
-            setattr(self, name, 
-                    interpolate.interp1d(t, 
-                                         d, 
-                                         kind='cubic')(ts))
-        
-        self._set_xyz_vxyz()
-    
-class SgrSnapshot(SgrData):
+            elif name in ["x","y","z","vx","vy","vz"]:
+                data = interpolate.interp1d(self["t"].data, self[name], 
+                                            kind='cubic')(ts)
+                columns.append(Column(data=data, units=self[name].units, name=name))
+            else:
+                pass
 
-    def __init__(self, overwrite=False, N=None, expr=""):
+        return Table(columns)
+    
+class SgrSnapshot(KVJSgrData):
+
+    def __init__(self, N=None, expr="", overwrite_npy=False):
         """ Read in Sgr simulation snapshop for individual particles
 
             Parameters
@@ -174,27 +177,17 @@ class SgrSnapshot(SgrData):
                 example, to select only unbound particles, use 
                 'tub > 0'.
         """
-        super(SgrSnapshot, self).__init__()
         
-        txt_filename = os.path.join(project_root, "data", "simulation", \
-                                    "SGR_SNAP")
-
-        npy_filename = _make_npy_file(txt_filename, \
-                                      overwrite=overwrite, \
-                                      ascii_kwargs=dict(names=["m","x","y","z","vx","vy","vz","s1", "s2", "tub"]))
-        self._data = np.load(npy_filename)
-        self._init_data()
-
-        if len(expr.strip()) > 0:
-            idx = numexpr.evaluate(str(expr), self.__dict__)
-            self._data = self._data[idx]
+        # Find and read in text file
+        txt_filename = os.path.join(project_root, "data", 
+                                    "simulation", "SGR_SNAP")
+        colnames = ["m","x","y","z","vx","vy","vz","s1", "s2", "tub"]
         
-        if N != None and N > 0:
-            idx = np.random.randint(0, len(self._data), N)
-            self._data = self._data[idx]
-        
-        # Do this again now that we've selected out the rows we want
-        self._init_data()
+        super(SgrSnapshot, self).__init__(filename=txt_filename, 
+                                          column_names=colnames,
+                                          overwrite_npy=overwrite_npy,
+                                          mask_expr=expr,
+                                          N=N)
     
     def add_errors(self):
         """ """

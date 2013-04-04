@@ -19,7 +19,7 @@ import astropy.units as u
 # Project
 from ..util import project_root
 
-__all__ = ["LINEAR", "QUEST"]
+__all__ = ["LINEAR", "QUEST", "StreamData"]
 
 def _make_npy_file(ascii_file, overwrite=False, ascii_kwargs=dict()):
     """ Make a .npy version of the given ascii file data.
@@ -91,4 +91,3 @@ class QUEST(StreamData):
             QUEST.data = hdulist[1].data
 
         self._set_coordinates("RAJ2000", "DEJ2000")
-

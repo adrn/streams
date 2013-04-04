@@ -16,31 +16,61 @@ import astropy.units as u
 import numpy as np
 import pytest
 
-from ..core import LM10, SgrCen, SgrSnapshot
+from .. import LM10, SgrCen, SgrSnapshot
 
-def test_sgrcen():
+class TestSgrCen(object):
     sgr_cen = SgrCen()
     
-    assert sgr_cen.xyz.value.shape == (3,len(sgr_cen.z))
-    assert sgr_cen.vxyz.value.shape == (3,len(sgr_cen.vz))
+    def test_create(self):
+        sgr_cen = self.sgr_cen
+        
+        assert sgr_cen["x"].units == u.kpc
+        assert sgr_cen["y"].units == u.kpc
+        assert sgr_cen["z"].units == u.kpc
+        
+        assert sgr_cen["vx"].units == u.kpc/u.Myr
+        assert sgr_cen["vy"].units == u.kpc/u.Myr
+        assert sgr_cen["vz"].units == u.kpc/u.Myr
+        
+        assert sgr_cen.xyz.unit == u.kpc
+        assert sgr_cen.vxyz.unit == u.kpc/u.Myr
+        
+        assert sgr_cen.xyz.value.shape == (3,len(sgr_cen))
+        assert sgr_cen.vxyz.value.shape == (3,len(sgr_cen))
+        
+        assert sgr_cen["x"].shape == sgr_cen["y"].shape
+        assert sgr_cen["y"].shape == sgr_cen["z"].shape
+        
+        assert sgr_cen["vx"].shape == sgr_cen["vy"].shape
+        assert sgr_cen["vy"].shape == sgr_cen["vz"].shape
+    
+    def test_interpolate(self):
+        sgr_cen = self.sgr_cen
+        
+        new_ts = np.linspace(0, 500, 100)*u.Myr
+        new_sgr_cen = sgr_cen.interpolate(new_ts)
+        
+        assert (new_sgr_cen["t"].data == new_ts.value).all()
 
-def test_sgrsnap():
-    sgr_snap = SgrSnapshot(num=100, 
-                           expr="sqrt(x**2 + y**2 + z**2) < 20.")
+class TestSgrSnap(object):
     
-    assert np.max(np.sqrt(sgr_snap.x**2+sgr_snap.y**2+sgr_snap.z**2)) < 20.
-    assert len(sgr_snap) == 100
-    
-    sgr_snap = SgrSnapshot(num=100, 
-                           expr="(sqrt(x**2 + y**2 + z**2) < 20.) & (tub > 0)")
-    assert np.max(np.sqrt(sgr_snap.x**2+sgr_snap.y**2+sgr_snap.z**2)) < 20.
-    assert np.all(sgr_snap.tub > 0)
-    assert len(sgr_snap) == 100
-    
-    sgr_snap = SgrSnapshot(num=100, 
-                           expr="(tub > 0)")
-    assert np.all(sgr_snap.tub > 0)
-    assert len(sgr_snap) == 100
+    def test_create(self):
+        sgr_snap = SgrSnapshot(N=100, 
+                               expr="sqrt(x**2 + y**2 + z**2) < 30.")
+        
+        assert np.max(np.sqrt(sgr_snap["x"]**2+sgr_snap["y"]**2+sgr_snap["z"]**2)) < 30.
+        assert len(sgr_snap) == 100
+        
+        sgr_snap = SgrSnapshot(N=100, 
+                               expr="(sqrt(x**2 + y**2 + z**2) < 20.) & (tub > 0)")
+        assert np.max(np.sqrt(sgr_snap["x"]**2+sgr_snap["y"]**2+sgr_snap["z"]**2)) < 20.
+        assert np.all(sgr_snap["tub"] > 0)
+        assert len(sgr_snap) == 100
+        
+        sgr_snap = SgrSnapshot(N=100, 
+                               expr="(tub > 0)")
+        assert np.all(sgr_snap["tub"] > 0)
+        assert len(sgr_snap) == 100
 
 def test_sgrsnap_uncertainties():   
     sgr_snap = SgrSnapshot(num=100, 
@@ -64,12 +94,4 @@ def test_coordinates():
     
     assert isinstance(lm10.ra[0], coord.RA)
     assert isinstance(lm10.dec[0], coord.Dec)
-
-def test_sgrcen_interpolate(): 
-    sgr_cen = SgrCen()
-    
-    new_ts = np.linspace(0, 500, 100)*u.Myr
-    sgr_cen.interpolate(new_ts)
-    
-    assert (sgr_cen.t == new_ts).all()
     
