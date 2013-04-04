@@ -22,6 +22,7 @@ import astropy.coordinates as coord
 from astropy.coordinates import transformations
 from astropy.coordinates.angles import rotation_matrix
 import astropy.units as u
+from astropy.io import ascii
 
 class OrphanCoordinates(coord.SphericalCoordinatesBase):
     """ A spherical coordinate system defined by the orbit of the Orphan stream
@@ -43,7 +44,7 @@ class OrphanCoordinates(coord.SphericalCoordinatesBase):
             self.Beta = newcoord.Beta
             self._distance = newcoord._distance
         else:
-            super(SgrCoordinates, self)._initialize_latlon('Lambda', 'Beta', \
+            super(OrphanCoordinates, self)._initialize_latlon('Lambda', 'Beta', \
                 False, args, kwargs, anglebounds=((0, 360), (-90,90)))
 
     def __repr__(self):
@@ -154,7 +155,26 @@ def distance_to_orphan_plane(ra, dec, heliocentric_distance):
     Z_orp_sol = orphan_coords.distance.kpc * np.sin(orphan_coords.Beta.radians)
 
     return Z_orp_sol
+
+def test_table():
+    """ Test the script against table 2 values from Newberg et al. 2010 """
+    names = ["Lambda", "l", "b", "db", "g0", "dg0", "v_gsr", "dv_gsr", "sigma_v", "N", "d", "dd"]
+    table = """−30 173 46.5 0.7 18.8 0.2 115.5 6.7 11.5 4 46.8 4.5
+    −20 187 50.0 1.0 18.5 0.1 119.7 6.9 11.9 4 40.7 1.9
+    −9 205 52.5 0.7 18.0 0.1 139.8 4.6 12.9 9 32.4 1.5
+    −1 218 53.5 1.0 17.8 0.1 131.5 3.1 8.2 8 29.5 1.4
+    8 234 53.5 0.7 17.4 0.1 111.3 11.1 11.1 2 24.5 1.2
+    18.4 249.5 50.0 0.7 17.1 0.1 101.4 2.9 9.8 12 21.4 1.0
+    36 271 38.0 3.5 16.8 0.1 38.4 1.7 2.5 3 18.6 0.9"""
     
+    t = ascii.read(table, names=names, data_start=0)
+    
+    for row in t:
+        galactic = coord.GalacticCoordinates(row["l"], row["b"], unit=(u.degree, \
+                                                                   u.degree))
+        icrs = galactic.icrs
+        print(distance_to_orphan_plane(icrs.ra, icrs.dec, float(row["d"])))
+        
 if __name__ == "__main__":
     
     from argparse import ArgumentParser
@@ -174,10 +194,20 @@ if __name__ == "__main__":
     parser.add_argument('--b', type=str, dest='b', default=None,
                        help='Galactic latitude in degrees.')
                        
-    parser.add_argument('--dist', type=str, dest='dist', required=True,
+    parser.add_argument('--dist', type=str, dest='dist', 
                        help='Heliocentric distance in kpc.')
+                       
+    parser.add_argument('--test', dest='test', default=False, action="store_true",
+                       help='Run tests.')
     
     args = parser.parse_args()
+    
+    if args.test:
+        test_table()
+        sys.exit(0)
+    
+    if args.dist == None:
+        raise ValueError("dist is required!")
     
     if args.ra != None and args.dec != None:
         print(distance_to_orphan_plane(args.ra, args.dec, float(args.dist)))
