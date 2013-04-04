@@ -231,13 +231,13 @@ class SgrCen(SgrData):
     
 class SgrSnapshot(SgrData):
 
-    def __init__(self, overwrite=False, num=None, expr=""):
+    def __init__(self, overwrite=False, N=None, expr=""):
         """ Read in Sgr simulation snapshop for individual particles
 
             Parameters
             ----------
-            num : int
-                If None, load all stars, otherwise randomly sample 'num' 
+            N : int
+                If None, load all stars, otherwise randomly sample 'N' 
                 particles from the snapshot data.
             expr : str (optional)
                 A selection expression to be fed in to numexpr. For
@@ -259,8 +259,8 @@ class SgrSnapshot(SgrData):
             idx = numexpr.evaluate(str(expr), self.__dict__)
             self._data = self._data[idx]
         
-        if num != None and num > 0:
-            idx = np.random.randint(0, len(self._data), num)
+        if N != None and N > 0:
+            idx = np.random.randint(0, len(self._data), N)
             self._data = self._data[idx]
         
         # Do this again now that we've selected out the rows we want
