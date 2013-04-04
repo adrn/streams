@@ -25,6 +25,22 @@ halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
                     phi=1.692969,
                     r_halo=12.)
 
+param_ranges = dict(qz=(1.,2.),
+                    q1=(1.,2.),
+                    q2=(1.,2.),
+                    v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr).value,
+                            (150.*u.km/u.s).to(u.kpc/u.Myr).value),
+                    phi=(np.pi/4, 3*np.pi/4),
+                    r_halo=(8,20))
+
+param_to_latex = dict(q1=r"$q_1$",
+                      q2=r"$q_2$",
+                      qz=r"$q_z$",
+                      v_halo=r"$v_{halo}$",
+                      phi=r"$\phi$",
+                      r_halo=r"$r_{halo}$"
+                      )
+
 def LawMajewski2010(**halo_parameters):
     """ Construct the Milky Way gravitational potential used by 
         Law & Majewski 2010 for their Nbody simulation with Sgr.

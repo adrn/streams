@@ -20,6 +20,8 @@ from scipy import interpolate
 
 # Project
 from ..util import project_root
+from .gaia import rr_lyrae_add_observational_uncertainties
+from ..plot.data import scatter_plot_matrix
 
 __all__ = ["LM10", "LINEAR", "QUEST", "SgrCen", "SgrSnapshot"]
 
@@ -132,32 +134,32 @@ class SgrData(StreamData):
         self._v_scale = (41.27781037*u.km/u.s).to(u.kpc/u.Myr).value # kpc/Myr
         self._t_scale = 14.9238134129 # Myr
         
-        self._r_unit = u.kpc
-        self._t_unit = u.Myr
-        self._v_unit = self._r_unit / self._t_unit
+        self.r_unit = u.kpc
+        self.t_unit = u.Myr
+        self.v_unit = self.r_unit / self.t_unit
     
     def _name_to_unit(self, name):
         """ Map a column name to a unit object. """
         
         if name in ["t","dt","tub"]:
-            return (self._t_scale, self._t_unit)
+            return (self._t_scale, self.t_unit)
         elif name in ["x","y","z"]:
-            return (self._r_scale, self._r_unit)
+            return (self._r_scale, self.r_unit)
         elif name in ["vx","vy","vz"]:
-            return (self._v_scale, self._v_unit)
+            return (self._v_scale, self.v_unit)
         elif name in ["s1", "s2", "m"]:
             return (1., 1.)
         else:
             raise NameError("Unsure of units for name '{0}'".format(name))
     
     def _set_xyz_vxyz(self):
-        self.xyz = np.array([self.x.value,
-                             self.y.value,
-                             self.z.value]) * self._r_unit
+        self.xyz = np.array([self.x,
+                             self.y,
+                             self.z])*self.r_unit
                                
-        self.vxyz = np.array([self.vx.value,
-                              self.vy.value,
-                              self.vz.value]) * self._v_unit
+        self.vxyz = np.array([self.vx,
+                              self.vy,
+                              self.vz])*self.v_unit
     
     def _init_data(self):
         """ Using a data array (read in from a .npy binary file), create the 
@@ -166,7 +168,7 @@ class SgrData(StreamData):
         
         for name in self._data.dtype.names:
             scale,unit = self._name_to_unit(name)
-            setattr(self, name, self._data[name]*scale*unit)
+            setattr(self, name, self._data[name]*scale)
         
         self._set_xyz_vxyz()
     
@@ -207,6 +209,8 @@ class SgrCen(SgrData):
         if not isinstance(ts, u.Quantity):
             raise TypeError("New time grid must be an Astropy Quantity object.")
         
+        ts = ts.to(self.t_unit).value
+        
         for name in SgrCen._data.dtype.names:
             if name == "t":
                 self.t = ts
@@ -214,14 +218,14 @@ class SgrCen(SgrData):
             elif name == "dt":
                 self.dt = None
             
-            t = self._data["t"]*self._t_scale*self._t_unit
+            t = self._data["t"]*self._t_scale
             
             scale,unit = self._name_to_unit(name)
-            d = self._data[name]*scale*unit
+            d = self._data[name]*scale
             setattr(self, name, 
-                    interpolate.interp1d(t.to(ts.unit).value, 
-                                         d.value, 
-                                         kind='cubic')(ts.value)*d.unit)
+                    interpolate.interp1d(t, 
+                                         d, 
+                                         kind='cubic')(ts))
         
         self._set_xyz_vxyz()
     
@@ -261,4 +265,39 @@ class SgrSnapshot(SgrData):
         
         # Do this again now that we've selected out the rows we want
         self._init_data()
-
+    
+    def add_errors(self):
+        """ """
+        
+        xyz,vxyz = rr_lyrae_add_observational_uncertainties(self.xyz,self.vxyz)
+        self.x = xyz[0]
+        self.y = xyz[1]
+        self.z = xyz[2]
+        
+        self.vx = vxyz[0]
+        self.vy = vxyz[1]
+        self.vz = vxyz[2]
+        
+        self._set_xyz_vxyz()
+    
+    def plot_positions(self, **kwargs):
+        """ Make a scatter-plot of 3 projections of the positions of the 
+            particles in Galactocentric XYZ coordinates.
+        """   
+        
+        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.r_unit)
+                    for nm in ["X", "Y", "Z"]]
+        
+        fig,axes = scatter_plot_matrix(self.xyz, labels=labels, **kwargs)
+        return fig, axes
+        
+    def plot_velocities(self, **kwargs):
+        """ Make a scatter-plot of 3 projections of the velocities of the 
+            particles. 
+        """
+        
+        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.r_unit)
+                    for nm in ["V^x", "V^y", "V^z"]]
+        
+        fig,axes = scatter_plot_matrix(self.vxyz, labels=labels, **kwargs)
+        return fig, axes

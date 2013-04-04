@@ -15,10 +15,11 @@ import astropy.units as u
 
 from streams.potential import *
 from streams.simulation import Particle, TestParticleSimulation
-from streams.data.gaia import parallax_error, rr_lyrae_M_V, rr_lyrae_add_observational_uncertainties
 
-def _variance_statistic(potential, xs, vs, sgr_cen):
-    """ Compute the variance scalar that we will minimize.
+__all__ = ["minimum_distance_matrix", "back_integrate", "generalized_variance"]
+
+def minimum_distance_matrix(potential, xs, vs, sgr_cen):
+    """ Compute the Nx6 matrix of minimum phase-space distance vectors.
         
         Parameters
         ----------
@@ -32,7 +33,6 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
             Data for the Sgr satellite center, interpolated onto the
             time grid for our particles.
     """
-    
     # Define tidal radius, escape velocity for satellite
     msat = 2.5E8 # M_sun
     sgr_orbital_radius = np.sqrt(sgr_cen.x**2 + sgr_cen.y**2 + sgr_cen.z**2)
@@ -56,17 +56,46 @@ def _variance_statistic(potential, xs, vs, sgr_cen):
     
     idx = np.argmin(d**2 + v**2, axis=0)
     
-    min_ds = []
+    min_xs = np.zeros((N,3))
     for ii,jj in enumerate(idx):
-        min_ds.append(d[jj,ii])
+        # xs[time, particles, dimension]
+        min_xs[ii] = (xs[jj,ii] - sgr_cen.xyz[:,jj]) / r_tides[jj]
     
-    min_vs = []
+    min_vs = np.zeros((N,3))
     for ii,jj in enumerate(idx):
-        min_vs.append(v[jj,ii])
+        # vs[time, particles, dimension]
+        min_vs[ii] = (vs[jj,ii] - sgr_cen.vxyz[:,jj]) / v_escs[jj]
     
-    return np.var(min_ds) + np.var(min_vs)
+    min_ps = np.hstack((min_xs, min_vs))
+    # min_ps -> (N x 6) matrix
+    
+    return min_ps
+    
+def generalized_variance(potential, xs, vs, sgr_cen):
+    """ Compute the variance scalar that we will minimize.
+        
+        Parameters
+        ----------
+        potential : Potential
+            The full Milky Way potential object.
+        xs : ndarray
+            An array of positions for all particles at all times
+        vs : ndarray
+            An array of velocities for all particles at all times
+        sgr_cen : SgrCen
+            Data for the Sgr satellite center, interpolated onto the
+            time grid for our particles.
+    """
+    
+    min_ps = minimum_distance_matrix(potential, xs, vs, sgr_cen)
+    
+    cov_matrix = np.cov(min_ps.T)
+    # cov_matrix -> (6 x 6) covariance matrix for particles
+    w,v = np.linalg.eig(cov_matrix)
+    
+    return np.sum(w)
 
-def back_integrate(potential, sgr_snap, sgr_cen, dt, errors=False):
+def back_integrate(potential, sgr_snap, sgr_cen, dt):
     """ Given the particle snapshot information and a potential, integrate the particles
         backwards and return the variance scalar.
     """
@@ -75,18 +104,14 @@ def back_integrate(potential, sgr_snap, sgr_cen, dt, errors=False):
     simulation = TestParticleSimulation(potential=potential)
     
     # Distances in kpc, velocities in kpc/Myr
-    xyz = np.array([sgr_snap.data["x"], sgr_snap.data["y"], sgr_snap.data["z"]])*u.kpc
-    vxyz = np.array([sgr_snap.data["vx"], sgr_snap.data["vy"], sgr_snap.data["vz"]])*u.kpc/u.Myr
+    xyz = sgr_snap.xyz
+    vxyz = sgr_snap.vxyz
     
-    if errors:
-        xyz,vxyz = rr_lyrae_add_observational_uncertainties(xyz,vxyz)
-    
-    for ii in range(sgr_snap.num):
+    for ii in range(len(sgr_snap)):
         p = Particle(position=(xyz[0,ii].to(u.kpc).value, xyz[1,ii].to(u.kpc).value, xyz[2,ii].to(u.kpc).value), # kpc
                      velocity=(vxyz[0,ii].to(u.kpc/u.Myr).value, vxyz[1,ii].to(u.kpc/u.Myr).value, vxyz[2,ii].to(u.kpc/u.Myr).value), # kpc/Myr
                      mass=1.) # M_sol
         simulation.add_particle(p)
     
-    ts, xs, vs = simulation.run(t1=max(sgr_cen.data["t"]), t2=min(sgr_cen.data["t"]), dt=-dt)
-
-    return _variance_statistic(potential, xs, vs, sgr_cen)
+    ts, xs, vs = simulation.run(t1=max(sgr_cen.t), t2=min(sgr_cen.t), dt=-dt)
+    return ts, xs, vs

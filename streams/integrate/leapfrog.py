@@ -19,7 +19,8 @@ __all__ = ["PotentialIntegrator", "leapfrog"]
 
 def leapfrog(acceleration_function, initial_position, initial_velocity, t1, t2, dt=None):
     """ Given an acceleration function and initial conditions, integrate from t1 to t2
-        with a timestep dt using Leapfrog integration.
+        with a timestep dt using Leapfrog integration. The integration always *includes*
+        the final timestep!
         See: http://ursa.as.arizona.edu/~rad/phys305/ODE_III/node11.html
 
         Parameters
@@ -47,8 +48,7 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t1, t2, 
         x_i = np.array(initial_position)
         v_i = np.array(initial_velocity)
 
-    #times = np.arange(t1, t2+dt, dt)
-    times = np.arange(t1, t2, dt)
+    times = np.arange(t1, t2+dt, dt)
     
     Ntimesteps = len(times)
 
