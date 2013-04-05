@@ -120,6 +120,20 @@ class KVJSgrData(Table):
         return np.array([np.array(self["vx"]),
                          np.array(self["vy"]),
                          np.array(self["vz"])])*self.v_unit
+    
+    def as_particles(self):
+        """ Return a list of particles from the position and velocity 
+            vectors.
+        """
+        
+        particles = []
+        for ii in range(len(self)):
+            p = Particle(position=(self["x"][ii], self["y"][ii], self["z"][ii]),
+                         velocity=(self["vx"][ii], self["vy"][ii], self["vz"][ii]),
+                         mass=1.) # M_sol
+            particles.append(p)
+        
+        return particles
 
 class SgrCen(KVJSgrData):
     
