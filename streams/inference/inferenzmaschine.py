@@ -13,11 +13,15 @@ import os, sys
 
 # Third-party
 import numpy as np
+import emcee
+from emcee.utils import MPIPool
+import astropy.units as u
 
-from . import back_integrate, generalized_variance
+from ..simulation import back_integrate, generalized_variance
 from ..potential import LawMajewski2010
 from ..potential.lm10 import halo_params as true_halo_params
 from ..potential.lm10 import param_ranges
+from ..data import SgrCen, SgrSnapshot
 
 __all__ = [""]
 
@@ -31,15 +35,16 @@ class Inferenzmaschine(object):
         
         self.params = list(param_names)
         
-        self.t1 = max(satellite_orbit["t"])
-        self.t2 = min(satellite_orbit["t"])
+        self.t1 = min(satellite_orbit["t"])
+        self.t2 = max(satellite_orbit["t"])
         
         if dt == None:
-            self.dt = satellite_orbit["dt"][0]
-        else: 
+            self.dt = satellite_orbit.dt
+        else:
             self.dt = dt
             
         self.particles = stars
+        self.satellite_orbit = satellite_orbit
         
     def ln_p_qz(self, qz):
         """ Flat prior on vertical (z) axis flattening parameter. """
@@ -113,24 +118,79 @@ class Inferenzmaschine(object):
         """
         
         halo_params = true_halo_params.copy()
-        for ii,param in enuerate(self.params):
+        for ii,param in enumerate(self.params):
             halo_params[param] = p[ii]
         
         # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
         mw_potential = LawMajewski2010(**halo_params)
         
-        ts,xs,vs = back_integrate(mw_potential, self.particles, 
+        #ts,xs,vs = back_integrate(mw_potential, self.particles, 
+        #                          self.t1, self.t2, self.dt)
+        ts,xs,vs = back_integrate(mw_potential, copy.copy(self.particles), 
                                   self.t1, self.t2, self.dt)
-        return -generalized_variance(mw_potential, xs, vs, self.satellite_orbit)
+        
+        return -generalized_variance(mw_potential, xs, vs, copy.copy(self.satellite_orbit))
     
     def ln_posterior(self, p):
         return self.ln_prior(p) + self.ln_likelihood(p)
     
-def test_inferenzmaschine():
+    def run_mcmc(self, nwalkers, nburn_in, nsteps, mpi=False, nthreads=1):
+        """ Use emcee to sample from the 'posterior' with a given number of 
+            walkers, for a given number of steps.
+        """
+        
+        # Create the starting points for all walkers
+        p0 = []
+        for ii in range(nwalkers):
+            p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
+                        for p_name in self.params])
+        p0 = np.array(p0)
+        ndim = p0.shape[1]
+        
+        if mpi:
+            # Initialize the MPI pool
+            pool = MPIPool()
+    
+            # Make sure the thread we're running on is the master
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
+    
+            self.sampler = emcee.EnsembleSampler(nwalkers, ndim, 
+                                            self.ln_posterior, pool=pool)
+        else:
+            self.sampler = emcee.EnsembleSampler(nwalkers, ndim, 
+                                            self.ln_posterior, threads=nthreads)
+        
+        # If a burn-in period is requested, run the sampler for nburn_in steps then
+        #   reset the walkers and use the end positions as new initial conditions
+        if nburn_in > 0:
+            pos, prob, state = self.sampler.run_mcmc(p0, nburn_in)
+            self.sampler.reset()
+        else:
+            pos = p0
+        
+        self.sampler.run_mcmc(pos, nsteps)
+        
+        # if we're running with MPI, we have to close the processor pool, otherwise
+        #   the script will never finish running until the end of timmmmeeeee (echo)
+        if mpi: pool.close()
+        
+        return self.sampler
+        
+def test_inferenzmaschine(nthreads=1):
     # API: 
+    
     sgr_cen = SgrCen()
-    sgr_snap = SgrSnapshot(N=100, expr=expr)
+    ts = np.arange(max(sgr_cen["t"]), min(sgr_cen["t"]), -sgr_cen["dt"][0]*10)*u.Myr
+    sgr_cen = sgr_cen.interpolate(ts)
+    
+    sgr_snap = SgrSnapshot(N=100, expr="tub > 0")
     maschine = Inferenzmaschine(["qz","v_halo"], 
                                 stars=sgr_snap.as_particles(), 
                                 satellite_orbit=sgr_cen)
-    sampler = maschine.run_mcmc(walkers=128, burn_in=100, steps=200, mpi=True)
+    sampler = maschine.run_mcmc(nwalkers=4, nburn_in=1, 
+                                nsteps=4, mpi=False, nthreads=nthreads)
+    
+    sampler.lnprobfn = None
+    sampler.pickle("/tmp/test.pickle", clobber=True)

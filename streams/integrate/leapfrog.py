@@ -49,6 +49,7 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t1, t2, 
         v_i = np.array(initial_velocity)
 
     times = np.arange(t1, t2+dt, dt)
+    #times = np.arange(t1, t2, dt)
     
     Ntimesteps = len(times)
 

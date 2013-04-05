@@ -27,16 +27,25 @@ from streams.potential.lm10 import param_ranges
 Nsteps = 20
 np.random.seed(42)
 sgr_cen = SgrCen()
-sgr_snap = SgrSnapshot(num=1000)
+sgr_snap = SgrSnapshot(N=1000)
 
 # Get timestep information from SGR_CEN
-t1 = min(sgr_cen.t)
-t2 = max(sgr_cen.t)
-dt = sgr_cen.dt[0]*10
+t1 = min(sgr_cen["t"])
+t2 = max(sgr_cen["t"])
+dt = sgr_cen["dt"][0]*10
 
 # Interpolate SgrCen data onto new times
 ts = np.arange(t2, t1, -dt)*u.Myr
-sgr_cen.interpolate(ts)
+sgr_cen = sgr_cen.interpolate(ts)
+
+def test_simple_integrate():
+    potential = LawMajewski2010(**true_halo_params)
+    ts, xs, vs = back_integrate(potential, 
+                                sgr_snap.as_particles(), 
+                                t2, t1, dt)
+    
+    assert len(ts) == len(sgr_cen["t"])
+    assert (ts == sgr_cen["t"]).all()
 
 @pytest.mark.parametrize(("param_name", ), 
                          [("q1",), ("q2",), ("qz",), ("v_halo",), \
@@ -53,7 +62,10 @@ def test_parameter(param_name):
         # Define potential
         halo_params[param_name] = val
         potential = LawMajewski2010(**halo_params)
-        ts, xs, vs = back_integrate(potential, sgr_snap, sgr_cen, dt)
+        ts, xs, vs = back_integrate(potential, 
+                                    sgr_snap.as_particles(), 
+                                    t1, t2, dt)
+        
         min_ps = minimum_distance_matrix(potential, xs, vs, sgr_cen)
 
         #var_sums.append(np.sum(np.var(min_ps, axis=0)))

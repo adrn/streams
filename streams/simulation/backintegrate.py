@@ -35,7 +35,7 @@ def minimum_distance_matrix(potential, xs, vs, sgr_cen):
     """
     # Define tidal radius, escape velocity for satellite
     msat = 2.5E8 # M_sun
-    sgr_orbital_radius = np.sqrt(sgr_cen.x**2 + sgr_cen.y**2 + sgr_cen.z**2)
+    sgr_orbital_radius = np.sqrt(sgr_cen["x"]**2 + sgr_cen["y"]**2 + sgr_cen["z"]**2)
     m_halo_enclosed = potential.params["v_halo"]**2 * sgr_orbital_radius/potential.params["_G"]
     mass_enclosed = potential.params["M_disk"] + potential.params["M_sph"] + m_halo_enclosed
 
@@ -46,13 +46,13 @@ def minimum_distance_matrix(potential, xs, vs, sgr_cen):
     N = xs.shape[1]
     
     # Distance to satellite center and total velocity
-    d = np.sqrt((xs[:,:,0] - sgr_cen.x[:,np.newaxis].repeat(N, axis=1))**2 +
-                (xs[:,:,1] - sgr_cen.y[:,np.newaxis].repeat(N, axis=1))**2 + 
-                (xs[:,:,2] - sgr_cen.z[:,np.newaxis].repeat(N, axis=1))**2) / r_tides[:,np.newaxis].repeat(N, axis=1)
+    d = np.sqrt((xs[:,:,0] - sgr_cen["x"][:,np.newaxis].repeat(N, axis=1))**2 +
+                (xs[:,:,1] - sgr_cen["y"][:,np.newaxis].repeat(N, axis=1))**2 + 
+                (xs[:,:,2] - sgr_cen["z"][:,np.newaxis].repeat(N, axis=1))**2) / r_tides[:,np.newaxis].repeat(N, axis=1)
     
-    v = np.sqrt((vs[:,:,0] - sgr_cen.vx[:,np.newaxis].repeat(N, axis=1))**2 +
-                (vs[:,:,1] - sgr_cen.vy[:,np.newaxis].repeat(N, axis=1))**2 +
-                (vs[:,:,2] - sgr_cen.vz[:,np.newaxis].repeat(N, axis=1))**2) / v_escs[:,np.newaxis].repeat(N, axis=1)
+    v = np.sqrt((vs[:,:,0] - sgr_cen["vx"][:,np.newaxis].repeat(N, axis=1))**2 +
+                (vs[:,:,1] - sgr_cen["vy"][:,np.newaxis].repeat(N, axis=1))**2 +
+                (vs[:,:,2] - sgr_cen["vz"][:,np.newaxis].repeat(N, axis=1))**2) / v_escs[:,np.newaxis].repeat(N, axis=1)
     
     idx = np.argmin(d**2 + v**2, axis=0)
     
@@ -110,5 +110,6 @@ def back_integrate(potential, particles, t1, t2, dt):
     # Initialize particle simulation with full potential
     simulation = TestParticleSimulation(potential=potential)
     simulation.add_particles(particles)
+    
     ts, xs, vs = simulation.run(t1=t1, t2=t2, dt=-dt)
     return ts, xs, vs

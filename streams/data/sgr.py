@@ -125,7 +125,7 @@ class KVJSgrData(Table):
         """ Return a list of particles from the position and velocity 
             vectors.
         """
-        
+        from ..simulation import Particle
         particles = []
         for ii in range(len(self)):
             p = Particle(position=(self["x"][ii], self["y"][ii], self["z"][ii]),
@@ -149,7 +149,9 @@ class SgrCen(KVJSgrData):
         super(SgrCen, self).__init__(filename=txt_filename, 
                                      column_names=colnames,
                                      overwrite_npy=overwrite_npy)
-    
+        
+        self.dt = self["dt"][0]
+        
     def interpolate(self, ts):
         """ Interpolate the SgrCen data onto the specified time grid. 
             
@@ -176,8 +178,17 @@ class SgrCen(KVJSgrData):
                 columns.append(Column(data=data, units=self[name].units, name=name))
             else:
                 pass
-
-        return Table(columns)
+        
+        # MAJOR hack here....
+        new_table = copy.copy(self)
+        new_table.remove_column("dt")
+        new_table2 = Table(columns, names=new_table.colnames)
+        new_table._init_from_table(new_table2, new_table.colnames, 
+                                   [new_table.dtype[ii] for ii in range(len(new_table.colnames))], 
+                                   len(new_table.colnames), 
+                                   True)
+        new_table.dt = ts[1]-ts[0]
+        return new_table
     
 class SgrSnapshot(KVJSgrData):
 
