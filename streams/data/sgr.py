@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import copy
 
 # Third-party
 import numpy as np
@@ -87,6 +88,8 @@ class KVJSgrData(Table):
             self[colname] *= scale
             self[colname].units = unit
         
+        self._phase_space_coord_names = ["x","y","z","vx","vy","vz"]
+        
     def _name_to_unit(self, name):
         """ Map a column name to a unit object. """
         
@@ -153,7 +156,7 @@ class SgrCen(KVJSgrData):
             if name == "t":
                 columns.append(Column(data=ts, units=self.t_unit, name=name))
                 continue
-            elif name in ["x","y","z","vx","vy","vz"]:
+            elif name in self._phase_space_coord_names:
                 data = interpolate.interp1d(self["t"].data, self[name], 
                                             kind='cubic')(ts)
                 columns.append(Column(data=data, units=self[name].units, name=name))
@@ -190,18 +193,38 @@ class SgrSnapshot(KVJSgrData):
                                           N=N)
     
     def add_errors(self):
-        """ """
+        """ Add observational errors to the data from GAIA error estimates
+            
+            Returns a *new* SgrSnapshot object.
+        """
         
-        xyz,vxyz = rr_lyrae_add_observational_uncertainties(self.xyz,self.vxyz)
-        self.x = xyz[0]
-        self.y = xyz[1]
-        self.z = xyz[2]
+        coords_w_errors = rr_lyrae_add_observational_uncertainties(
+                            self["x"].data*self.r_unit,
+                            self["y"].data*self.r_unit,
+                            self["z"].data*self.r_unit,
+                            self["vx"].data*self.v_unit,
+                            self["vy"].data*self.v_unit,
+                            self["vz"].data*self.v_unit
+                         )
         
-        self.vx = vxyz[0]
-        self.vy = vxyz[1]
-        self.vz = vxyz[2]
+        columns = []
+        for colname in self.colnames:
+            if colname in self._phase_space_coord_names:
+                ii = self._phase_space_coord_names.index(colname)
+                columns.append(Column(data=coords_w_errors[ii], 
+                                      units=coords_w_errors[ii].unit,
+                                      name=colname))
+            else:
+                columns.append(self[colname])
         
-        self._set_xyz_vxyz()
+        # MAJOR hack here....
+        new_table = copy.copy(self)
+        new_table2 = Table(columns, names=self.colnames)
+        new_table._init_from_table(new_table2, self.colnames, 
+                                   [self.dtype[ii] for ii in range(len(self.colnames))], 
+                                   len(self.colnames), 
+                                   True)
+        return new_table
     
     def plot_positions(self, **kwargs):
         """ Make a scatter-plot of 3 projections of the positions of the 

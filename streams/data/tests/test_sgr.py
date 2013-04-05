@@ -72,22 +72,22 @@ class TestSgrSnap(object):
         assert np.all(sgr_snap["tub"] > 0)
         assert len(sgr_snap) == 100
 
-def test_sgrsnap_uncertainties():   
-    sgr_snap = SgrSnapshot(num=100, 
-                           expr="(tub > 0)")
-    
-    
-    fig,axes = sgr_snap.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
-    sgr_snap.add_errors()
-    sgr_snap.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
-    
-    fig.savefig("plots/tests/sgrsnap_uncertainties_position.png")
-    
-    fig,axes = sgr_snap.plot_velocities(subplots_kwargs=dict(figsize=(16,16)))
-    sgr_snap.add_errors()
-    sgr_snap.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
-    
-    fig.savefig("plots/tests/sgrsnap_uncertainties_velocity.png")
+    def test_uncertainties(self):
+        sgr_snap = SgrSnapshot(N=100, 
+                               expr="(tub > 0)")
+        
+        fig,axes = sgr_snap.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
+        with_errors = sgr_snap.add_errors()
+        assert isinstance(with_errors, SgrSnapshot)
+        with_errors.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
+        
+        fig.savefig("plots/tests/sgrsnap_uncertainties_position.png")
+        
+        fig,axes = sgr_snap.plot_velocities(subplots_kwargs=dict(figsize=(16,16)))
+        with_errors = sgr_snap.add_errors()
+        with_errors.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
+        
+        fig.savefig("plots/tests/sgrsnap_uncertainties_velocity.png")
 
 def test_coordinates():
     lm10 = LM10()

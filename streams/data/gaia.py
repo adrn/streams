@@ -138,7 +138,7 @@ def proper_motion_error(V, V_minus_I):
 
     return dmu.to(u.radian/u.yr)
 
-def rr_lyrae_add_observational_uncertainties(x, v):
+def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz):
     """ Given 3D galactocentric position and velocity, transform to heliocentric
         coordinates, apply observational uncertainty estimates, then transform
         back to galactocentric frame.
@@ -147,23 +147,21 @@ def rr_lyrae_add_observational_uncertainties(x, v):
         
         Parameters
         ----------
-        x : astropy.units.Quantity
+        x,y,z : astropy.units.Quantity
             Positions.
-        v : astropy.units.Quantity
+        vx,vy,vz : astropy.units.Quantity
             Velocities.
     """
     
-    if not isinstance(x,u.Quantity):
+    if not isinstance(x,u.Quantity) or \
+       not isinstance(y,u.Quantity) or \
+       not isinstance(z,u.Quantity):
         raise TypeError("Positions must be Astropy Quantity objects!")
     
-    if not x.unit.is_equivalent(u.kpc):
-        raise ValueError("Invalid distance unit: Distance must have distance-like units.")
-    
-    if not isinstance(v,u.Quantity):
+    if not isinstance(vx,u.Quantity) or \
+       not isinstance(vy,u.Quantity) or \
+       not isinstance(vz,u.Quantity):
         raise TypeError("Velocities must be Astropy Quantity objects!")
-    
-    if not v.unit.is_equivalent(u.km/u.s):
-        raise ValueError("Invalid velocity unit: Velocity must have velocity-like units.")
     
     # assuming [Fe/H] = -0.5 for Sgr
     M_V, dM_V = rr_lyrae_M_V(-0.5)
@@ -171,24 +169,24 @@ def rr_lyrae_add_observational_uncertainties(x, v):
     # Transform to heliocentric coordinates
     rsun = 8.*u.kpc
     
-    x.value[0] += rsun.to(x.unit).value 
+    x = x + rsun
     
-    d = np.sqrt(x[0]**2 + x[1]**2 + x[2]**2)*x.unit
+    d = np.sqrt(x**2 + y**2 + z**2)*x.unit
     V = apparent_magnitude(M_V, d)
     
-    vr = (x[0]*v[0] + x[1]*v[1] + x[2]*v[2]) / d 
+    vr = (x*vx + y*vy + z*vz) / d 
     
     # proper motions in km/s/kpc
-    rad = np.sqrt(x[0]**2 + x[1]**2)*x.unit
-    vrad = (x[0]*v[0] + x[1]*v[1]) / rad
-    mul = (x[0]*v[1] - x[1]*v[0]) / rad / d
-    mub = (-x[2]*vrad + rad*v[2]) / d**2
+    rad = np.sqrt(x**2 + y**2)*x.unit
+    vrad = (x*vx + y*vy) / rad
+    mul = (x*vy - y*vx) / rad / d
+    mub = (-z*vrad + rad*vz) / d**2
        
     # angular position
-    sinb = x[2]/d
+    sinb = z/d
     cosb = rad/d
-    cosl = x[0]/rad
-    sinl = x[1]/rad
+    cosl = x/rad
+    sinl = y/rad
     
     # DISTANCE ERROR -- assuming 2% distances from RR Lyrae mid-IR
     d += np.random.normal(0., 0.02*d.value)*d.unit
@@ -197,31 +195,18 @@ def rr_lyrae_add_observational_uncertainties(x, v):
     vr += np.random.normal(0., (5.*u.km/u.s))*u.km/u.s
 
     dmu = proper_motion_error(V, rr_lyrae_V_minus_I)
-    
-    # translate to radians/year
-    #conv1 = np.pi/180./60./60./1.e6
-    # translate to km/s from  kpc/year 
-    #kmpkpc = 3.085678e16
-    #secperyr = 3.1536e7 
-    #conv2 = kmpkpc/secperyr
-    #dmu = dmu*conv1*conv2
-    
+        
     dmu = (dmu.to(u.rad/u.s).value / u.s).to(u.km / (u.kpc*u.s))
     mul += np.random.normal(0., dmu.value)*dmu.unit
     mub += np.random.normal(0., dmu.value)*dmu.unit
+        
+    new_x = (d*cosb*cosl - rsun).to(d.unit).value
+    new_y = (d*cosb*sinl).to(d.unit).value
+    new_z = (d*sinb).to(d.unit).value
     
-    # CONVERT BACK
-    new_x = copy.copy(x.value)
-    new_x_unit = d.unit
-    new_v = copy.copy(v.value)
-    new_v_unit = vr.unit
+    new_vx = (vr*cosb*cosl - d*mul*sinl - d*mub*sinb*cosl).to(vr.unit).value
+    new_vy = (vr*cosb*sinl + d*mul*cosl - d*mub*sinb*sinl).to(vr.unit).value
+    new_vz = (vr*sinb + d*mub*cosb).to(vr.unit).value
     
-    new_x[0] = (d*cosb*cosl - rsun).to(d.unit).value
-    new_x[1] = (d*cosb*sinl).to(d.unit).value
-    new_x[2] = (d*sinb).to(d.unit).value
-    
-    new_v[0] = (vr*cosb*cosl - d*mul*sinl - d*mub*sinb*cosl).to(vr.unit).value
-    new_v[1] = (vr*cosb*sinl + d*mul*cosl - d*mub*sinb*sinl).to(vr.unit).value
-    new_v[2] = (vr*sinb + d*mub*cosb).to(vr.unit).value
-    
-    return (new_x*d.unit, new_v*vr.unit)
+    return (new_x*x.unit, new_y*x.unit, new_z*x.unit, 
+            new_vx*vx.unit, new_vy*vx.unit, new_vz*vx.unit)
