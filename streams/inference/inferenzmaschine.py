@@ -23,13 +23,23 @@ __all__ = [""]
 
 class Inferenzmaschine(object):
 
-    def __init__(self, param_names, stars, satellite_orbit):
+    def __init__(self, param_names, stars, satellite_orbit, dt=None):
         """ Contains priors, likelihood function, and posterior for inferring
             the parameters of the Galactic dark matter halo, assuming a 
             Logarithmic potential. 
         """
         
         self.params = list(param_names)
+        
+        self.t1 = max(satellite_orbit["t"])
+        self.t2 = min(satellite_orbit["t"])
+        
+        if dt == None:
+            self.dt = satellite_orbit["dt"][0]
+        else: 
+            self.dt = dt
+            
+        self.particles = stars
         
     def ln_p_qz(self, qz):
         """ Flat prior on vertical (z) axis flattening parameter. """
@@ -109,14 +119,18 @@ class Inferenzmaschine(object):
         # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
         mw_potential = LawMajewski2010(**halo_params)
         
-        ts,xs,vs = back_integrate(mw_potential, sgr_snap, sgr_cen, dt)
-        return -generalized_variance(mw_potential, xs, vs, sgr_cen)
+        ts,xs,vs = back_integrate(mw_potential, self.particles, 
+                                  self.t1, self.t2, self.dt)
+        return -generalized_variance(mw_potential, xs, vs, self.satellite_orbit)
     
     def ln_posterior(self, p):
         return self.ln_prior(p) + self.ln_likelihood(p)
     
 def test_inferenzmaschine():
     # API: 
+    sgr_cen = SgrCen()
     sgr_snap = SgrSnapshot(N=100, expr=expr)
-    maschine = Inferenzmaschine(["qz","v_halo"], stars=particles, satellite_orbit=sgr_cen)
+    maschine = Inferenzmaschine(["qz","v_halo"], 
+                                stars=sgr_snap.as_particles(), 
+                                satellite_orbit=sgr_cen)
     sampler = maschine.run_mcmc(walkers=128, burn_in=100, steps=200, mpi=True)

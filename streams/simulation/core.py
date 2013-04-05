@@ -34,7 +34,12 @@ class TestParticleSimulation(object):
 
         self._particle_pos_array = None
         self._particle_vel_array = None
-
+    
+    def add_particles(self, ps):
+        """ Add a set of test-particles to the simulation """
+        for p in ps:
+            self.add_particle(p)
+        
     def add_particle(self, p):
         """ Add a test-particle to the simulation (to be integrated through the potential) """
 
@@ -63,7 +68,7 @@ class TestParticleSimulation(object):
 
     def particles_at(self, t):
         """ Get a list of Particle objects at the given time step """
-
+        raise NotImplementedError()
 
 class Particle(object):
 

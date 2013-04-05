@@ -95,23 +95,20 @@ def generalized_variance(potential, xs, vs, sgr_cen):
     
     return np.sum(w)
 
-def back_integrate(potential, sgr_snap, sgr_cen, dt):
-    """ Given the particle snapshot information and a potential, integrate the particles
-        backwards and return the variance scalar.
+def back_integrate(potential, particles, t1, t2, dt):
+    """ Given a potential and a list of particles, integrate the particles
+        backwards from t1 to t2 with timestep dt.
+        
+        Parameters
+        ----------
+        potential : Potential
+            The full Milky Way potential object.
+        particles : list
+            A list of Particle objects for each star's position.
     """
 
     # Initialize particle simulation with full potential
     simulation = TestParticleSimulation(potential=potential)
-    
-    # Distances in kpc, velocities in kpc/Myr
-    xyz = sgr_snap.xyz
-    vxyz = sgr_snap.vxyz
-    
-    for ii in range(len(sgr_snap)):
-        p = Particle(position=(xyz[0,ii].to(u.kpc).value, xyz[1,ii].to(u.kpc).value, xyz[2,ii].to(u.kpc).value), # kpc
-                     velocity=(vxyz[0,ii].to(u.kpc/u.Myr).value, vxyz[1,ii].to(u.kpc/u.Myr).value, vxyz[2,ii].to(u.kpc/u.Myr).value), # kpc/Myr
-                     mass=1.) # M_sol
-        simulation.add_particle(p)
-    
-    ts, xs, vs = simulation.run(t1=max(sgr_cen.t), t2=min(sgr_cen.t), dt=-dt)
+    simulation.add_particles(particles)
+    ts, xs, vs = simulation.run(t1=t1, t2=t2, dt=-dt)
     return ts, xs, vs
