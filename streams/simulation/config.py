@@ -6,11 +6,50 @@ from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
-# Standard library
-import os, sys
-
 # Third-party
 import astropy.units as u
+
+def _parse_key_val(key, val):
+    """ Given a key,value pair from a simulation configuration file, parse 
+        the value into a typed Python object.
+        
+        Parameters
+        ----------
+        key : str
+        val : str
+    """
+    
+    _key = key.lower()
+    if _key.startswith("(i)"):
+        # integer
+        k = _key.split()[1]
+        v = int(val)
+    elif _key.startswith("(f)"):
+        # float
+        k = _key.split()[1]
+        v = float(val)
+    elif _key.startswith("(u)"):
+        # number with units
+        num,unit = val.split()
+        k = _key.split()[1]
+        v = float(num)*u.Unit(unit)
+    elif _key.startswith("(s)"):
+        # string
+        k = _key.split()[1]
+        v = str(val)
+    elif _key.startswith("(b)"):
+        # boolean
+        k = _key.split()[1]
+        v = val.lower() in ("yes", "true", "t", "y", "1", "duh")
+    elif _key.startswith("(l"):
+        # list
+        l,element_type = _key.split(",")
+        v = val.split()
+        k = element_type.split()[1]
+    else:
+        raise ValueError("Unknown datatype in key '{0}'.".format(key))
+    
+    return k,v
 
 def read(file):
     """ Read in configuration parameters for the simulation from the 
@@ -23,6 +62,7 @@ def read(file):
             (U) if a number with units
             (B) if boolean
             (S) if string
+            (L,[I,F,U,B,S]) if list, where second letter specifies element type
         
         Parameters
         ----------
@@ -49,27 +89,9 @@ def read(file):
         if "#" in val:
             val,comment = val.split("#")
             val = val.strip()
-        
-        if key.startswith("(I)"):
-            # integer
-            config[key.split()[1]] = int(val)
-        elif key.startswith("(F)"):
-            # float
-            config[key.split()[1]] = float(val)
-        elif key.startswith("(U)"):
-            # number with units
-            num,unit = val.split()
-            config[key.split()[1]] = float(num)*u.Unit(unit)
-        elif key.startswith("(S)"):
-            # string
-            config[key.split()[1]] = str(val)
-        elif key.startswith("(B)"):
-            # boolean
-            config[key.split()[1]] = val.lower() in ("yes", "true", "t", 
-                                                     "y", "1", "duh")
-        else:
-            raise ValueError("Unknown datatype for line {0}: '{1}'"
-                             .format(ii+1,line))
+    
+        k,v = _parse_key_val(key,val)
+        config[k] = v
     
     return config
 
@@ -79,7 +101,8 @@ def test_read():
     file = """(I) particles : 100 # number of particles
               (U) dt : 1. Myr # timestep for back integration
               (B) with_errors : yes
-              (S) description : blah blah blah"""
+              (S) description : blah blah blah
+              (L,S) parameters : q1 qz v_halo phi"""
     
     f = StringIO.StringIO(file)
     config = read(f)
@@ -87,3 +110,4 @@ def test_read():
     assert config["particles"] == 100
     assert config["dt"] == (1.*u.Myr)
     assert config["with_errors"] == True
+    assert config["parameters"] == ["q1", "qz", "v_halo", "phi"]
