@@ -8,18 +8,17 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import uuid
 
 # Third-party
 import numpy as np
-from ..potential import Potential
-from ..util import _validate_coord
 
-__all__ = ["PotentialIntegrator", "leapfrog"]
+__all__ = ["leapfrog"]
 
-def leapfrog(acceleration_function, initial_position, initial_velocity, t1, t2, dt=None):
-    """ Given an acceleration function and initial conditions, integrate from t1 to t2
-        with a timestep dt using Leapfrog integration. The integration always *includes*
+def leapfrog(acceleration_function, initial_position, initial_velocity, t=None, 
+             t1=None, t2=None, dt=None):
+    """ Given an acceleration function and initial conditions, integrate from 
+        t1 to t2 with a timestep dt using Leapfrog integration. Alternatively,
+        specify the full time array with 't'. The integration always *includes* 
         the final timestep!
         See: http://ursa.as.arizona.edu/~rad/phys305/ODE_III/node11.html
 
@@ -47,9 +46,12 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t1, t2, 
     else:
         x_i = np.array(initial_position)
         v_i = np.array(initial_velocity)
-
-    times = np.arange(t1, t2+dt, dt)
-    #times = np.arange(t1, t2, dt)
+    
+    if t == None:
+        times = np.arange(t1, t2+dt, dt)
+        #times = np.arange(t1, t2, dt)
+    else:
+        times = t
     
     Ntimesteps = len(times)
 
@@ -74,17 +76,3 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t1, t2, 
 
     return times, xs, vs
 
-class PotentialIntegrator(object):
-
-    def __init__(self, potential, integrator=None):
-        ''' Convenience class for integrating particles in a potential.
-
-            Parameters
-            ----------
-            potential : Potential
-            integrator : function (optional)
-                The integration scheme. Defaults to leapfrog.
-
-        '''
-        if not isinstance(potential, Potential):
-            raise TypeError("potential must be a Potential object or subclass.")
