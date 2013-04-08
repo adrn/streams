@@ -46,6 +46,9 @@ def LawMajewski2010(**halo_parameters):
         Law & Majewski 2010 for their Nbody simulation with Sgr.
     """
     
+    if len(halo_parameters) == 0:
+        halo_parameters = halo_params
+    
     disk_potential = MiyamotoNagaiPotential(M=1E11*u.M_sun,
                                             a=6.5,
                                             b=0.26)
