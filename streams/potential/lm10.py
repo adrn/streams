@@ -46,16 +46,17 @@ def LawMajewski2010(**halo_parameters):
     if len(halo_parameters) == 0:
         halo_parameters = halo_params
     
-    disk_potential = MiyamotoNagaiPotential(m=1E11*u.M_sun,
+    bases = [u.radian, u.Myr, u.kpc, u.M_sun]
+    disk_potential = MiyamotoNagaiPotential(bases, m=1E11*u.M_sun,
                                             a=6.5*u.kpc,
                                             b=0.26*u.kpc)
-    bulge_potential = HernquistPotential(m=3.4E10*u.M_sun,
+    bulge_potential = HernquistPotential(bases, m=3.4E10*u.M_sun,
                                          c=0.7*u.kpc)
     
     params = halo_params.copy()
     for key,val in halo_parameters.items():
         params[key] = val
         
-    halo_potential = LogarithmicPotentialLJ(**params)
+    halo_potential = LogarithmicPotentialLJ(bases, **params)
     
     return disk_potential + bulge_potential + halo_potential

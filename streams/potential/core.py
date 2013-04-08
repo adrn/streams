@@ -120,9 +120,9 @@ class CartesianPotential(object):
         # Compute contribution to the potential from each component
         for potential_component in self._potential_components.values():
             try:
-                potential_value += potential_component(x.value,y.value,z.value)
+                potential_value += potential_component(x,y,z)
             except NameError:
-                potential_value = potential_component(x.value,y.value,z.value)
+                potential_value = potential_component(x,y,z)
         
         return potential_value
 
@@ -140,9 +140,9 @@ class CartesianPotential(object):
 
         for potential_derivative in self._potential_component_derivs.values():
             try:
-                acceleration -= potential_derivative(x.value,y.value,z.value)
+                acceleration -= potential_derivative(x,y,z)
             except NameError:
-                acceleration = -potential_derivative(x.value,y.value,z.value)
+                acceleration = -potential_derivative(x,y,z)
 
         return acceleration
 
@@ -161,11 +161,10 @@ class CartesianPotential(object):
         return u'Components: ${0}$'.format(ltx_str)
 
     def _r_to_xyz(self, r):
-        if not isinstance(r, u.Quantity):
-            raise TypeError("Position r must be an Astropy Quantity object. You"
-                            " specified a {0}".format(type(r)))
+        if isinstance(r, u.Quantity):
+            r = r.decompose(bases=self.unit_bases).value
         
-        if len(r.value.shape) == 1: 
+        if len(r.shape) == 1: 
             x,y,z = r
         else:
             x = r[:,0]
