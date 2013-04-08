@@ -40,7 +40,7 @@ def _cartesian_point_mass_model(G):
     '''
     
     def f(x,y,z,m,origin): 
-        return -G * m / np.sqrt((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)/x.unit
+        return -G * m / np.sqrt((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)
     
     def df(x,y,z,m,origin): 
         denom = ((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)**1.5
@@ -49,13 +49,13 @@ def _cartesian_point_mass_model(G):
         dy = G * m*(y-origin[1]) / denom
         dz = G * m*(z-origin[2]) / denom
         
-        return u.Quantity([dx,dy,dz], unit=dx.unit)
+        return np.array([dx,dy,dz])
         
     return (f, df)
 
 class PointMassPotential(CartesianPotential):
 
-    def __init__(self, m, origin=[0.,0.,0.]*u.kpc):
+    def __init__(self, unit_bases, m, origin=[0.,0.,0.]*u.kpc):
         ''' Represents a point-mass potential at the given origin.
 
             $\Phi = -\frac{GM}{x-x_0}$
@@ -71,7 +71,7 @@ class PointMassPotential(CartesianPotential):
 
         '''
         super(PointMassPotential, self).\
-            __init__()
+            __init__(unit_bases)
 
         # First see if M is a Quantity-like object
         if not isinstance(m, u.Quantity):
@@ -83,9 +83,10 @@ class PointMassPotential(CartesianPotential):
                             "passed a {0}.".format(type(origin)))
         
         name = uuid.uuid4()
-        params = dict(m=m, origin=origin)
+        params = dict(m=m.decompose(bases=self.unit_bases).value, 
+                      origin=origin.decompose(bases=self.unit_bases).value)
 
-        f,df = _cartesian_point_mass_model(G.decompose(bases=[origin.unit,m.unit,u.s]))
+        f,df = _cartesian_point_mass_model(G.decompose(bases=unit_bases).value)
         self.add_component(name, f, f_prime=df, parameters=params)
         
         # now that we've used it, throw it away
@@ -112,27 +113,27 @@ def _cartesian_miyamoto_nagai_model(G):
         xx = (x-origin[0])
         yy = (y-origin[1])
         zz = (z-origin[2])
-        return -G * m / np.sqrt(xx**2 + yy**2 + (a + np.sqrt(zz**2 + b**2)*zz.unit)**2)/x.unit
+        return -G * m / np.sqrt(xx**2 + yy**2 + (a + np.sqrt(zz**2 + b**2))**2)
     
     def df(x,y,z,m,a,b,origin): 
         xx = (x-origin[0])
         yy = (y-origin[1])
         zz = (z-origin[2])
         
-        denom = ((xx**2 + yy**2) + (a + np.sqrt(zz**2 + b**2)*zz.unit)**2)**1.5
+        denom = ((xx**2 + yy**2) + (a + np.sqrt(zz**2 + b**2))**2)**1.5
         
         dx = G*m*xx / denom
         dy = G*m*yy / denom
-        _tmp = a/(np.sqrt(zz**2 + b**2)*zz.unit)
-        dz = G*m*zz * (1.+_tmp.value) / denom
+        _tmp = a/(np.sqrt(zz**2 + b**2))
+        dz = G*m*zz * (1.+_tmp) / denom
                 
-        return u.Quantity([dx,dy,dz], unit=dx.unit)
+        return np.array([dx,dy,dz])
         
     return (f, df)
 
 class MiyamotoNagaiPotential(CartesianPotential):
 
-    def __init__(self, m, a, b, origin=[0.,0.,0.]*u.kpc):
+    def __init__(self, unit_bases, m, a, b, origin=[0.,0.,0.]*u.kpc):
         ''' Represents the Miyamoto-Nagai potential (1975) for a disk-like
             potential.
 
@@ -140,7 +141,7 @@ class MiyamotoNagaiPotential(CartesianPotential):
 
         '''
         super(MiyamotoNagaiPotential, self).\
-            __init__()
+            __init__(unit_bases)
 
         # First see if parameters is a Quantity-like object
         if not isinstance(m, u.Quantity) or not isinstance(a, u.Quantity) \
@@ -148,9 +149,12 @@ class MiyamotoNagaiPotential(CartesianPotential):
             raise TypeError("parameters must be Astropy Quantity objects.")
         
         name = uuid.uuid4()
-        params = dict(m=m, origin=origin, a=a, b=b)
+        params = dict(m=m.decompose(bases=unit_bases).value, 
+                      origin=origin.decompose(bases=unit_bases).value, 
+                      a=a.decompose(bases=unit_bases).value, 
+                      b=b.decompose(bases=unit_bases).value)
 
-        f,df = _cartesian_miyamoto_nagai_model(G.decompose(bases=[origin.unit,m.unit,u.s]))
+        f,df = _cartesian_miyamoto_nagai_model(G.decompose(bases=unit_bases).value)
         self.add_component(name, f, f_prime=df, parameters=params)
         
         # now that we've used it, throw it away
@@ -177,33 +181,33 @@ def _cartesian_hernquist_model(G):
         xx = (x-origin[0])
         yy = (y-origin[1])
         zz = (z-origin[2])
-        val = -G * m / (np.sqrt(xx**2 + yy**2 + zz**2)*xx.unit + c)
-        return val.decompose()
+        val = -G * m / (np.sqrt(xx**2 + yy**2 + zz**2) + c)
+        return val
     
     def df(x,y,z,m,c,origin):
         xx = (x-origin[0])
         yy = (y-origin[1])
         zz = (z-origin[2])
         
-        denom = (np.sqrt(xx**2 + yy**2 + zz**2)*xx.unit + c)**2 * np.sqrt(xx**2 + yy**2 + zz**2)
+        denom = (np.sqrt(xx**2 + yy**2 + zz**2)*xx + c)**2 * np.sqrt(xx**2 + yy**2 + zz**2)
         
-        dx = G*m*xx / denom / xx.unit
-        dy = G*m*yy / denom / xx.unit
-        dz = G*m*zz / denom / xx.unit
+        dx = G*m*xx / denom
+        dy = G*m*yy / denom
+        dz = G*m*zz / denom
         
-        return u.Quantity([dx,dy,dz], unit=dx.unit)
+        return np.array([dx,dy,dz])
         
     return (f, df)
     
 class HernquistPotential(CartesianPotential):
     
-    def __init__(self, m, c, origin=[0.,0.,0.]*u.kpc):
+    def __init__(self, unit_bases, m, c, origin=[0.,0.,0.]*u.kpc):
         ''' Represents the Hernquist potential (1990) for a spheroid (bulge).
 
             $\Phi_{spher} = -\frac{GM_{spher}}{r + c}$
         '''
         super(HernquistPotential, self).\
-            __init__()
+            __init__(unit_bases)
 
         # First see if parameters is a Quantity-like object
         if not isinstance(m, u.Quantity) or not isinstance(c, u.Quantity) \
@@ -211,9 +215,11 @@ class HernquistPotential(CartesianPotential):
             raise TypeError("parameters must be Astropy Quantity objects.")
         
         name = uuid.uuid4()
-        params = dict(m=m, origin=origin, c=c)
+        params = dict(m=m.decompose(bases=unit_bases).value, 
+                      origin=origin.decompose(bases=unit_bases).value, 
+                      c=c.decompose(bases=unit_bases).value)
 
-        f,df = _cartesian_hernquist_model(G.decompose(bases=[origin.unit,m.unit,u.s]))
+        f,df = _cartesian_hernquist_model(G.decompose(bases=unit_bases).value)
         self.add_component(name, f, f_prime=df, parameters=params)
         
         # now that we've used it, throw it away
@@ -239,9 +245,9 @@ def _cartesian_logarithmic_lj_model(G):
     '''
 
     def f(x,y,z,v_halo,q1,q2,qz,phi,r_halo,origin): 
-        C1 = (np.cos(phi.to(u.radian))/q1)**2+(np.sin(phi.to(u.radian))/q2)**2
-        C2 = (np.cos(phi.to(u.radian))/q2)**2+(np.sin(phi.to(u.radian))/q1)**2
-        C3 = 2.*np.sin(phi.to(u.radian))*np.cos(phi.to(u.radian))*(1./q1**2 - 1./q2**2)
+        C1 = (np.cos(phi)/q1)**2+(np.sin(phi)/q2)**2
+        C2 = (np.cos(phi)/q2)**2+(np.sin(phi)/q1)**2
+        C3 = 2.*np.sin(phi)*np.cos(phi)*(1./q1**2 - 1./q2**2)
         
         xx = (x-origin[0])
         yy = (y-origin[1])
@@ -250,9 +256,9 @@ def _cartesian_logarithmic_lj_model(G):
         return v_halo**2 * np.log(C1*xx**2 + C2*yy**2 + C3*xx*yy + zz**2/qz**2 + r_halo**2)
     
     def df(x,y,z,v_halo,q1,q2,qz,phi,r_halo,origin):
-        C1 = (np.cos(phi.to(u.radian))/q1)**2+(np.sin(phi.to(u.radian))/q2)**2
-        C2 = (np.cos(phi.to(u.radian))/q2)**2+(np.sin(phi.to(u.radian))/q1)**2
-        C3 = 2.*np.sin(phi.to(u.radian))*np.cos(phi.to(u.radian))*(1./q1**2 - 1./q2**2)
+        C1 = (np.cos(phi)/q1)**2+(np.sin(phi)/q2)**2
+        C2 = (np.cos(phi)/q2)**2+(np.sin(phi)/q1)**2
+        C3 = 2.*np.sin(phi)*np.cos(phi)*(1./q1**2 - 1./q2**2)
         
         xx = (x-origin[0])
         yy = (y-origin[1])
@@ -260,17 +266,17 @@ def _cartesian_logarithmic_lj_model(G):
         
         denom = (C1*xx**2 + C2*yy**2 + C3*xx*yy + zz**2/qz**2 + r_halo**2)
         
-        dx = v_halo**2 * (2.*C1*xx + C3*yy) / denom / xx.unit
-        dy = v_halo**2 * (2.*C2*yy + C3*xx) / denom / xx.unit
-        dz = 2.*v_halo**2 * zz / denom / qz**2 / xx.unit**2
+        dx = v_halo**2 * (2.*C1*xx + C3*yy) / denom
+        dy = v_halo**2 * (2.*C2*yy + C3*xx) / denom
+        dz = 2.*v_halo**2 * zz / denom / qz**2
         
-        return u.Quantity([dx,dy,dz], unit=dx.unit)
+        return np.array([dx,dy,dz])
         
     return (f, df)
 
 class LogarithmicPotentialLJ(CartesianPotential):
 
-    def __init__(self, **kwargs):
+    def __init__(self, unit_bases, **kwargs):
         ''' Represents a triaxial Logarithmic potential (e.g. triaxial halo).
             
             $\Phi_{halo} = v_{halo}^2\ln(C1x^2 + C2y^2 + C3xy + z^2/q_z^2 + r_halo^2)$
@@ -278,7 +284,7 @@ class LogarithmicPotentialLJ(CartesianPotential):
             Parameters: v_halo, q1, q2, qz, phi, r_halo, origin
 
         '''
-        super(LogarithmicPotentialLJ, self).__init__()
+        super(LogarithmicPotentialLJ, self).__init__(unit_bases)
         
         # First see if parameters is a Quantity-like object
         assert "q1" in kwargs.keys() and \
@@ -293,10 +299,14 @@ class LogarithmicPotentialLJ(CartesianPotential):
                 raise TypeError("parameters must be Astropy Quantity objects.")
         
         name = uuid.uuid4()
-        params = kwargs
+        params = dict()
+        for key,val in kwargs.items():
+            if isinstance(val, u.Quantity):
+                params[key] = val.decompose(bases=unit_bases).value
+            else:
+                params[key] = val
 
-        bases = [u.M_sun] + kwargs["v_halo"].unit.bases
-        f,df = _cartesian_logarithmic_lj_model(G.decompose(bases=bases))
+        f,df = _cartesian_logarithmic_lj_model(G.decompose(bases=unit_bases).value)
         self.add_component(name, f, f_prime=df, parameters=params)
         
         # now that we've used it, throw it away

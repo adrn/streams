@@ -28,11 +28,12 @@ __all__ = ["CartesianPotential"]
 
 class CartesianPotential(object):
 
-    def __init__(self):
+    def __init__(self, unit_bases):
         """ A baseclass for representing gravitational potentials in Cartesian
             coordinates.
         """
-
+        self.unit_bases = unit_bases
+    
         # Initialize empty containers for potential components and their
         #   derivatives.
         self._potential_components = dict()
@@ -119,9 +120,9 @@ class CartesianPotential(object):
         # Compute contribution to the potential from each component
         for potential_component in self._potential_components.values():
             try:
-                potential_value += potential_component(x,y,z)
+                potential_value += potential_component(x.value,y.value,z.value)
             except NameError:
-                potential_value = potential_component(x,y,z)
+                potential_value = potential_component(x.value,y.value,z.value)
         
         return potential_value
 
@@ -139,9 +140,9 @@ class CartesianPotential(object):
 
         for potential_derivative in self._potential_component_derivs.values():
             try:
-                acceleration -= potential_derivative(x,y,z)
+                acceleration -= potential_derivative(x.value,y.value,z.value)
             except NameError:
-                acceleration = potential_derivative(x,y,z)
+                acceleration = -potential_derivative(x.value,y.value,z.value)
 
         return acceleration
 
@@ -224,7 +225,7 @@ class CartesianPotential(object):
                     r = r.T*x.unit
                     
                     cs = axes[ii-1,jj].contourf(X1, X2, 
-                                                self.value_at(r).value.reshape(X1.shape), 
+                                                self.value_at(r).reshape(X1.shape), 
                                                 cmap=cm.Blues, **plot_kwargs)
 
             cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
@@ -258,7 +259,7 @@ class CartesianPotential(object):
         if not isinstance(other, CartesianPotential):
             raise TypeError("Addition is only supported between two Potential objects!")
 
-        new_potential = CartesianPotential()
+        new_potential = CartesianPotential(self.unit_bases)
         for key in self._potential_components.keys():
             new_potential.add_component(key, self._potential_components[key], 
                                         f_prime=self._potential_component_derivs[key],

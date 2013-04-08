@@ -29,27 +29,29 @@ else:
 class TestPointMass(object):
 
     def test_creation(self):
-        potential = PointMassPotential(m=1.*u.M_sun, 
+        potential = PointMassPotential(unit_bases=[u.au, u.M_sun, u.yr],
+                                       m=1.*u.M_sun, 
                                        origin=[0.,0.,0.]*u.au)
         
         r = [1.,0.,0.]*u.au
         pot_val = potential.value_at(r)
-        assert pot_val.unit == (u.au/u.s)**2
         
         np.testing.assert_array_almost_equal(
-            np.sqrt(-pot_val.decompose(bases=[u.au,u.yr])), 2*np.pi, decimal=3) 
+            np.sqrt(-pot_val), 2*np.pi, decimal=3) 
         
         acc_val = potential.acceleration_at(r)
-        assert acc_val.unit.is_equivalent(u.m/u.s**2)
         
-        np.testing.assert_array_almost_equal(acc_val.to(u.m/u.s**2).value, 
-                                             [0.00593173285805,0.,0.], decimal=8)
+        np.testing.assert_array_almost_equal(acc_val, 
+                                             [-39.48621,0.,0.], decimal=2)
     
     def test_addition(self):
         
-        potential1 = PointMassPotential(m=1.*u.M_sun, 
+        bases = [u.au, u.M_sun, u.yr]
+        potential1 = PointMassPotential(bases, 
+                                        m=1.*u.M_sun, 
                                         origin=[-2.,-1.,0.]*u.au)
-        potential2 = PointMassPotential(m=1.*u.M_sun, 
+        potential2 = PointMassPotential(bases,
+                                        m=1.*u.M_sun, 
                                         origin=[2.,1.,0.]*u.au)
         
         potential = potential1 + potential2
@@ -58,22 +60,20 @@ class TestPointMass(object):
         fig,axes = potential.plot(grid,grid,grid)
         fig.savefig(os.path.join(plot_path, "two_point_mass.png"))
 
+gal_bases = [u.kpc, u.M_sun, u.Myr, u.radian]
 class TestMiyamotoNagai(object):
 
     def test_creation(self):
-
-        potential = MiyamotoNagaiPotential(m=1.E11*u.M_sun, 
+        
+        potential = MiyamotoNagaiPotential(gal_bases, 
+                                           m=1.E11*u.M_sun, 
                                            a=6.5*u.kpc,
                                            b=0.26*u.kpc,
                                            origin=[0.,0.,0.]*u.kpc)
         
         r = [1.,0.,0.]*u.kpc
-        pot_val = potential.value_at(r)
-
-        assert pot_val.unit.is_equivalent((u.kpc/u.s)**2)
-        
+        pot_val = potential.value_at(r)        
         acc_val = potential.acceleration_at(r)
-        assert acc_val.unit.is_equivalent(u.m/u.s**2)
         
         grid = np.linspace(-20.,20, 50)*u.kpc
         fig,axes = potential.plot(grid,grid,grid)
@@ -81,11 +81,13 @@ class TestMiyamotoNagai(object):
     
     def test_addition(self):
         
-        potential1 = MiyamotoNagaiPotential(m=1E11*u.M_sun, 
+        potential1 = MiyamotoNagaiPotential(gal_bases, 
+                                           m=1E11*u.M_sun, 
                                            a=6.5*u.kpc,
                                            b=0.26*u.kpc,
                                            origin=[0.,0.,0.]*u.kpc)
-        potential2 = PointMassPotential(m=2E9*u.M_sun, 
+        potential2 = PointMassPotential(gal_bases, 
+                                        m=2E9*u.M_sun, 
                                         origin=[12.,1.,0.]*u.kpc)
         potential = potential1 + potential2
         
@@ -97,16 +99,19 @@ class TestCompositeGalaxy(object):
     
     def test_creation(self):
 
-        disk = MiyamotoNagaiPotential(m=1.E11*u.M_sun, 
+        disk = MiyamotoNagaiPotential(gal_bases,
+                                      m=1.E11*u.M_sun, 
                                       a=6.5*u.kpc,
                                       b=0.26*u.kpc,
                                       origin=[0.,0.,0.]*u.kpc)
         
-        bulge = HernquistPotential(m=3.4E10*u.M_sun,
+        bulge = HernquistPotential(gal_bases,
+                                   m=3.4E10*u.M_sun,
                                    c=0.7*u.kpc,
                                    origin=[0.,0.,0.]*u.kpc)
         
-        halo = LogarithmicPotentialLJ(v_halo=(121.858*u.km/u.s),
+        halo = LogarithmicPotentialLJ(gal_bases,
+                                      v_halo=(121.858*u.km/u.s),
                                       q1=1.38,
                                       q2=1.0,
                                       qz=1.36,
@@ -118,20 +123,13 @@ class TestCompositeGalaxy(object):
         for potential in [disk, bulge, halo]: 
             print(potential)
             pot_val = potential.value_at(r)
-            assert pot_val.unit.is_equivalent((u.kpc/u.s)**2)        
-            
             acc_val = potential.acceleration_at(r)
-            assert acc_val.unit.is_equivalent(u.m/u.s**2)
         
         potential = disk + bulge + halo 
         
         r = [1.,0.,0.]*u.kpc
-        pot_val = potential.value_at(r)
-
-        assert pot_val.unit.is_equivalent((u.kpc/u.s)**2)
-        
+        pot_val = potential.value_at(r)        
         acc_val = potential.acceleration_at(r)
-        assert acc_val.unit.is_equivalent(u.m/u.s**2)
         
         grid = np.linspace(-20.,20, 50)*u.kpc
         fig,axes = potential.plot(grid,grid,grid)
