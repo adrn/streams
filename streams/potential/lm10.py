@@ -15,20 +15,20 @@ import astropy.units as u
 
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
 
-halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
+halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
                     q1=1.38,
                     q2=1.0,
                     qz=1.36,
-                    phi=1.692969,
-                    r_halo=12.)
+                    phi=1.692969*u.radian,
+                    r_halo=12.*u.kpc)
 
 param_ranges = dict(qz=(1.,2.),
                     q1=(1.,2.),
                     q2=(1.,2.),
-                    v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr).value,
-                            (150.*u.km/u.s).to(u.kpc/u.Myr).value),
-                    phi=(np.pi/4, 3*np.pi/4),
-                    r_halo=(8,20))
+                    v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr),
+                            (150.*u.km/u.s).to(u.kpc/u.Myr)),
+                    phi=(np.pi/4, 3*np.pi/4)*u.radian,
+                    r_halo=(8,20)*u.kpc)
 
 param_to_latex = dict(q1=r"$q_1$",
                       q2=r"$q_2$",
@@ -47,10 +47,10 @@ def LawMajewski2010(**halo_parameters):
         halo_parameters = halo_params
     
     disk_potential = MiyamotoNagaiPotential(M=1E11*u.M_sun,
-                                            a=6.5,
-                                            b=0.26)
+                                            a=6.5*u.kpc,
+                                            b=0.26*u.kpc)
     bulge_potential = HernquistPotential(M=3.4E10*u.M_sun,
-                                         c=0.7)
+                                         c=0.7*u.kpc)
     
     params = halo_params.copy()
     for key,val in halo_parameters.items():
