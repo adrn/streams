@@ -71,158 +71,68 @@ class TestParticleSimulation(object):
         raise NotImplementedError()
 
 class Particle(object):
-
-    def __init__(self, r, v, m=1.0*u.M_sun):
-        """ Represents a massive particle at some position with some velocity.
+    
+    def __init__(self, r, v, m):
+        """ Represents a single or array of massive particles with positions 
+            and velocities. Useful for integration because internally stores 
+            data as arrays.
             
             Parameters
             ----------
             r : astropy.units.Quantity
-                A Quantity object with a vector position.
+                A Quantity object with position(s) aligned with the
+                specified velocities.
             v : astropy.units.Quantity
-                A Quantity object with a vector velocity.
+                A Quantity object with velocities aligned with the
+                specified position(s).
             m : astropy.units.Quantity
-                A Quantity object for the mass of the particle.
+                A Quantity object with an array of masses aligned with the
+                specified positions/velocities.
         """
-
-        # Set position as array
-        if not isinstance(r, u.Quantity) or not isinstance(v, u.Quantity):
-            raise TypeError("Position and Velocity arrays must be Astropy "
-                            "Quantity objects. You specified {0},{1}."
-                            .format(type(r),type(v)))
-        
-        if not isinstance(m, u.Quantity):
-            raise TypeError("Mass must be an Astropy Quantity object. You "
-                            "specified {0}.".format(type(m)))
+                
+        if not isinstance(r, u.Quantity) or \
+           not isinstance(v, u.Quantity) or \
+           not isinstance(m, u.Quantity):
+            raise TypeError("Position, Velocity, and Mass must be Astropy "
+                            "Quantity objects. You specified {0},{1},{2}."
+                            .format(type(r),type(v),type(m)))
         
         if not isiterable(r.value):
             r = u.Quantity([r.value], unit=r.unit)
         
         if not isiterable(v.value):
             v = u.Quantity([v.value], unit=v.unit)
-            
-        if len(r.value.shape) > 1 or len(v.value.shape) > 1:
-            raise ValueError("Particle objects cannot contain arrays. Use a "
-                             "ParticleCollection instead.")
+        
+        if not isiterable(m.value):
+            m = u.Quantity([m.value], unit=m.unit)
         
         if r.value.shape != v.value.shape:
-            raise ValueError("Shape mismatch: position vectory doesn't "
-                             "match velocity vector. {0} vs. {1}"
-                             .format(_r.value.shape,_v.value.shape))
+            raise ValueError("Shape mismatch: position and velocity "
+                             "shapes must match. {0}, {1}"
+                             .format(r.value.shape,v.value.shape))
         
-        self.position = self.r = r.copy()
-        self.velocity = self.v = v.copy()
-        self.m = self.mass = m.copy()
-
-    def __repr__(self):
-        return "<Particle m={0} at x=[{1}], v=[{2}]".format(str(self.mass), ",".join(map(str, self.position)), ",".join(map(str, self.velocity)))
-
-    def __key(self):
-        return (tuple(self.position), tuple(self.velocity), self.mass)
-
-    def __hash__(self):
-        return hash(self.__key())
-
-class ParticleCollection(object):
-    
-    def __init__(self, particles=None, r=None, v=None, m=None):
-        """ A collection of Particle objects. Useful for doing integration
-            because internally stores data as arrays and is thus faster than
-            iterating over lists of Particles.
-            
-            Parameters
-            ----------
-            particles : list, ndarray
-                A list/array of Particle objects.
-            r : astropy.units.Quantity
-                A Quantity object with an array of positions aligned with the
-                specified velocities (if Particles is not specified).
-            v : astropy.units.Quantity
-                A Quantity object with an array of velocities aligned with the
-                specified positions (if Particles is not specified).
-            m : astropy.units.Quantity (optional)
-                A Quantity object with an array of masses aligned with the
-                specified positions/velocities. Will default to 1 solar mass.
-        """
-        
-        if particles != None:
-            ndim = 0
-            _r, _v, _m = [], [], []
-            r_unit, v_unit, m_unit = None,None,None
-            for p in particles:
-                # Make sure all objects are Particle's
-                if not isinstance(p,Particle):
-                    raise TypeError("particles must be a list or array of "
-                                    "particle objects! You passed a {0}."
-                                    .format(type(p)))
-                
-                # store the dimensionality to check that all positions and
-                #   velocities match
-                if ndim == 0:
-                    ndim = len(p.position)
-                
-                # store the units of the position/velocity for the final array
-                if r_unit == None:
-                    r_unit = p.position.unit
-                    v_unit = p.velocity.unit
-                    m_unit = p.mass.unit
-                
-                if len(p.position) != ndim or len(p.velocity) != ndim:
-                    raise ValueError("Particle dimensionality ({0}) must match "
-                                     "{1} for all particles in this collection."
-                                     .format(len(p.position),ndim))
-                
-                _r.append(p.position.value)
-                _v.append(p.velocity.value)
-                _m.append(p.mass.value)
-            
-            _r = np.array(_r)*r_unit
-            _v = np.array(_v)*v_unit
-            _m = np.array(_m)*m_unit
-        
-        else:
-            if r == None or v == None:
-                raise ValueError("You must specify either a list/array of "
-                                 "Particle objects or both an array of "
-                                 "positions and an array of velocities.")
-            
-            elif not isinstance(r, u.Quantity) or not isinstance(v, u.Quantity):
-                raise TypeError("Position and Velocity arrays must be Astropy "
-                                "Quantity objects. You specified {0},{1}."
-                                .format(type(r),type(v)))
-            
-            if m != None and not isinstance(m, u.Quantity):
-                raise TypeError("Mass array must be an Astropy Quantity object."
-                                " You specified {0}.".format(type(m)))
-            
-            if r.value.shape != v.value.shape:
-                raise ValueError("Shape mismatch: position vector doesn't "
-                                 "match velocity vector. {0} vs. {1}"
-                                 .format(r.value.shape,v.value.shape))
-            
-            if m == None:
-                m = np.ones_like(r.value)*u.M_sun
-            else:
-                if r.value.shape != m.value.shape:
-                    raise ValueError("Shape mismatch: mass vector doesn't "
-                                     "match other shapes. {0} vs. {1}"
-                                     .format(m.value.shape,r.value.shape))
-            
-            _r = r
-            _v = v
-            _m = m
-            
-        self.r = _r
-        self.v = _v
-        self.m = _m
+        if len(r.value.shape) > 1:
+            if r.value.shape[0] != m.value.shape[0]:
+                raise ValueError("Shape mismatch: mass array must be aligned "
+                                 "with positions along axis=0. {0} vs {1}"
+                                 .format(m.value.shape, r.value.shape))
+                             
+        self.r = r
+        self.v = v
+        self.m = m
     
     def __getitem__(self, val):
         """ Implement indexing / slicing """
         
-        if isinstance(val, int):
+        if isinstance(val, int) or isinstance(val, slice):
             return Particle(r=self.r[val], v=self.v[val], m=self.m[val])
-        elif isinstance(val, slice):
-            return ParticleCollection(r=self.r[val], v=self.v[val], m=self.m[val])
         else:
             raise TypeError("Indices must be integer, not {0}".format(type(val)))
-        
+    
+    def __len__(self):
+        return len(self.r)
+    
+class Orbit(object):
+    
+    def __init__(self, t):
+        """ Represents the orbit of a Particle """

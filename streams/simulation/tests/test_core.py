@@ -15,76 +15,72 @@ import numpy as np
 import pytest
 import astropy.units as u
 
-from ..core import Particle, ParticleCollection
+from ..core import Particle
 
 # Tests for the Particle class -- *not* a test particle!!!
 class TestParticle(object):
     
     def test_creation(self):
-        
         # Not quantities
         with pytest.raises(TypeError):
-            Particle(15., 16.)
+            Particle(15., 16., 1.*u.M_sun)
             
         with pytest.raises(TypeError):
-            Particle(15.*u.kpc, 16.)
+            Particle(15.*u.kpc, 16., 1.*u.M_sun)
         
         with pytest.raises(TypeError):
-            Particle(15., 16.*u.kpc/u.Myr)
+            Particle(15., 16.*u.kpc/u.Myr, 1.*u.M_sun)
         
         # make 1D case vectors
-        p = Particle(15.*u.kpc, 16.*u.kpc/u.Myr)
+        p = Particle(15.*u.kpc, 16.*u.kpc/u.Myr, m=1.*u.M_sun)
         assert len(p.r) == 1 and len(p.v) == 1
         
-        # don't support arrays
-        with pytest.raises(ValueError):
-            Particle([[15.,11.,13],[15.,11.,13]]*u.kpc, 
-                     [[15.,11.,13],[15.,11.,13]]*u.kpc/u.Myr)
+        # 2D case
+        p = Particle([15.,10.]*u.kpc, [160.,110.]*u.kpc/u.Myr, m=1.*u.M_sun)
+        assert len(p.r) == 2 and len(p.v) == 2 and len(p.m) == 1
         
-        with pytest.raises(ValueError):
-            Particle([[15.,11.,13],[15.,11.,13]]*u.kpc, 
-                     [[15.,11.,13],[15.,11.,13]]*u.kpc/u.Myr)
-        
+        # 3D case
         p = Particle([0.,8.,0.2]*u.kpc, 
-                     [10.,200.,-15.]*u.km/u.s)
-
-
-class TestParticleCollection(object):
-    
-    def test_creation(self):
+                     [10.,200.,-15.]*u.km/u.s,
+                     m=1.*u.M_sun)
         
-        particles = [Particle(r=np.random.random(size=3)*u.kpc, 
-                              v=np.random.random(size=3)*u.kpc) for ii in range(100)]
+        with pytest.raises(ValueError):
+            p = Particle([[15.,11.,13],[15.,11.,13]]*u.kpc, 
+                     [[15.,11.,13],[15.,11.,13]]*u.kpc/u.Myr,
+                     m=[1.,1.,1.]*u.M_sun)
         
-        pc = ParticleCollection(particles=particles)
+        # 3D, multiple particles
+        p = Particle([[15.,11.,13],[15.,11.,13]]*u.kpc, 
+                     [[15.,11.,13],[15.,11.,13]]*u.kpc/u.Myr,
+                     m=[1.,1.]*u.M_sun)
         
-        pc = ParticleCollection(r=np.random.random(size=500)*u.kpc,
-                                v=np.random.random(size=500)*u.kpc)
+        pc = Particle(r=np.random.random(size=500)*u.kpc,
+                      v=np.random.random(size=500)*u.kpc,
+                      m=np.ones(500)*u.M_sun)
+        
+        
+        pc = Particle(r=np.random.random(size=(500,3))*u.kpc,
+                      v=np.random.random(size=(500,3))*u.kpc,
+                      m=np.ones(500)*u.M_sun)
         
         # Size mismatch
         with pytest.raises(ValueError):
-            pc = ParticleCollection(r=np.random.random(size=500)*u.kpc,
-                                    v=np.random.random(size=501)*u.kpc)
+            pc = Particle(r=np.random.random(size=(500,3))*u.kpc,
+                          v=np.random.random(size=(501,3))*u.kpc,
+                          m=np.ones(500)*u.M_sun)
         
         with pytest.raises(ValueError):
-            pc = ParticleCollection(r=np.random.random(size=501)*u.kpc,
-                                    v=np.random.random(size=500)*u.kpc)
-        
-        # test adding particle with wrong type/dimensionality
-        particles = [Particle(r=np.random.random(size=3)*u.kpc, 
-                              v=np.random.random(size=3)*u.kpc) for ii in range(10)]
-        
-        with pytest.raises(TypeError):
-            pc = ParticleCollection(particles=particles+[16])
-        
-        with pytest.raises(ValueError):
-            pc = ParticleCollection(particles=particles+[Particle([0]*u.kpc,[0]*u.kpc)])
+            pc = Particle(r=np.random.random(size=(501,3))*u.kpc,
+                          v=np.random.random(size=(501,3))*u.kpc,
+                          m=np.ones(500)*u.M_sun)
     
     def test_slicing(self):
-        pc = ParticleCollection(r=np.random.random(size=500)*u.kpc,
-                                v=np.random.random(size=500)*u.km/u.s)
+        pc = Particle(r=np.random.random(size=500)*u.kpc,
+                      v=np.random.random(size=500)*u.km/u.s,
+                      m=np.ones(500)*u.M_sun)
         
         assert isinstance(pc[0], Particle)
         
-        assert isinstance(pc[0:15], ParticleCollection)
+        assert isinstance(pc[0:15], Particle)
+        assert len(pc[0:15]) == 15
         
