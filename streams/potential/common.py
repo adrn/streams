@@ -13,19 +13,20 @@ import uuid
 # Third-party
 import numpy as np
 import astropy.units as u
-from astropy.constants.si import G
+from astropy.constants import G
 
-from .core import Potential
+from .core import CartesianPotential
 from ..util import *
-from ..coordinates import CartesianCoordinates, SphericalCoordinates, \
-                          CylindricalCoordinates
 
 #import _common # minimal gains from using Cython
 
+'''
 __all__ = ["MiyamotoNagaiPotential", "HernquistPotential", \
            "LogarithmicPotentialLJ", "LogarithmicPotentialJZSH", \
            "LogarithmicPotentialJHB", "LogarithmicPotential", \
            "PointMassPotential"]
+'''
+__all__ = ["PointMassPotential"]
 
 def _raise(ex):
     raise ex
@@ -34,58 +35,67 @@ def _raise(ex):
 #    Potential due to a point mass at the given position
 ####################################################################################
 
-def _point_mass_model_cartesian(params):
+def _cartesian_point_mass_model(G):
     ''' A function that accepts model parameters, and returns a tuple of
         functions that accept coordinates and evaluates this component of the
         potential and its derivatives for cartesian coordinates.
+        
+        params[0] = mass
+        params[1] = origin
+            origin[0] = x0, etc.
     '''
-    f = lambda x,y,z: -params["_G"] * params["M"] / np.sqrt((x-params["x0"])**2 + (y-params["y0"])**2 + (z-params["z0"])**2)
-    df_dx = lambda x,y,z: params["_G"] * params["M"]*(x-params["x0"]) / ((x-params["x0"])**2 + (y-params["y0"])**2 + (z-params["z0"])**2)**1.5
-    df_dy = lambda x,y,z: params["_G"] * params["M"]*(y-params["y0"]) / ((x-params["x0"])**2 + (y-params["y0"])**2 + (z-params["z0"])**2)**1.5
-    df_dz = lambda x,y,z: params["_G"] * params["M"]*(z-params["z0"]) / ((x-params["x0"])**2 + (y-params["y0"])**2 + (z-params["z0"])**2)**1.5
-    return (f, df_dx, df_dy, df_dz)
+    
+    def f(x,y,z,m,origin): 
+        return -G * m / np.sqrt((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)/x.unit
+    
+    def df(x,y,z,m,origin): 
+        denom = ((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)**1.5
+        
+        dx = -G * m*(x-origin[0]) / denom
+        dy = -G * m*(y-origin[1]) / denom
+        dz = -G * m*(z-origin[2]) / denom
+        
+        return u.Quantity([dx,dy,dz], unit=dx.unit)
+        
+    return (f, df)
 
-class PointMassPotential(Potential):
+class PointMassPotential(CartesianPotential):
 
-    def __init__(self, M, location, length_unit=u.kpc, time_unit=u.Myr, \
-                    mass_unit=u.solMass):
+    def __init__(self, m, origin):
         ''' Represents a point-mass potential at the given origin.
 
             $\Phi = -\frac{GM}{x-x_0}$
 
             Parameters
             ----------
-            M : numeric or Quantity
+            M : astropy.units.Quantity
                 Mass.
-            location : dict
-                Must be a dictionary specifying the location of the point mass.
-                For example, in cartesian, it should look like
-                origin={'x0' : 5.}.
+            origin : astropy.units.Quantity
+                Must specify the location of the point mass along each 
+                dimension. For example, it could look like 
+                    origin=[0,0,0)]*u.kpc
 
         '''
         super(PointMassPotential, self).\
-            __init__(coordinate_system=CartesianCoordinates)
-        self.length_unit = u.Unit(length_unit)
-        self.time_unit = u.Unit(time_unit)
-        self.mass_unit = u.Unit(mass_unit)
+            __init__()
 
         # First see if M is a Quantity-like object
-        if hasattr(M, 'to'):
-            M_val = M.to(self.mass_unit).value
-        else:
-            M_val = float(M)
+        if not isinstance(m, u.Quantity):
+            raise TypeError("mass must be an Astropy Quantity object. You "
+                            "passed a {0}.".format(type(m)))
+        
+        if not isinstance(origin, u.Quantity):
+            raise TypeError("origin must be an Astropy Quantity object. You "
+                            "passed a {0}.".format(type(origin)))
+        
+        name = uuid.uuid4()
+        params = dict(m=m, origin=origin)
 
-        self.params = {"M" : float(M_val),
-                       "_G" : G.to(self.length_unit**3 / self.mass_unit \
-                                     / self.time_unit**2).value}
-
-        # Trust that the user knows what they are doing with 'origin'
-        for key,val in location.items():
-            self.params[key] = val
-
-        f_derivs = _point_mass_model_cartesian(self.params)
-        self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
-        self.add_component = lambda *args: \
+        f,df = _cartesian_point_mass_model(G.decompose(bases=[origin.unit,m.unit,u.s]))
+        self.add_component(name, f, f_prime=df, parameters=params)
+        
+        # now that we've used it, throw it away
+        self.add_component = lambda *args,**kwargs: \
             _raise(AttributeError("'add_component' is only available for the "
                                   "base Potential class."))
 
@@ -93,6 +103,7 @@ class PointMassPotential(Potential):
         ''' Custom latex representation for IPython Notebook '''
         return "$\\Phi = -\\frac{GM}{r-r_0}$"
 
+"""
 ####################################################################################
 #    Miyamoto-Nagai Disk potential from Miyamoto & Nagai 1975
 #    http://adsabs.harvard.edu/abs/1975PASJ...27..533M
@@ -411,3 +422,4 @@ class LogarithmicPotentialJHB(Potential):
         ''' Custom latex representation for IPython Notebook '''
         return "$\\Phi_{halo} = v_{halo}^2\\ln(x^2 + y^2 + z^2 + d^2)$"
 
+"""

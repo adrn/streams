@@ -8,13 +8,12 @@ from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
-__all__ = ["Potential"]
-
 # Standard library
 import os
 import copy
 import inspect
 import logging
+import functools
 
 # Third-party
 import numpy as np
@@ -23,37 +22,16 @@ from matplotlib import cm
 from astropy.utils import isiterable
 import astropy.units as u
 
-from ..util import *
-from ..coordinates import Coordinates, CartesianCoordinates, \
-                          SphericalCoordinates, CylindricalCoordinates
+#from ..util import *
 
-class Potential(object):
+__all__ = ["CartesianPotential"]
 
-    def __init__(self, coordinate_system, length_unit=u.kpc,
-                                          mass_unit=u.solMass):
-        ''' A Potential object or baseclass represents an analytic form of a
-            gravitational potential.
+class CartesianPotential(object):
 
-            Parameters
-            ----------
-            coordinate_system : streams.coordinates.Coordinates
-                A Coordinates object that represents the type of coordinate
-                system this potential is expressed in.
-            length_unit : astropy.units.Unit, str (optional)
-                The unit of length. Defaults to kiloparsec (kpc).
-            mass_unit : astropy.units.Unit, str (optional)
-                The unit of mass. Defaults to solar masses (solMass).
-        '''
-
-        if not issubclass(coordinate_system, Coordinates):
-            raise ValueError("The specified coordinate_system must be a "
-                             " subclass of streams.coordinates.Coordinates.")
-        else:
-            self.coordinate_system = coordinate_system
-
-        # Make sure these units are both astropy.units.Unit objects
-        self.length_unit = u.Unit(length_unit)
-        self.mass_unit = u.Unit(mass_unit)
+    def __init__(self):
+        """ A baseclass for representing gravitational potentials in Cartesian
+            coordinates.
+        """
 
         # Initialize empty containers for potential components and their
         #   derivatives.
@@ -61,14 +39,13 @@ class Potential(object):
         self._potential_component_derivs = dict()
         self._latex = dict()
         self.ndim = None
-        
-        self.params = dict()
+        self.parameters = dict()
 
-    def add_component(self, name, func, derivs=None, latex=None, params=None):
-        ''' Add a component to the potential. The component must have a name,
+    def add_component(self, name, func, f_prime=None, latex=None, parameters=None):
+        """ Add a component to the potential. The component must have a name,
             and you must specify the functional form of the potential component.
             You may also optionally add derivatives using the 'derivs'
-            parameter.
+            keyword.
 
             Parameters
             ----------
@@ -76,15 +53,16 @@ class Potential(object):
                 The name of the potential component, e.g. 'halo'
             func : function
                 The functional form of the potential component. This must be a
-                function that accepts N arguments where N is the dimensionality
-            derivs : tuple
-                A tuple of functions representing the derivatives of the
-                potential.
+                function that accepts N arguments where N is the dimensionality.
+            f_prime : tuple (optional)
+                A functions that computes the derivatives of the potential.
             latex : str (optional)
                 The latex representation of this potential component. Will be
                 used to make sexy output in iPython Notebook.
+            parameters : dict (optional)
+                Any extra parameters that the potential function requires.
 
-        '''
+        """
 
         # Make sure the func is callable, and that the component doesn't already
         #   exist in the potential
@@ -96,41 +74,25 @@ class Potential(object):
             raise NameError("Potential component '{0}' already exists!".\
                              format(name))
 
-        self._potential_components[name] = func
-
-        ndim_this_p = len(inspect.getargspec(func).args)
+        if isinstance(func, functools.partial):
+            func = func.func
+            
+        ndim_this_func = len(inspect.getargspec(func).args) - len(parameters)
         if self.ndim == None:
-            self.ndim = ndim_this_p
-        elif ndim_this_p != self.ndim:
+            self.ndim = ndim_this_func
+        elif ndim_this_func != self.ndim:
             raise ValueError("This potential is already established to be "
                              "{0} dimensional. You attempted to add a component"
                              " with only {1} dimensions".\
-                             format(self.ndim, ndim_this_p))
-
-        # If the user passes the potential derivatives, make sure it is an
-        #   iterable of functions
-        if derivs is not None:
-            if not isiterable(derivs):
-                raise TypeError("'derivs' should be a tuple of functions that "
-                                "compute the potential derivatives along each "
-                                "dimension.")
-
-            derivs = tuple(derivs)
-
-            # Number of derivative functions should be equal to the
-            #   dimensionality of the potential
-            if len(derivs) != self.ndim:
-                raise ValueError("Number of derivative functions should equal "
-                                 "dimensionality of potential! (e.g. the number"
-                                 " of arguments for the potential function).")
-
-            for deriv in derivs:
-                if not hasattr(deriv, '__call__'):
-                    raise TypeError("'derivs' parameter must be a tuple of "
-                                    "functions! You passed in a '{0}'".\
-                                    format(deriv.__class__))
-
-        self._potential_component_derivs[name] = derivs
+                             format(self.ndim, ndim_this_func))
+        
+        self._potential_components[name] = functools.partial(func, **parameters)
+        
+        # If the user passes the potential derivatives
+        if f_prime is not None:
+            self._potential_component_derivs[name] = functools.partial(f_prime, **parameters)
+        else:
+            self._potential_component_derivs[name] = None
 
         if latex != None:
             if latex.startswith("$"):
@@ -140,63 +102,48 @@ class Potential(object):
                 latex = latex[:-1]
 
             self._latex[name] = latex
-
-    def value_at(self, *args):
-        ''' Compute the value of the potential at the given position(s) '''
-
-        coord_array = self._args_to_coords(args)
-
+        
+        self.parameters[name] = parameters
+        
+    def value_at(self, r):
+        """ Compute the value of the potential at the given position(s) 
+            
+            Parameters
+            ----------
+            r : astropy.units.Quantity
+                Position to compute the value at.
+        """
+        
+        x,y,z = self._r_to_xyz(r)
+        
         # Compute contribution to the potential from each component
         for potential_component in self._potential_components.values():
             try:
-                potential_value += potential_component(*coord_array.T)
+                potential_value += potential_component(x,y,z)
             except NameError:
-                potential_value = potential_component(*coord_array.T)
-
+                potential_value = potential_component(x,y,z)
+        
         return potential_value
 
-    def acceleration_at(self, *args):
-        ''' Compute the acceleration due to the potential at the given
-            position(s)
-        '''
+    def acceleration_at(self, r):
+        """ Compute the acceleration due to the potential at the given 
+            position(s) 
+            
+            Parameters
+            ----------
+            r : astropy.units.Quantity
+                Position to compute the acceleration at.
+        """
+        
+        x,y,z = self._r_to_xyz(r)
 
-        coord_array = self._args_to_coords(args)
+        for potential_derivative in self._potential_component_derivs.values():
+            try:
+                acceleration -= potential_derivative(x,y,z)
+            except NameError:
+                acceleration = potential_derivative(x,y,z)
 
-        # Define empty container for accelerations
-        accelerations = np.zeros_like(coord_array, dtype=float)
-
-        for component_funcs in self._potential_component_derivs.values():
-            for ii,potential_derivative in enumerate(component_funcs):
-                accelerations[:,ii] -= potential_derivative(*coord_array.T)
-
-        return accelerations
-
-    def energy_at(self, position, velocity):
-        ''' Compute the total energy for an array of particles. '''
-
-        # Coordinate systems imported from ..utils
-        if self.coordinate_system == CartesianCoordinates:
-            kinetic = 0.5*np.sum(velocity**2, axis=2)
-
-        elif self.coordinate_system == SphericalCoordinates:
-            r_vel = self.vel[:,:,0]**2
-            theta_vel = self.pos[:,:,0]**2 * sin(self.vel[:,:,2])**2 \
-                        * self.vel[:,:,1]
-            phi_vel = self.pos[:,:,0]**2 * self.vel[:,:,2]**2
-            kinetic = 0.5*(r_vel + theta_vel + phi_vel)
-
-        elif self.coordinate_system == CylindricalCoordinates:
-            R_vel = self.vel[:,:,0]**2
-            phi_vel = self.pos[:,:,0]**2 * self.vel[:,:,1]**2
-            z_vel = self.vel[:,:,2]**2
-            kinetic = 0.5*(R_vel + phi_vel + z_vel)
-
-        else:
-            raise ValueError("Unknown potential coordinate system '{0}'".\
-                             format(self.coordinate_system))
-
-        potential_energy = self.value_at(position)
-        return kinetic + potential_energy.T
+        return acceleration
 
     def _repr_latex_(self):
         ''' Generate a latex representation of the potential. This is used by
@@ -212,48 +159,46 @@ class Potential(object):
 
         return u'Components: ${0}$'.format(ltx_str)
 
-    def _args_to_coords(self, args):
-        ''' Private method to convert a list of arguments into coordinates that Potential understands '''
-
-        if len(args) == 1 and isinstance(args[0], np.ndarray):
-            coord_array = args[0]
-
-            if len(coord_array.shape) == 1:
-                coord_array = coord_array[:,np.newaxis]
-
-            if not coord_array.shape[-1] == self.ndim:
-                raise ValueError("Array of shape '{0}' does not match potential of {1} dimensions along axis 1.".format(coord_array.shape, self.ndim))
-
-        elif len(args) == self.ndim:
-            coords = [_validate_coord(x) for x in args]
-            coord_len = len(coords[0])
-            for coord in coords:
-                if len(coord) != coord_len:
-                    raise ValueError("Individual coordinate arrays have different lengths.")
-
-            coord_array = np.vstack(coords).T
-
+    def _r_to_xyz(self, r):
+        if not isinstance(r, u.Quantity):
+            raise TypeError("Position r must be an Astropy Quantity object. You"
+                            " specified a {0}".format(type(r)))
+        
+        if len(r.value.shape) == 1: 
+            x,y,z = r
         else:
-            raise ValueError("You must supply either a single position as a list of arguments, or an array where axis 0 has length 'self.ndim'.")
+            x = r[:,0]
+            y = r[:,1]
+            z = r[:,2]
+        
+        return x,y,z
 
-        return coord_array
+    def plot(self, x, y, z, axes=None, plot_kwargs=dict()):
+        """ Plot equipotentials lines. Must pass in grid arrays to evaluate the
+            potential over (positional args). This function takes care of the
+            meshgridding...
+            
+            Parameters
+            ----------
+            x,y,z : astropy.units.Quantity
+                Coordinate grids to compute the potential over.
+            axes : matplotlib.Axes (optional)
+            plot_kwargs : dict
+                kwargs passed to either contourf() or plot().
 
-    def plot(self, *args, **kwargs):
-        ''' Plot equipotentials lines. Must pass in coordinate arrays to evaluate the
-            potential over (positional args). Any keyword arguments are passed to the
-            matplotlib.pyplot.contourf() function call
-
-        '''
-
-        coord_array = self._args_to_coords(args)
-
-        if not kwargs.has_key("axes"):
+        """
+        
+        coords = [x,y,z]
+        
+        assert x.unit == y.unit
+        assert z.unit == z.unit
+        
+        if axes == None:
             if self.ndim > 1:
                 fig, axes = plt.subplots(self.ndim-1, self.ndim-1, sharex=True, sharey=True, figsize=(12,12))
             else:
                 fig, axes = plt.subplots(1, 1, figsize=(12,12))
         else:
-            axes = kwargs["axes"]
             if self.ndim > 1:
                 fig = axes[0,0].figure
             else:
@@ -269,35 +214,37 @@ class Potential(object):
                             pass
                         continue
 
-                    print("axes[{0},{1}] <= x:{2}, y:{3}".format(ii-1,jj,jj,ii))
-                    bottom = coord_array[:, jj]
-                    side = coord_array[:, ii]
+                    bottom = coords[jj]
+                    side = coords[ii]
                     X1, X2 = np.meshgrid(bottom,side)
 
-                    args = [np.zeros_like(X1.ravel()) for xx in range(self.ndim)]
-                    args[jj] = X1.ravel()
-                    args[ii] = X2.ravel()
-
-                    cs = axes[ii-1,jj].contourf(X1, X2, self.value_at(*args).reshape(X1.shape), cmap=cm.Blues, **kwargs)
+                    r = np.array([np.zeros_like(X1.ravel()) for xx in range(self.ndim)])
+                    r[jj] = X1.ravel()
+                    r[ii] = X2.ravel()
+                    r = r.T*x.unit
+                    
+                    cs = axes[ii-1,jj].contourf(X1, X2, 
+                                                self.value_at(r).value.reshape(X1.shape), 
+                                                cmap=cm.Blues, **plot_kwargs)
 
             cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
             fig.colorbar(cs, cax=cax)
 
             # Label the axes
-            if self.coordinate_system != None:
-                axis_names = self.coordinate_system._axis_names
-                axes[0,0].set_ylabel("{1} [{0}]".format(self.length_unit, axis_names[1]))
-                axes[1,0].set_xlabel("{1} [{0}]".format(self.length_unit, axis_names[0]))
-                axes[1,0].set_ylabel("{1} [{0}]".format(self.length_unit, axis_names[2]))
-                axes[1,1].set_xlabel("{1} [{0}]".format(self.length_unit, axis_names[1]))
+            axes[0,0].set_ylabel("{0} [{1}]".format("y", x.unit))
+            axes[1,0].set_xlabel("{0} [{1}]".format("x", x.unit))
+            axes[1,0].set_ylabel("{0} [{1}]".format("z", x.unit))
+            axes[1,1].set_xlabel("{0} [{1}]".format("y", x.unit))
 
         elif self.ndim == 2:
+            raise NotImplementedError()
             bottom = coord_array[:, 0]
             side = coord_array[:, 1]
             X, Y = np.meshgrid(bottom,side)
             cs = axes.contourf(X, Y, self.value_at(X.ravel(),Y.ravel()).reshape(X.shape), cmap=cm.Blues, **kwargs)
             fig.colorbar(cs, shrink=0.9)
         elif self.ndim == 1:
+            raise NotImplementedError()
             axes.plot(coord_array, self.value_at(coord_array))
 
         fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
@@ -306,31 +253,20 @@ class Potential(object):
         return fig, axes
 
     def __add__(self, other):
-        ''' Allow adding two potentials '''
+        """ Allow adding two potentials """
 
-        if not isinstance(other, Potential):
+        if not isinstance(other, CartesianPotential):
             raise TypeError("Addition is only supported between two Potential objects!")
 
-        if other.coordinate_system != self.coordinate_system:
-            raise ValueError("Potentials must have same coordinate system.")
-
-        new_potential = Potential(self.coordinate_system)
+        new_potential = CartesianPotential()
         for key in self._potential_components.keys():
-            new_potential.add_component(key, self._potential_components[key], derivs=self._potential_component_derivs[key])
+            new_potential.add_component(key, self._potential_components[key], 
+                                        f_prime=self._potential_component_derivs[key],
+                                        parameters=self.parameters[key])
 
         for key in other._potential_components.keys():
-            new_potential.add_component(key, other._potential_components[key], derivs=other._potential_component_derivs[key])
-        
-        for key,val in self.params.items():
-            #if key in new_potential.params.keys():
-            #    logging.warning("Parameter '{0}' already found in this potential! Overwriting...".format(key))
-                
-            new_potential.params[key] = val
-        
-        for key,val in other.params.items():
-            #if key in new_potential.params.keys():
-            #    logging.warning("Parameter '{0}' already found in this potential! Overwriting...".format(key))
-                
-            new_potential.params[key] = val
+            new_potential.add_component(key, other._potential_components[key], 
+                                        f_prime=other._potential_component_derivs[key],
+                                        parameters=other.parameters[key])
 
         return new_potential
