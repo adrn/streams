@@ -8,14 +8,11 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import uuid
 
 # Third-party
 import numpy as np
 import astropy.units as u
-from astropy.constants import G
 
-from .core import Potential
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
 
 halo_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr).value,
