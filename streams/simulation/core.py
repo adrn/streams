@@ -14,7 +14,7 @@ import numpy as np
 import astropy.units as u
 from astropy.utils.misc import isiterable
 
-from ..potential import Potential
+from ..potential import CartesianPotential
 from ..integrate import leapfrog
 
 __all__ = ["Particle", "Orbit"]
@@ -89,7 +89,7 @@ class Particle(object):
             ----------
             potential : streams.Potential
                 A Potential object to integrate the particles under.
-            t : numpy.ndarray
+            t : astropy.units.Quantity
                 An array of times to integrate the particles on.
             integrator : func (optional)
                 A function to use for integrating the particle orbits.
@@ -97,17 +97,31 @@ class Particle(object):
                 Use N-body integration, computing inter-particle forces. 
         """
         
-        if not isinstance(potential, Potential):
-            raise TypeError()
+        if not isinstance(potential, CartesianPotential):
+            raise TypeError("potential must be a Potential object.")
         
         if nbody == False:
             # test particles -- ignore particle-particle effects
-            t, r, v = integrator(self.potential.acceleration_at, 
-                                 self.r,
-                                 self.v, 
-                                 t=t)
+            _t, r, v = integrator(potential.acceleration_at, 
+                                  self.r.decompose(bases=potential.unit_bases).value,
+                                  self.v.decompose(bases=potential.unit_bases).value, 
+                                  t=t)
+            assert (t == _t).all()
+            return _t,r,v
         else:
             raise NotImplementedError("nbody integration not yet supported")
+    
+    def energy(self, potential):
+        """ Compute the sum of the kinetic energy and potential energy of the
+            particle(s) in the given potential.
+            
+            Parameters
+            ----------
+            potential : streams.Potential
+                A Potential object.
+        """
+        
+        raise NotImplementedError()
         
 class Orbit(object):
     
