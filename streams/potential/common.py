@@ -16,16 +16,9 @@ import astropy.units as u
 from astropy.constants import G
 
 from .core import CartesianPotential
-from ..util import *
 
 #import _common # minimal gains from using Cython
 
-'''
-__all__ = ["MiyamotoNagaiPotential", "HernquistPotential", \
-           "LogarithmicPotentialLJ", "LogarithmicPotentialJZSH", \
-           "LogarithmicPotentialJHB", "LogarithmicPotential", \
-           "PointMassPotential"]
-'''
 __all__ = ["PointMassPotential", "MiyamotoNagaiPotential", "HernquistPotential",
            "LogarithmicPotentialLJ"]
 
@@ -62,7 +55,7 @@ def _cartesian_point_mass_model(G):
 
 class PointMassPotential(CartesianPotential):
 
-    def __init__(self, m, origin):
+    def __init__(self, m, origin=[0.,0.,0.]*u.kpc):
         ''' Represents a point-mass potential at the given origin.
 
             $\Phi = -\frac{GM}{x-x_0}$
@@ -139,7 +132,7 @@ def _cartesian_miyamoto_nagai_model(G):
 
 class MiyamotoNagaiPotential(CartesianPotential):
 
-    def __init__(self, m, a, b, origin):
+    def __init__(self, m, a, b, origin=[0.,0.,0.]*u.kpc):
         ''' Represents the Miyamoto-Nagai potential (1975) for a disk-like
             potential.
 
@@ -204,7 +197,7 @@ def _cartesian_hernquist_model(G):
     
 class HernquistPotential(CartesianPotential):
     
-    def __init__(self, m, c, origin):
+    def __init__(self, m, c, origin=[0.,0.,0.]*u.kpc):
         ''' Represents the Hernquist potential (1990) for a spheroid (bulge).
 
             $\Phi_{spher} = -\frac{GM_{spher}}{r + c}$
@@ -291,7 +284,10 @@ class LogarithmicPotentialLJ(CartesianPotential):
         assert "q1" in kwargs.keys() and \
                "q2" in kwargs.keys() and \
                "qz" in kwargs.keys()
-               
+        
+        if "origin" not in kwargs.keys():
+            kwargs["origin"] = [0.,0.,0.]*u.kpc
+        
         for k in ["v_halo", "phi", "r_halo", "origin"]:
             if not isinstance(kwargs[k], u.Quantity):
                 raise TypeError("parameters must be Astropy Quantity objects.")
