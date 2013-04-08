@@ -17,58 +17,7 @@ from astropy.utils.misc import isiterable
 from ..potential import Potential
 from ..integrate import leapfrog
 
-__all__ = ["Particle", "TestParticleSimulation"]
-
-class TestParticleSimulation(object):
-
-    def __init__(self, potential):
-        """ This is a handy class that will handle integrating a group of particles through a potential. """
-
-        if not isinstance(potential, Potential):
-            raise TypeError("potential must be a streams.Potential object.")
-
-        self.potential = potential
-        #self.particles = dict()
-        self.particles = list()
-        self._particle_map = dict()
-
-        self._particle_pos_array = None
-        self._particle_vel_array = None
-    
-    def add_particles(self, ps):
-        """ Add a set of test-particles to the simulation """
-        for p in ps:
-            self.add_particle(p)
-        
-    def add_particle(self, p):
-        """ Add a test-particle to the simulation (to be integrated through the potential) """
-
-        if not isinstance(p, Particle):
-            raise TypeError("add_particle() only accepts Particle objects.")
-
-        self.particles.append(p)
-
-        if self._particle_pos_array == None:
-            self._particle_pos_array = p.position.reshape((1,p.position.shape[0]))
-            self._particle_vel_array = p.velocity.reshape((1,p.velocity.shape[0]))
-        else:
-            self._particle_pos_array = np.append(self._particle_pos_array, p.position.reshape((1,p.position.shape[0])), axis=0)
-            self._particle_vel_array = np.append(self._particle_vel_array, p.velocity.reshape((1,p.velocity.shape[0])), axis=0)
-
-        #self._particle_map[hash(p)] = len(self._particle_pos_array)-1
-
-    def run(self, t1, t2, dt=None, integrator=leapfrog):
-        """ Integrate the particle positions from t1 to t2 using the specified integrator """
-
-        if dt == None:
-            dt = (t2 - t1) / 100.
-        ts, xs, vs = integrator(self.potential.acceleration_at, self._particle_pos_array, self._particle_vel_array, t1, t2, dt)
-
-        return ts, xs, vs
-
-    def particles_at(self, t):
-        """ Get a list of Particle objects at the given time step """
-        raise NotImplementedError()
+__all__ = ["Particle", "Orbit"]
 
 class Particle(object):
     
@@ -132,6 +81,34 @@ class Particle(object):
     def __len__(self):
         return len(self.r)
     
+    def integrate(self, potential, t, integrator=leapfrog, nbody=False):
+        """ Integrate the particle(s) from time t1 to t2 in the given 
+            potential. 
+            
+            Parameters
+            ----------
+            potential : streams.Potential
+                A Potential object to integrate the particles under.
+            t : numpy.ndarray
+                An array of times to integrate the particles on.
+            integrator : func (optional)
+                A function to use for integrating the particle orbits.
+            nbody : bool (optional)
+                Use N-body integration, computing inter-particle forces. 
+        """
+        
+        if not isinstance(potential, Potential):
+            raise TypeError()
+        
+        if nbody == False:
+            # test particles -- ignore particle-particle effects
+            t, r, v = integrator(self.potential.acceleration_at, 
+                                 self.r,
+                                 self.v, 
+                                 t=t)
+        else:
+            raise NotImplementedError("nbody integration not yet supported")
+        
 class Orbit(object):
     
     def __init__(self, t):

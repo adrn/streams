@@ -83,4 +83,4 @@ class TestParticle(object):
         
         assert isinstance(pc[0:15], Particle)
         assert len(pc[0:15]) == 15
-        
+    
