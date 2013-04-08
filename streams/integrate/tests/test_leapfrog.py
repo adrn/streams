@@ -7,16 +7,20 @@ from __future__ import absolute_import, unicode_literals, division, print_functi
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
+import os
 import pytest
 import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from .._leapfrog import leapfrog2
 from ..leapfrog import *
 from ... import potential as pot
 
-show_plots = True
+plot_path = "plots/tests/simulation"
+animation_path = os.path.join(plot_path, "animation")
+
+if not os.path.exists(plot_path):
+    os.mkdir(plot_path)
 
 class TestBoxOnSpring(object):
 
@@ -42,7 +46,7 @@ class TestBoxOnSpring(object):
 
         for ii in range(Ntimesteps):
             t = times[ii]
-            a_i = acceleration(t, x_i)
+            a_i = acceleration(x_i)
 
             x_ip1 = x_i + v_i*dt + 0.5*a_i*dt*dt
             a_ip1 = acceleration(x_ip1)
@@ -56,88 +60,116 @@ class TestBoxOnSpring(object):
             v_i = v_ip1
 
         plt.plot(times, xs, 'k-')
-        if show_plots: plt.show()
+        plt.savefig(os.path.join(plot_path,"box_spring.png"))
 
 def plot_energies(potential, ts, xs, vs, axes1=None):
     E_kin = 0.5*np.sum(vs**2, axis=2)
-    E_pot = potential.value_at(xs)
-
-    energies = potential.energy_at(xs, vs)
-
+    E_pot = potential.value_at(xs[:,0,:])
+    
     if axes1 == None:
-        fig1, axes1 = plt.subplots(3,1,sharex=True,sharey=True)
+        fig1, axes1 = plt.subplots(3,1,sharex=True,sharey=True,figsize=(12,8))
 
-    axes1[0].plot(ts, E_kin)
+    axes1[0].plot(ts, E_kin[:,0])
     axes1[0].set_ylabel(r"$E_{kin}$")
 
-    axes1[1].plot(ts, E_pot.T)
+    axes1[1].plot(ts, E_pot)
     axes1[1].set_ylabel(r"$E_{pot}$")
 
-    axes1[2].plot(ts, (E_kin + E_pot.T))
+    axes1[2].plot(ts, (E_kin[:,0] + E_pot))
     axes1[2].set_ylabel(r"$E_{tot}$")
 
-    grid = np.linspace(-20., 20., 100)
+    grid = np.linspace(-20., 20., 100)*u.kpc
     fig2, axes2 = potential.plot(grid,grid,grid)
     axes2[0,0].plot(xs[:,0,0], xs[:,0,1])
     axes2[1,0].plot(xs[:,0,0], xs[:,0,2])
     axes2[1,1].plot(xs[:,0,1], xs[:,0,2])
+    
+    return fig1,fig2 
 
 class TestIntegrate(object):
+    
+    def test_point_mass_energy(self):
+        potential = pot.PointMassPotential(unit_bases=[u.M_sun, u.au, u.yr],
+                                           m=1*u.M_sun)
 
-    def test_speed(self):
-        potential = pot.HernquistPotential(M=1E10, c=0.7)
+        initial_position = np.array([1.0, 0.0, 0.]) # au
+        initial_velocity = np.array([0.0, 2*np.pi, 0.]) # au/yr
 
-        initial_position = np.random.uniform(0.5, 1.5, size=(200,3)) # kpc
-        initial_velocity = np.random.uniform(0.01, 0.05, size=(200,3)) # kpc/Myr
-
-        import time
-
-        time1 = time.time()
-        ts, xs, vs = leapfrog(potential.acceleration_at, initial_position, initial_velocity, 0., 1000., 0.1)
-        print("python: ", time.time()-time1)
-
-        time2 = time.time()
-        ts, xs, vs = leapfrog2(potential.acceleration_at, initial_position, initial_velocity, 0., 1000., 0.1)
-        print("cython: ", time.time()-time2)
-
-        assert xs.shape == (len(ts),) + initial_position.shape
-        assert vs.shape == (len(ts),) + initial_position.shape
-
+        ts, xs, vs = leapfrog(potential.acceleration_at, 
+                              initial_position,
+                              initial_velocity, 
+                              t1=0., t2=5., dt=0.05)
+        fig1,fig2 = plot_energies(potential,ts, xs, vs)
+        fig1.savefig(os.path.join(plot_path,"point_mass_energy.png"))
+    
     def test_hernquist_energy(self):
-        potential = pot.HernquistPotential(M=1E10*u.solMass, c=0.7)
+        potential = pot.HernquistPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
+                                           m=1E10*u.M_sun, 
+                                           c=0.7*u.kpc)
 
         initial_position = np.array([10.0, 0.0, 0.]) # kpc
         initial_velocity = np.array([0.0, (30.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]) # kpc/Myr
 
-        ts, xs, vs = leapfrog(potential.acceleration_at, initial_position, initial_velocity, 0., 1000., 1.)
-        plot_energies(potential,ts, xs, vs)
-        if show_plots: plt.show()
+        ts, xs, vs = leapfrog(potential.acceleration_at, 
+                              initial_position,
+                              initial_velocity, 
+                              t1=0., t2=1000., dt=1.)
+        fig1,fig2 = plot_energies(potential,ts, xs, vs)
+        fig1.savefig(os.path.join(plot_path,"hernquist_energy.png"))
 
     def test_miyamoto_energy(self):
-        potential = pot.MiyamotoNagaiPotential(M=1E11*u.solMass, a=6.5, b=0.26)
+        potential = pot.MiyamotoNagaiPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
+                                               m=1E11*u.M_sun, 
+                                               a=6.5*u.kpc, 
+                                               b=0.26*u.kpc)
 
         initial_position = np.array([8.0, 0.0, 0.]) # kpc
         initial_velocity = np.array([0.0, (200.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]) # kpc/Myr
 
-        ts, xs, vs = leapfrog(potential.acceleration_at, initial_position, initial_velocity, 0., 1000., 1.)
-        plot_energies(potential,ts, xs, vs)
-        if show_plots: plt.show()
+        ts, xs, vs = leapfrog(potential.acceleration_at, 
+                              initial_position, initial_velocity, 
+                              t1=0., t2=1000., dt=1.)
+        fig1,fig2 = plot_energies(potential,ts, xs, vs)
+        fig1.savefig(os.path.join(plot_path,"miyamoto_energy.png"))
 
     def test_log_potential(self):
-        potential = pot.LogarithmicPotential(v_circ=(181.*u.km/u.s).to(u.kpc/u.Myr).value, p=1., q=0.75, c=12.)
+        potential = pot.LogarithmicPotentialLJ(unit_bases=[u.kpc,u.Myr,u.M_sun,u.radian],
+                                               v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
+                                               q1=1.38,
+                                               q2=1.0,
+                                               qz=1.36,
+                                               phi=1.692969*u.radian,
+                                               r_halo=12.*u.kpc)
 
         initial_position = np.array([14.0, 0.0, 0.]) # kpc
         initial_velocity = np.array([0.0, (160.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]) # kpc/Myr
 
-        ts, xs, vs = leapfrog(potential.acceleration_at, initial_position, initial_velocity, 0., 6000., 1.)
+        ts, xs, vs = leapfrog(potential.acceleration_at, 
+                              initial_position, 
+                              initial_velocity, 
+                              t1=0., t2=6000., dt=1.)
         plot_energies(potential,ts, xs, vs)
-        if show_plots: plt.show()
+        fig1,fig2 = plot_energies(potential,ts, xs, vs)
+        fig1.savefig(os.path.join(plot_path,"logarithmic_energy.png"))
 
     def test_three_component(self):
-        potential1 = pot.HernquistPotential(M=1E10*u.solMass, c=0.7)
-        potential2 = pot.MiyamotoNagaiPotential(M=1E11*u.solMass, a=6.5, b=0.26)
-        potential3 = pot.LogarithmicPotential(v_circ=(181.*u.km/u.s).to(u.kpc/u.Myr).value, p=1., q=1., c=12.)
-        potential = potential1 + potential2 + potential3
+        bulge = pot.HernquistPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
+                                           m=1E10*u.M_sun, 
+                                           c=0.7*u.kpc)
+        disk = pot.MiyamotoNagaiPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
+                                               m=1E11*u.M_sun, 
+                                               a=6.5*u.kpc, 
+                                               b=0.26*u.kpc)
+        
+        halo = pot.LogarithmicPotentialLJ(unit_bases=[u.kpc,u.Myr,u.M_sun,u.radian],
+                                               v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
+                                               q1=1.38,
+                                               q2=1.0,
+                                               qz=1.36,
+                                               phi=1.692969*u.radian,
+                                               r_halo=12.*u.kpc)
+        
+        potential = disk + bulge + halo
 
         initial_position = np.array([14.0, 0.0, 5.]) # kpc
         initial_velocity = np.array([(40.*u.km/u.s).to(u.kpc/u.Myr).value,
@@ -145,7 +177,10 @@ class TestIntegrate(object):
                                      (40.*u.km/u.s).to(u.kpc/u.Myr).value]) # kpc/Myr
 
         fig, axes = plt.subplots(3, 1, sharex=True, sharey=True)
-        ts, xs, vs = leapfrog(potential.acceleration_at, initial_position, initial_velocity, 0., 6000., 1.)
-        plot_energies(potential, ts, xs, vs, axes)
-
-        if show_plots: plt.show()
+        ts, xs, vs = leapfrog(potential.acceleration_at, 
+                              initial_position, 
+                              initial_velocity, 
+                              t1=0., t2=6000., dt=1.)
+        plot_energies(potential,ts, xs, vs)
+        fig1,fig2 = plot_energies(potential,ts, xs, vs)
+        fig1.savefig(os.path.join(plot_path,"three_component_energy.png"))
