@@ -14,7 +14,7 @@ import numpy as np
 import astropy.units as u
 
 from streams.potential import *
-from streams.simulation import Particle, TestParticleSimulation
+from streams.simulation import Particle
 
 __all__ = ["minimum_distance_matrix", "back_integrate", "generalized_variance"]
 
@@ -71,18 +71,17 @@ def minimum_distance_matrix(potential, xs, vs, sgr_cen):
     
     return min_ps
     
-def generalized_variance(potential, xs, vs, sgr_cen):
+def generalized_variance(potential, particle_orbits, satellite_orbit):
     """ Compute the variance scalar that we will minimize.
         
         Parameters
         ----------
         potential : Potential
             The full Milky Way potential object.
-        xs : ndarray
-            An array of positions for all particles at all times
-        vs : ndarray
-            An array of velocities for all particles at all times
-        sgr_cen : SgrCen
+        particle_orbits : OrbitCollection
+            An object containing orbit information for a collection of 
+            particles.
+        satellite_orbit : Orbit
             Data for the Sgr satellite center, interpolated onto the
             time grid for our particles.
     """
@@ -111,5 +110,7 @@ def back_integrate(potential, particles, t1, t2, dt):
     simulation = TestParticleSimulation(potential=potential)
     simulation.add_particles(particles)
     
-    ts, xs, vs = simulation.run(t1=t1, t2=t2, dt=-dt)
+    #ts, xs, vs = simulation.run(t1=t1, t2=t2, dt=-dt)
+    particle_orbits = simulation.run(t1=t1, t2=t2, dt=-dt)
+    
     return ts, xs, vs
