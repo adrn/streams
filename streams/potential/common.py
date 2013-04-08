@@ -189,7 +189,7 @@ def _cartesian_hernquist_model(G):
         yy = (y-origin[1])
         zz = (z-origin[2])
         
-        denom = (np.sqrt(xx**2 + yy**2 + zz**2)*xx + c)**2 * np.sqrt(xx**2 + yy**2 + zz**2)
+        denom = (np.sqrt(xx**2 + yy**2 + zz**2) + c)**2 * np.sqrt(xx**2 + yy**2 + zz**2)
         
         dx = G*m*xx / denom
         dy = G*m*yy / denom
