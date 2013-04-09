@@ -7,5 +7,8 @@ TODO
 
 Code
 ====
- * Overhaul Potential classes to accept Quantity objects so the Particle.integrate() method works.
  * Particle should have .energy(potential) method, not Potential
+ * Clean up and assess all tests
+ * Finish Orbit class and make wrapper for leapfrog that returns orbit objects
+ * CartesianPotential.plot() should just default to 3D...
+ * Write new integrate_satellites() or something function that will do what leapfrog_hack() currently does
