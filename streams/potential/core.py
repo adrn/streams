@@ -223,9 +223,10 @@ class CartesianPotential(object):
                     r[ii] = X2.ravel()
                     r = r.T*x.unit
                     
+                    axes[ii-1,jj].set_axis_bgcolor("#000000")
                     cs = axes[ii-1,jj].contourf(X1, X2, 
                                                 self.value_at(r).reshape(X1.shape), 
-                                                cmap=cm.Blues, **plot_kwargs)
+                                                cmap=cm.bone_r, **plot_kwargs)
 
             cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
             fig.colorbar(cs, cax=cax)
