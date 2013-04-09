@@ -19,27 +19,66 @@ import functools
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from astropy.utils import isiterable
 import astropy.units as u
-
-#from ..util import *
 
 __all__ = ["CartesianPotential"]
 
-class CartesianPotential(object):
+class Potential(object):
+    pass
 
-    def __init__(self, unit_bases):
+class CartesianPotential(Potential):
+
+    def __init__(self, unit_bases, origin):
         """ A baseclass for representing gravitational potentials in Cartesian
-            coordinates.
+            coordinates. 
+            
+            Note::
+                Currently only supports 3D potentials.
         """
+        
+        # Check that unit_bases contains at least a length, mass, and time unit
+        _base_map = dict()
+        for base in unit_bases:
+            tp = base.physical_type
+            if tp in _base_map.keys():
+                raise ValueError("You specified multiple {0} units! Only one "
+                                 "unit per physical type permitted."
+                                 .format(tp))
+            
+            if tp == "unknown":
+                if base.is_equivalent(u.s):
+                    tp = "time"
+                else:
+                    raise ValueError("Unknown physical type for unit {0}."
+                                     .format(base))
+            
+            _base_map[tp] = base
+        
+        if "length" not in _base_map.keys() or \
+           "mass" not in _base_map.keys() or \
+           "time" not in _base_map.keys():
+            raise ValueError("You must specify, at minimum, a length unit, "
+                             "mass unit, and time unit.")
+        
         self.unit_bases = unit_bases
-    
+        
+        # Validate the origin -- make sure it is a Quantity object with 
+        #   length units            
+        try:
+            if origin.unit.physical_type != "length":
+                raise ValueError("origin must have length units, not {0}."
+                                 .format(origin.unit.physical_type))
+        except AttributeError:
+            raise TypeError("origin must be an Astropy Quantity-like object. "
+                            "You passed a {0}.".format(type(origin)))
+        
+        self.ndim = len(origin)
+        
         # Initialize empty containers for potential components and their
         #   derivatives.
-        self._potential_components = dict()
-        self._potential_component_derivs = dict()
+        self._components = dict()
+        self._component_derivs = dict()
         self._latex = dict()
-        self.ndim = None
         self.parameters = dict()
 
     def add_component(self, name, func, f_prime=None, latex=None, parameters=None):
@@ -71,7 +110,7 @@ class CartesianPotential(object):
             raise TypeError("'func' parameter must be a callable function! You "
                             "passed in a '{0}'".format(func.__class__))
 
-        if self._potential_components.has_key(name):
+        if self._components.has_key(name):
             raise NameError("Potential component '{0}' already exists!".\
                              format(name))
 
@@ -87,13 +126,13 @@ class CartesianPotential(object):
                              " with only {1} dimensions".\
                              format(self.ndim, ndim_this_func))
         
-        self._potential_components[name] = functools.partial(func, **parameters)
+        self._components[name] = functools.partial(func, **parameters)
         
         # If the user passes the potential derivatives
         if f_prime is not None:
-            self._potential_component_derivs[name] = functools.partial(f_prime, **parameters)
+            self._component_derivs[name] = functools.partial(f_prime, **parameters)
         else:
-            self._potential_component_derivs[name] = None
+            self._component_derivs[name] = None
 
         if latex != None:
             if latex.startswith("$"):
@@ -118,7 +157,7 @@ class CartesianPotential(object):
         x,y,z = self._r_to_xyz(r)
         
         # Compute contribution to the potential from each component
-        for potential_component in self._potential_components.values():
+        for potential_component in self._components.values():
             try:
                 potential_value += potential_component(x,y,z)
             except NameError:
@@ -138,7 +177,7 @@ class CartesianPotential(object):
         
         x,y,z = self._r_to_xyz(r)
 
-        for potential_derivative in self._potential_component_derivs.values():
+        for potential_derivative in self._component_derivs.values():
             try:
                 acceleration -= potential_derivative(x,y,z)
             except NameError:
@@ -260,14 +299,14 @@ class CartesianPotential(object):
             raise TypeError("Addition is only supported between two Potential objects!")
 
         new_potential = CartesianPotential(self.unit_bases)
-        for key in self._potential_components.keys():
-            new_potential.add_component(key, self._potential_components[key], 
-                                        f_prime=self._potential_component_derivs[key],
+        for key in self._components.keys():
+            new_potential.add_component(key, self._components[key], 
+                                        f_prime=self._component_derivs[key],
                                         parameters=self.parameters[key])
 
-        for key in other._potential_components.keys():
-            new_potential.add_component(key, other._potential_components[key], 
-                                        f_prime=other._potential_component_derivs[key],
+        for key in other._components.keys():
+            new_potential.add_component(key, other._components[key], 
+                                        f_prime=other._component_derivs[key],
                                         parameters=other.parameters[key])
 
         return new_potential

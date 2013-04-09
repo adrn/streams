@@ -56,31 +56,26 @@ def _cartesian_point_mass_model(G):
 class PointMassPotential(CartesianPotential):
 
     def __init__(self, unit_bases, m, origin=[0.,0.,0.]*u.kpc):
-        ''' Represents a point-mass potential at the given origin.
+        """ Represents a point-mass potential at the given origin.
 
             $\Phi = -\frac{GM}{x-x_0}$
 
             Parameters
             ----------
-            M : astropy.units.Quantity
+            m : astropy.units.Quantity
                 Mass.
             origin : astropy.units.Quantity
                 Must specify the location of the point mass along each 
                 dimension. For example, it could look like 
                     origin=[0,0,0)]*u.kpc
 
-        '''
-        super(PointMassPotential, self).\
-            __init__(unit_bases)
+        """
+        super(PointMassPotential, self).__init__(unit_bases, origin)
 
         # First see if M is a Quantity-like object
         if not isinstance(m, u.Quantity):
             raise TypeError("mass must be an Astropy Quantity object. You "
                             "passed a {0}.".format(type(m)))
-        
-        if not isinstance(origin, u.Quantity):
-            raise TypeError("origin must be an Astropy Quantity object. You "
-                            "passed a {0}.".format(type(origin)))
         
         name = uuid.uuid4()
         params = dict(m=m.decompose(bases=self.unit_bases).value, 
