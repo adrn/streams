@@ -67,10 +67,7 @@ def test_against_David_Law():
                                       coord.Angle(row["b"], u.degree))
 
         law_sgr_coords = SgrCoordinates(row["lambda"], row["beta"], unit=(u.degree, u.degree))
-        print(c,law_sgr_coords.transform_to(coord.GalacticCoordinates))
-        #print(sgr_coords.separation(law_sgr_coords))
-
-    assert False
+        assert c.separation(law_sgr_coords.transform_to(coord.GalacticCoordinates)).degrees < 3.
 
 def test_with_simulation_data():
     import matplotlib.pyplot as plt

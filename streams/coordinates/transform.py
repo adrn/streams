@@ -12,8 +12,6 @@ import os, sys
 # Third-party
 import numpy as np
 
-from .core import *
-
 __all__ = ["cartesian_to_spherical", "spherical_to_cartesian", \
            "cartesian_to_cylindrical", "cylindrical_to_cartesian", \
            "spherical_to_cylindrical", "cylindrical_to_spherical"]
@@ -112,9 +110,6 @@ def spherical_to_cartesian(r, phi=None, theta=None):
     else:
         raise ValueError("Unsupported operation from spherical to cartesian coordinates.")
 
-
-register_transform(CartesianCoordinates, SphericalCoordinates, cartesian_to_spherical, spherical_to_cartesian)
-
 # --------------------------------------------------------
 #    Cartesian - Cylindrical
 # --------------------------------------------------------
@@ -187,9 +182,6 @@ def cylindrical_to_cartesian(r, phi=None, z=None):
     else:
         raise ValueError("Unsupported operation from cylindrical to cartesian coordinates.")
 
-
-register_transform(CartesianCoordinates, CylindricalCoordinates, cartesian_to_cylindrical, cylindrical_to_cartesian)
-
 # --------------------------------------------------------
 #    Spherical - Cylindrical
 # --------------------------------------------------------
@@ -247,6 +239,3 @@ def cylindrical_to_spherical(r, phi=None, z=None):
 
     else:
         raise ValueError("Unsupported operation from cylindrical to spherical coordinates.")
-
-
-register_transform(SphericalCoordinates, CylindricalCoordinates, spherical_to_cylindrical, cylindrical_to_spherical)
