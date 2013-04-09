@@ -60,10 +60,13 @@ class CartesianPotential(Potential):
             raise ValueError("You must specify, at minimum, a length unit, "
                              "mass unit, and time unit.")
         
-        self.unit_bases = unit_bases
+        self.unit_bases = _base_map
         
         # Validate the origin -- make sure it is a Quantity object with 
-        #   length units            
+        #   length units
+        if origin == None:
+            origin = [0.,0.,0.] * self.unit_bases["length"]
+            
         try:
             if origin.unit.physical_type != "length":
                 raise ValueError("origin must have length units, not {0}."
@@ -80,7 +83,22 @@ class CartesianPotential(Potential):
         self._component_derivs = dict()
         self._latex = dict()
         self.parameters = dict()
-
+    
+    def _scale_parameters(self, parameters):
+        """ Given a dictionary of potential component parameters, trust that 
+            the user passed in Quantity objects where necessary. For the sake 
+            of speed later on, we convert any Quantity-like objects to numeric
+            values in the base unit system of this potential.
+        """
+        _params = dict()
+        for param_name, val in parameters.items():
+            try:
+                _params[param_name] = val.decompose(bases=self.unit_bases.values()).value
+            except AttributeError: # not Quantity-like
+                _params[param_name] = val
+        
+        return _params
+    
     def add_component(self, name, func, f_prime=None, latex=None, parameters=None):
         """ Add a component to the potential. The component must have a name,
             and you must specify the functional form of the potential component.

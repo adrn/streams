@@ -29,25 +29,26 @@ def _raise(ex):
 #    Potential due to a point mass at the given position
 ####################################################################################
 
-def _cartesian_point_mass_model(G):
-    ''' A function that accepts model parameters, and returns a tuple of
-        functions that accept coordinates and evaluates this component of the
-        potential and its derivatives for cartesian coordinates.
+def _cartesian_point_mass_model(bases):
+    """ TODO: WRITE THIS
         
         params[0] = mass
         params[1] = origin
             origin[0] = x0, etc.
-    '''
+    """
+    
+    # scale G to be in this unit system
+    _G = G.decompose(bases=bases.values()).value
     
     def f(x,y,z,m,origin): 
-        return -G * m / np.sqrt((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)
+        return -_G * m / np.sqrt((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)
     
     def df(x,y,z,m,origin): 
         denom = ((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)**1.5
         
-        dx = G * m*(x-origin[0]) / denom
-        dy = G * m*(y-origin[1]) / denom
-        dz = G * m*(z-origin[2]) / denom
+        dx = _G * m*(x-origin[0]) / denom
+        dy = _G * m*(y-origin[1]) / denom
+        dz = _G * m*(z-origin[2]) / denom
         
         return np.array([dx,dy,dz])
         
@@ -55,39 +56,46 @@ def _cartesian_point_mass_model(G):
 
 class PointMassPotential(CartesianPotential):
 
-    def __init__(self, unit_bases, m, origin=[0.,0.,0.]*u.kpc):
+    def __init__(self, unit_bases, origin=None, name=None, **parameters):
         """ Represents a point-mass potential at the given origin.
 
             $\Phi = -\frac{GM}{x-x_0}$
-
+            
+            The parameters dictionary should include:
+                m : mass
+            
             Parameters
             ----------
-            m : astropy.units.Quantity
-                Mass.
-            origin : astropy.units.Quantity
+            unit_bases : list, iterable
+                A list of astropy Unit objects that specify the base units
+                for length, time, mass, etc.
+            origin : astropy.units.Quantity (optional)
                 Must specify the location of the point mass along each 
                 dimension. For example, it could look like 
-                    origin=[0,0,0)]*u.kpc
+                    origin=[0,0,0]*u.kpc
+                Defaults to (0,0,0).
+            name : str, hashable (optional)
+                Optional name of the potential. If adding multiple potential
+                components, this is a useful way to keep track.
+            parameters : dict
+                A dictionary of parameters for the potential definition.
 
-        """
+        """        
         super(PointMassPotential, self).__init__(unit_bases, origin)
-
-        # First see if M is a Quantity-like object
-        if not isinstance(m, u.Quantity):
-            raise TypeError("mass must be an Astropy Quantity object. You "
-                            "passed a {0}.".format(type(m)))
         
-        name = uuid.uuid4()
-        params = dict(m=m.decompose(bases=self.unit_bases).value, 
-                      origin=origin.decompose(bases=self.unit_bases).value)
-
-        f,df = _cartesian_point_mass_model(G.decompose(bases=unit_bases).value)
+        if name == None:
+            name = uuid.uuid4()
+        
+        params = self._scale_parameters(parameters)
+                
+        # get functions for evaluating potential and derivatives
+        f,df = _cartesian_point_mass_model(self.unit_bases)
         self.add_component(name, f, f_prime=df, parameters=params)
         
         # now that we've used it, throw it away
         self.add_component = lambda *args,**kwargs: \
-            _raise(AttributeError("'add_component' is only available for the "
-                                  "base Potential class."))
+            _raise(AttributeError("'add_component' is only available for "
+                                  "base potential classes."))
 
     def _repr_latex_(self):
         ''' Custom latex representation for IPython Notebook '''
