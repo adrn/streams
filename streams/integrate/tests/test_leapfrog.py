@@ -184,3 +184,4 @@ class TestIntegrate(object):
         plot_energies(potential,ts, xs, vs)
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"three_component_energy.png"))
+    
