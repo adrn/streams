@@ -86,6 +86,9 @@ class PointMassPotential(CartesianPotential):
         if name == None:
             name = uuid.uuid4()
         
+        # TODO: need to preserve original Quantity parameters for addition / combining potentials
+        #   - Maybe the current way of "adding" potentials is wrong? maybe there should
+        #       be a "HierarchicalPotential" or "CompositePotential" class instead?
         params = self._scale_parameters(parameters)
                 
         # get functions for evaluating potential and derivatives

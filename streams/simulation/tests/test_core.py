@@ -314,17 +314,23 @@ def test_mw_plus_sat():
     
     mw_potential = disk + bulge + halo
 
-    sat_potential = HernquistPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
-                                       m=2.5E9*u.M_sun, 
-                                       c=1.*u.kpc,
-                                       origin=[40.,0.,0.]*u.kpc)
+    sat_potential = MiyamotoNagaiPotential(unit_bases=[u.M_sun, u.kpc, u.Myr], 
+                                           origin=[60.,0.,0.]*u.kpc,
+                                           m=2.5E8*u.M_sun, 
+                                           a=6.5*u.kpc, 
+                                           b=0.26*u.kpc)
+                                           
+    #sat_potential = HernquistPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
+    #                                   m=2.5E9*u.M_sun, 
+    #                                   c=1.*u.kpc,
+    #                                   origin=[40.,0.,0.]*u.kpc)
     
     N = 1000
     
-    r = np.sqrt(np.random.uniform(size=(N,1))*4.**2)
+    r = np.sqrt(np.random.uniform(size=(N,1))*5.**2)
     phi = np.random.uniform(size=(N,1))*2.*np.pi
     
-    x = r*np.cos(phi) + 40.
+    x = r*np.cos(phi) + 60.
     y = r*np.sin(phi)
     z = np.random.uniform(-0.2, 0.2, size=(N,1))
     initial_position = np.hstack((x,y,z))

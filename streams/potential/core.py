@@ -75,7 +75,8 @@ class CartesianPotential(Potential):
             raise TypeError("origin must be an Astropy Quantity-like object. "
                             "You passed a {0}.".format(type(origin)))
         
-        self.ndim = len(origin)
+        self.origin = origin
+        self.ndim = len(self.origin)
         
         # Initialize empty containers for potential components and their
         #   derivatives.
@@ -97,6 +98,7 @@ class CartesianPotential(Potential):
             except AttributeError: # not Quantity-like
                 _params[param_name] = val
         
+        _params["origin"] = self.origin
         return _params
     
     def add_component(self, name, func, f_prime=None, latex=None, parameters=None):
@@ -316,7 +318,7 @@ class CartesianPotential(Potential):
         if not isinstance(other, CartesianPotential):
             raise TypeError("Addition is only supported between two Potential objects!")
 
-        new_potential = CartesianPotential(self.unit_bases)
+        new_potential = CartesianPotential(self.unit_bases.values(), self.origin)
         for key in self._components.keys():
             new_potential.add_component(key, self._components[key], 
                                         f_prime=self._component_derivs[key],
