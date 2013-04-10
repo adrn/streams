@@ -311,9 +311,12 @@ class CompositePotential(dict, CartesianPotential):
         self.units = self._validate_unit_system(units)
         self.origin = self._validate_origin(origin)
         
-        # TODO: check kwargs, make sure they're all Potential subclasses!
+        for v in kwargs.values():
+            if not isinstance(v, Potential):
+                raise TypeError("Values may only be Potential objects, not "
+                                "{0}.".format(type(v)))
         
-        self.ndim = 3 # BAD
+        self.ndim = len(self.origin)
         
         dict.__init__(self, *args, **kwargs)
     
@@ -321,6 +324,12 @@ class CompositePotential(dict, CartesianPotential):
         """ TODO: figure out what to display... """
         
         return "<CompositePotential ??????>"
+    
+    def __setitem__(self, key, value):
+        if not isinstance(value, Potential):
+            raise TypeError("Values may only be Potential objects, not "
+                            "{0}.".format(type(value)))
+        super(CompositePotential, self).__setitem__(key, value)
     
     @property
     def _latex(self):

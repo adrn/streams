@@ -26,6 +26,18 @@ else:
     for plot in os.listdir(plot_path):
         os.remove(os.path.join(plot_path,plot))
 
+def test_failure():
+    
+    potential = CompositePotential(units=[u.kpc,u.Myr,u.M_sun],
+                                   origin=[0.,0.,0.]*u.kpc)
+    with pytest.raises(TypeError):
+        potential["disk"] = "cat"
+    
+    with pytest.raises(TypeError):
+        potential = CompositePotential(units=[u.kpc,u.Myr,u.M_sun],
+                                   origin=[0.,0.,0.]*u.kpc,
+                                   disk="cat")
+
 def test_api():    
     # or, more complicated:
     mw_potential = CompositePotential(units=[u.kpc,u.Myr,u.M_sun],
