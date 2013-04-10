@@ -23,95 +23,76 @@ import astropy.units as u
 
 __all__ = ["CartesianPotential"]
 
+def _validate_unit_system(unit_bases):
+    """ Given a list or dictionary of astropy unit objects, make sure it is
+        a valid system of units: e.g., make sure it contains a length, mass,
+        and time (at minimum).
+    """
+    
+    try:
+        unit_bases = unit_bases.values()
+    except AttributeError:
+        pass
+    
+    # Check that unit_bases contains at least a length, mass, and time unit
+    _base_map = dict()
+    for base in unit_bases:
+        tp = base.physical_type
+        if tp in _base_map.keys():
+            raise ValueError("You specified multiple {0} units! Only one "
+                             "unit per physical type permitted."
+                             .format(tp))
+        
+        # hack because v0.2 of Astropy doesn't have a 'time' physical type
+        if tp == "unknown":
+            if base.is_equivalent(u.s):
+                tp = "time"
+            else:
+                raise ValueError("Unknown physical type for unit {0}."
+                                 .format(base))
+        
+        _base_map[tp] = base
+    
+    if "length" not in _base_map.keys() or \
+       "mass" not in _base_map.keys() or \
+       "time" not in _base_map.keys():
+        raise ValueError("You must specify, at minimum, a length unit, "
+                         "mass unit, and time unit.")
+    
+    return _base_map
+
+def _validate_origin(origin):
+    """ Make sure the origin is a Quantity and has length-like units """
+    
+    try:
+        if origin.unit.physical_type != "length":
+            raise ValueError("origin must have length units, not {0}."
+                             .format(origin.unit.physical_type))
+    except AttributeError:
+        raise TypeError("origin must be an Astropy Quantity-like object. "
+                        "You passed a {0}.".format(type(origin)))
+
 class Potential(object):
     pass
 
 class CartesianPotential(Potential):
 
-    def __init__(self, unit_bases, origin):
+    def __init__(self, units, f, f_prime, latex=None, parameters=None, 
+                 origin=None):
         """ A baseclass for representing gravitational potentials in Cartesian
-            coordinates. 
+            coordinates. You must specify the functional form of the potential
+            component. You may also optionally add derivatives using the 
+            f_prime keyword.
             
             Note::
                 Currently only supports 3D potentials.
-        """
-        
-        # Check that unit_bases contains at least a length, mass, and time unit
-        _base_map = dict()
-        for base in unit_bases:
-            tp = base.physical_type
-            if tp in _base_map.keys():
-                raise ValueError("You specified multiple {0} units! Only one "
-                                 "unit per physical type permitted."
-                                 .format(tp))
-            
-            if tp == "unknown":
-                if base.is_equivalent(u.s):
-                    tp = "time"
-                else:
-                    raise ValueError("Unknown physical type for unit {0}."
-                                     .format(base))
-            
-            _base_map[tp] = base
-        
-        if "length" not in _base_map.keys() or \
-           "mass" not in _base_map.keys() or \
-           "time" not in _base_map.keys():
-            raise ValueError("You must specify, at minimum, a length unit, "
-                             "mass unit, and time unit.")
-        
-        self.unit_bases = _base_map
-        
-        # Validate the origin -- make sure it is a Quantity object with 
-        #   length units
-        if origin == None:
-            origin = [0.,0.,0.] * self.unit_bases["length"]
-            
-        try:
-            if origin.unit.physical_type != "length":
-                raise ValueError("origin must have length units, not {0}."
-                                 .format(origin.unit.physical_type))
-        except AttributeError:
-            raise TypeError("origin must be an Astropy Quantity-like object. "
-                            "You passed a {0}.".format(type(origin)))
-        
-        self.origin = origin
-        self.ndim = len(self.origin)
-        
-        # Initialize empty containers for potential components and their
-        #   derivatives.
-        self._components = dict()
-        self._component_derivs = dict()
-        self._latex = dict()
-        self.parameters = dict()
-    
-    def _scale_parameters(self, parameters):
-        """ Given a dictionary of potential component parameters, trust that 
-            the user passed in Quantity objects where necessary. For the sake 
-            of speed later on, we convert any Quantity-like objects to numeric
-            values in the base unit system of this potential.
-        """
-        _params = dict()
-        for param_name, val in parameters.items():
-            try:
-                _params[param_name] = val.decompose(bases=self.unit_bases.values()).value
-            except AttributeError: # not Quantity-like
-                _params[param_name] = val
-        
-        _params["origin"] = self.origin
-        return _params
-    
-    def add_component(self, name, func, f_prime=None, latex=None, parameters=None):
-        """ Add a component to the potential. The component must have a name,
-            and you must specify the functional form of the potential component.
-            You may also optionally add derivatives using the 'derivs'
-            keyword.
 
             Parameters
             ----------
-            name : str, hashable
-                The name of the potential component, e.g. 'halo'
-            func : function
+            units : list, dict
+                Either a list or dictionary of base units specifying the 
+                system of units for this potential. 
+            f : function
                 The functional form of the potential component. This must be a
                 function that accepts N arguments where N is the dimensionality.
             f_prime : tuple (optional)
@@ -121,38 +102,48 @@ class CartesianPotential(Potential):
                 used to make sexy output in iPython Notebook.
             parameters : dict (optional)
                 Any extra parameters that the potential function requires.
-
-        """
-
-        # Make sure the func is callable, and that the component doesn't already
-        #   exist in the potential
-        if not hasattr(func, '__call__'):
-            raise TypeError("'func' parameter must be a callable function! You "
-                            "passed in a '{0}'".format(func.__class__))
-
-        if self._components.has_key(name):
-            raise NameError("Potential component '{0}' already exists!".\
-                             format(name))
-
-        if isinstance(func, functools.partial):
-            func = func.func
+            origin : astropy.units.Quantity (optional)
+                Must specify the location of the potential origin along each 
+                dimension. For example, it could look like 
+                    origin=[0,0,0]*u.kpc
             
-        ndim_this_func = len(inspect.getargspec(func).args) - len(parameters)
-        if self.ndim == None:
-            self.ndim = ndim_this_func
-        elif ndim_this_func != self.ndim:
-            raise ValueError("This potential is already established to be "
-                             "{0} dimensional. You attempted to add a component"
-                             " with only {1} dimensions".\
-                             format(self.ndim, ndim_this_func))
+        """
+                
+        self.units = _validate_unit_system(units)
         
-        self._components[name] = functools.partial(func, **parameters)
+        if origin == None:
+            origin = [0.,0.,0.] * self.units["length"]
+        
+        self.origin = _validate_origin(origin)
+        self.ndim = len(self.origin)       
+
+        self.parameters = self._rescale_parameters(parameters)
+        
+        # Make sure the f is callable, and that the component doesn't already
+        #   exist in the potential
+        if not hasattr(f, '__call__'):
+            raise TypeError("'f' parameter must be a callable function! You "
+                            "passed in a '{0}'".format(f.__class__))
+        
+        self.f = lambda *args: f(*args, 
+                                 origin=self.origin.decompose(bases=self.units).value, 
+                                 **self.parameters)
+        
+        if f_prime != None:
+            if not hasattr(f_prime, '__call__'):
+                raise TypeError("'f_prime' must be a callable function! You "
+                                "passed in a '{0}'".format(f_prime.__class__))
+            self.f_prime = lambda *args: f_prime(*args, 
+                                 origin=self.origin.decompose(bases=self.units).value, 
+                                 **self.parameters)
+        else:
+            self.f_prime = None
+        
+        #if isinstance(func, functools.partial):
+        #    func = func.func
+        # functools.partial(func, **parameters)
         
         # If the user passes the potential derivatives
-        if f_prime is not None:
-            self._component_derivs[name] = functools.partial(f_prime, **parameters)
-        else:
-            self._component_derivs[name] = None
 
         if latex != None:
             if latex.startswith("$"):
@@ -161,10 +152,23 @@ class CartesianPotential(Potential):
             if latex.endswith("$"):
                 latex = latex[:-1]
 
-            self._latex[name] = latex
+            self._latex = latex
+    
+    def _rescale_parameters(self, parameters):
+        """ Given a dictionary of potential component parameters, trust that 
+            the user passed in Quantity objects where necessary. For the sake 
+            of speed later on, we convert any Quantity-like objects to numeric
+            values in the base unit system of this potential.
+        """
+        _params = dict()
+        for param_name, val in parameters.items():
+            try:
+                _params[param_name] = val.decompose(bases=self.units.values()).value
+            except AttributeError: # not Quantity-like
+                _params[param_name] = val
         
-        self.parameters[name] = parameters
-        
+        return _params
+    
     def value_at(self, r):
         """ Compute the value of the potential at the given position(s) 
             
@@ -175,15 +179,7 @@ class CartesianPotential(Potential):
         """
         
         x,y,z = self._r_to_xyz(r)
-        
-        # Compute contribution to the potential from each component
-        for potential_component in self._components.values():
-            try:
-                potential_value += potential_component(x,y,z)
-            except NameError:
-                potential_value = potential_component(x,y,z)
-        
-        return potential_value
+        return self.f(x,y,z)
 
     def acceleration_at(self, r):
         """ Compute the acceleration due to the potential at the given 
@@ -196,32 +192,18 @@ class CartesianPotential(Potential):
         """
         
         x,y,z = self._r_to_xyz(r)
-
-        for potential_derivative in self._component_derivs.values():
-            try:
-                acceleration -= potential_derivative(x,y,z)
-            except NameError:
-                acceleration = -potential_derivative(x,y,z)
-
-        return acceleration
+        return -self.f_prime(x,y,z)
 
     def _repr_latex_(self):
-        ''' Generate a latex representation of the potential. This is used by
+        """ Generate a latex representation of the potential. This is used by
             the IPython notebook to render nice latex equations.
-        '''
-
-        ltx_str = ""
-        for name,latex in self._latex.items():
-            ltx_str += "\\textit{{{0}}}: {1}\\\\".format(name, latex)
-
-        if ltx_str == "":
-            return ""
-
-        return u'Components: ${0}$'.format(ltx_str)
+        """
+        # TODO: some way to also show parameter values?
+        return u'${0}$'.format(self._latex)
 
     def _r_to_xyz(self, r):
         if isinstance(r, u.Quantity):
-            r = r.decompose(bases=self.unit_bases).value
+            r = r.decompose(bases=self.units).value
         
         if len(r.shape) == 1: 
             x,y,z = r
@@ -312,21 +294,28 @@ class CartesianPotential(Potential):
 
         return fig, axes
 
-    def __add__(self, other):
-        """ Allow adding two potentials """
-
-        if not isinstance(other, CartesianPotential):
-            raise TypeError("Addition is only supported between two Potential objects!")
-
-        new_potential = CartesianPotential(self.unit_bases.values(), self.origin)
-        for key in self._components.keys():
-            new_potential.add_component(key, self._components[key], 
-                                        f_prime=self._component_derivs[key],
-                                        parameters=self.parameters[key])
-
-        for key in other._components.keys():
-            new_potential.add_component(key, other._components[key], 
-                                        f_prime=other._component_derivs[key],
-                                        parameters=other.parameters[key])
-
-        return new_potential
+class CompositePotential(dict):
+    
+    def __init__(self, units, origin, *args, **kwargs):
+        """ Represents a potential composed of several sub-potentials. For 
+            example, two point masses or a galactic disk + halo. The origins 
+            of the components are *relative to the origin of the composite*.
+            
+            Parameters
+            ----------
+            units : list, dict
+                Either a list or dictionary of base units specifying the 
+                system of units for this potential. 
+        """
+        self.units = _validate_unit_system(units)
+        self.origin = _validate_origin(origin)
+        
+        # TODO: check kwargs, make sure they're all Potential subclasses!
+        
+        dict.__init__(self, *args, **kwargs)
+    
+    def __repr__(self):
+        """ TODO: figure out what to display... """
+        
+        return "<CompositePotential ??????>
+    
