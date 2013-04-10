@@ -26,6 +26,54 @@ else:
     for plot in os.listdir(plot_path):
         os.remove(os.path.join(plot_path,plot))
 
+def test_api():
+    # API:
+    potential = CompositePotential(units=[u.au,u.yr,u.M_sun], 
+                                   origin=[0.,0.,0.]*u.au)
+    potential["sun"] = PointMassPotential(units=potential.units,
+                                          origin=[0.,0.,0.]*u.au,
+                                          m=1.*u.M_sun)
+    potential["earth"] = PointMassPotential(units=potential.units,
+                                            origin=[1.,0.,0.]*u.au,
+                                            m=3E-6*u.M_sun)
+    
+    # or, more complicated:
+    mw_potential = CompositePotential(units=[u.kpc,u.Myr,u.M_sun],
+                                      origin=[0.,0.,0.]*u.kpc)
+    mw_potential["disk"] = MiyamotoNagaiPotential(galaxy_potential.units,
+                                                  m=1.E11*u.M_sun, 
+                                                  a=6.5*u.kpc,
+                                                  b=0.26*u.kpc,
+                                                  origin=[0.,0.,0.]*u.kpc)
+    
+    mw_potential["bulge"] = HernquistPotential(galaxy_potential.units,
+                                               m=3.4E10*u.M_sun,
+                                               c=0.7*u.kpc,
+                                               origin=[0.,0.,0.]*u.kpc)
+            
+    mw_potential["halo"] = LogarithmicPotentialLJ(galaxy_potential.units,
+                                                  v_halo=(121.858*u.km/u.s),
+                                                  q1=1.38,
+                                                  q2=1.0,
+                                                  qz=1.36,
+                                                  phi=1.692969*u.radian,
+                                                  r_halo=12.*u.kpc,
+                                                  origin=[0.,0.,0.]*u.kpc)
+    
+    satellite_potential = CompositePotential(units=[u.kpc,u.Myr,u.M_sun], 
+                                             origin=[40.,0.,0.]*u.kpc)
+    satellite_potential["disk"] = MiyamotoNagaiPotential(galaxy_potential.units,
+                                                         m=1.E11*u.M_sun, 
+                                                         a=6.5*u.kpc,
+                                                         b=0.26*u.kpc,
+                                                         origin=[0.,0.,0.]*u.kpc)
+    
+    potential = CompositePotential(units=[u.kpc,u.Myr,u.M_sun], 
+                                   origin=[0.,0.,0.]*u.kpc)
+    
+    potential["mw"] = mw_potential
+    potential["satellite"] = satellite_potential
+
 class TestPointMass(object):
 
     def test_creation(self):
