@@ -13,6 +13,7 @@ import os, sys
 import numpy as np
 import astropy.units as u
 from astropy.utils.misc import isiterable
+from scipy import interpolate
 
 from ..potential import CartesianPotential
 from ..integrate import leapfrog
@@ -137,7 +138,7 @@ class TestParticle(object):
         if self.r.value.ndim == 1:
             return "<Particle r={1} v={2}>".format(self.r, self.v)
         else:
-            return "[" + ", ".join(["<Particle r={1} v={2}>".format(p.r,p.v) for p in self]) + "]"
+            return "[" + ", ".join(["<Particle r={0} v={1}>".format(p.r,p.v) for p in self]) + "]"
     
 class TestParticleOrbit(object):
         
@@ -164,31 +165,23 @@ class TestParticleOrbit(object):
         self.t = t
     
     def interpolate(self, t):
-        """ Interpolate the orbit onto the specified time grid. """
+        """ Interpolate the orbit onto the specified time grid. 
         
-        raise NotImplementedError()
-    
-    def normalized_phase_space_distance(self, other, r_norm, v_norm):
-        """ Compute the phase-space distance between two orbits at each time.
-            If the time arrays are different, throw an error.
+            Parameters
+            ----------
+            t : astropy.units.Quantity
+                The new grid of times to interpolate on to.
         """
-        if not (self.t == other.t).all():
-            raise NotImplementedError("Interpolation not yet supported. Time "
-                                      "vectors must be aligned.")
         
-        if self.Nparticles == other.Nparticles:
-            r_term = self.r-other.r
-            v_term = self.v-other.v
-        elif self.Nparticles == 1 and other.Nparticles > 1:
-            r_term = self.r[:,np.newaxis,:] - other.r
-            v_term = self.v[:,np.newaxis,:] - other.v            
-        elif other.Nparticles == 1 and self.Nparticles > 1:
-            r_term = self.r - other.r[:,np.newaxis,:]
-            v_term = self.v - other.v[:,np.newaxis,:]
-        else:
-            raise ValueError("Size mismatch: {0} vs {1}"
-                             .format(self.r.value.shape, other.r.value.shape))
+        if not isinstance(t, u.Quantity):
+            raise TypeError("New time grid must be an Astropy Quantity object.")
         
-        dist = np.sqrt(np.sum((r_term/r_norm).decompose()**2 + (v_term/v_norm).decompose()**2, axis=2))
-        return dist
-            
+        new_t = t.to(self.t.unit)
+        
+        new_r = np.zeros((len(new_t), 3))
+        new_v = np.zeros((len(new_t), 3))
+        for i in range(3):
+            new_r[:,i] = interpolate.interp1d(self.t.value, self.r[:,i].value, kind='cubic')(new_t.value)
+            new_v[:,i] = interpolate.interp1d(self.t.value, self.v[:,i].value, kind='cubic')(new_t.value)
+        
+        return TestParticleOrbit(new_t, new_r*self.r.unit, new_v*self.v.unit)
