@@ -12,62 +12,125 @@ import os, sys
 # Third-party
 import numpy as np
 import astropy.units as u
+from astropy.constants import G
 
 from streams.potential import *
-from streams.simulation import Particle
+from streams.simulation import TestParticle
 
-__all__ = ["minimum_distance_matrix", "back_integrate", "generalized_variance"]
+__all__ = ["relative_normalized_coordinates",
+           "phase_space_distance",
+           "minimum_distance_matrix", 
+           "back_integrate",
+           "generalized_variance"]
 
-def minimum_distance_matrix(potential, xs, vs, sgr_cen):
+def relative_normalized_coordinates(particle_orbits, satellite_orbit, 
+                                    r_tide, v_esc):
+    """ Compute the coordinates of particles relative to the satellite, 
+        with positions normalized by the tidal radius and velocities
+        normalized by the escape velocity.
+        
+        Parameters
+        ----------
+        particle_orbits : TestParticleOrbit
+        satellite_orbit : TestParticleOrbit
+        r_tide : astropy.units.Quantity
+        v_esc : astropy.units.Quantity
+    """
+    
+    if not (particle_orbits.t == satellite_orbit.t).all():
+        raise ValueError("Interpolation not yet supported. Time vectors must "
+                         "be aligned.")
+        
+    if particle_orbits.r.value.ndim == 2:
+        sat_r = satellite_orbit.r
+        sat_v = satellite_orbit.v
+        r_tide = r_tide[:,np.newaxis]
+        v_esc = v_esc[:,np.newaxis]
+    elif particle_orbits.r.value.ndim == 3:
+        sat_r = satellite_orbit.r[:,np.newaxis,:]
+        sat_v = satellite_orbit.v[:,np.newaxis,:]
+        r_tide = r_tide[:,np.newaxis,np.newaxis]
+        v_esc = v_esc[:,np.newaxis,np.newaxis]
+    else:
+        raise ValueError("")
+    
+    return (particle_orbits.r - sat_r) / r_tide, (particle_orbits.v - sat_v) / v_esc
+    
+def phase_space_distance(R,V):
+    """ Compute the phase-space distance from relative, normalized coordinates.
+        
+        Parameters
+        ----------
+        R : Quantity, array
+            Positions of particles relative to satellite, normalized by R_tide.
+        V : Quantity, array
+            Velocities of particles relative to satellite, normalized by V_esc.
+    """
+    try:
+        R = R.decompose().value
+    except AttributeError:
+        pass
+    
+    try:
+        V = V.decompose().value
+    except AttributeError:
+        pass
+    
+    if R.shape != V.shape:
+        raise ValueError("Shape of R,V must match!")
+    
+    if R.ndim != 3 or V.ndim != 3:
+        raise ValueError("R and V should have shape: (Ntimesteps, Nparticles, 6)")
+    
+    if isinstance(R, u.Quantity):
+        dist = np.sqrt(np.sum(R.decompose()**2,axis=2) + np.sum(V.decompose()**2, axis=2))
+    else:
+        dist = np.sqrt(np.sum(R**2,axis=2) + np.sum(V**2, axis=2))
+        
+    return dist
+
+def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     """ Compute the Nx6 matrix of minimum phase-space distance vectors.
         
         Parameters
         ----------
         potential : Potential
-            The full Milky Way potential object.
-        xs : ndarray
-            An array of positions for all particles at all times
-        vs : ndarray
-            An array of velocities for all particles at all times
-        sgr_cen : SgrCen
-            Data for the Sgr satellite center, interpolated onto the
-            time grid for our particles.
+        particle_orbits : TestParticleOrbit
+            ...
+        satellite_orbit : TestParticleOrbit
+            ...
     """
+    # TODO: check for quantities?
+    
+    Nparticles = particle_orbits.r.value.shape[1]
+    unit_bases = potential.units.values()
+    
     # Define tidal radius, escape velocity for satellite
-    msat = 2.5E8 # M_sun
-    sgr_orbital_radius = np.sqrt(sgr_cen["x"]**2 + sgr_cen["y"]**2 + sgr_cen["z"]**2)
-    m_halo_enclosed = potential.params["v_halo"]**2 * sgr_orbital_radius/potential.params["_G"]
-    mass_enclosed = potential.params["M_disk"] + potential.params["M_sph"] + m_halo_enclosed
-
-    r_tides = sgr_orbital_radius * (msat / mass_enclosed)**(1./3)
-    v_escs = np.sqrt(potential.params["_G"] * msat / r_tides)
+    m_sat = 2.5E8 * u.M_sun
     
-    # N = number of particles
-    N = xs.shape[1]
+    # Radius of Sgr center relative to galactic center
+    R_sgr = np.sqrt(satellite_orbit.r[:,0]**2 + \
+                    satellite_orbit.r[:,1]**2 + \
+                    satellite_orbit.r[:,2]**2) * satellite_orbit.r.unit
     
-    # Distance to satellite center and total velocity
-    d = np.sqrt((xs[:,:,0] - sgr_cen["x"][:,np.newaxis].repeat(N, axis=1))**2 +
-                (xs[:,:,1] - sgr_cen["y"][:,np.newaxis].repeat(N, axis=1))**2 + 
-                (xs[:,:,2] - sgr_cen["z"][:,np.newaxis].repeat(N, axis=1))**2) / r_tides[:,np.newaxis].repeat(N, axis=1)
+    m_halo_enc = potential["halo"]._unscaled_parameters["v_halo"]**2 * R_sgr/G
+    m_enc = potential["disk"]._unscaled_parameters["m"] + \
+            potential["bulge"]._unscaled_parameters["m"] + \
+            m_halo_enc
     
-    v = np.sqrt((vs[:,:,0] - sgr_cen["vx"][:,np.newaxis].repeat(N, axis=1))**2 +
-                (vs[:,:,1] - sgr_cen["vy"][:,np.newaxis].repeat(N, axis=1))**2 +
-                (vs[:,:,2] - sgr_cen["vz"][:,np.newaxis].repeat(N, axis=1))**2) / v_escs[:,np.newaxis].repeat(N, axis=1)
+    r_tide = R_sgr * ((m_sat / m_enc).decompose().value)**(1./3)
+    v_esc = ( (G * m_sat / r_tide).decompose(bases=unit_bases)) ** 0.5
     
-    idx = np.argmin(d**2 + v**2, axis=0)
+    R,V = relative_normalized_coordinates(particle_orbits, satellite_orbit, 
+                                          r_tide, v_esc)
+    D_ps = phase_space_distance(R,V)
     
-    min_xs = np.zeros((N,3))
-    for ii,jj in enumerate(idx):
-        # xs[time, particles, dimension]
-        min_xs[ii] = (xs[jj,ii] - sgr_cen.xyz[:,jj]) / r_tides[jj]
+    # Find the index of the time of the minimum D_ps for each particle
+    min_time_idx = D_ps.argmin(axis=0)
     
-    min_vs = np.zeros((N,3))
-    for ii,jj in enumerate(idx):
-        # vs[time, particles, dimension]
-        min_vs[ii] = (vs[jj,ii] - sgr_cen.vxyz[:,jj]) / v_escs[jj]
-    
-    min_ps = np.hstack((min_xs, min_vs))
-    # min_ps -> (N x 6) matrix
+    min_ps = np.zeros((Nparticles,6))
+    for jj,ii in zip(min_time_idx, range(Nparticles)):
+        min_ps[ii] = np.append(R[jj,ii], V[jj,ii])
     
     return min_ps
     
@@ -78,22 +141,22 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
         ----------
         potential : Potential
             The full Milky Way potential object.
-        particle_orbits : OrbitCollection
+        particle_orbits : TestParticleOrbit
             An object containing orbit information for a collection of 
             particles.
-        satellite_orbit : Orbit
+        satellite_orbit : TestParticleOrbit
             Data for the Sgr satellite center, interpolated onto the
             time grid for our particles.
     """
     
-    min_ps = minimum_distance_matrix(potential, xs, vs, sgr_cen)
+    min_ps = minimum_distance_matrix(potential, particle_orbits, satellite_orbit)
     
     cov_matrix = np.cov(min_ps.T)
     # cov_matrix -> (6 x 6) covariance matrix for particles
     w,v = np.linalg.eig(cov_matrix)
     
     return np.sum(w)
-
+    
 def back_integrate(potential, particles, t1, t2, dt):
     """ Given a potential and a list of particles, integrate the particles
         backwards from t1 to t2 with timestep dt.
