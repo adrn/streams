@@ -40,20 +40,20 @@ def test_failure():
 
 def test_api():    
     # or, more complicated:
-    mw_potential = CompositePotential(units=[u.kpc,u.Myr,u.M_sun],
+    mw_potential = CompositePotential(units=[u.kpc,u.Myr,u.M_sun,u.radian],
                                       origin=[0.,0.,0.]*u.kpc)
-    mw_potential["disk"] = MiyamotoNagaiPotential(galaxy_potential.units,
+    mw_potential["disk"] = MiyamotoNagaiPotential(mw_potential.units,
                                                   m=1.E11*u.M_sun, 
                                                   a=6.5*u.kpc,
                                                   b=0.26*u.kpc,
                                                   origin=[0.,0.,0.]*u.kpc)
     
-    mw_potential["bulge"] = HernquistPotential(galaxy_potential.units,
+    mw_potential["bulge"] = HernquistPotential(mw_potential.units,
                                                m=3.4E10*u.M_sun,
                                                c=0.7*u.kpc,
                                                origin=[0.,0.,0.]*u.kpc)
             
-    mw_potential["halo"] = LogarithmicPotentialLJ(galaxy_potential.units,
+    mw_potential["halo"] = LogarithmicPotentialLJ(mw_potential.units,
                                                   v_halo=(121.858*u.km/u.s),
                                                   q1=1.38,
                                                   q2=1.0,
@@ -64,7 +64,7 @@ def test_api():
     
     satellite_potential = CompositePotential(units=[u.kpc,u.Myr,u.M_sun], 
                                              origin=[40.,0.,0.]*u.kpc)
-    satellite_potential["disk"] = MiyamotoNagaiPotential(galaxy_potential.units,
+    satellite_potential["disk"] = MiyamotoNagaiPotential(mw_potential.units,
                                                          m=1.E11*u.M_sun, 
                                                          a=6.5*u.kpc,
                                                          b=0.26*u.kpc,
