@@ -40,4 +40,4 @@ def test_add_uncertainties():
     x = np.random.uniform(0., 10., (3,N)) * u.kpc
     v = np.random.uniform(0., 25., (3,N)) * u.km/u.s
     
-    new_x, new_v = rr_lyrae_add_observational_uncertainties(x,v)
+    derp = rr_lyrae_add_observational_uncertainties(x[0],x[1],x[2],v[0],v[1],v[2])
