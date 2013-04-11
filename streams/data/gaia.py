@@ -15,8 +15,11 @@ import numpy as np
 import astropy.units as u
 from astropy.utils.misc import isiterable
 
+from ..simulation import TestParticle
+
 __all__ = ["parallax_error", "proper_motion_error", "rr_lyrae_M_V", \
-           "apparent_magnitude", "rr_lyrae_add_observational_uncertainties"]
+           "apparent_magnitude", "rr_lyrae_add_observational_uncertainties", \
+           "add_uncertainties_to_particles"]
 
 # Johnson/Cousins (V - I_C) color for RR Lyrae at *minimum*
 # Guldenschuh et al. (2005 PASP 117, 721), pg. 725
@@ -210,3 +213,27 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz):
     
     return (new_x*x.unit, new_y*x.unit, new_z*x.unit, 
             new_vx*vx.unit, new_vy*vx.unit, new_vz*vx.unit)
+
+def add_uncertainties_to_particles(particles):
+    """ Given a TestParticle object, add RR Lyrae-like uncertainties and return
+        a new TestParticle with the errors.
+    """
+    
+    x,y,z,vx,vy,vz = rr_lyrae_add_observational_uncertainties(particles.r[:,0],
+                                                              particles.r[:,1],
+                                                              particles.r[:,2],
+                                                              particles.v[:,0],
+                                                              particles.v[:,1],
+                                                              particles.v[:,2])
+    
+    new_r = np.zeros_like(particles.r.value)
+    new_r[:,0] = x.value
+    new_r[:,1] = y.value
+    new_r[:,2] = z.value
+    
+    new_v = np.zeros_like(particles.r.value)
+    new_v[:,0] = vx.value
+    new_v[:,1] = vy.value
+    new_v[:,2] = vz.value
+    
+    return TestParticle(r=new_r*particles.r.unit, v=new_v*particles.v.unit)
