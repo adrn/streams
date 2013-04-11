@@ -51,6 +51,11 @@ class TestSgrCen(object):
         new_sgr_cen = sgr_cen.interpolate(new_ts)
         
         assert (new_sgr_cen["t"].data == new_ts.value).all()
+    
+    def test_orbit(self):
+        sgr_cen = self.sgr_cen
+        
+        sgr_cen.as_orbit()
 
 class TestSgrSnap(object):
     
@@ -88,6 +93,12 @@ class TestSgrSnap(object):
         with_errors.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
         
         fig.savefig("plots/tests/sgrsnap_uncertainties_velocity.png")
+    
+    def test_as_particles(self):
+        sgr_snap = SgrSnapshot(N=100, 
+                               expr="(tub > 0)")
+        p = sgr_snap.as_particles()
+        print(p)
 
 def test_coordinates():
     lm10 = LM10()

@@ -25,6 +25,7 @@ from ..util import project_root
 from .gaia import rr_lyrae_add_observational_uncertainties
 from ..plot.data import scatter_plot_matrix
 from .core import StreamData, _make_npy_file
+from ..simulation import TestParticle, TestParticleOrbit
 
 __all__ = ["LM10", "SgrCen", "SgrSnapshot"]
 
@@ -125,15 +126,19 @@ class KVJSgrData(Table):
         """ Return a list of particles from the position and velocity 
             vectors.
         """
-        from ..simulation import Particle
-        particles = []
-        for ii in range(len(self)):
-            p = Particle(position=(self["x"][ii], self["y"][ii], self["z"][ii]),
-                         velocity=(self["vx"][ii], self["vy"][ii], self["vz"][ii]),
-                         mass=1.) # M_sol
-            particles.append(p)
+        from ..simulation import TestParticle
         
-        return particles
+        r = np.zeros((len(self), 3))
+        r[:,0] = np.array(self["x"])
+        r[:,1] = np.array(self["y"])
+        r[:,2] = np.array(self["z"])
+        
+        v = np.zeros((len(self), 3))
+        v[:,0] = np.array(self["vx"])
+        v[:,1] = np.array(self["vy"])
+        v[:,2] = np.array(self["vz"])
+        
+        return TestParticle(r*self.r_unit, v*self.v_unit)
 
 class SgrCen(KVJSgrData):
     
@@ -151,45 +156,23 @@ class SgrCen(KVJSgrData):
                                      overwrite_npy=overwrite_npy)
         
         self.dt = self["dt"][0]
-        
-    def interpolate(self, ts):
-        """ Interpolate the SgrCen data onto the specified time grid. 
-            
-            Parameters
-            ----------
-            ts : astropy.units.Quantity
-                The new grid of times to interpolate on to.
-        
-        """
-        
-        if not isinstance(ts, u.Quantity):
-            raise TypeError("New time grid must be an Astropy Quantity object.")
-        
-        ts = ts.to(self.t_unit).value
-        
-        columns = []
-        for name in self.colnames:
-            if name == "t":
-                columns.append(Column(data=ts, units=self.t_unit, name=name))
-                continue
-            elif name in self._phase_space_coord_names:
-                data = interpolate.interp1d(self["t"].data, self[name], 
-                                            kind='cubic')(ts)
-                columns.append(Column(data=data, units=self[name].units, name=name))
-            else:
-                pass
-        
-        # MAJOR hack here....
-        new_table = copy.copy(self)
-        new_table.remove_column("dt")
-        new_table2 = Table(columns, names=new_table.colnames)
-        new_table._init_from_table(new_table2, new_table.colnames, 
-                                   [new_table.dtype[ii] for ii in range(len(new_table.colnames))], 
-                                   len(new_table.colnames), 
-                                   True)
-        new_table.dt = ts[1]-ts[0]
-        return new_table
     
+    def as_orbit(self):
+        """ Return a TestParticleOrbit object. """
+        
+        r = np.zeros((len(self), 3))
+        r[:,0] = np.array(self["x"])
+        r[:,1] = np.array(self["y"])
+        r[:,2] = np.array(self["z"])
+        
+        v = np.zeros((len(self), 3))
+        v[:,0] = np.array(self["vx"])
+        v[:,1] = np.array(self["vy"])
+        v[:,2] = np.array(self["vz"])
+        
+        t = np.array(self["t"])
+        return TestParticleOrbit(t*self.t_unit, r*self.r_unit, v*self.v_unit)
+        
 class SgrSnapshot(KVJSgrData):
 
     def __init__(self, N=None, expr="", overwrite_npy=False):
