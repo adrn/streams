@@ -75,7 +75,7 @@ def read(file):
         file_lines = file.read().split("\n")
     except AttributeError:
         # file isn't a file object, try openining it as if it were a filename
-        with open(filename, "r") as f:
+        with open(file, "r") as f:
             file_lines = f.readlines()
     
     config = dict()

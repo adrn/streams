@@ -16,7 +16,7 @@ import logging
 import numpy as np
 import astropy.units as u
 
-from ..data import SgrSnapshot, SgrCen
+#from ..data import SgrSnapshot, SgrCen
 
 def simulation_setup():
     from argparse import ArgumentParser
