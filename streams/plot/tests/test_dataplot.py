@@ -13,21 +13,26 @@ import pytest
 
 from ..data import scatter_plot_matrix
 
+plot_path = "plots/tests/plot/"
+
+if not os.path.exists(plot_path):
+    os.mkdir(plot_path)
+
 def test_scatter_plot_matrix():
     M = 6
     data = np.random.normal(size=(M,100))
         
     labels = ["x", "y", "z", "vx", "vy", "vz"]
-    axes = scatter_plot_matrix(data, labels=labels)
+    fig,axes = scatter_plot_matrix(data, labels=labels)
     fig = axes[0,0].figure
-    fig.savefig("plots/tests/scatterplot_matrix.png")
+    fig.savefig(os.path.join(plot_path,"scatterplot_matrix.png"))
     
-    axes = scatter_plot_matrix(data, labels=labels, 
+    fig,axes = scatter_plot_matrix(data, labels=labels, 
                                subplots_kwargs={"figsize":(16,16)},
                                scatter_kwargs={"edgecolor":"none",  
                                                "c":"k",
                                                "s":10,
                                                "alpha":0.5})
     fig = axes[0,0].figure
-    fig.savefig("plots/tests/scatterplot_matrix_sexier.png")
+    fig.savefig(os.path.join(plot_path,"scatterplot_matrix_sexier.png"))
     
