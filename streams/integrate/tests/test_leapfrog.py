@@ -14,13 +14,15 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from ..leapfrog import *
-from ... import potential as pot
+from ...potential import *
 
-plot_path = "plots/tests/simulation"
+plot_path = "plots/tests/integrate"
 animation_path = os.path.join(plot_path, "animation")
 
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
+
+gal_units = [u.kpc,u.Myr,u.M_sun,u.radian]
 
 class TestBoxOnSpring(object):
 
@@ -58,7 +60,8 @@ class TestBoxOnSpring(object):
             a_i = a_ip1
             x_i = x_ip1
             v_i = v_ip1
-
+        
+        plt.clf()
         plt.plot(times, xs, 'k-')
         plt.savefig(os.path.join(plot_path,"box_spring.png"))
 
@@ -89,7 +92,7 @@ def plot_energies(potential, ts, xs, vs, axes1=None):
 class TestIntegrate(object):
     
     def test_point_mass_energy(self):
-        potential = pot.PointMassPotential(unit_bases=[u.M_sun, u.au, u.yr],
+        potential = PointMassPotential(units=[u.M_sun, u.au, u.yr],
                                            m=1*u.M_sun)
 
         initial_position = np.array([1.0, 0.0, 0.]) # au
@@ -103,7 +106,7 @@ class TestIntegrate(object):
         fig1.savefig(os.path.join(plot_path,"point_mass_energy.png"))
     
     def test_hernquist_energy(self):
-        potential = pot.HernquistPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
+        potential = HernquistPotential(units=[u.M_sun, u.kpc, u.Myr],
                                            m=1E10*u.M_sun, 
                                            c=0.7*u.kpc)
 
@@ -118,7 +121,7 @@ class TestIntegrate(object):
         fig1.savefig(os.path.join(plot_path,"hernquist_energy.png"))
 
     def test_miyamoto_energy(self):
-        potential = pot.MiyamotoNagaiPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
+        potential = MiyamotoNagaiPotential(units=[u.M_sun, u.kpc, u.Myr],
                                                m=1E11*u.M_sun, 
                                                a=6.5*u.kpc, 
                                                b=0.26*u.kpc)
@@ -133,7 +136,7 @@ class TestIntegrate(object):
         fig1.savefig(os.path.join(plot_path,"miyamoto_energy.png"))
 
     def test_log_potential(self):
-        potential = pot.LogarithmicPotentialLJ(unit_bases=[u.kpc,u.Myr,u.M_sun,u.radian],
+        potential = LogarithmicPotentialLJ(units=[u.kpc,u.Myr,u.M_sun,u.radian],
                                                v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
                                                q1=1.38,
                                                q2=1.0,
@@ -153,29 +156,33 @@ class TestIntegrate(object):
         fig1.savefig(os.path.join(plot_path,"logarithmic_energy.png"))
 
     def test_three_component(self):
-        bulge = pot.HernquistPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
-                                           m=1E10*u.M_sun, 
-                                           c=0.7*u.kpc)
-        disk = pot.MiyamotoNagaiPotential(unit_bases=[u.M_sun, u.kpc, u.Myr],
-                                               m=1E11*u.M_sun, 
-                                               a=6.5*u.kpc, 
-                                               b=0.26*u.kpc)
+        potential = CompositePotential(units=gal_units, 
+                                       origin=[0.,0.,0.]*u.kpc)
+        potential["disk"] = MiyamotoNagaiPotential(gal_units,
+                                      m=1.E11*u.M_sun, 
+                                      a=6.5*u.kpc,
+                                      b=0.26*u.kpc,
+                                      origin=[0.,0.,0.]*u.kpc)
         
-        halo = pot.LogarithmicPotentialLJ(unit_bases=[u.kpc,u.Myr,u.M_sun,u.radian],
-                                               v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
-                                               q1=1.38,
-                                               q2=1.0,
-                                               qz=1.36,
-                                               phi=1.692969*u.radian,
-                                               r_halo=12.*u.kpc)
+        potential["bulge"] = HernquistPotential(gal_units,
+                                   m=3.4E10*u.M_sun,
+                                   c=0.7*u.kpc,
+                                   origin=[0.,0.,0.]*u.kpc)
         
-        potential = disk + bulge + halo
+        potential["halo"] = LogarithmicPotentialLJ(gal_units,
+                                      v_halo=(121.858*u.km/u.s),
+                                      q1=1.38,
+                                      q2=1.0,
+                                      qz=1.36,
+                                      phi=1.692969*u.radian,
+                                      r_halo=12.*u.kpc,
+                                      origin=[0.,0.,0.]*u.kpc)
 
         initial_position = np.array([14.0, 0.0, 5.]) # kpc
         initial_velocity = np.array([(40.*u.km/u.s).to(u.kpc/u.Myr).value,
                                      (130.*u.km/u.s).to(u.kpc/u.Myr).value,
                                      (40.*u.km/u.s).to(u.kpc/u.Myr).value]) # kpc/Myr
-
+        
         fig, axes = plt.subplots(3, 1, sharex=True, sharey=True)
         ts, xs, vs = leapfrog(potential.acceleration_at, 
                               initial_position, 
