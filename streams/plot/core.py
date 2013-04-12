@@ -17,6 +17,8 @@ import matplotlib.gridspec as gridspec
 from ..potential.lm10 import param_to_latex
 from ..potential.lm10 import halo_params as true_halo_params
 
+__all__ = ["emcee_plot"]
+
 # TODO: make this more general...
 def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,None)):
     """ Plot posterior probability distributions and chain traces from the 
