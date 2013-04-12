@@ -31,7 +31,7 @@ import emcee
 from emcee.utils import MPIPool
 
 # Project
-from streams.potential.lm10 import param_ranges, param_to_latex
+from streams.potential.lm10 import param_ranges, param_to_latex, param_units
 from streams.simulation.setup import simulation_setup
 from streams.simulation import config
 from streams.data import SgrSnapshot, SgrCen
@@ -118,10 +118,10 @@ def infer_potential(particles, satellite_orbit, simulation_params):
     for ii in range(sp["walkers"]):
         p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
                     for p_name in sp["model_parameters"]])
-    p0 = np.array(p0)
-    ndim = p0.shape[1]
+    #p0 = np.array(p0)
+    #ndim = np.array(p0).shape[1]
+    ndim = len(sp["model_parameters"])
     
-    # TODO: ln_posterior????
     # Construct the log posterior probability function to pass in to emcee
     args = sp["model_parameters"], particles, satellite_orbit
     

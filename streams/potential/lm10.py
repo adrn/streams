@@ -23,13 +23,20 @@ halo_params = dict(v_halo=(121.858*u.km/u.s),
                     phi=1.692969*u.radian,
                     r_halo=12.*u.kpc)
 
+# RANGED MUST BE IN UNITS BELOW!!!
 param_ranges = dict(qz=(1.,2.),
                     q1=(1.,2.),
                     q2=(1.,2.),
-                    v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr),
-                            (150.*u.km/u.s).to(u.kpc/u.Myr)),
-                    phi=(np.pi/4, 3*np.pi/4)*u.radian,
-                    r_halo=(8,20)*u.kpc)
+                    v_halo=((100.*u.km/u.s).value,(150.*u.km/u.s).value),
+                    phi=(np.pi/4, 3*np.pi/4),
+                    r_halo=(8,20)) # kpc
+
+param_units = dict(v_halo=u.km/u.s,
+                   q1=1.,
+                   q2=1.,
+                   qz=1.,
+                   phi=u.radian,
+                   r_halo=u.kpc)
 
 param_to_latex = dict(q1=r"$q_1$",
                       q2=r"$q_2$",

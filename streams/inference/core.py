@@ -20,7 +20,7 @@ import astropy.units as u
 from ..simulation import generalized_variance
 from ..potential import LawMajewski2010
 from ..potential.lm10 import halo_params as true_halo_params
-from ..potential.lm10 import param_ranges
+from ..potential.lm10 import param_ranges, param_units
 from ..data import SgrCen, SgrSnapshot
 
 __all__ = ["ln_posterior"]
@@ -101,7 +101,7 @@ def ln_likelihood(p, param_names, particles, satellite_orbit):
     
     halo_params = true_halo_params.copy()
     for ii,param in enumerate(param_names):
-        halo_params[param] = p[ii]
+        halo_params[param] = p[ii]*param_units[param]
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     potential = LawMajewski2010(**halo_params)
