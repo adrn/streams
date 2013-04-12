@@ -20,7 +20,6 @@ from streams.simulation import TestParticle
 __all__ = ["relative_normalized_coordinates",
            "phase_space_distance",
            "minimum_distance_matrix", 
-           "back_integrate",
            "generalized_variance"]
 
 def relative_normalized_coordinates(particle_orbits, satellite_orbit, 
@@ -36,8 +35,11 @@ def relative_normalized_coordinates(particle_orbits, satellite_orbit,
         r_tide : astropy.units.Quantity
         v_esc : astropy.units.Quantity
     """
+    # THE BELOW IS A HACK HACK HACK BECAUSE OF:
+    #   https://github.com/astropy/astropy/issues/974  
+    #if not (particle_orbits.t == satellite_orbit.t).all():
     
-    if not (particle_orbits.t == satellite_orbit.t).all():
+    if not (particle_orbits.t.value == satellite_orbit.t.value).all():
         raise ValueError("Interpolation not yet supported. Time vectors must "
                          "be aligned.")
         
@@ -53,6 +55,11 @@ def relative_normalized_coordinates(particle_orbits, satellite_orbit,
         v_esc = v_esc[:,np.newaxis,np.newaxis]
     else:
         raise ValueError("")
+    
+    # THE BELOW IS A HACK HACK HACK BECAUSE OF:
+    #   https://github.com/astropy/astropy/issues/974  
+    sat_r = u.Quantity(sat_r.value, str(sat_r.unit))
+    sat_v = u.Quantity(sat_v.value, str(sat_v.unit))
     
     return (particle_orbits.r - sat_r) / r_tide, (particle_orbits.v - sat_v) / v_esc
     
@@ -100,7 +107,6 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
         satellite_orbit : TestParticleOrbit
             ...
     """
-    # TODO: check for quantities?
     
     Nparticles = particle_orbits.r.value.shape[1]
     unit_bases = potential.units.values()
@@ -108,15 +114,36 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     # Define tidal radius, escape velocity for satellite
     m_sat = 2.5E8 * u.M_sun
     
+    # ----------------------------
+    # THE BELOW IS A HACK HACK HACK BECAUSE OF:
+    #   https://github.com/astropy/astropy/issues/974
+    
+    # Radius of Sgr center relative to galactic center
+    #R_sgr = np.sqrt(satellite_orbit.r[:,0]**2 + \
+    #                satellite_orbit.r[:,1]**2 + \
+    #                satellite_orbit.r[:,2]**2) * satellite_orbit.r.unit
+    
+    #m_halo_enc = potential["halo"]._unscaled_parameters["v_halo"]**2 * R_sgr/G
+    #m_enc = potential["disk"]._unscaled_parameters["m"] + \
+    #        potential["bulge"]._unscaled_parameters["m"] + \
+    #        m_halo_enc
+    
     # Radius of Sgr center relative to galactic center
     R_sgr = np.sqrt(satellite_orbit.r[:,0]**2 + \
                     satellite_orbit.r[:,1]**2 + \
-                    satellite_orbit.r[:,2]**2) * satellite_orbit.r.unit
+                    satellite_orbit.r[:,2]**2) * u.Unit(str(satellite_orbit.r.unit))
     
-    m_halo_enc = potential["halo"]._unscaled_parameters["v_halo"]**2 * R_sgr/G
-    m_enc = potential["disk"]._unscaled_parameters["m"] + \
-            potential["bulge"]._unscaled_parameters["m"] + \
-            m_halo_enc
+    v_halo = u.Quantity(potential["halo"]._unscaled_parameters["v_halo"].value,
+                        str(potential["halo"]._unscaled_parameters["v_halo"].unit))
+    m_disk = u.Quantity(potential["disk"]._unscaled_parameters["m"].value,
+                        str(potential["disk"]._unscaled_parameters["m"].unit))
+    m_bulge = u.Quantity(potential["bulge"]._unscaled_parameters["m"].value,
+                        str(potential["bulge"]._unscaled_parameters["m"].unit))
+                        
+    m_halo_enc = v_halo**2 * R_sgr/G
+    m_enc = m_disk + m_bulge + m_halo_enc
+    
+    # -----------------------------------------
     
     r_tide = R_sgr * ((m_sat / m_enc).decompose().value)**(1./3)
     v_esc = ( (G * m_sat / r_tide).decompose(bases=unit_bases)) ** 0.5
@@ -156,24 +183,4 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
     w,v = np.linalg.eig(cov_matrix)
     
     return np.sum(w)
-    
-def back_integrate(potential, particles, t1, t2, dt):
-    """ Given a potential and a list of particles, integrate the particles
-        backwards from t1 to t2 with timestep dt.
-        
-        Parameters
-        ----------
-        potential : Potential
-            The full Milky Way potential object.
-        particles : list
-            A list of Particle objects for each star's position.
-    """
 
-    # Initialize particle simulation with full potential
-    simulation = TestParticleSimulation(potential=potential)
-    simulation.add_particles(particles)
-    
-    #ts, xs, vs = simulation.run(t1=t1, t2=t2, dt=-dt)
-    particle_orbits = simulation.run(t1=t1, t2=t2, dt=-dt)
-    
-    return ts, xs, vs

@@ -120,6 +120,7 @@ class CartesianPotential(Potential):
         
         self._unscaled_parameters = parameters
         self.parameters = self._rescale_parameters(parameters)
+        self._scaled_origin = self.origin.decompose(bases=self.units.values()).value
         
         # Make sure the f is callable, and that the component doesn't already
         #   exist in the potential
@@ -128,7 +129,7 @@ class CartesianPotential(Potential):
                             "passed in a '{0}'".format(f.__class__))
         
         self.f = lambda *args: f(*args, 
-                                 origin=self.origin.decompose(bases=self.units.values()).value, 
+                                 origin=self._scaled_origin, 
                                  **self.parameters)
         
         if f_prime != None:
@@ -136,16 +137,10 @@ class CartesianPotential(Potential):
                 raise TypeError("'f_prime' must be a callable function! You "
                                 "passed in a '{0}'".format(f_prime.__class__))
             self.f_prime = lambda *args: f_prime(*args, 
-                                 origin=self.origin.decompose(bases=self.units.values()).value, 
+                                 origin=self._scaled_origin, 
                                  **self.parameters)
         else:
             self.f_prime = None
-        
-        #if isinstance(func, functools.partial):
-        #    func = func.func
-        # functools.partial(func, **parameters)
-        
-        # If the user passes the potential derivatives
 
         if latex != None:
             if latex.startswith("$"):
@@ -204,8 +199,8 @@ class CartesianPotential(Potential):
         return u'${0}$'.format(self._latex)
 
     def _r_to_xyz(self, r):
-        if isinstance(r, u.Quantity):
-            r = r.decompose(bases=self.units.values()).value
+        #if isinstance(r, u.Quantity):
+        #    r = r.decompose(bases=self.units.values()).value
         
         if len(r.shape) == 1: 
             x,y,z = r

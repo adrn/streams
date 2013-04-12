@@ -13,6 +13,7 @@ import os, sys
 import numpy as np
 import astropy.units as u
 
+from .core import CompositePotential
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
 
 halo_params = dict(v_halo=(121.858*u.km/u.s),

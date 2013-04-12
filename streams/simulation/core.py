@@ -17,6 +17,7 @@ from scipy import interpolate
 
 from ..potential import CartesianPotential
 from ..integrate import leapfrog
+from ..plot.data import scatter_plot_matrix
 
 __all__ = ["TestParticle", "TestParticleOrbit"]
 
@@ -89,16 +90,24 @@ class TestParticle(object):
                 A function to use for integrating the particle orbits.
         """
         
-        if not isinstance(potential, CartesianPotential):
-            raise TypeError("potential must be a Potential object.")
+        #if not isinstance(potential, CartesianPotential):
+        #    raise TypeError("potential must be a Potential object.")
+        
+        # THIS IS A HACK HACK HACK BECAUSE OF:
+        #   https://github.com/astropy/astropy/issues/974
+        r = u.Quantity(self.r.value, str(self.r.unit))
+        v = u.Quantity(self.v.value, str(self.v.unit))
+        t = u.Quantity(t.value, str(t.unit))
         
         # test particles -- ignore particle-particle effects
         _t, r, v = integrator(potential.acceleration_at, 
-                              self.r.decompose(bases=potential.units.values()).value,
-                              self.v.decompose(bases=potential.units.values()).value, 
-                              t=t)
-        assert (t == _t).all()
-        return _t,r,v
+                              r.to(potential.units["length"]).value,
+                              v.decompose(bases=potential.units.values()).value, 
+                              t=t.decompose(bases=potential.units.values()).value)
+        
+        return TestParticleOrbit(_t*potential.units["time"], 
+                                 r*potential.units["length"],
+                                 v*potential.units["length"]/potential.units["time"])
     
     '''
     def acceleration_at(self, r):
@@ -139,6 +148,32 @@ class TestParticle(object):
             return "<Particle r={1} v={2}>".format(self.r, self.v)
         else:
             return "[" + ", ".join(["<Particle r={0} v={1}>".format(p.r,p.v) for p in self]) + "]"
+    
+    def plot_positions(self, **kwargs):
+        """ Make a scatter-plot of 3 projections of the positions of the 
+            particles in Galactocentric XYZ coordinates.
+        """   
+        
+        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.r.unit)
+                    for nm in ["X", "Y", "Z"]]
+        
+        fig,axes = scatter_plot_matrix(self.r.value.T, 
+                                       labels=labels,
+                                       **kwargs)
+        return fig, axes
+        
+    def plot_velocities(self, **kwargs):
+        """ Make a scatter-plot of 3 projections of the velocities of the 
+            particles. 
+        """
+        
+        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.r_unit)
+                    for nm in ["V^x", "V^y", "V^z"]]
+        
+        fig,axes = scatter_plot_matrix(self.v.value.T, 
+                                       labels=labels,
+                                       **kwargs)
+        return fig, axes
     
 class TestParticleOrbit(object):
         
