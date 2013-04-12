@@ -234,24 +234,4 @@ class SgrSnapshot(KVJSgrData):
                                    True)
         return new_table
     
-    def plot_positions(self, **kwargs):
-        """ Make a scatter-plot of 3 projections of the positions of the 
-            particles in Galactocentric XYZ coordinates.
-        """   
-        
-        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.r_unit)
-                    for nm in ["X", "Y", "Z"]]
-        
-        fig,axes = scatter_plot_matrix(self.xyz, labels=labels, **kwargs)
-        return fig, axes
-        
-    def plot_velocities(self, **kwargs):
-        """ Make a scatter-plot of 3 projections of the velocities of the 
-            particles. 
-        """
-        
-        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.r_unit)
-                    for nm in ["V^x", "V^y", "V^z"]]
-        
-        fig,axes = scatter_plot_matrix(self.vxyz, labels=labels, **kwargs)
-        return fig, axes
+    
