@@ -13,6 +13,7 @@ import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import astropy.units as u
 
 from ..potential.lm10 import param_to_latex
 from ..potential.lm10 import halo_params as true_halo_params
