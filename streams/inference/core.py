@@ -17,11 +17,13 @@ import emcee
 from emcee.utils import MPIPool
 import astropy.units as u
 
-from ..simulation import back_integrate, generalized_variance
+from ..simulation import generalized_variance
 from ..potential import LawMajewski2010
 from ..potential.lm10 import halo_params as true_halo_params
 from ..potential.lm10 import param_ranges
 from ..data import SgrCen, SgrSnapshot
+
+__all__ = ["ln_posterior"]
 
 def ln_p_qz(qz):
     """ Flat prior on vertical (z) axis flattening parameter. """
@@ -89,7 +91,10 @@ def ln_prior(p, param_names):
     
     return sum
 
-def ln_likelihood(p, param_names, particles, satellite_orbit, t1, t2, dt):
+# Note: if this doesn't work, I can always pass param_names in to each prior
+#   and if it isn't in there, return 0...
+
+def ln_likelihood(p, param_names, particles, satellite_orbit):
     """ Evaluate the likelihood function for a given set of halo 
         parameters.
     """
@@ -99,12 +104,11 @@ def ln_likelihood(p, param_names, particles, satellite_orbit, t1, t2, dt):
         halo_params[param] = p[ii]
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
-    mw_potential = LawMajewski2010(**halo_params)
+    potential = LawMajewski2010(**halo_params)
     
-    ts,xs,vs = back_integrate(mw_potential, particles, t1, t2, dt)
-    
-    return -generalized_variance(mw_potential, xs, vs, satellite_orbit)
+    particle_orbits = particles.integrate(potential, satellite_orbit.t)
+    return -generalized_variance(potential, particle_orbits, satellite_orbit)
 
 def ln_posterior(p, *args):
-    param_names, particles, satellite_orbit, t1, t2, dt = args
+    param_names, particles, satellite_orbit = args
     return ln_prior(p, param_names) + ln_likelihood(p, *args)
