@@ -191,17 +191,26 @@ def infer_potential(particles, satellite_orbit, simulation_params):
             (sampler.acceptance_fraction < 0.6) # rule of thumb, bitches
     logger.info("{0} walkers ({1:.1f}%) converged"
                 .format(sum(idx), sum(idx)/sp["walkers"]*100))
-
-    # If chains converged, make mcmc plots
-    if len(sampler.flatchain) == 0:
-        logger.warning("Not making plots -- no chains converged!")
-    else:
-        fig = emcee_plot(sampler, params=sp["model_parameters"], 
-                         converged_idx=100, 
-                         acceptance_fraction_bounds=(0.1, 0.6))
-        fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
-        
-    return
+    
+    # Pluck out good chains, make a new flatchain from those...
+    good_flatchain = []
+    good_chains = sampler.chain[idx]
+    for chain in good_chains:
+        good_flatchain += list(chain)
+    good_flatchain = np.array(good_flatchain)
+    
+    if sp["make_plots"]:
+        # If chains converged, make mcmc plots
+        if len(good_flatchain) == 0:
+            logger.warning("Not making plots -- no chains converged!")
+        else:
+            fig = emcee_plot(sampler, params=sp["model_parameters"], 
+                             converged_idx=100, 
+                             acceptance_fraction_bounds=(0.1, 0.6))
+            fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
+    
+    # Get "best" (mean) potential parameters:
+    return dict(zip(sp["model_parameters"],np.mean(good_flatchain,axis=0)))
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
