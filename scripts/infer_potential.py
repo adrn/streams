@@ -187,8 +187,10 @@ def infer_potential(particles, satellite_orbit, simulation_params):
     except:
         logger.warning("Unable to pickle sampler file!")
 
-    idx = (sampler.acceptance_fraction > 0.1) & \
-            (sampler.acceptance_fraction < 0.6) # rule of thumb, bitches
+    #idx = (sampler.acceptance_fraction > 0.1) & \
+    #        (sampler.acceptance_fraction < 0.6) # rule of thumb, bitches
+    idx = np.ones_like(sampler.acceptance_fraction).astype(bool)
+
     logger.info("{0} walkers ({1:.1f}%) converged"
                 .format(sum(idx), sum(idx)/sp["walkers"]*100))
     
@@ -200,7 +202,7 @@ def infer_potential(particles, satellite_orbit, simulation_params):
     good_flatchain = np.array(good_flatchain)
     
     if sp["make_plots"]:
-        fig = plot_sampler_pickle(data_file, params=sp["model_parameters"])
+        fig = plot_sampler_pickle(os.path.join(path,data_file), params=sp["model_parameters"])
         fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
     
     # Get "best" (mean) potential parameters:
