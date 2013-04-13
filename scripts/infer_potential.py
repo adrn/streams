@@ -15,6 +15,7 @@ import os, sys
 import datetime
 import logging
 import multiprocessing
+import cPickle as pickle
 
 # Third-party
 import numpy as np
@@ -37,7 +38,7 @@ from streams.simulation import config
 from streams.data import SgrSnapshot, SgrCen
 from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import ln_posterior
-from streams.plot import emcee_plot
+from streams.plot import plot_sampler_pickle
 
 def write_defaults(filename=None):
     """ Write a default configuration file for running infer_potential to
@@ -199,14 +200,8 @@ def infer_potential(particles, satellite_orbit, simulation_params):
     good_flatchain = np.array(good_flatchain)
     
     if sp["make_plots"]:
-        # If chains converged, make mcmc plots
-        if len(good_flatchain) == 0:
-            logger.warning("Not making plots -- no chains converged!")
-        else:
-            fig = emcee_plot(sampler, params=sp["model_parameters"], 
-                             converged_idx=100, 
-                             acceptance_fraction_bounds=(0.1, 0.6))
-            fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
+        fig = plot_sampler_pickle(data_file, params=sp["model_parameters"])
+        fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
     
     # Get "best" (mean) potential parameters:
     return dict(zip(sp["model_parameters"],np.mean(good_flatchain,axis=0)))

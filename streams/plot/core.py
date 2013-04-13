@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import cPickle as pickle
 
 # Third-party
 import numpy as np
@@ -18,7 +19,7 @@ import astropy.units as u
 from ..potential.lm10 import param_to_latex
 from ..potential.lm10 import halo_params as true_halo_params
 
-__all__ = ["emcee_plot"]
+__all__ = ["emcee_plot", "plot_sampler_pickle"]
 
 # TODO: make this more general...
 def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,None)):
@@ -52,27 +53,15 @@ def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,
     
     if acceptance_fraction_bounds[1] != None:
         idx &= sampler.acceptance_fraction < acceptance_fraction_bounds[1]
-    
+        
     chain = sampler.chain[idx]
-    flatchain = []
-    for walker in chain:
-        flatchain += list(walker)
-    flatchain = np.array(flatchain)
-    
-    # The halo velocity (v_halo) parameter is stored in units of kpc/Myr, but I
-    #   want to plot it in km/s
-    if "v_halo" in params:
-        ii = params.index("v_halo")
-        #for xx in range(chain.shape[0]):
-        #    for yy in range(chain.shape[1]):
-        chain[:,:,ii] = (chain[:,:,ii]*u.kpc/u.Myr).to(u.km/u.s).value
     
     # For each parameter, I want to plot each walker on one panel, and a histogram
     #   of all links from all walkers past 150 steps (approximately when the chains
     #   converged)
     for ii,param in enumerate(params):
         these_chains = chain[:,:,ii]
-                
+        
         ax1 = plt.subplot(gs[ii, :2])     
         ax1.axvline(converged_idx, 
                     color="#67A9CF", 
@@ -109,9 +98,9 @@ def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,
                  orientation='horizontal',
                  facecolor="#67A9CF",
                  edgecolor="none")
-        ax2.axhline(true_halo_params[param], 
-                    color="#555555",
-                    linestyle="--")
+        #ax2.axhline(true_halo_params[param], 
+        #            color="#555555",
+        #            linestyle="--")
         
         # Same y-bounds as the walkers plot, so they line up
         ax1.set_ylim(np.min(these_chains[:,0]), np.max(these_chains[:,0]))
@@ -138,6 +127,12 @@ def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,
                            rotation="horizontal",
                            color="k",
                            labelpad=16)
+        elif param == "r_halo":
+            ax2.set_ylabel("kpc",
+                           fontsize=20,
+                           rotation="horizontal",
+                           color="k",
+                           labelpad=16)
         ax2.yaxis.set_label_position("right")
         
         # Adjust axis ticks, e.g. make them appear on the outside of the plots and
@@ -157,4 +152,23 @@ def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,
             ax2.set_yticks(ax2.get_yticks()[1:-1])
     
     fig.subplots_adjust(hspace=0.02, wspace=0.0, bottom=0.075, top=0.9, left=0.12, right=0.88)
+    return fig
+
+def plot_sampler_pickle(filename, params, acceptance_fraction_bounds=(None,None)):
+    """ Given a pickled emcee Sampler object, generate an emcee_plot """
+    
+    if not hasattr(filename, "read"):
+        if not os.path.exists(filename):
+            raise IOError("File {0} doesn't exist!".format(filename))
+        
+        with open(filename) as f:
+            sampler = pickle.load(f)
+        
+    else:
+        sampler = pickle.load(f)
+    
+    # If chains converged, make mcmc plots
+    fig = emcee_plot(sampler, params=params, 
+                     converged_idx=0, 
+                     acceptance_fraction_bounds=acceptance_fraction_bounds)
     return fig
