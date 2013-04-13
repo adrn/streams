@@ -182,10 +182,7 @@ def infer_potential(particles, satellite_orbit, simulation_params):
     data_file = os.path.join(path, "sampler_data.pickle")
     
     sampler.lnprobfn = None
-    try:
-        sampler.pickle(data_file)
-    except:
-        logger.warning("Unable to pickle sampler file!")
+    sampler.pickle(data_file)
 
     idx = (sampler.acceptance_fraction > 0.1) & \
             (sampler.acceptance_fraction < 0.6) # rule of thumb, bitches
