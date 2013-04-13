@@ -118,8 +118,7 @@ def infer_potential(particles, satellite_orbit, simulation_params):
     for ii in range(sp["walkers"]):
         p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
                     for p_name in sp["model_parameters"]])
-    #p0 = np.array(p0)
-    #ndim = np.array(p0).shape[1]
+    p0 = np.array(p0)
     ndim = len(sp["model_parameters"])
     
     # Construct the log posterior probability function to pass in to emcee
