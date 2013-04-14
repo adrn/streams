@@ -1,9 +1,9 @@
 #!/hpc/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
-""" In this module, I'll test how the distribution of 'energy distance' changes as I tweak
-    various galaxy potential parameters. Ultimately, I want to come up with a way to evaluate
-    the 'best' potential.
+""" In this module, I'll test how the distribution of 'energy distance' changes 
+    as I tweak various galaxy potential parameters. Ultimately, I want to come 
+    up with a way to evaluate the 'best' potential.
 """
 
 from __future__ import division, print_function
@@ -13,6 +13,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import logging
+import datetime
 
 # Third-party
 import numpy as np
@@ -93,7 +94,11 @@ def main(config_file):
     if simulation_params["observational_errors"]:
         particles = add_uncertainties_to_particles(particles)
     
-    best_parameters = infer_potential(particles, satellite_orbit, simulation_params)
+    # Create a new path for the output
+    path = os.path.join(simulation_params["output_path"], 
+                        datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    
+    best_parameters = infer_potential(particles, satellite_orbit, path, simulation_params)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

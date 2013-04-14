@@ -16,6 +16,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import logging
+import datetime
 
 # Third-party
 import numpy as np
@@ -47,8 +48,8 @@ def write_defaults(filename=None):
     config_file.append("(S) expr: tub > 0.")
     config_file.append("(L,S) model_parameters: q1 qz v_halo phi")
     config_file.append("(I) seed: 42")
-    config_file.append("(I) walkers: 128")
-    config_file.append("(I) burn_in: 100")
+    config_file.append("(I) walkers: 32")
+    config_file.append("(I) burn_in: 50")
     config_file.append("(I) steps: 100")
     config_file.append("(B) mpi: no")
     config_file.append("(B) make_plots: no")
@@ -94,8 +95,9 @@ def main(config_file):
     # Interpolate satellite_orbit onto new time grid
     satellite_orbit = satellite_orbit.interpolate(time_grid)
     
-    # Don't make plots for each infer_potential run!!
-    simulation_params["make_plots"] = False
+    # Create a new path for the output
+    path = os.path.join(sp["output_path"], 
+                        datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
     all_best_parameters = []
     for bb in range(simulation_params["bootstrap_resamples"]):
@@ -104,7 +106,9 @@ def main(config_file):
         if simulation_params["observational_errors"]:
             bootstrap_particles = add_uncertainties_to_particles(bootstrap_particles)
     
-        all_best_parameters.append(infer_potential(particles, satellite_orbit, simulation_params))
+        best_parameters = infer_potential(particles, satellite_orbit, 
+                                          path, simulation_params)
+        all_best_parameters.append(best_parameters)
 
     all_q1 = [x["q1"] for x in all_best_parameters]
     all_qz = [x["qz"] for x in all_best_parameters]
@@ -116,7 +120,7 @@ def main(config_file):
     axes[0].hist(all_qz)
     axes[0].hist(all_v_halo)
     axes[0].hist(all_phi)
-    fig.savefig("")
+    fig.savefig(os.path.join(path,"bootstrap_test.png"))
     
 if __name__ == "__main__":
     from argparse import ArgumentParser

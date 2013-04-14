@@ -28,7 +28,7 @@ from streams.plot import plot_sampler_pickle
 
 __all__ = ["infer_potential"]
 
-def infer_potential(particles, satellite_orbit, simulation_params):
+def infer_potential(particles, satellite_orbit, path, simulation_params):
     """ """
     
     # Shorthand!
@@ -68,10 +68,6 @@ def infer_potential(particles, satellite_orbit, simulation_params):
     
     print("About to start simulation with parameters: \n{0}"
           .format("\n\t".join(["{0}: {1}".format(k,v) for k,v in sp.items()])))
-    
-    # Create a new path for the output
-    path = os.path.join(sp["output_path"], 
-                        datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
     print("Output path: {0}".format(path))
     
