@@ -96,7 +96,7 @@ def main(config_file):
     satellite_orbit = satellite_orbit.interpolate(time_grid)
     
     # Create a new path for the output
-    path = os.path.join(sp["output_path"], 
+    path = os.path.join(simulation_params["output_path"], 
                         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
     all_best_parameters = []
