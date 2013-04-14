@@ -66,14 +66,14 @@ def infer_potential(particles, satellite_orbit, simulation_params):
                                         ln_posterior, args=args,
                                         threads=threads)
     
-    logger.info("About to start simulation with parameters: \n{0}"
-                .format("\n\t".join(["{0}: {1}".format(k,v) for k,v in sp.items()])))
+    print("About to start simulation with parameters: \n{0}"
+          .format("\n\t".join(["{0}: {1}".format(k,v) for k,v in sp.items()])))
     
     # Create a new path for the output
     path = os.path.join(sp["output_path"], 
                         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
-    logger.debug("Output path: {0}".format(path))
+    print("Output path: {0}".format(path))
     
     if sp["make_plots"]:
         if not os.path.exists(path):
@@ -106,12 +106,12 @@ def infer_potential(particles, satellite_orbit, simulation_params):
     #sampler.pickle(data_file)
     fnpickle(sampler, data_file)
 
-    #idx = (sampler.acceptance_fraction > 0.1) & \
-    #        (sampler.acceptance_fraction < 0.6) # rule of thumb, bitches
-    idx = np.ones_like(sampler.acceptance_fraction).astype(bool)
+    idx = (sampler.acceptance_fraction > 0.1) & \
+            (sampler.acceptance_fraction < 0.6) # rule of thumb, bitches
+    #idx = np.ones_like(sampler.acceptance_fraction).astype(bool)
 
-    logger.info("{0} walkers ({1:.1f}%) converged"
-                .format(sum(idx), sum(idx)/sp["walkers"]*100))
+    print("{0} walkers ({1:.1f}%) converged"
+            .format(sum(idx), sum(idx)/sp["walkers"]*100))
     
     # Pluck out good chains, make a new flatchain from those...
     good_flatchain = []
