@@ -28,9 +28,16 @@ if __name__ == "__main__":
                     required=True, action='store', help="The halo parameters.")
     parser.add_argument("-o", "--output-file", dest="output_file", required=True,
                     help="Path to save the plot.")
+    parser.add_argument("-a", "--acceptance-fraction", dest="acc_frac", nargs=2,
+                    type=float, default=(None,None), help="Allowed range of "
+                                "acceptance fractions for 'good' walkers.")
+    parser.add_argument("--show-true", dest="show_true", action="store_true",
+                    default=False, help="Plot the true halo parameter values.")
     
     args = parser.parse_args()
     
-    fig = plot_sampler_pickle(args.file, args.params)
+    fig = plot_sampler_pickle(args.file, args.params, 
+                              acceptance_fraction_bounds=args.acc_frac, 
+                              show_true=args.show_true)
     fig.savefig(args.output_file)
     

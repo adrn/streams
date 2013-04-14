@@ -16,13 +16,14 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import astropy.units as u
 
-from ..potential.lm10 import param_to_latex
+from ..potential.lm10 import param_to_latex, param_ranges
 from ..potential.lm10 import halo_params as true_halo_params
 
 __all__ = ["emcee_plot", "plot_sampler_pickle"]
 
 # TODO: make this more general...
-def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,None)):
+def emcee_plot(sampler, params, converged_idx, 
+                acceptance_fraction_bounds=(None,None), show_true=False):
     """ Plot posterior probability distributions and chain traces from the 
         chains associated with the given sampler. 
         
@@ -36,6 +37,8 @@ def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,
         acceptance_fraction_bounds : tuple (optional)
             Only plot samples from chains that have an acceptance fraction
             within the provided range.
+        show_true : bool (optional)
+            Optionally show the true halo parameter value as a line.
     """
     
     if len(params) != sampler.chain.shape[2]:
@@ -91,6 +94,13 @@ def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,
         
         ax2 = plt.subplot(gs[ii, 2])
         
+        # Same y-bounds as the walkers plot, so they line up
+        #ax1.set_ylim(np.min(these_chains[:,ii]), np.max(these_chains[:,ii]))
+        ax1.set_ylim(param_ranges[param])
+        ax2.set_ylim(ax1.get_ylim())
+        ax2.xaxis.set_visible(False)
+        ax2.yaxis.tick_right()
+        
         # Create a histogram of all values past the converged point. Make 100 bins
         #   between the y-axis bounds defined by the 'walkers' plot.
         ax2.hist(np.ravel(these_chains[:,converged_idx:]), 
@@ -98,15 +108,15 @@ def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,
                  orientation='horizontal',
                  facecolor="#67A9CF",
                  edgecolor="none")
-        #ax2.axhline(true_halo_params[param], 
-        #            color="#555555",
-        #            linestyle="--")
         
-        # Same y-bounds as the walkers plot, so they line up
-        ax1.set_ylim(np.min(these_chains[:,0]), np.max(these_chains[:,0]))
-        ax2.set_ylim(ax1.get_ylim())
-        ax2.xaxis.set_visible(False)
-        ax2.yaxis.tick_right()
+        if show_true:
+            val = true_halo_params[param]
+            if hasattr(val, "value"):
+                val = val.value
+                
+            ax2.axhline(val, 
+                        color="#555555",
+                        linestyle="--")
         
         # For the first plot, add titles and shift them up a bit
         if ii == 0:
@@ -147,14 +157,15 @@ def emcee_plot(sampler, params, converged_idx, acceptance_fraction_bounds=(None,
         #   first and last tick labels so I can squash the plots right up against
         #   each other
         if param == "phi":
-            ax2.set_yticks(ax2.get_yticks()[1:-2])
+            #ax2.set_yticks(ax2.get_yticks()[1:-2])
+            ax2.set_yticks(ax2.get_yticks()[1:-1])
         else:
             ax2.set_yticks(ax2.get_yticks()[1:-1])
     
     fig.subplots_adjust(hspace=0.02, wspace=0.0, bottom=0.075, top=0.9, left=0.12, right=0.88)
     return fig
 
-def plot_sampler_pickle(filename, params, acceptance_fraction_bounds=(None,None)):
+def plot_sampler_pickle(filename, params, **kwargs):
     """ Given a pickled emcee Sampler object, generate an emcee_plot """
     
     if not hasattr(filename, "read"):
@@ -169,6 +180,6 @@ def plot_sampler_pickle(filename, params, acceptance_fraction_bounds=(None,None)
     
     # If chains converged, make mcmc plots
     fig = emcee_plot(sampler, params=params, 
-                     converged_idx=0, 
-                     acceptance_fraction_bounds=acceptance_fraction_bounds)
+                     converged_idx=0,
+                     **kwargs)
     return fig
