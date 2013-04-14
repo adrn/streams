@@ -99,6 +99,7 @@ def main(config_file):
     # Create a new path for the output
     path = os.path.join(simulation_params["output_path"], 
                         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    os.mkdir(path)
     
     all_best_parameters = []
     for bb in range(simulation_params["bootstrap_resamples"]):
