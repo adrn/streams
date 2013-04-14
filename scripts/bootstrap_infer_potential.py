@@ -15,148 +15,151 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import copy
-import datetime
-import multiprocessing
+import logging
 
 # Third-party
 import numpy as np
 np.seterr(all="ignore")
 import scipy
 scipy.seterr(all="ignore")
-from scipy import interpolate
-import matplotlib
-matplotlib.use("agg")
-import matplotlib.pyplot as plt
 import astropy.units as u
-from astropy.io.misc import fnpickle, fnunpickle
-import emcee
-from emcee.utils import MPIPool
 
 # Project
-from streams.potential.lm10 import param_ranges, param_to_latex
-from streams.simulation import make_posterior
-from streams.simulation.setup import simulation_setup
-from streams.plot.data import scatter_plot_matrix
+from streams.simulation import config
+from streams.data import SgrSnapshot, SgrCen
+from streams.data.gaia import add_uncertainties_to_particles
+from streams.inference import infer_potential
 
-tf_yn = dict(True="yes", False="no")
-
-def max_likelihood_parameters(sampler):
-    """ """
-    ii = np.argmax(sampler.flatlnprobability)
-    return flatchain[ii]
-
-def bootstrap_sgr_snap(sgr_snap, num):
-    """ Bootstrap (subsample) with replacement from sgr_snap """
-    idx = np.random.randint(0, len(sgr_snap), num)
-    
-    sgr_snap_bootstrap = copy.deepcopy(sgr_snap)
-    sgr_snap_bootstrap.x = sgr_snap.x[idx]
-    sgr_snap_bootstrap.y = sgr_snap.y[idx]
-    sgr_snap_bootstrap.z = sgr_snap.z[idx]
-    sgr_snap_bootstrap.vx = sgr_snap.vx[idx]
-    sgr_snap_bootstrap.vy = sgr_snap.vy[idx]
-    sgr_snap_bootstrap.vz = sgr_snap.vz[idx]
-    sgr_snap_bootstrap._set_xyz_vxyz()
-    
-    return sgr_snap_bootstrap
-
-def test_bootstrap_sgr_snap():
-    from streams.data import SgrSnapshot
-    
-    np.random.seed(42)
-    sgr_snap = SgrSnapshot(num=100,
-                           expr="tub > 0")
-                           
-    fig,axes = sgr_snap.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
-    
-    np.random.seed(401)
-    sgr_snap_bootstrap = bootstrap_sgr_snap(sgr_snap, 25)
-    sgr_snap_bootstrap.plot_positions(axes=axes, scatter_kwargs={"c":"r", "alpha":0.5, "s":40})
-    
-    fig.savefig("plots/tests/test_bootstrap.png")
-
-def main():
-    config_kwargs = simulation_setup()
-    
-    # 100 different bootstrap resamples
-    B = 100
-    best_parameters = []
-    for b in range(B):
-        sgr_snap = bootstrap_sgr_snap(config_kwargs["sgr_snap"], int(config_kwargs["nparticles"]/10))
+def write_defaults(filename=None):
+    """ Write a default configuration file for running infer_potential to
+        the supplied path. If no path supplied, will return a string version.
         
-        ln_posterior = make_posterior(config_kwargs["params"], 
-                                      sgr_snap, 
-                                      config_kwargs["sgr_cen"], 
-                                      config_kwargs["dt"])
+        Parameters
+        ----------
+        path : str (optional)
+            Path to write the file to or return string version.
+    """
+    config_file = []
+    config_file.append("(I) particles: 100")
+    config_file.append("(I) bootstrap_resamples: 100")
+    config_file.append("(U) dt: 5. Myr # timestep")
+    config_file.append("(B) observational_errors: yes # add observational errors")
+    config_file.append("(S) expr: tub > 0.")
+    config_file.append("(L,S) model_parameters: q1 qz v_halo phi")
+    config_file.append("(I) seed: 42")
+    config_file.append("(I) walkers: 128")
+    config_file.append("(I) burn_in: 100")
+    config_file.append("(I) steps: 100")
+    config_file.append("(B) mpi: no")
+    config_file.append("(B) make_plots: no")
+    config_file.append("(S) output_path: /tmp/")
+    
+    if filename == None:
+        filename = "streams.cfg"
         
-        sampler = infer_potential(ln_posterior, **config_kwargs)
-        best_parameters.append(max_likelihood_parameters(sampler))
-    
-    best_parameters = np.array(best_parameters)
-    
-    # Create a new path for the output
-    path = os.path.join(output_path, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-    
-    if not os.path.exists(path):
-        os.mkdir(path)
-    
-    fig, axes = scatter_plot_matrix(best_parameters, 
-                        labels=[param_to_latex(param) for param in config_kwargs["params"]])
-                        
-    fig.savefig(os.path.join(path, "bootstrap.png"))
-    
-    
-def infer_potential(ln_posterior, nwalkers=100, nsamples=100, nburn_in=100, 
-                    params=[], output_path="/tmp", with_errors=True, mpi=False, 
-                    nthreads=multiprocessing.cpu_count(), logger=None, 
-                    description="", expr="", **kwargs):
-    
-    """ Given a log posterior function, infer the parameters for the halo model. """
-    
-    if len(params) == 0:
-        raise ValueError("No parameters specified!")
-    
-    # Create the starting points for all walkers
-    p0 = []
-    for ii in range(nwalkers):
-        p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
-                    for p_name in params])
-    p0 = np.array(p0)
-    ndim = p0.shape[1]
+    f = open(filename, "w")
+    f.write("\n".join(config_file))
+    f.close()
 
-    if mpi:
-        # Initialize the MPI pool
-        pool = MPIPool()
+def main(config_file):
+        
+    # Make sure input configuration file exists
+    if not os.path.exists(config_file):
+        raise ValueError("Configuration file '{0}' doesn't exist!"
+                         .format(config_file))
+    
+    simulation_params = config.read(config_file)
+    
+    # Expression for selecting particles from the simulation data snapshot
+    expr = "(tub > 10.)"
+    if len(simulation_params["expr"]) > 0:
+        expr = ""
+        expr += " & " + " & ".join(["({0})".format(x) for x in simulation_params["expr"]])
+    
+    # Read in Sagittarius simulation data
+    np.random.seed(simulation_params["seed"])
+    sgr_cen = SgrCen()
+    satellite_orbit = sgr_cen.as_orbit()
+    
+    sgr_snap = SgrSnapshot(N=simulation_params["particles"]*10,
+                           expr=simulation_params["expr"])
+    particles = sgr_snap.as_particles()
+    
+    # Define new time grid
+    time_grid = np.arange(max(satellite_orbit.t.value), 
+                          min(satellite_orbit.t.value),
+                          -simulation_params["dt"].to(satellite_orbit.t.unit).value)
+    time_grid *= satellite_orbit.t.unit
+    
+    # Interpolate satellite_orbit onto new time grid
+    satellite_orbit = satellite_orbit.interpolate(time_grid)
+    
+    # Don't make plots for each infer_potential run!!
+    simulation_params["make_plots"] = False
+    
+    all_best_parameters = []
+    for bb in range(simulation_params["bootstrap_resamples"]):
+        bootstrap_particles = particles[np.random.randint(simulation_params["particles"])]
+        
+        if simulation_params["observational_errors"]:
+            bootstrap_particles = add_uncertainties_to_particles(bootstrap_particles)
+    
+        all_best_parameters.append(infer_potential(particles, satellite_orbit, simulation_params))
 
-        # Make sure the thread we're running on is the master
-        if not pool.is_master():
-            pool.wait()
-            sys.exit(0)
-
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, pool=pool)
-    else:
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, ln_posterior, threads=nthreads)
+    all_q1 = [x["q1"] for x in all_best_parameters]
+    all_qz = [x["qz"] for x in all_best_parameters]
+    all_v_halo = [x["v_halo"] for x in all_best_parameters]
+    all_phi = [x["phi"] for x in all_best_parameters]    
     
-    # If a burn-in period is requested, run the sampler for nburn_in steps then
-    #   reset the walkers and use the end positions as new initial conditions
-    if nburn_in > 0:
-        pos, prob, state = sampler.run_mcmc(p0, nburn_in)
-        sampler.reset()
-    else:
-        pos = p0
+    fig,axes = plt.subplots(4,1)
+    axes[0].hist(all_q1)
+    axes[0].hist(all_qz)
+    axes[0].hist(all_v_halo)
+    axes[0].hist(all_phi)
+    fig.savefig("")
     
-    sampler.run_mcmc(pos, nsamples)
-    run_parameters.append("median acceptance fraction: {0:.3f}".\
-                            format(np.median(sampler.acceptance_fraction)))
-    
-    # if we're running with MPI, we have to close the processor pool, otherwise
-    #   the script will never finish running until the end of timmmmeeeee (echo)
-    if mpi: pool.close()
-    
-    return sampler
-
 if __name__ == "__main__":
-    main()
+    from argparse import ArgumentParser
     
+    parser = ArgumentParser(description="")
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", 
+                    default=False, help="Be chatty! (default = False)")
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", 
+                    default=False, help="Be quiet! (default = False)")
+    parser.add_argument("-f", "--file", dest="file", default="streams.cfg", 
+                    help="Path to the configuration file to run with.")
+    
+    # Dump defaults
+    parser.add_argument("-d", "--dump-defaults", action="store_true", 
+                    dest="dump", default=False, help="Don't do anything "
+                    "except write out the default config file.")
+    parser.add_argument("-o", "--output", dest="output", default=None, 
+                    help="File to write the default config settings to.")
+    
+    args = parser.parse_args()
+    
+    # Create logger
+    logger = logging.getLogger(__name__)
+    ch = logging.StreamHandler()
+    formatter = logging.Formatter("%(name)s / %(levelname)s / %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    elif args.quiet:
+        logger.setLevel(logging.ERROR)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    if args.dump:
+        if args.output == None:
+            raise ValueError("If you want to dump a default config file, you "
+                             "must also throw the --output flag and give it "
+                             "the full path to the file you want to write to.")
+        
+        write_defaults(args.output)
+        sys.exit(0)
+    
+    main(args.file)
     sys.exit(0)
