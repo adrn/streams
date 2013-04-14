@@ -24,6 +24,7 @@ np.seterr(all="ignore")
 import scipy
 scipy.seterr(all="ignore")
 import astropy.units as u
+from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
 from streams.simulation import config
@@ -101,7 +102,8 @@ def main(config_file):
     
     all_best_parameters = []
     for bb in range(simulation_params["bootstrap_resamples"]):
-        bootstrap_particles = particles[np.random.randint(simulation_params["particles"])]
+        resample_idx = np.random.randint(len(particles), size=simulation_params["particles"])
+        bootstrap_particles = particles[resample_idx]
         
         if simulation_params["observational_errors"]:
             bootstrap_particles = add_uncertainties_to_particles(bootstrap_particles)
@@ -109,7 +111,9 @@ def main(config_file):
         best_parameters = infer_potential(particles, satellite_orbit, 
                                           path, simulation_params)
         all_best_parameters.append(best_parameters)
-
+    
+    fnpickle(all_best_parameters, os.path.join(path,"all_best_parameters.pickle"))
+    
     all_q1 = [x["q1"] for x in all_best_parameters]
     all_qz = [x["qz"] for x in all_best_parameters]
     all_v_halo = [x["v_halo"] for x in all_best_parameters]
