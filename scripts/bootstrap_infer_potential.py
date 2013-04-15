@@ -82,7 +82,9 @@ def main(config_file):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
-    
+    else:
+        pool = None
+        
     # Expression for selecting particles from the simulation data snapshot
     expr = "(tub > 10.)"
     if len(simulation_params["expr"]) > 0:
@@ -112,6 +114,7 @@ def main(config_file):
                         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     os.mkdir(path)
     
+    try:
     all_best_parameters = []
     for bb in range(simulation_params["bootstrap_resamples"]):
         resample_idx = np.random.randint(len(particles), size=simulation_params["particles"])
@@ -119,9 +122,13 @@ def main(config_file):
         
         if simulation_params["observational_errors"]:
             bootstrap_particles = add_uncertainties_to_particles(bootstrap_particles)
-    
-        best_parameters = infer_potential(particles, satellite_orbit, 
-                                          path, simulation_params, pool=pool)
+        
+        try:
+            best_parameters = infer_potential(particles, satellite_orbit, 
+                                              path, simulation_params, pool=pool)
+        except:
+            if simulation_params["mpi"]: pool.close()
+            
         all_best_parameters.append(best_parameters)
     
     # if we're running with MPI, we have to close the processor pool, otherwise

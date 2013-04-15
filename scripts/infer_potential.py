@@ -82,7 +82,9 @@ def main(config_file):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
-    
+    else:
+        pool = None
+        
     # Read in Sagittarius simulation data
     np.random.seed(simulation_params["seed"])
     sgr_cen = SgrCen()
@@ -108,9 +110,12 @@ def main(config_file):
     path = os.path.join(simulation_params["output_path"], 
                         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
-    best_parameters = infer_potential(particles, satellite_orbit, path, 
-                                      simulation_params, pool=pool)
-    
+    try:
+        best_parameters = infer_potential(particles, satellite_orbit, path, 
+                                          simulation_params, pool=pool)
+    except:
+        if simulation_params["mpi"]: pool.close()
+        
     # if we're running with MPI, we have to close the processor pool, otherwise
     #   the script will never finish running until the end of timmmmeeeee (echo)
     if simulation_params["mpi"]: pool.close()
