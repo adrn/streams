@@ -25,6 +25,7 @@ import scipy
 scipy.seterr(all="ignore")
 import astropy.units as u
 from astropy.io.misc import fnpickle, fnunpickle
+from emcee.utils import MPIPool
 
 # Project
 from streams.simulation import config
@@ -72,6 +73,15 @@ def main(config_file):
     
     simulation_params = config.read(config_file)
     
+    if simulation_params["mpi"]:
+        # Initialize the MPI pool
+        pool = MPIPool()
+
+        # Make sure the thread we're running on is the master
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
+    
     # Expression for selecting particles from the simulation data snapshot
     expr = "(tub > 10.)"
     if len(simulation_params["expr"]) > 0:
@@ -110,7 +120,7 @@ def main(config_file):
             bootstrap_particles = add_uncertainties_to_particles(bootstrap_particles)
     
         best_parameters = infer_potential(particles, satellite_orbit, 
-                                          path, simulation_params)
+                                          path, simulation_params, pool=pool)
         all_best_parameters.append(best_parameters)
     
     fnpickle(all_best_parameters, os.path.join(path,"all_best_parameters.pickle"))

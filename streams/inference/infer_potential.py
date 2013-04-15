@@ -19,7 +19,6 @@ scipy.seterr(all="ignore")
 import astropy.units as u
 from astropy.io.misc import fnpickle, fnunpickle
 import emcee
-from emcee.utils import MPIPool
 
 # Project
 from streams.potential.lm10 import param_ranges
@@ -28,7 +27,7 @@ from streams.plot import plot_sampler_pickle
 
 __all__ = ["infer_potential"]
 
-def infer_potential(particles, satellite_orbit, path, simulation_params):
+def infer_potential(particles, satellite_orbit, path, simulation_params, pool=None):
     """ """
     
     # Shorthand!
@@ -46,14 +45,9 @@ def infer_potential(particles, satellite_orbit, path, simulation_params):
     args = sp["model_parameters"], particles, satellite_orbit
     
     if sp["mpi"]:
-        # Initialize the MPI pool
-        pool = MPIPool()
-
-        # Make sure the thread we're running on is the master
-        if not pool.is_master():
-            pool.wait()
-            sys.exit(0)
-
+        if pool == None:
+            raise ValueError("If MPI specified, you must supply an MPIPool!")
+            
         sampler = emcee.EnsembleSampler(sp["walkers"], ndim, ln_posterior, 
                                         pool=pool, args=args)
     else:

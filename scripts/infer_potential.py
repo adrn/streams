@@ -21,6 +21,7 @@ np.seterr(all="ignore")
 import scipy
 scipy.seterr(all="ignore")
 import astropy.units as u
+from emcee.utils import MPIPool
 
 # Project
 from streams.simulation import config
@@ -72,6 +73,15 @@ def main(config_file):
     if len(simulation_params["expr"]) > 0:
         expr = ""
         expr += " & " + " & ".join(["({0})".format(x) for x in simulation_params["expr"]])
+    
+    if simulation_params["mpi"]:
+        # Initialize the MPI pool
+        pool = MPIPool()
+
+        # Make sure the thread we're running on is the master
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
     
     # Read in Sagittarius simulation data
     np.random.seed(simulation_params["seed"])
