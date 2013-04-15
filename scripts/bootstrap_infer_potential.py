@@ -26,6 +26,7 @@ scipy.seterr(all="ignore")
 import astropy.units as u
 from astropy.io.misc import fnpickle, fnunpickle
 from emcee.utils import MPIPool
+import matplotlib.pyplot as plt
 
 # Project
 from streams.simulation import config
@@ -122,6 +123,10 @@ def main(config_file):
         best_parameters = infer_potential(particles, satellite_orbit, 
                                           path, simulation_params, pool=pool)
         all_best_parameters.append(best_parameters)
+    
+    # if we're running with MPI, we have to close the processor pool, otherwise
+    #   the script will never finish running until the end of timmmmeeeee (echo)
+    if simulation_params["mpi"]: pool.close()
     
     fnpickle(all_best_parameters, os.path.join(path,"all_best_parameters.pickle"))
     

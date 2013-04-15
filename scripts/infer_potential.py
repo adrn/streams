@@ -108,8 +108,13 @@ def main(config_file):
     path = os.path.join(simulation_params["output_path"], 
                         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
-    best_parameters = infer_potential(particles, satellite_orbit, path, simulation_params)
-
+    best_parameters = infer_potential(particles, satellite_orbit, path, 
+                                      simulation_params, pool=pool)
+    
+    # if we're running with MPI, we have to close the processor pool, otherwise
+    #   the script will never finish running until the end of timmmmeeeee (echo)
+    if simulation_params["mpi"]: pool.close()
+    
 if __name__ == "__main__":
     from argparse import ArgumentParser
     

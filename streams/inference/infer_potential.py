@@ -85,10 +85,6 @@ def infer_potential(particles, satellite_orbit, path, simulation_params, pool=No
     #run_parameters.append("median acceptance fraction: {0:.3f}".\
     #                        format(np.median(sampler.acceptance_fraction)))
     
-    # if we're running with MPI, we have to close the processor pool, otherwise
-    #   the script will never finish running until the end of timmmmeeeee (echo)
-    if sp["mpi"]: pool.close()
-    
     data_file = os.path.join(path, "sampler_data.pickle")
     
     sampler.lnprobfn = None
