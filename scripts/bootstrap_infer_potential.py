@@ -144,9 +144,9 @@ def main(config_file):
     
     fig,axes = plt.subplots(4,1)
     axes[0].hist(all_q1)
-    axes[0].hist(all_qz)
-    axes[0].hist(all_v_halo)
-    axes[0].hist(all_phi)
+    axes[1].hist(all_qz)
+    axes[2].hist(all_v_halo)
+    axes[3].hist(all_phi)
     fig.savefig(os.path.join(path,"bootstrap_test.png"))
     
 if __name__ == "__main__":
