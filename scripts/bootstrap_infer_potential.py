@@ -114,7 +114,6 @@ def main(config_file):
                         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     os.mkdir(path)
     
-    try:
     all_best_parameters = []
     for bb in range(simulation_params["bootstrap_resamples"]):
         resample_idx = np.random.randint(len(particles), size=simulation_params["particles"])
@@ -127,7 +126,8 @@ def main(config_file):
             best_parameters = infer_potential(particles, satellite_orbit, 
                                               path, simulation_params, pool=pool)
         except:
-            if simulation_params["mpi"]: pool.close()
+            if simulation_params["mpi"]:
+                pool.close()
             
         all_best_parameters.append(best_parameters)
     
