@@ -96,7 +96,7 @@ def main(config_file):
     sgr_cen = SgrCen()
     satellite_orbit = sgr_cen.as_orbit()
     
-    sgr_snap = SgrSnapshot(N=simulation_params["particles"]*10,
+    sgr_snap = SgrSnapshot(N=simulation_params["particles"],
                            expr=simulation_params["expr"])
     particles = sgr_snap.as_particles()
     
