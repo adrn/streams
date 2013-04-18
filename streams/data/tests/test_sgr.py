@@ -48,9 +48,10 @@ class TestSgrCen(object):
         sgr_cen = self.sgr_cen
         
         new_ts = np.linspace(0, 500, 100)*u.Myr
-        new_sgr_cen = sgr_cen.interpolate(new_ts)
+        orb = sgr_cen.as_orbit()
+        new_orb = orb.interpolate(new_ts)
         
-        assert (new_sgr_cen["t"].data == new_ts.value).all()
+        assert (new_orb.t.value == new_ts.value).all()
     
     def test_orbit(self):
         sgr_cen = self.sgr_cen
@@ -81,16 +82,17 @@ class TestSgrSnap(object):
         sgr_snap = SgrSnapshot(N=100, 
                                expr="(tub > 0)")
         
-        fig,axes = sgr_snap.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
+        p = sgr_snap.as_particles()
         with_errors = sgr_snap.add_errors()
-        assert isinstance(with_errors, SgrSnapshot)
-        with_errors.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
+        p_we = with_errors.as_particles()
+        
+        fig,axes = p.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
+        p.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
         
         fig.savefig("plots/tests/sgrsnap_uncertainties_position.png")
         
-        fig,axes = sgr_snap.plot_velocities(subplots_kwargs=dict(figsize=(16,16)))
-        with_errors = sgr_snap.add_errors()
-        with_errors.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
+        fig,axes = p.plot_velocities(subplots_kwargs=dict(figsize=(16,16)))
+        p_we.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
         
         fig.savefig("plots/tests/sgrsnap_uncertainties_velocity.png")
     
@@ -102,7 +104,5 @@ class TestSgrSnap(object):
 
 def test_coordinates():
     lm10 = LM10()
-    
-    assert isinstance(lm10.ra[0], coord.RA)
-    assert isinstance(lm10.dec[0], coord.Dec)
+
     
