@@ -33,6 +33,7 @@ from streams.simulation import config
 from streams.data import SgrSnapshot, SgrCen
 from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential
+from streams.potential.lm10 import halo_params
 
 def write_defaults(filename=None):
     """ Write a default configuration file for running infer_potential to
@@ -119,6 +120,7 @@ def main(config_file):
         resample_idx = np.random.randint(len(particles), size=simulation_params["particles"])
         bootstrap_particles = particles[resample_idx]
         
+        simulation_params["bootstrap_index"] = bb
         if simulation_params["observational_errors"]:
             bootstrap_particles = add_uncertainties_to_particles(bootstrap_particles)
         
@@ -136,17 +138,21 @@ def main(config_file):
     if simulation_params["mpi"]: pool.close()
     
     fnpickle(all_best_parameters, os.path.join(path,"all_best_parameters.pickle"))
+    best = np.array([[x["q1"],x["qz"],x["v_halo"],x["phi"]] for x in all_best_parameters])  
     
-    all_q1 = [x["q1"] for x in all_best_parameters]
-    all_qz = [x["qz"] for x in all_best_parameters]
-    all_v_halo = [x["v_halo"] for x in all_best_parameters]
-    all_phi = [x["phi"] for x in all_best_parameters]    
+    fig,axes = plt.subplots(4,1,figsize=(14,12))
+    fig.subplots_adjust(left=0.075, right=0.95)
+    for ii,name in enumerate(["q1","qz","v_halo","phi"]):
+        try:
+            p = halo_params[name].value
+        except AttributeError:
+            p = halo_params[name]
+            
+        axes[ii].hist(best[:,ii], bins=25, histtype="step", color="k", linewidth=2)
+        axes[ii].axvline(p, linestyle="--", color="#EF8A62", linewidth=3)
+        axes[ii].set_ylabel(name)
+        axes[ii].set_ylim(0,20)
     
-    fig,axes = plt.subplots(4,1)
-    axes[0].hist(all_q1)
-    axes[1].hist(all_qz)
-    axes[2].hist(all_v_halo)
-    axes[3].hist(all_phi)
     fig.savefig(os.path.join(path,"bootstrap_test.png"))
     
 if __name__ == "__main__":

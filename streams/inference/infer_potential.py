@@ -107,8 +107,15 @@ def infer_potential(particles, satellite_orbit, path, simulation_params, pool=No
     good_flatchain = np.array(good_flatchain)
     
     if sp["make_plots"]:
-        fig = plot_sampler_pickle(os.path.join(path,data_file), params=sp["model_parameters"])
-        fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
+        fig = plot_sampler_pickle(os.path.join(path,data_file), 
+                                  params=sp["model_parameters"], 
+                                  acceptance_fraction_bounds=(0.1,0.6),
+                                  show_true=True)
+        if "bootstrap_index" in sp.keys():
+            fig.savefig(os.path.join(path, "emcee_sampler{0}.png"
+                                     .format(sp["bootstrap_index"])), format="png")
+        else:
+            fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
     
     # Get "best" (mean) potential parameters:
-    return dict(zip(sp["model_parameters"],np.mean(good_flatchain,axis=0)))
+    return dict(zip(sp["model_parameters"],np.median(good_flatchain,axis=0)))
