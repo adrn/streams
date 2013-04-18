@@ -110,18 +110,11 @@ def main(config_file):
     path = os.path.join(simulation_params["output_path"], 
                         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
-    import cProfile as profile #####
-    p = profile.Profile() #####
-    p.enable() #####
     try:
         best_parameters = infer_potential(particles, satellite_orbit, path, 
                                           simulation_params, pool=pool)
     except:
         if simulation_params["mpi"]: pool.close()
-    
-    p.disable() #####
-    s = p.create_stats() #####
-    print(s.sort_stats("cumulative"))####
     
     # if we're running with MPI, we have to close the processor pool, otherwise
     #   the script will never finish running until the end of timmmmeeeee (echo)
