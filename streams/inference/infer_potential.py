@@ -82,14 +82,11 @@ def infer_potential(particles, satellite_orbit, path, simulation_params, pool=No
         pos = p0
     
     sampler.run_mcmc(pos, sp["steps"])
-    #run_parameters.append("median acceptance fraction: {0:.3f}".\
-    #                        format(np.median(sampler.acceptance_fraction)))
     
     data_file = os.path.join(path, "sampler_data.pickle")
     
     sampler.lnprobfn = None
     sampler.pool = None
-    #sampler.pickle(data_file)
     fnpickle(sampler, data_file)
 
     idx = (sampler.acceptance_fraction > 0.1) & \
@@ -105,17 +102,26 @@ def infer_potential(particles, satellite_orbit, path, simulation_params, pool=No
     for chain in good_chains:
         good_flatchain += list(chain)
     good_flatchain = np.array(good_flatchain)
+    good_probs = sampler.flatlnprobability[idx]
+    
+    # Get maximum likelihood parameters
+    ii = np.argmax(good_probs)
+    best_parameters = good_flatchain[ii]
     
     if sp["make_plots"]:
         fig = plot_sampler_pickle(os.path.join(path,data_file), 
                                   params=sp["model_parameters"], 
                                   acceptance_fraction_bounds=(0.1,0.6),
                                   show_true=True)
+        
+        for ii,param_name in enumerate(sp["model_parameters"]):
+            fig.axes[ii][1].axhline(best_parameters[ii], color="#CA0020", linestyle="--", linewidth=2)
+        
         if "bootstrap_index" in sp.keys():
-            fig.savefig(os.path.join(path, "emcee_sampler{0}.png"
+            fig.savefig(os.path.join(path, "emcee_sampler{0:02d}.png"
                                      .format(sp["bootstrap_index"])), format="png")
         else:
             fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
     
-    # Get "best" (mean) potential parameters:
-    return dict(zip(sp["model_parameters"],np.median(good_flatchain,axis=0)))
+    # return whole flatchain instead
+    return dict(zip(sp["model_parameters"],best_parameters))

@@ -111,8 +111,8 @@ def main(config_file):
                         datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     
     try:
-        best_parameters = infer_potential(particles, satellite_orbit, path, 
-                                          simulation_params, pool=pool)
+        flatchain = infer_potential(particles, satellite_orbit, path, 
+                                    simulation_params, pool=pool)
     except:
         if simulation_params["mpi"]: pool.close()
         
