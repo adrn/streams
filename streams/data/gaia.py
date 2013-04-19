@@ -195,7 +195,7 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz):
     d += np.random.normal(0., 0.02*d.value)*d.unit
     
     # VELOCITY ERROR -- 5 km/s (TODO: ???)
-    vr += np.random.normal(0., (5.*u.km/u.s))*u.km/u.s
+    vr += np.random.normal(0., 5.)*u.km/u.s
 
     dmu = proper_motion_error(V, rr_lyrae_V_minus_I)
         
