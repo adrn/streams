@@ -115,7 +115,7 @@ def main(config_file):
                                     simulation_params, pool=pool)
     except:
         if simulation_params["mpi"]: pool.close()
-        
+    
     # if we're running with MPI, we have to close the processor pool, otherwise
     #   the script will never finish running until the end of timmmmeeeee (echo)
     if simulation_params["mpi"]: pool.close()

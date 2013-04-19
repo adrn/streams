@@ -24,33 +24,10 @@ from scipy import interpolate
 from ..util import project_root
 from .gaia import rr_lyrae_add_observational_uncertainties
 from ..plot.data import scatter_plot_matrix
-from .core import StreamData, _make_npy_file
+from .core import _make_npy_file
 from ..simulation import TestParticle, TestParticleOrbit
 
 __all__ = ["LM10", "SgrCen", "SgrSnapshot"]
-
-class LM10(StreamData):
-
-    data = None
-
-    def __init__(self, overwrite=False):
-        """ Read in simulation data from Law & Majewski 2010.
-
-            Parameters
-            ----------
-            overwrite : bool (optional)
-                If True, will overwrite any existing npy files and regenerate
-                using the latest ascii data.
-        """
-
-        if LM10.data == None:
-            dat_filename = os.path.join(project_root, "data", "simulation", \
-                                    "SgrTriax_DYN.dat")
-
-            npy_filename = _make_npy_file(dat_filename, overwrite=overwrite)
-            LM10.data = np.load(npy_filename)
-
-        self._set_coordinates("ra", "dec")
 
 class KVJSgrData(Table):
     
@@ -83,6 +60,7 @@ class KVJSgrData(Table):
         self.r_unit = u.kpc
         self.t_unit = u.Myr
         self.v_unit = self.r_unit / self.t_unit
+        self.angle_unit = u.degree
         
         for colname in self.colnames:
             scale,unit = self._name_to_unit(colname)
@@ -234,4 +212,46 @@ class SgrSnapshot(KVJSgrData):
                                    True)
         return new_table
     
+
+class LM10(KVJSgrData):
+
+    def __init__(self, N=None, expr="", overwrite_npy=False):
+        """ Read in Sgr simulation snapshop from David Law's 2010 simulation
+
+            Parameters
+            ----------
+            N : int
+                If None, load all stars, otherwise randomly sample 'N' 
+                particles from the snapshot data.
+            expr : str (optional)
+                A selection expression to be fed in to numexpr. For
+                example, to select only unbound particles, use 
+                'Pcol > -1'.
+        """
+        
+        # Find and read in text file
+        txt_filename = os.path.join(project_root, "data", "simulation", \
+                                    "SgrTriax_DYN.dat")
+        colnames = "lambda beta ra dec l b xgc ygc zgc xsun ysun zsun x4 y4 z4 u v w dist vgsr mul mub mua mud Pcol Lmflag".split()
+        
+        super(LM10, self).__init__(filename=txt_filename, 
+                                          column_names=colnames,
+                                          overwrite_npy=overwrite_npy,
+                                          mask_expr=expr,
+                                          N=N)
     
+    def _name_to_unit(self, name):
+        """ Map a column name to a unit object. """
+        
+        if name in ["lambda", "beta", "ra", "dec", "l", "b"]:
+            return (1., self.angle_unit)
+        elif name in ["xgc","ygc","zgc","xsun","ysun","zsun", "dist"]:
+            return (1., self.r_unit)
+        elif name in "x4 y4 z4 Pcol Lmflag".split():
+            return (1.,1.)
+        elif name in ["vgsr", "u", "v", "w"]:
+            return (1., u.km/u.s)
+        elif name in ["mul", "mub", "mua", "mud"]:
+            return (1., u.mas/u.yr)
+        else:
+            raise NameError("Unsure of units for name '{0}'".format(name))

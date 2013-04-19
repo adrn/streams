@@ -167,7 +167,7 @@ class TestParticle(object):
             particles. 
         """
         
-        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.r_unit)
+        labels = [r"${0}_{{GC}}$ [{1}]".format(nm, self.v.unit)
                     for nm in ["V^x", "V^y", "V^z"]]
         
         fig,axes = scatter_plot_matrix(self.v.value.T, 

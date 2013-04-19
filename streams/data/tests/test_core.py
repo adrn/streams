@@ -16,14 +16,14 @@ import astropy.units as u
 import numpy as np
 import pytest
 
-from ..core import LINEAR, QUEST
+from ..core import read_linear, read_quest
    
-def test_coordinates():
-    linear = LINEAR()
-    quest = QUEST()
+def test_linear():
+    linear_data = read_linear()
+    linear_data["ra"]
+    linear_data["dec"]
     
-    assert isinstance(linear.ra[0], coord.RA)
-    assert isinstance(linear.dec[0], coord.Dec)
-    
-    assert isinstance(quest.ra[0], coord.RA)
-    assert isinstance(quest.dec[0], coord.Dec)
+def test_quest():
+    quest_data = read_quest()
+    quest_data["ra"]
+    quest_data["dec"]

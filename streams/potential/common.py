@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import uuid
+import math
 
 # Third-party
 import numpy as np
@@ -118,12 +119,12 @@ def _cartesian_miyamoto_nagai_model(bases):
         yy = (y-origin[1])
         zz = (z-origin[2])
         
-        denom = ((xx**2 + yy**2) + (a + np.sqrt(zz**2 + b**2))**2)**1.5
+        fac = _G*m*((xx**2 + yy**2) + (a + np.sqrt(zz**2 + b**2))**2)**-1.5
         
-        dx = _G*m*xx / denom
-        dy = _G*m*yy / denom
+        dx = fac*xx
+        dy = fac*yy
         _tmp = a/(np.sqrt(zz**2 + b**2))
-        dz = _G*m*zz * (1.+_tmp) / denom
+        dz = fac*zz * (1.+_tmp)
                 
         return np.array([dx,dy,dz])
         
@@ -181,11 +182,11 @@ def _cartesian_hernquist_model(bases):
         yy = (y-origin[1])
         zz = (z-origin[2])
         
-        denom = (np.sqrt(xx**2 + yy**2 + zz**2) + c)**2 * np.sqrt(xx**2 + yy**2 + zz**2)
+        denom = _G*m / ((np.sqrt(xx**2 + yy**2 + zz**2) + c)**2 * np.sqrt(xx**2 + yy**2 + zz**2))
         
-        dx = _G*m*xx / denom
-        dy = _G*m*yy / denom
-        dz = _G*m*zz / denom
+        dx = fac*xx
+        dy = fac*yy
+        dz = fac*zz
         
         return np.array([dx,dy,dz])
         
@@ -231,9 +232,9 @@ def _cartesian_logarithmic_lj_model(bases):
     """
 
     def f(x,y,z,v_halo,q1,q2,qz,phi,r_halo,origin): 
-        C1 = (np.cos(phi)/q1)**2+(np.sin(phi)/q2)**2
-        C2 = (np.cos(phi)/q2)**2+(np.sin(phi)/q1)**2
-        C3 = 2.*np.sin(phi)*np.cos(phi)*(1./q1**2 - 1./q2**2)
+        C1 = (math.cos(phi)/q1)**2+(math.sin(phi)/q2)**2
+        C2 = (math.cos(phi)/q2)**2+(math.sin(phi)/q1)**2
+        C3 = 2.*math.sin(phi)*math.cos(phi)*(1./q1**2 - 1./q2**2)
         
         xx = (x-origin[0])
         yy = (y-origin[1])
@@ -242,19 +243,19 @@ def _cartesian_logarithmic_lj_model(bases):
         return v_halo**2 * np.log(C1*xx**2 + C2*yy**2 + C3*xx*yy + zz**2/qz**2 + r_halo**2)
     
     def df(x,y,z,v_halo,q1,q2,qz,phi,r_halo,origin):
-        C1 = (np.cos(phi)/q1)**2+(np.sin(phi)/q2)**2
-        C2 = (np.cos(phi)/q2)**2+(np.sin(phi)/q1)**2
-        C3 = 2.*np.sin(phi)*np.cos(phi)*(1./q1**2 - 1./q2**2)
+        C1 = (math.cos(phi)/q1)**2+(math.sin(phi)/q2)**2
+        C2 = (math.cos(phi)/q2)**2+(math.sin(phi)/q1)**2
+        C3 = 2.*math.sin(phi)*math.cos(phi)*(1./q1**2 - 1./q2**2)
         
         xx = (x-origin[0])
         yy = (y-origin[1])
         zz = (z-origin[2])
         
-        denom = (C1*xx**2 + C2*yy**2 + C3*xx*yy + zz**2/qz**2 + r_halo**2)
+        fac = v_halo**2 / (C1*xx**2 + C2*yy**2 + C3*xx*yy + zz**2/qz**2 + r_halo**2)
         
-        dx = v_halo**2 * (2.*C1*xx + C3*yy) / denom
-        dy = v_halo**2 * (2.*C2*yy + C3*xx) / denom
-        dz = 2.*v_halo**2 * zz / denom / qz**2
+        dx = fac * (2.*C1*xx + C3*yy)
+        dy = fac * (2.*C2*yy + C3*xx)
+        dz = 2.* fac * zz * qz**-2
         
         return np.array([dx,dy,dz])
         
