@@ -6,7 +6,6 @@ from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
-# Third-party
 import astropy.units as u
 
 def _parse_key_val(key, val):
@@ -20,6 +19,7 @@ def _parse_key_val(key, val):
     """
     
     _key = key.lower()
+    
     if _key.startswith("(i)"):
         # integer
         k = _key.split()[1]

@@ -30,6 +30,8 @@ from streams.simulation.config import read
 from streams.data import SgrSnapshot, SgrCen
 from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
+from streams.plot import plot_sampler_pickle
+from streams.potential.lm10 import halo_params
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -82,53 +84,85 @@ def main(config_file):
                             datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         os.mkdir(path)
     
-    # TODO: this is where i can turn this in to a bootstrap loop?
+    # Get the number of bootstrap reamples. if not specified, it's just 1
+    B = config.get("bootstrap_resamples", 1)
     
     if config["observational_errors"]:
         particles = add_uncertainties_to_particles(particles)
     
-    try:
-        sampler = infer_potential(particles, satellite_orbit, 
-                                  model_parameters=config["model_parameters"],
-                                  walkers=config["walkers"],
-                                  steps=config["steps"],
-                                  burn_in=config["burn_in"],
-                                  pool=pool)
-    except:
-        if config["mpi"]: pool.close()
-        raise
+    all_best_parameters = []
+    for bb in range(B):    
+        try:
+            sampler = infer_potential(particles, satellite_orbit, 
+                                      model_parameters=config["model_parameters"],
+                                      walkers=config["walkers"],
+                                      steps=config["steps"],
+                                      burn_in=config["burn_in"],
+                                      pool=pool)
+        except:
+            if config["mpi"]: pool.close()
+            raise
+        
+        best_parameters = max_likelihood_parameters(sampler)
+        all_best_parameters.append(best_parameters)
+        
+        # Create a new path for the output
+        if config["make_plots"]:
+            # Plot the positions of the particles in galactic XYZ coordinates
+            fig,axes = particles.plot_positions()
+            fig.savefig(os.path.join(path, "particles.png"))
+            
+            # write the sampler to a pickle file
+            data_file = os.path.join(path, "sampler_data.pickle")
+            sampler.lnprobfn = None
+            sampler.pool = None
+            fnpickle(sampler, data_file)
+            
+            # make sexy plots from the sampler data
+            fig = plot_sampler_pickle(os.path.join(path,data_file), 
+                                      params=config["model_parameters"], 
+                                      acceptance_fraction_bounds=(0.15,0.6),
+                                      show_true=True)
+            
+            # add the max likelihood estimates to the plots                           
+            for ii,param_name in enumerate(config["model_parameters"]):
+                fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
+                                              color="#CA0020",
+                                              linestyle="--",
+                                              linewidth=2)
+            
+            fig.savefig("emcee_sampler_{0}.png".format(bb))
     
     # if we're running with MPI, we have to close the processor pool, otherwise
     #   the script will never finish running until the end of timmmmeeeee (echo)
     if config["mpi"]: pool.close()
     
-    best_parameters = max_likelihood_parameters(sampler)
+    best_p = dict()
+    for ii,name in enumerate(config["model_parameters"]):
+        best_p[name] = [x[ii] for x in all_best_parameters]
     
-    # Create a new path for the output
-    if config["make_plots"]:
-        # Plot the positions of the particles in galactic XYZ coordinates
-        fig,axes = particles.plot_positions()
-        fig.savefig(os.path.join(path, "particles.png"))
+    # finally, make plots showing the bootstrap resamples
+    if B > 1 and config["make_plots"]:
+        fnpickle(best_p, os.path.join(path, "all_best_parameters.pickle"))
         
-        # write the sampler to a pickle file
-        data_file = os.path.join(path, "sampler_data.pickle")
-        sampler.lnprobfn = None
-        sampler.pool = None
-        fnpickle(sampler, data_file)
+        fig,axes = plt.subplots(4,1,figsize=(14,12))
+        fig.subplots_adjust(left=0.075, right=0.95)
+        for ii,name in enumerate(config["model_parameters"]):
+            try:
+                p = halo_params[name].value
+            except AttributeError:
+                p = halo_params[name]
+                
+            axes[ii].hist(best_p[name], bins=25, histtype="step", color="k", linewidth=2)
+            axes[ii].axvline(p, linestyle="--", color="#EF8A62", linewidth=3)
+            axes[ii].set_ylabel(name)
+            axes[ii].set_ylim(0,20)
         
-        # make sexy plots from the sampler data
-        fig = plot_sampler_pickle(os.path.join(path,data_file), 
-                                  params=config["model_parameters"], 
-                                  acceptance_fraction_bounds=(0.15,0.6),
-                                  show_true=True)
+        fig.savefig(os.path.join(path,"bootstrap_1d.png"))
         
-        # add the max likelihood estimates to the plots                           
-        for ii,param_name in enumerate(config["model_parameters"]):
-            fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
-                                          color="#CA0020",
-                                          linestyle="--",
-                                          linewidth=2)
-    
+        # Now make 2D plots of the bootstrap results
+        #fig,axes = scatter_plot_matrix()
+        
 if __name__ == "__main__":
     from argparse import ArgumentParser
     
