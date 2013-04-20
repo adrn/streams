@@ -131,7 +131,7 @@ def main(config_file):
                                               linestyle="--",
                                               linewidth=2)
             
-            fig.savefig("emcee_sampler_{0}.png".format(bb))
+            fig.savefig(os.path.join(path, "emcee_sampler_{0}.png".format(bb)))
     
     # if we're running with MPI, we have to close the processor pool, otherwise
     #   the script will never finish running until the end of timmmmeeeee (echo)
