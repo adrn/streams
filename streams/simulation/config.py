@@ -95,19 +95,37 @@ def read(file):
     
     return config
 
-def test_read():
-    import cStringIO as StringIO
+def write(filename, clobber=False):
+    """ Write all defaults into a configuration file.
     
-    file = """(I) particles : 100 # number of particles
-              (U) dt : 1. Myr # timestep for back integration
-              (B) with_errors : yes
-              (S) description : blah blah blah
-              (L,S) parameters : q1 qz v_halo phi"""
+        Parameters
+        ----------
+        filename : str 
+            File to write the default values to.
+        clobber : bool (optional)
+            If the file exists, overwrite it.
+    """
     
-    f = StringIO.StringIO(file)
-    config = read(f)
+    config_file = []
+    config_file.append("(I) particles: 100")
+    config_file.append("(U) dt: 5. Myr # timestep")
+    config_file.append("(B) observational_errors: yes # add observational errors")
+    config_file.append("(S) expr: tub > 0.")
+    config_file.append("(L,S) model_parameters: q1 qz v_halo phi")
+    config_file.append("(I) seed: 42")
+    config_file.append("(I) walkers: 128")
+    config_file.append("(I) burn_in: 50")
+    config_file.append("(I) steps: 100")
+    config_file.append("(B) mpi: yes")
+    config_file.append("(B) make_plots: no")
+    config_file.append("(S) output_path: /tmp/")
     
-    assert config["particles"] == 100
-    assert config["dt"] == (1.*u.Myr)
-    assert config["with_errors"] == True
-    assert config["parameters"] == ["q1", "qz", "v_halo", "phi"]
+    if os.path.exists(filename) and clobber:
+        os.remove(filename)
+    elif os.path.exists(filename) and not clobber:
+        raise IOError("File exists and you don't want to clobber it!")
+        
+    f = open(filename, "w")
+    f.write("\n".join(config_file))
+    f.close()
+    
