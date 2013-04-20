@@ -13,7 +13,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import logging
-from dateteim import datetime
+from datetime import datetime
 import multiprocessing
 
 # Third-party
@@ -26,7 +26,7 @@ from emcee.utils import MPIPool
 from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
-from streams.simulatio.config import read
+from streams.simulation.config import read
 from streams.data import SgrSnapshot, SgrCen
 from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
