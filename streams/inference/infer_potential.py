@@ -115,7 +115,7 @@ def infer_potential(particles, satellite_orbit, path, simulation_params, pool=No
                                   show_true=True)
         
         for ii,param_name in enumerate(sp["model_parameters"]):
-            fig.axes[ii][1].axhline(best_parameters[ii], color="#CA0020", linestyle="--", linewidth=2)
+            fig.axes[int(2*ii+1)].axhline(best_parameters[ii], color="#CA0020", linestyle="--", linewidth=2)
         
         if "bootstrap_index" in sp.keys():
             fig.savefig(os.path.join(path, "emcee_sampler{0:02d}.png"

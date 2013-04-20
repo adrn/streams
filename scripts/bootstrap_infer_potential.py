@@ -124,20 +124,28 @@ def main(config_file):
         if simulation_params["observational_errors"]:
             bootstrap_particles = add_uncertainties_to_particles(bootstrap_particles)
         
+        best = infer_potential(particles, satellite_orbit, 
+                               path, simulation_params, pool=pool)
+        
         try:
-            flatchain = infer_potential(particles, satellite_orbit, 
-                                        path, simulation_params, pool=pool)
+            #flatchain = infer_potential(particles, satellite_orbit, 
+            #                            path, simulation_params, pool=pool)
+            pass
         except:
             if simulation_params["mpi"]:
                 pool.close()
             
-        all_best_parameters.append(flatchain)
+        all_best_parameters.append(best)
     
     # if we're running with MPI, we have to close the processor pool, otherwise
     #   the script will never finish running until the end of timmmmeeeee (echo)
     if simulation_params["mpi"]: pool.close()
     
-    fnpickle(all_best_parameters, os.path.join(path,"all_best_parameters.pickle"))
+    best_p = dict()
+    for name in simulation_params["model_parameters"]:
+        best_p[name] = [x[name] for x in all_best_parameters]
+    
+    fnpickle(best_p, os.path.join(path,"all_best_parameters.pickle"))
     
     fig,axes = plt.subplots(4,1,figsize=(14,12))
     fig.subplots_adjust(left=0.075, right=0.95)
@@ -147,7 +155,7 @@ def main(config_file):
         except AttributeError:
             p = halo_params[name]
             
-        axes[ii].hist(all_best_parameters[:,ii], bins=25, histtype="step", color="k", linewidth=2)
+        axes[ii].hist(best_p[name], bins=25, histtype="step", color="k", linewidth=2)
         axes[ii].axvline(p, linestyle="--", color="#EF8A62", linewidth=3)
         axes[ii].set_ylabel(name)
         axes[ii].set_ylim(0,20)
