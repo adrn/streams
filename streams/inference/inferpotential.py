@@ -8,8 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import datetime
-import cPickle as pickle
+from multiprocessing import Pool
 
 # Third-party
 import numpy as np
@@ -17,111 +16,121 @@ np.seterr(all="ignore")
 import scipy
 scipy.seterr(all="ignore")
 import astropy.units as u
-from astropy.io.misc import fnpickle, fnunpickle
 import emcee
 
 # Project
 from streams.potential.lm10 import param_ranges
 from streams.inference import ln_posterior
-from streams.plot import plot_sampler_pickle
 
-__all__ = ["infer_potential"]
+__all__ = ["infer_potential", "max_likelihood_parameters"]
 
-def infer_potential(particles, satellite_orbit, path, simulation_params, pool=None):
-    """ """
+logger = logging.getLogger(__name__)
+
+def infer_potential(particles, satellite_orbit, model_parameters, 
+                    walkers=None, steps=100, burn_in=None, pool=None):
     
-    # Shorthand!
-    sp = simulation_params
+    """ Given a set of particles and the orbit of the progenitor system, 
+        infer the model halo parameters by using MCMC to optimize the 
+        generalized variance of the reduced, relative phase-space 
+        coordinate distribution.
+        
+        Parameters
+        ----------
+        particles : TestParticle
+            A set of particles -- positions and velocities -- to integrate
+            backwards with the satellite orbit.
+        satellite_orbit : TestParticleOrbit
+            The orbit of the progenitor satellite galaxy.
+        model_parameters : list, tuple
+            List of the names of the model parameters to infer.
+        walkers : int
+            Number of walkers to use in emcee.
+        steps : int (optional)
+            Number of steps for each walker to take through parameter space.
+        burn_in : int (optional)
+            Defaults to 1/10 the number of steps. 
+        pool : multiprocessing.Pool, emcee.MPIPool
+            A multiprocessing or MPI pool to pass to emcee for wicked awesome
+            parallelization!
+            
+    """
+    
+    # If the number of walkers is not specified, default to twice the number 
+    #   of model parameters
+    if walkers == None:
+        walkers = len(model_parameters) * 2
+    
+    if burn_in == None:
+        burn_in = steps // 10
     
     # Create the starting points for all walkers
-    p0 = []
-    for ii in range(sp["walkers"]):
-        p0.append([np.random.uniform(param_ranges[p_name][0], param_ranges[p_name][1])
-                    for p_name in sp["model_parameters"]])
-    p0 = np.array(p0)
-    ndim = len(sp["model_parameters"])
+    for p_name in model_parameters:
+        # sample initial parameter values from uniform distributions over 
+        #   the ranges specified in lm10.py
+        this_p = np.random.uniform(param_ranges[p_name][0], 
+                                   param_ranges[p_name][1],
+                                   size=walkers)
+        try:
+            p0 = np.vstack((p0, this_p))
+        except NameError:
+            p0 = this_p
     
     # Construct the log posterior probability function to pass in to emcee
-    args = sp["model_parameters"], particles, satellite_orbit
+    args = model_parameters, particles, satellite_orbit
+   
+    # If no pool is specified, just create a single-processor pool
+    if pool == None:
+        pool = Pool(processes=1)
     
-    if sp["mpi"]:
-        if pool == None:
-            raise ValueError("If MPI specified, you must supply an MPIPool!")
-            
-        sampler = emcee.EnsembleSampler(sp["walkers"], ndim, ln_posterior, 
-                                        pool=pool, args=args)
-    else:
-        if "threads" in sp.keys():
-            threads = sp["threads"]
-        else:
-            threads = 1
-            
-        sampler = emcee.EnsembleSampler(sp["walkers"], ndim, 
-                                        ln_posterior, args=args,
-                                        threads=threads)
+    # Construct an ensemble sampler to walk through dat model parameter space
+    sampler = emcee.EnsembleSampler(nwalkers=walkers, 
+                                    ndim=len(model_parameters), 
+                                    lnpostfn=ln_posterior, 
+                                    pool=pool, 
+                                    args=args)
     
-    print("About to start simulation with parameters: \n{0}"
-          .format("\n\t".join(["{0}: {1}".format(k,v) for k,v in sp.items()])))
+    logger.debug("About to start simulation...")
     
-    print("Output path: {0}".format(path))
-    
-    if sp["make_plots"]:
-        if not os.path.exists(path):
-            os.mkdir(path)
-    
-        # Plot the initial positions of the particles in galactic XYZ coordinates
-        fig,axes = particles.plot_positions()
-        fig.savefig(os.path.join(path, "particles.png"))
-    
-    # If a burn-in period is requested, run the sampler for nburn_in steps then
+    # If a burn-in period requested, run the sampler for 'burn_in' steps then
     #   reset the walkers and use the end positions as new initial conditions
-    if sp["burn_in"] > 0:
-        pos, prob, state = sampler.run_mcmc(p0, sp["burn_in"])
+    if burn_in > 0:
+        pos, prob, state = sampler.run_mcmc(p0, burn_in)
         sampler.reset()
     else:
         pos = p0
     
-    sampler.run_mcmc(pos, sp["steps"])
+    # Run the MCMC sampler and draw 'steps' samplers per walker
+    pos, prob, state = sampler.run_mcmc(pos, steps)
     
-    data_file = os.path.join(path, "sampler_data.pickle")
+    return sampler
     
-    sampler.lnprobfn = None
-    sampler.pool = None
-    fnpickle(sampler, data_file)
-
-    idx = (sampler.acceptance_fraction > 0.1) & \
-            (sampler.acceptance_fraction < 0.6) # rule of thumb, bitches
-    #idx = np.ones_like(sampler.acceptance_fraction).astype(bool)
-
-    print("{0} walkers ({1:.1f}%) converged"
-            .format(sum(idx), sum(idx)/sp["walkers"]*100))
+def max_likelihood_parameters(sampler):
+    """ Given an emcee Sampler object, find the maximum likelihood parameters
     
-    # Pluck out good chains, make a new flatchain from those...
-    good_flatchain = []
-    good_chains = sampler.chain[idx]
-    for chain in good_chains:
-        good_flatchain += list(chain)
-    good_flatchain = np.array(good_flatchain)
-    good_probs = sampler.flatlnprobability[idx]
+        Parameters
+        ----------
+        sampler : EnsembleSampler
+    """
     
-    # Get maximum likelihood parameters
-    ii = np.argmax(good_probs)
-    best_parameters = good_flatchain[ii]
+    nwalkers, nsteps, nparams = sampler.chain.shape
     
-    if sp["make_plots"]:
-        fig = plot_sampler_pickle(os.path.join(path,data_file), 
-                                  params=sp["model_parameters"], 
-                                  acceptance_fraction_bounds=(0.1,0.6),
-                                  show_true=True)
-        
-        for ii,param_name in enumerate(sp["model_parameters"]):
-            fig.axes[int(2*ii+1)].axhline(best_parameters[ii], color="#CA0020", linestyle="--", linewidth=2)
-        
-        if "bootstrap_index" in sp.keys():
-            fig.savefig(os.path.join(path, "emcee_sampler{0:02d}.png"
-                                     .format(sp["bootstrap_index"])), format="png")
-        else:
-            fig.savefig(os.path.join(path, "emcee_sampler.png"), format="png")
+    # only use samplers that have reasonable acceptance fractions
+    good_walkers = (sampler.acceptance_fraction > 0.15) & \
+                   (sampler.acceptance_fraction < 0.6)
     
-    # return whole flatchain instead
-    return dict(zip(sp["model_parameters"],best_parameters))
+    logger.info("{0} walkers ({1:.1f}%) converged"
+                .format(sum(idx), sum(idx)/nwalkers*100))
+    
+    good_chain = sampler.chain[idx] # (sum(idx), nsteps, nparams)
+    good_probs = sampler.lnprobability[idx] # (sum(idx), nsteps)
+    
+    best_step_idx = np.argmax(np.ravel(good_probs))
+    
+    flatchain = []
+    for walker_i in range(nwalkers):
+        flatchain.append(good_chain[walker_i])
+    flatchain = np.array(flatchain)
+    
+    best_params = flatchain[best_step_idx]
+    
+    return best_params

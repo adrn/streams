@@ -13,7 +13,8 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import logging
-import datetime
+from dateteim import datetime
+import multiprocessing
 
 # Third-party
 import numpy as np
@@ -22,59 +23,30 @@ import scipy
 scipy.seterr(all="ignore")
 import astropy.units as u
 from emcee.utils import MPIPool
+from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
-from streams.simulation import config
+from streams.simulatio.config import read
 from streams.data import SgrSnapshot, SgrCen
 from streams.data.gaia import add_uncertainties_to_particles
-from streams.inference import infer_potential
+from streams.inference import infer_potential, max_likelihood_parameters
 
-def write_defaults(filename=None):
-    """ Write a default configuration file for running infer_potential to
-        the supplied path. If no path supplied, will return a string version.
-        
-        Parameters
-        ----------
-        path : str (optional)
-            Path to write the file to or return string version.
-    """
-    config_file = []
-    config_file.append("(I) particles: 100")
-    config_file.append("(U) dt: 1. Myr # timestep")
-    config_file.append("(B) observational_errors: yes # add observational errors")
-    config_file.append("(S) expr: tub > 0.")
-    config_file.append("(L,S) model_parameters: q1 qz v_halo phi")
-    config_file.append("(I) seed: 42")
-    config_file.append("(I) walkers: 128")
-    config_file.append("(I) burn_in: 100")
-    config_file.append("(I) steps: 100")
-    config_file.append("(B) mpi: no")
-    config_file.append("(B) make_plots: no")
-    config_file.append("(S) output_path: /tmp/")
-    
-    if filename == None:
-        filename = "streams.cfg"
-        
-    f = open(filename, "w")
-    f.write("\n".join(config_file))
-    f.close()
+# Create logger
+logger = logging.getLogger(__name__)
 
 def main(config_file):
-        
-    # Make sure input configuration file exists
-    if not os.path.exists(config_file):
-        raise ValueError("Configuration file '{0}' doesn't exist!"
-                         .format(config_file))
     
-    simulation_params = config.read(config_file)
+    # Read in simulation parameters from config file
+    config = read(config_file)
     
     # Expression for selecting particles from the simulation data snapshot
-    expr = "(tub > 10.)"
-    if len(simulation_params["expr"]) > 0:
-        expr = ""
-        expr += " & " + " & ".join(["({0})".format(x) for x in simulation_params["expr"]])
+    expr = ""
+    if len(config["expr"]) > 0:
+        expr += " & " + " & ".join(["({0})".format(x) for x in config["expr"]])
+    else:
+        expr += "(tub > 0.)"
     
-    if simulation_params["mpi"]:
+    if config["mpi"]:
         # Initialize the MPI pool
         pool = MPIPool()
 
@@ -83,42 +55,75 @@ def main(config_file):
             pool.wait()
             sys.exit(0)
     else:
-        pool = None
+        if config.has_key("threads"):
+            pool = multiprocessing.Pool(config["threads"])
         
     # Read in Sagittarius simulation data
-    np.random.seed(simulation_params["seed"])
+    np.random.seed(config["seed"])
     sgr_cen = SgrCen()
     satellite_orbit = sgr_cen.as_orbit()
     
-    sgr_snap = SgrSnapshot(N=simulation_params["particles"],
-                           expr=simulation_params["expr"])
+    sgr_snap = SgrSnapshot(N=config["particles"],
+                           expr=config["expr"])
     particles = sgr_snap.as_particles()
     
     # Define new time grid
     time_grid = np.arange(max(satellite_orbit.t.value), 
                           min(satellite_orbit.t.value),
-                          -simulation_params["dt"].to(satellite_orbit.t.unit).value)
+                          -config["dt"].to(satellite_orbit.t.unit).value)
     time_grid *= satellite_orbit.t.unit
     
     # Interpolate satellite_orbit onto new time grid
     satellite_orbit = satellite_orbit.interpolate(time_grid)
     
-    if simulation_params["observational_errors"]:
+    # Create a new path for the output
+    if config["make_plots"]:
+        path = os.path.join(config["output_path"], 
+                            datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        os.mkdir(path)
+    
+    # TODO: this is where i can turn this in to a bootstrap loop?
+    
+    if config["observational_errors"]:
         particles = add_uncertainties_to_particles(particles)
     
-    # Create a new path for the output
-    path = os.path.join(simulation_params["output_path"], 
-                        datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-    
     try:
-        flatchain = infer_potential(particles, satellite_orbit, path, 
-                                    simulation_params, pool=pool)
+        sampler = infer_potential(particles, satellite_orbit, path, 
+                                    config, pool=pool)
     except:
-        if simulation_params["mpi"]: pool.close()
+        if config["mpi"]: pool.close()
+        raise
     
     # if we're running with MPI, we have to close the processor pool, otherwise
     #   the script will never finish running until the end of timmmmeeeee (echo)
-    if simulation_params["mpi"]: pool.close()
+    if config["mpi"]: pool.close()
+    
+    best_parameters = max_likelihood_parameters(sampler)
+    
+    # Create a new path for the output
+    if config["make_plots"]:
+        # Plot the positions of the particles in galactic XYZ coordinates
+        fig,axes = particles.plot_positions()
+        fig.savefig(os.path.join(path, "particles.png"))
+        
+        # write the sampler to a pickle file
+        data_file = os.path.join(path, "sampler_data.pickle")
+        sampler.lnprobfn = None
+        sampler.pool = None
+        fnpickle(sampler, data_file)
+        
+        # make sexy plots from the sampler data
+        fig = plot_sampler_pickle(os.path.join(path,data_file), 
+                                  params=config["model_parameters"], 
+                                  acceptance_fraction_bounds=(0.15,0.6),
+                                  show_true=True)
+        
+        # add the max likelihood estimates to the plots                           
+        for ii,param_name in enumerate(config["model_parameters"]):
+            fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
+                                          color="#CA0020",
+                                          linestyle="--",
+                                          linewidth=2)
     
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -131,37 +136,14 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--file", dest="file", default="streams.cfg", 
                     help="Path to the configuration file to run with.")
     
-    # Dump defaults
-    parser.add_argument("-d", "--dump-defaults", action="store_true", 
-                    dest="dump", default=False, help="Don't do anything "
-                    "except write out the default config file.")
-    parser.add_argument("-o", "--output", dest="output", default=None, 
-                    help="File to write the default config settings to.")
-    
     args = parser.parse_args()
     
-    # Create logger
-    logger = logging.getLogger(__name__)
-    ch = logging.StreamHandler()
-    formatter = logging.Formatter("%(name)s / %(levelname)s / %(message)s")
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    
     if args.verbose:
-        logger.setLevel(logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG)
     elif args.quiet:
-        logger.setLevel(logging.ERROR)
+        logging.basicConfig(level=logging.ERROR)
     else:
-        logger.setLevel(logging.INFO)
-    
-    if args.dump:
-        if args.output == None:
-            raise ValueError("If you want to dump a default config file, you "
-                             "must also throw the --output flag and give it "
-                             "the full path to the file you want to write to.")
-        
-        write_defaults(args.output)
-        sys.exit(0)
+        logging.basicConfig(level=logging.INFO)
     
     main(args.file)
     sys.exit(0)
