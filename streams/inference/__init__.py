@@ -1,2 +1,2 @@
 from .core import *
-from .infer_potential import *
+from .inferpotential import *
