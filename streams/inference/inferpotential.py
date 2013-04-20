@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 from multiprocessing import Pool
+import logging
 
 # Third-party
 import numpy as np
