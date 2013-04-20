@@ -88,8 +88,12 @@ def main(config_file):
         particles = add_uncertainties_to_particles(particles)
     
     try:
-        sampler = infer_potential(particles, satellite_orbit, path, 
-                                    config, pool=pool)
+        sampler = infer_potential(particles, satellite_orbit, 
+                                  model_parameters=config["model_parameters"],
+                                  walkers=config["walkers"],
+                                  steps=config["steps"],
+                                  burn_in=config["burn_in"],
+                                  pool=pool)
     except:
         if config["mpi"]: pool.close()
         raise

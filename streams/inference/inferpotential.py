@@ -75,6 +75,7 @@ def infer_potential(particles, satellite_orbit, model_parameters,
             p0 = np.vstack((p0, this_p))
         except NameError:
             p0 = this_p
+    p0 = p0.T
     
     # Construct the log posterior probability function to pass in to emcee
     args = model_parameters, particles, satellite_orbit
@@ -85,7 +86,7 @@ def infer_potential(particles, satellite_orbit, model_parameters,
     
     # Construct an ensemble sampler to walk through dat model parameter space
     sampler = emcee.EnsembleSampler(nwalkers=walkers, 
-                                    ndim=len(model_parameters), 
+                                    dim=len(model_parameters), 
                                     lnpostfn=ln_posterior, 
                                     pool=pool, 
                                     args=args)
@@ -120,18 +121,18 @@ def max_likelihood_parameters(sampler):
                    (sampler.acceptance_fraction < 0.6)
     
     logger.info("{0} walkers ({1:.1f}%) converged"
-                .format(sum(idx), sum(idx)/nwalkers*100))
+                .format(sum(good_walkers), sum(good_walkers)/nwalkers*100))
     
-    good_chain = sampler.chain[idx] # (sum(idx), nsteps, nparams)
-    good_probs = sampler.lnprobability[idx] # (sum(idx), nsteps)
+    good_chain = sampler.chain[good_walkers] # (sum(good_walkers), nsteps, nparams)
+    good_probs = sampler.lnprobability[good_walkers] # (sum(good_walkers), nsteps)
     
     best_step_idx = np.argmax(np.ravel(good_probs))
     
     flatchain = []
-    for walker_i in range(nwalkers):
-        flatchain.append(good_chain[walker_i])
+    for walker_i in range(len(good_chain)):
+        flatchain += list(good_chain[walker_i])
     flatchain = np.array(flatchain)
-    
+
     best_params = flatchain[best_step_idx]
     
     return best_params
