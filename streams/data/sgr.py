@@ -2,7 +2,7 @@
 
 """ Classes for accessing simulation data related to Sagittarius. """
 
-from __future__ import division, print_function, absolute_import, unicode_literals
+from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
@@ -239,17 +239,24 @@ class LM10(KVJSgrData):
                                           overwrite_npy=overwrite_npy,
                                           mask_expr=expr,
                                           N=N)
+        
+        self.rename_column('xgc', "x")
+        self.rename_column('ygc', "y")
+        self.rename_column('zgc', "z")
+        self.rename_column('u', "vx")
+        self.rename_column('v', "vy")
+        self.rename_column('w', "vz")
     
     def _name_to_unit(self, name):
         """ Map a column name to a unit object. """
         
         if name in ["lambda", "beta", "ra", "dec", "l", "b"]:
             return (1., self.angle_unit)
-        elif name in ["xgc","ygc","zgc","xsun","ysun","zsun", "dist"]:
+        elif name in ["xgc","ygc","zgc","xsun","ysun","zsun", "dist", "x", "y", "z"]:
             return (1., self.r_unit)
         elif name in "x4 y4 z4 Pcol Lmflag".split():
             return (1.,1.)
-        elif name in ["vgsr", "u", "v", "w"]:
+        elif name in ["vgsr", "u", "v", "w", "vx", "vy", "vz"]:
             return (1., u.km/u.s)
         elif name in ["mul", "mub", "mua", "mud"]:
             return (1., u.mas/u.yr)

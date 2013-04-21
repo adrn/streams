@@ -104,5 +104,3 @@ class TestSgrSnap(object):
 
 def test_coordinates():
     lm10 = LM10()
-
-    

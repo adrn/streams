@@ -17,6 +17,7 @@ from datetime import datetime
 import multiprocessing
 
 # Third-party
+import matplotlib.pyplot as plt
 import numpy as np
 np.seterr(all="ignore")
 import scipy
@@ -27,7 +28,7 @@ from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
 from streams.simulation.config import read
-from streams.data import SgrSnapshot, SgrCen
+from streams.data import LM10, SgrSnapshot, SgrCen
 from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle
@@ -65,8 +66,22 @@ def main(config_file):
     sgr_cen = SgrCen()
     satellite_orbit = sgr_cen.as_orbit()
     
-    sgr_snap = SgrSnapshot(N=config["particles"],
-                           expr=config["expr"])
+    if isinstance(config["expr"], list):
+        expr = " & ".join(["({0})".format(x) for x in config["expr"]])
+    else:
+        expr = config["expr"]
+    
+    if not config.has_key("particle_source"):
+        sim_name = "kvj"
+    else:
+        sim_name = config["particle_source"]
+    
+    if sim_name == "lm10":
+        sgr_snap = LM10(N=config["particles"],
+                        expr=expr)
+    else:
+        sgr_snap = SgrSnapshot(N=config["particles"],
+                               expr=config["expr"])
     particles = sgr_snap.as_particles()
     
     # Define new time grid
@@ -103,7 +118,11 @@ def main(config_file):
             if config["mpi"]: pool.close()
             raise
         
-        best_parameters = max_likelihood_parameters(sampler)
+        try:
+            best_parameters = max_likelihood_parameters(sampler)
+        except:
+            continue
+            
         all_best_parameters.append(best_parameters)
         
         # Create a new path for the output
