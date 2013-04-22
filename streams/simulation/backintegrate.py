@@ -42,15 +42,13 @@ def relative_normalized_coordinates(particle_orbits, satellite_orbit,
     if not (particle_orbits.t.value == satellite_orbit.t.value).all():
         raise ValueError("Interpolation not yet supported. Time vectors must "
                          "be aligned.")
-        
+    
     if particle_orbits.r.value.ndim == 2:
         sat_r = satellite_orbit.r
         sat_v = satellite_orbit.v
         r_tide = r_tide[:,np.newaxis]
         v_esc = v_esc[:,np.newaxis]
     elif particle_orbits.r.value.ndim == 3:
-        sat_r = satellite_orbit.r[:,np.newaxis,:]
-        sat_v = satellite_orbit.v[:,np.newaxis,:]
         r_tide = r_tide[:,np.newaxis,np.newaxis]
         v_esc = v_esc[:,np.newaxis,np.newaxis]
     else:
@@ -58,10 +56,11 @@ def relative_normalized_coordinates(particle_orbits, satellite_orbit,
     
     # THE BELOW IS A HACK HACK HACK BECAUSE OF:
     #   https://github.com/astropy/astropy/issues/974  
-    sat_r = u.Quantity(sat_r.value, str(sat_r.unit))
-    sat_v = u.Quantity(sat_v.value, str(sat_v.unit))
+    sat_r = u.Quantity(satellite_orbit.r.value, str(satellite_orbit.r.unit))
+    sat_v = u.Quantity(satellite_orbit.v.value, str(satellite_orbit.v.unit))
     
-    return (particle_orbits.r - sat_r) / r_tide, (particle_orbits.v - sat_v) / v_esc
+    return (particle_orbits.r - sat_r) / r_tide, \
+           (particle_orbits.v - sat_v) / v_esc
     
 def phase_space_distance(R,V):
     """ Compute the phase-space distance from relative, normalized coordinates.
@@ -129,9 +128,9 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     #        m_halo_enc
     
     # Radius of Sgr center relative to galactic center
-    R_sgr = np.sqrt(satellite_orbit.r[:,0]**2 + \
-                    satellite_orbit.r[:,1]**2 + \
-                    satellite_orbit.r[:,2]**2) * u.Unit(str(satellite_orbit.r.unit))
+    R_sgr = np.sqrt(satellite_orbit.r[:,0,0]**2 + \
+                    satellite_orbit.r[:,0,1]**2 + \
+                    satellite_orbit.r[:,0,2]**2) * u.Unit(str(satellite_orbit.r.unit))
     
     v_halo = u.Quantity(potential["halo"]._unscaled_parameters["v_halo"].value,
                         str(potential["halo"]._unscaled_parameters["v_halo"].unit))

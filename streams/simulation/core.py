@@ -109,28 +109,6 @@ class TestParticle(object):
                                  r*potential.units["length"],
                                  v*potential.units["length"]/potential.units["time"])
     
-    '''
-    def acceleration_at(self, r):
-        """ Compute the gravitational acceleration from a collection of 
-            massive particle objects.
-            
-            Parameters
-            ----------
-            r : astropy.units.Quantity
-                Position to compute the acceleration at.
-        """
-        from ..potential.common import _cartesian_point_mass_model
-        f,df = _cartesian_point_mass_model(bases={"length":self.r.unit,
-                                                  "time":self.v.unit.bases[1],
-                                                  "mass":self.m.unit})
-        
-        acc = np.zeros_like(r)
-        for p in self:
-            acc += df(p.r,origin=np.array([0.,0.,0.])*self.r.unit,m=p.m)
-        
-        return -acc
-    '''
-    
     def energy(self, potential):
         """ Compute the sum of the kinetic energy and potential energy of the
             particle(s) in the given potential.
@@ -145,7 +123,7 @@ class TestParticle(object):
     
     def __repr__(self):
         if self.r.value.ndim == 1:
-            return "<Particle r={1} v={2}>".format(self.r, self.v)
+            return "<Particle r={0} v={1}>".format(self.r, self.v)
         else:
             return "[" + ", ".join(["<Particle r={0} v={1}>".format(p.r,p.v) for p in self]) + "]"
     
@@ -220,3 +198,17 @@ class TestParticleOrbit(object):
             new_v[:,i] = interpolate.interp1d(self.t.value, self.v[:,i].value, kind='cubic')(new_t.value)
         
         return TestParticleOrbit(new_t, new_r*self.r.unit, new_v*self.v.unit)
+    
+    def __getitem__(self, val):
+        """ Selecting a single index returns a TestParticle object. Using a 
+            slice, returns a new TestParticleOrbit with only the selected
+            indices.
+        """
+        
+        if isinstance(val, int): 
+            return TestParticle(r=self.r[val], v=self.v[val])
+        elif isinstance(val, slice) or isinstance(val, np.ndarray):
+            # TODO!!
+            raise NotImplementedError()
+        else:
+            raise TypeError("Indices must be integer, not {0}".format(type(val)))

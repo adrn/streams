@@ -106,7 +106,16 @@ class TestTestParticleOrbit(object):
         orbit1 = TestParticleOrbit(t*u.Myr,
                                    r=r*u.kpc,
                                    v=r*u.km/u.s)
-    
+   
+    def test_slicing(self):
+        r = np.random.random(size=(1000,100,3))
+        t = np.arange(0.,1000.)
+        orbit1 = TestParticleOrbit(t*u.Myr,
+                                   r=r*u.kpc,
+                                   v=r*u.km/u.s)
+        
+        assert isinstance(orbit1[15], TestParticle)
+   
     def test_psd(self):
         N = 2
         t = np.arange(0.,1000)

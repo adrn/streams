@@ -149,7 +149,7 @@ class SgrCen(KVJSgrData):
         v[:,2] = np.array(self["vz"])
         
         t = np.array(self["t"])
-        return TestParticleOrbit(t*self.t_unit, r*self.r_unit, v*self.v_unit)
+        return TestParticleOrbit(t*self.t_unit, r*self.r_unit, v*self.v_unit)    
         
 class SgrSnapshot(KVJSgrData):
 

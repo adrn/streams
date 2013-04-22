@@ -94,7 +94,7 @@ def ln_prior(p, param_names):
 # Note: if this doesn't work, I can always pass param_names in to each prior
 #   and if it isn't in there, return 0...
 
-def ln_likelihood(p, param_names, particles, satellite_orbit):
+def ln_likelihood(p, param_names, particles, satellite_ic, t):
     """ Evaluate the likelihood function for a given set of halo 
         parameters.
     """
@@ -106,9 +106,10 @@ def ln_likelihood(p, param_names, particles, satellite_orbit):
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     potential = LawMajewski2010(**halo_params)
     
-    particle_orbits = particles.integrate(potential, satellite_orbit.t)
+    satellite_orbit = satellite_ic.integrate(potential, t)
+    particle_orbits = particles.integrate(potential, t)
     return -generalized_variance(potential, particle_orbits, satellite_orbit)
 
 def ln_posterior(p, *args):
-    param_names, particles, satellite_orbit = args
+    param_names, particles, satellite_ic, t = args
     return ln_prior(p, param_names) + ln_likelihood(p, *args)

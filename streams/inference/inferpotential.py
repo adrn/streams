@@ -27,7 +27,7 @@ __all__ = ["infer_potential", "max_likelihood_parameters"]
 
 logger = logging.getLogger(__name__)
 
-def infer_potential(particles, satellite_orbit, model_parameters, 
+def infer_potential(particles, satellite_ic, t, model_parameters, 
                     walkers=None, steps=100, burn_in=None, pool=None):
     
     """ Given a set of particles and the orbit of the progenitor system, 
@@ -40,8 +40,10 @@ def infer_potential(particles, satellite_orbit, model_parameters,
         particles : TestParticle
             A set of particles -- positions and velocities -- to integrate
             backwards with the satellite orbit.
-        satellite_orbit : TestParticleOrbit
-            The orbit of the progenitor satellite galaxy.
+        satellite_ic : TestParticle
+            The initial conditions of the progenitor satellite orbit.
+        t : numpy.ndarray
+            Array of times to integrate the particles / satellite over.
         model_parameters : list, tuple
             List of the names of the model parameters to infer.
         walkers : int
@@ -78,7 +80,7 @@ def infer_potential(particles, satellite_orbit, model_parameters,
     p0 = p0.T
     
     # Construct the log posterior probability function to pass in to emcee
-    args = model_parameters, particles, satellite_orbit
+    args = model_parameters, particles, satellite_ic, t
    
     # If no pool is specified, just create a single-processor pool
     if pool == None:

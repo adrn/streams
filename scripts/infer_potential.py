@@ -63,8 +63,8 @@ def main(config_file):
         
     # Read in Sagittarius simulation data
     np.random.seed(config["seed"])
-    sgr_cen = SgrCen()
-    satellite_orbit = sgr_cen.as_orbit()
+    satellite_orbit = SgrCen().as_orbit()
+    satellite_ic = satellite_orbit[-1]
     
     if isinstance(config["expr"], list):
         expr = " & ".join(["({0})".format(x) for x in config["expr"]])
@@ -91,7 +91,7 @@ def main(config_file):
     time_grid *= satellite_orbit.t.unit
     
     # Interpolate satellite_orbit onto new time grid
-    satellite_orbit = satellite_orbit.interpolate(time_grid)
+    #satellite_orbit = satellite_orbit.interpolate(time_grid)
     
     # Create a new path for the output
     if config["make_plots"]:
@@ -108,7 +108,8 @@ def main(config_file):
     all_best_parameters = []
     for bb in range(B):    
         try:
-            sampler = infer_potential(particles, satellite_orbit, 
+            sampler = infer_potential(particles, satellite_ic,
+                                      t=time_grid,
                                       model_parameters=config["model_parameters"],
                                       walkers=config["walkers"],
                                       steps=config["steps"],
