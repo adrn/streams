@@ -27,7 +27,7 @@ from ..plot.data import scatter_plot_matrix
 from .core import _make_npy_file
 from ..simulation import TestParticle, TestParticleOrbit
 
-__all__ = ["LM10", "SgrCen", "SgrSnapshot"]
+__all__ = ["LM10Cen", "LM10Snapshot", "SgrCen", "SgrSnapshot"]
 
 class KVJSgrData(Table):
     
@@ -213,7 +213,7 @@ class SgrSnapshot(KVJSgrData):
         return new_table
     
 
-class LM10(KVJSgrData):
+class LM10Snapshot(KVJSgrData):
 
     def __init__(self, N=None, expr="", overwrite_npy=False):
         """ Read in Sgr simulation snapshop from David Law's 2010 simulation
@@ -234,7 +234,7 @@ class LM10(KVJSgrData):
                                     "SgrTriax_DYN.dat")
         colnames = "lambda beta ra dec l b xgc ygc zgc xsun ysun zsun x4 y4 z4 u v w dist vgsr mul mub mua mud Pcol Lmflag".split()
         
-        super(LM10, self).__init__(filename=txt_filename, 
+        super(LM10Snapshot, self).__init__(filename=txt_filename, 
                                           column_names=colnames,
                                           overwrite_npy=overwrite_npy,
                                           mask_expr=expr,
@@ -262,3 +262,59 @@ class LM10(KVJSgrData):
             return (1., u.mas/u.yr)
         else:
             raise NameError("Unsure of units for name '{0}'".format(name))
+
+class LM10Cen(KVJSgrData):
+    
+    def __init__(self, overwrite_npy=False):
+        
+        # Find and read in text file
+        txt_filename = os.path.join(project_root, 
+                                    "data",
+                                    "simulation", 
+                                    "SgrTriax_orbit.dat")
+        colnames = ["t","lambda_sun","beta_sun","ra","dec","x_sun","y_sun",\
+                    "z_sun","x_gc","y_gc","z_gc","dist","vgsr"]
+        
+        super(LM10Cen, self).__init__(filename=txt_filename, 
+                                     column_names=colnames,
+                                     overwrite_npy=overwrite_npy)
+        
+        self["t"] += np.fabs(min(self["t"]))
+        self.dt = self["t"][1]-self["t"][0]
+    
+    def _name_to_unit(self, name):
+        """ Map a column name to a unit object. """
+        
+        if name in ["lambda_sun", "beta_sun", "ra", "dec", "l", "b"]:
+            return (1., self.angle_unit)
+        elif name in ["x_gc","y_gc","z_gc","x_sun","y_sun","z_sun", "dist", "x", "y", "z"]:
+            return (1., self.r_unit)
+        elif name in "x4 y4 z4 Pcol Lmflag".split():
+            return (1.,1.)
+        elif name in ["vgsr", "u", "v", "w", "vx", "vy", "vz"]:
+            return (1., u.km/u.s)
+        elif name in ["mul", "mub", "mua", "mud"]:
+            return (1., u.mas/u.yr)
+        elif name in ["t"]:
+            return (1000., u.Myr)
+        else:
+            raise NameError("Unsure of units for name '{0}'".format(name))
+    
+    def today(self):
+        return self.as_orbit()[-1]
+    
+    def as_orbit(self):
+        """ Return a TestParticleOrbit object. """
+        
+        r = np.zeros((len(self), 3))
+        r[:,0] = np.array(self["x_gc"])
+        r[:,1] = np.array(self["y_gc"])
+        r[:,2] = np.array(self["z_gc"])
+        
+        v = np.zeros((len(self), 3))
+        v[:,0] += (230.*u.km/u.s).to(u.kpc/u.Myr).value
+        v[:,1] += (-35.*u.km/u.s).to(u.kpc/u.Myr).value
+        v[:,2] += (195.*u.km/u.s).to(u.kpc/u.Myr).value
+        
+        t = np.array(self["t"])
+        return TestParticleOrbit(t*self.t_unit, r*self.r_unit, v*self.v_unit)

@@ -28,7 +28,8 @@ from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
 from streams.simulation.config import read
-from streams.data import LM10, SgrSnapshot, SgrCen
+from streams.simulation import TestParticle
+from streams.data import LM10Snapshot, LM10Cen, SgrSnapshot, SgrCen
 from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle
@@ -60,35 +61,45 @@ def main(config_file):
     else:
         if config.has_key("threads"):
             pool = multiprocessing.Pool(config["threads"])
-        
-    # Read in Sagittarius simulation data
-    np.random.seed(config["seed"])
-    satellite_orbit = SgrCen().as_orbit()
-    satellite_ic = satellite_orbit[-1]
     
     if isinstance(config["expr"], list):
         expr = " & ".join(["({0})".format(x) for x in config["expr"]])
     else:
         expr = config["expr"]
     
-    if not config.has_key("particle_source"):
-        sim_name = "kvj"
-    else:
-        sim_name = config["particle_source"]
+    np.random.seed(config["seed"])
     
-    if sim_name == "lm10":
-        sgr_snap = LM10(N=config["particles"],
-                        expr=expr)
-    else:
+    # Read in Sagittarius simulation data
+    if config["particle_source"] == "kvj":
+        satellite_orbit = SgrCen().as_orbit()
+        satellite_ic = satellite_orbit[-1]
+        
         sgr_snap = SgrSnapshot(N=config["particles"],
                                expr=config["expr"])
-    particles = sgr_snap.as_particles()
+        
+        # Define new time grid
+        time_grid = np.arange(max(satellite_orbit.t.value), 
+                              min(satellite_orbit.t.value),
+                              -config["dt"].to(satellite_orbit.t.unit).value)
+        time_grid *= satellite_orbit.t.unit
+        
+    elif config["particle_source"] == "lm10":
+        satellite_ic = TestParticle(r=[19.0, 2.7, -6.9]*u.kpc,
+                                    v=([230., -35., 195.]*u.km/u.s).to(u.kpc/u.Myr))
+        sgr_snap = LM10Snapshot(N=config["particles"],
+                                expr=expr)
+                        
+        # Define new time grid -here
+        time_grid = np.arange((7.9961+0.0013144)*1000,
+                              0.,
+                              -config["dt"].to(u.Myr).value)
+        time_grid *= u.Myr
+        
+    else:
+        raise ValueError("Invalid particle source {0}"
+                         .format(config["particle_source"]))
     
-    # Define new time grid
-    time_grid = np.arange(max(satellite_orbit.t.value), 
-                          min(satellite_orbit.t.value),
-                          -config["dt"].to(satellite_orbit.t.unit).value)
-    time_grid *= satellite_orbit.t.unit
+    particles = sgr_snap.as_particles()
     
     # Interpolate satellite_orbit onto new time grid
     #satellite_orbit = satellite_orbit.interpolate(time_grid)
