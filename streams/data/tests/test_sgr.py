@@ -16,7 +16,7 @@ import astropy.units as u
 import numpy as np
 import pytest
 
-from .. import LM10, SgrCen, SgrSnapshot
+from .. import LM10Snapshot, SgrCen, SgrSnapshot
 
 class TestSgrCen(object):
     sgr_cen = SgrCen()
@@ -102,5 +102,5 @@ class TestSgrSnap(object):
         p = sgr_snap.as_particles()
         print(p)
 
-def test_coordinates():
-    lm10 = LM10()
+def test_lm10():
+    lm10 = LM10Snapshot()
