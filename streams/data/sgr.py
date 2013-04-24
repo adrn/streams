@@ -243,10 +243,13 @@ class LM10Snapshot(KVJSgrData):
         self.rename_column('xgc', "x")
         self.rename_column('ygc', "y")
         self.rename_column('zgc', "z")
+        self["x"] = -self["x"]
+        
         self.rename_column('u', "vx")
         self.rename_column('v', "vy")
         self.rename_column('w', "vz")
-    
+        self["vx"] = -self["vx"]
+        
     def _name_to_unit(self, name):
         """ Map a column name to a unit object. """
         
@@ -307,12 +310,12 @@ class LM10Cen(KVJSgrData):
         """ Return a TestParticleOrbit object. """
         
         r = np.zeros((len(self), 3))
-        r[:,0] = np.array(self["x_gc"])
+        r[:,0] = -np.array(self["x_gc"])
         r[:,1] = np.array(self["y_gc"])
         r[:,2] = np.array(self["z_gc"])
         
         v = np.zeros((len(self), 3))
-        v[:,0] += (230.*u.km/u.s).to(u.kpc/u.Myr).value
+        v[:,0] += -(-230.*u.km/u.s).to(u.kpc/u.Myr).value
         v[:,1] += (-35.*u.km/u.s).to(u.kpc/u.Myr).value
         v[:,2] += (195.*u.km/u.s).to(u.kpc/u.Myr).value
         
