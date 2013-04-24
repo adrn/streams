@@ -279,7 +279,7 @@ class LM10Cen(KVJSgrData):
                                      column_names=colnames,
                                      overwrite_npy=overwrite_npy)
         
-        self["t"] += np.fabs(min(self["t"]))
+        #self["t"] += np.fabs(min(self["t"]))
         self.dt = self["t"][1]-self["t"][0]
     
     def _name_to_unit(self, name):
