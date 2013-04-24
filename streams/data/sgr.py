@@ -27,7 +27,7 @@ from ..plot.data import scatter_plot_matrix
 from .core import _make_npy_file
 from ..simulation import TestParticle, TestParticleOrbit
 
-__all__ = ["LM10Cen", "LM10Snapshot", "SgrCen", "SgrSnapshot"]
+__all__ = ["LM10Cen", "LM10Snapshot", "SgrCen", "SgrSnapshot", "read_lm10"]
 
 class KVJSgrData(Table):
     
@@ -320,4 +320,78 @@ class LM10Cen(KVJSgrData):
         v[:,2] += (195.*u.km/u.s).to(u.kpc/u.Myr).value
         
         t = np.array(self["t"])
+        
         return TestParticleOrbit(t*self.t_unit, r*self.r_unit, v*self.v_unit)
+        
+def read_lm10(N=None, expr=None):
+    """ """
+    
+    # Read in the file describing the orbit of the satellite.
+    sat_filename = os.path.join(project_root, 
+                                "data",
+                                "simulation", 
+                                "SgrTriax_orbit.dat")
+    sat_colnames = ["t","lambda_sun","beta_sun","ra","dec", \
+                    "x_sun","y_sun","z_sun","x_gc","y_gc","z_gc", \
+                    "dist","vgsr"]
+    
+    satellite_data = ascii.read(sat_filename, names=sat_colnames)
+    satellite_data = satellite_data[satellite_data["t"] <= 0.]
+    satellite_data.rename_column("lambda_sun", "lambda")
+    satellite_data.rename_column("beta_sun", "beta")
+    
+    satellite_data.rename_column("x_gc", "x")
+    satellite_data["x"] = -satellite_data["x"]
+    satellite_data.rename_column("y_gc", "y")
+    satellite_data.rename_column("z_gc", "z")
+    
+    # initial conditions, or, position of the satellite today
+    satellite_ics = dict()
+    r = [satellite_data[-1]['x'], satellite_data[-1]['y'], satellite_data[-1]['z']]*u.kpc # kpc
+    v = ([230., -35., 195.]*u.km/u.s).to(u.kpc/u.Myr)
+    
+    satellite_ic = TestParticle(r, v)
+    satellite_ic.t1 = (satellite_data[-1]['t'] + abs(satellite_data[0]['t'])) * 1000. # Myr
+    satellite_ic.t2 = 0.
+    
+    # Read in particle data -- a snapshot of particle positions, velocities at
+    #   the end of the simulation
+    particle_filename = os.path.join(project_root, 
+                                     "data",
+                                     "simulation", 
+                                     "SgrTriax_DYN.dat")
+    particle_colnames = ["lambda", "beta", "ra", "dec", "l", "b", \
+                         "xgc", "ygc", "zgc", "xsun", "ysun", "zsun", \
+                         "x4", "y4", "z4", "u", "v", "w", "dist", "vgsr", \
+                         "mul", "mub", "mua", "mud", "Pcol", "Lmflag"]
+    
+    particle_data = ascii.read(particle_filename, names=particle_colnames)
+    particle_data.add_column(Column(data=-np.array(particle_data["xgc"]), name="x"))
+    particle_data.add_column(Column(data=np.array(particle_data["ygc"]), name="y"))
+    particle_data.add_column(Column(data=np.array(particle_data["zgc"]), name="z"))
+    particle_data.add_column(Column(data=-np.array(particle_data["u"]), name="vx"))
+    particle_data.add_column(Column(data=np.array(particle_data["v"]), name="vy"))
+    particle_data.add_column(Column(data=np.array(particle_data["w"]), name="vz"))
+
+    if expr != None and len(expr.strip()) > 0:
+        idx = numexpr.evaluate(str(expr), particle_data)
+        particle_data = particle_data[idx]
+    
+    if N != None and N > 0:
+        idx = np.random.randint(0, len(particle_data), N)
+        particle_data = particle_data[idx]
+    
+    r = np.zeros((len(particle_data), 3))
+    r[:,0] = np.array(particle_data["x"])
+    r[:,1] = np.array(particle_data["y"])
+    r[:,2] = np.array(particle_data["z"])
+    
+    v = np.zeros((len(particle_data), 3))
+    v[:,0] = np.array(particle_data["vx"])
+    v[:,1] = np.array(particle_data["vy"])
+    v[:,2] = np.array(particle_data["vz"])
+    v = v*u.km/u.s
+        
+    particles = TestParticle(r*u.kpc, v.to(u.kpc/u.Myr))
+    
+    return satellite_ic, particles

@@ -29,7 +29,7 @@ from astropy.io.misc import fnpickle, fnunpickle
 # Project
 from streams.simulation.config import read
 from streams.simulation import TestParticle
-from streams.data import LM10Snapshot, LM10Cen, SgrSnapshot, SgrCen
+from streams.data import SgrSnapshot, SgrCen, read_lm10
 from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle
@@ -83,23 +83,20 @@ def main(config_file):
                               -config["dt"].to(satellite_orbit.t.unit).value)
         time_grid *= satellite_orbit.t.unit
         
+        particles = sgr_snap.as_particles()
+        
     elif config["particle_source"] == "lm10":
-        satellite_ic = TestParticle(r=[19.0, 2.7, -6.9]*u.kpc,
-                                    v=([230., -35., 195.]*u.km/u.s).to(u.kpc/u.Myr))
-        sgr_snap = LM10Snapshot(N=config["particles"],
-                                expr=expr)
+        satellite_ic, particles = read_lm10(N=config["particles"], expr=expr)
                         
         # Define new time grid -here
-        time_grid = np.arange((7.9961+0.0013144)*1000,
-                              0.,
+        time_grid = np.arange(satellite_ic.t1,
+                              satellite_ic.t2,
                               -config["dt"].to(u.Myr).value)
         time_grid *= u.Myr
         
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
-    
-    particles = sgr_snap.as_particles()
     
     # Interpolate satellite_orbit onto new time grid
     #satellite_orbit = satellite_orbit.interpolate(time_grid)
