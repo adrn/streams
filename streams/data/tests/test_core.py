@@ -16,14 +16,16 @@ import astropy.units as u
 import numpy as np
 import pytest
 
-from ..core import read_linear, read_quest
-   
-def test_linear():
-    linear_data = read_linear()
-    linear_data["ra"]
-    linear_data["dec"]
-    
-def test_quest():
-    quest_data = read_quest()
-    quest_data["ra"]
-    quest_data["dec"]
+from ..core import *
+
+@pytest.mark.parametrize(("reader", ), [(read_linear,), 
+                                        (read_catalina,), 
+                                        (read_quest,), 
+                                        (read_asas,), 
+                                        (read_nsvs,),
+                                        (read_stripe82,)])
+def test_readers(reader):
+    data = reader()
+    data["ra"]
+    data["dec"]
+    data["V"]
