@@ -81,6 +81,17 @@ def apparent_magnitude(M_V, d):
     # Compute the apparent magnitude -- ignores extinction
     return M_V - 5.*(1. - np.log10(d.to(u.pc).value))
 
+def rr_lyrae_photometric_distance(m_V, fe_h):
+    """ Estimate the distance to an RR Lyrae given its apparent V-band
+        magnitude and metallicity.
+    """
+    M_V, dM_V = rr_lyrae_M_V(fe_h)
+    mu = m_V - M_V
+    
+    d = 10**(mu/5. + 1) * u.pc
+    
+    return d.to(u.kpc)
+    
 def parallax_error(V, V_minus_I):
     """ Compute the estimated GAIA parallax error as a function of apparent 
         V-band magnitude and V-I color. All equations are taken from the GAIA
