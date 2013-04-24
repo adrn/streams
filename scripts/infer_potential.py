@@ -108,6 +108,10 @@ def main(config_file):
     if config["make_plots"]:
         path = os.path.join(config["output_path"], 
                             datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        
+        if config.has_key("name"):
+            path = path + "-" + config["name"]
+            
         os.mkdir(path)
     
     # Get the number of bootstrap reamples. if not specified, it's just 1
@@ -193,6 +197,12 @@ def main(config_file):
         
         # Now make 2D plots of the bootstrap results
         #fig,axes = scatter_plot_matrix()
+    
+    if config["make_plots"]:
+        with open(config_file) as f:
+            g = open(os.path.join(path,"config.txt"), "w")
+            g.write(f.read())
+            g.close()
         
 if __name__ == "__main__":
     from argparse import ArgumentParser
