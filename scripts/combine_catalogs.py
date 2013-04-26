@@ -19,13 +19,13 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import logging
 
 # Third-party
 import numpy as np
 from matplotlib import cm
 import matplotlib.pyplot as plt
-import matplotlib.colors as col
-from scipy.stats import gaussian_kde
+from astropy.io import ascii
 import astropy.coordinates as coord
 from astropy.table import Table, Column
 import astropy.units as u
@@ -33,59 +33,188 @@ import astropy.units as u
 from streams.data import *
 from streams.coordinates import SgrCoordinates, OrphanCoordinates
 from streams.data.gaia import rr_lyrae_photometric_distance
+from streams.plot import discrete_cmap
 
-def discrete_cmap(N=8):
-    """create a colormap with N (N<15) discrete colors and register it"""
-    # define individual colors as hex values
-    cpool = ['#9E0142', '#D53E4F', '#F46D43', '#FDAE61', '#FEE08B',
-             '#E6F598', '#ABDDA4', '#66C2A5', '#3288BD', '#5E4FA2']
-    if N == 5:
-        cmap3 = col.ListedColormap(cpool[::2], 'nice_spectral')
-    else:
-        cmap3 = col.ListedColormap(cpool[0:N], 'nice_spectral')
-    cm.register_cmap(cmap=cmap3)
+# Create logger
+logger = logging.getLogger(__name__)
 
 discrete_cmap(5)
-css = read_catalina()
-quest = read_quest()
-asas = read_asas()
-nsvs = read_nsvs()
-sdss = read_stripe82()
-
-css.keep_columns(["ra","dec","V"])
-css.add_column(Column(1*np.ones(len(css)), name="survey"))
-css = np.array(css["ra","dec","V","survey"])
-
-quest.keep_columns(["ra","dec","V"])
-quest.add_column(Column(2*np.ones(len(quest)), name="survey"))
-quest = np.array(quest["ra","dec","V","survey"])
-
-asas.keep_columns(["ra","dec","V"])
-asas.add_column(Column(3*np.ones(len(asas)), name="survey"))
-asas = np.array(asas["ra","dec","V","survey"])
-
-nsvs.keep_columns(["ra","dec","V"])
-nsvs.add_column(Column(4*np.ones(len(nsvs)), name="survey"))
-nsvs = np.array(nsvs["ra","dec","V","survey"])
-
-sdss.keep_columns(["ra","dec","V"])
-sdss.add_column(Column(5*np.ones(len(sdss)), name="survey"))
-sdss = np.array(sdss)
-
-all_rrlyr = np.hstack((css, quest, asas, nsvs, sdss))
-all_rrlyr = Table(all_rrlyr)
-
-def sgr():    
-    L,B = [], []
-    for row in all_rrlyr:
-        icrs = coord.ICRSCoordinates(row["ra"], row["dec"], unit=(u.degree, u.degree))
-        sgr = icrs.transform_to(SgrCoordinates)
-        #sgr = icrs.transform_to(OrphanCoordinates)
-        L.append(sgr.Lambda.degrees)
-        B.append(sgr.Beta.degrees)
     
-    all_rrlyr.add_column(Column(L, name="Lambda_sgr"))
-    all_rrlyr.add_column(Column(B, name="Beta_sgr"))
+# Make sure plot dump directory exists:
+plot_path = os.path.join("plots", "rr_lyr_surveys")
+if not os.path.exists(plot_path):
+    os.mkdir(plot_path)
+
+all_surveys_filename = os.path.join('data','catalog','all_surveys_rrlyr.txt ')
+surveys = ["catalina", "quest", "asas", "nsvs", "stripe82", "linear"]
+
+def compile_surveys():
+    """ Compile RR Lyrae data from all surveys into one txt file """
+    
+    for ii,survey in enumerate(surveys):
+        reader = globals()["read_{0}".format(survey)]
+        data = reader()
+        data.keep_columns(["ra","dec","V"])
+        data.add_column(Column(ii*np.ones(len(data)), name="survey_id"))
+        logger.info("Survey {0} = {1}".format(ii, survey))
+        
+        try:
+            all_data = np.hstack((all_data, np.array(data["ra","dec","V","survey_id"])))
+        except NameError:
+            all_data = np.array(data["ra","dec","V","survey_id"])
+    
+    all_rrlyr = Table(all_data)
+    
+    L_sgr,B_sgr = [], []
+    L_orp,B_orp = [], []
+    for star in all_rrlyr:
+        icrs = coord.ICRSCoordinates(star["ra"], star["dec"], unit=(u.degree, u.degree))
+        
+        sgr = icrs.transform_to(SgrCoordinates)
+        L_sgr.append(sgr.Lambda.degrees)
+        B_sgr.append(sgr.Beta.degrees)
+        
+        orp = icrs.transform_to(OrphanCoordinates)
+        L_orp.append(orp.Lambda.degrees)
+        B_orp.append(orp.Beta.degrees)
+    
+    all_rrlyr.add_column(Column(L_sgr, name="Lambda_sgr"))
+    all_rrlyr.add_column(Column(B_sgr, name="Beta_sgr"))
+    all_rrlyr.add_column(Column(L_orp, name="Lambda_orp"))
+    all_rrlyr.add_column(Column(B_orp, name="Beta_orp"))
+    
+    all_rrlyr.write(all_surveys_filename, format="ascii")
+
+def all_sky_plot(all_rrlyr):
+    
+    fig = plt.figure(figsize=(14,8))
+    ax = fig.add_subplot(111, projection="hammer")
+    
+    # cheat and get RA into the range -180,180 but make it look like 360,0
+    ra = -(all_rrlyr["ra"]-180)
+    ra = (ra*u.degree).to(u.radian).value
+    dec = (all_rrlyr["dec"]*u.degree).to(u.radian).value
+    s = ax.scatter(ra, 
+                   dec, 
+                   c=all_rrlyr["survey_id"], 
+                   cmap=cm.get_cmap('nice_spectral'), 
+                   edgecolor="none",
+                   s=8,
+                   alpha=0.75)
+    ax.set_axis_bgcolor("#666666")
+    ax.set_xticklabels([])
+    cb = fig.colorbar(s, ax=ax)
+    
+    cbar_labels = []
+    for survey in surveys:
+        cbar_labels.append("")
+        cbar_labels.append(survey)
+    cb.ax.set_yticklabels(cbar_labels + [""])
+    fig.savefig(os.path.join(plot_path, "all_sky_rr_lyr.png"))
+
+def all_sky_sgr(all_rrlyr):
+    fig = plt.figure(figsize=(14,8))
+    ax = fig.add_subplot(111, projection="hammer")
+    
+    selected_rrlyr = all_rrlyr[np.fabs(all_rrlyr["Beta_sgr"]) < 10.]
+    
+    # cheat and get RA into the range -180,180 but make it look like 360,0
+    ra = -(selected_rrlyr["ra"]-180)
+    ra = (ra*u.degree).to(u.radian).value
+    dec = (selected_rrlyr["dec"]*u.degree).to(u.radian).value
+    s = ax.scatter(ra, 
+                   dec, 
+                   c=selected_rrlyr["survey_id"], 
+                   cmap=cm.get_cmap('nice_spectral'), 
+                   edgecolor="none",
+                   s=8,
+                   alpha=0.75)
+    ax.set_axis_bgcolor("#666666")
+    ax.set_xticklabels([])
+    cb = fig.colorbar(s, ax=ax)
+    
+    cbar_labels = []
+    for survey in surveys:
+        cbar_labels.append("")
+        cbar_labels.append(survey)
+    cb.ax.set_yticklabels(cbar_labels + [""])
+    fig.suptitle(r"RR Lyrae  $|B_{sgr}| < 10$ deg")
+    fig.savefig(os.path.join(plot_path, "all_sky_sgr_rr_lyr.png"))
+
+def all_sky_orp(all_rrlyr):
+    fig = plt.figure(figsize=(14,8))
+    ax = fig.add_subplot(111, projection="hammer")
+    
+    selected_rrlyr = all_rrlyr[np.fabs(all_rrlyr["Beta_orp"]) < 1.5]
+    
+    # cheat and get RA into the range -180,180 but make it look like 360,0
+    ra = -(selected_rrlyr["ra"]-180)
+    ra = (ra*u.degree).to(u.radian).value
+    dec = (selected_rrlyr["dec"]*u.degree).to(u.radian).value
+    s = ax.scatter(ra, 
+                   dec, 
+                   c=selected_rrlyr["survey_id"], 
+                   cmap=cm.get_cmap('nice_spectral'), 
+                   edgecolor="none",
+                   s=8,
+                   alpha=0.75)
+    ax.set_axis_bgcolor("#666666")
+    ax.set_xticklabels([])
+    cb = fig.colorbar(s, ax=ax)
+    
+    cbar_labels = []
+    for survey in surveys:
+        cbar_labels.append("")
+        cbar_labels.append(survey)
+    cb.ax.set_yticklabels(cbar_labels + [""])
+    fig.suptitle(r"RR Lyrae  $|B_{orp}| < 1.5$ deg")
+    fig.savefig(os.path.join(plot_path, "all_sky_orphan_rr_lyr.png"))
+    
+    
+def magic_plot(ax, x, y, c=None, s=None):
+    s = ax.scatter(x, y, c=c, 
+                   cmap=cm.get_cmap('nice_spectral'), 
+                   edgecolor="none",
+                   s=s,
+                   alpha=0.5)
+    ax.set_axis_bgcolor("#555555")
+    if len(c) > 1:
+        cb = ax.figure.colorbar(s, ax=ax, fraction=0.085)
+        
+        cbar_labels = []
+        for survey in surveys:
+            cbar_labels.append("")
+            cbar_labels.append(survey)
+        cb.ax.set_yticklabels(cbar_labels + [""])
+    
+    return ax
+    
+def sgr_plane_dist(all_rrlyr):
+    fig = plt.figure(figsize=(10,8))
+    ax = fig.add_subplot(111, projection="polar")
+    
+    selected_rrlyr = all_rrlyr[np.fabs(all_rrlyr["Beta_sgr"]) < 10.]
+    
+    lam = (selected_rrlyr["Lambda_sgr"]*u.degree).to(u.radian).value
+    dist = rr_lyrae_photometric_distance(selected_rrlyr["V"], -1.)
+    ax = magic_plot(ax, lam, dist, c=selected_rrlyr["survey_id"], s=(np.array(dist)/10.)**1.5+4)
+    ax.set_ylim(0., 80.)
+    ax.set_xlabel(r"$\Lambda_{sgr}$ [deg]")
+    fig.suptitle(r"RR Lyrae  $|B_{sgr}| < 10.$ deg")
+    fig.savefig(os.path.join(plot_path, "sgr_Lambda_dist_polar.png"))
+    
+    fig = plt.figure(figsize=(10,8))
+    ax = fig.add_subplot(111, projection="polar")
+    lm10 = LM10Snapshot(expr="(Pcol > 0) & (dist < 100) & (abs(Lmflag) == 1) & (beta < 10.)")
+    lam = (lm10["lambda"]*u.degree).to(u.radian).value
+    dist = lm10["dist"]
+    ax = magic_plot(ax, lam, dist, c="w", s=(np.array(dist)/10.)**1.5+4)
+    ax.set_ylim(0., 80.)
+    ax.set_xlabel(r"$\Lambda_{sgr}$ [deg]")
+    fig.suptitle(r"Particles from Law & Majewski 2010")
+    fig.savefig(os.path.join(plot_path, "lm10_Lambda_dist_polar.png"))
+    
+    return
     
     lm10 = LM10Snapshot(expr="(Pcol > 0) & (dist < 100) & (abs(Lmflag) == 1)")
     
@@ -180,5 +309,13 @@ def orphan():
     plt.savefig("plots/rrlyr_density_orphan.png")
 
 if __name__ == "__main__":
-    sgr()
-    orphan()
+    
+    if not os.path.exists(all_surveys_filename):
+        compile_surveys()
+    
+    all_rrlyr = ascii.read(all_surveys_filename)
+    
+    #all_sky_plot(all_rrlyr)
+    #all_sky_sgr(all_rrlyr)
+    #all_sky_orp(all_rrlyr)
+    sgr_plane_dist(all_rrlyr)
