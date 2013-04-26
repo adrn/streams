@@ -13,13 +13,27 @@ import cPickle as pickle
 # Third-party
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as col
+import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 import astropy.units as u
 
 from ..potential.lm10 import param_to_latex, param_ranges
 from ..potential.lm10 import halo_params as true_halo_params
 
-__all__ = ["emcee_plot", "plot_sampler_pickle"]
+__all__ = ["discrete_cmap", "emcee_plot", "plot_sampler_pickle"]
+
+def discrete_cmap(N=8):
+    """create a colormap with N (N<15) discrete colors and register it"""
+    # define individual colors as hex values
+    # #9E0142
+    cpool = ['#D085A4', '#D53E4F', '#F46D43', '#FDAE61', '#FEE08B',
+             '#E6F598', '#ABDDA4', '#66C2A5', '#3288BD', '#5E4FA2']
+    if N == 5:
+        cmap3 = col.ListedColormap(cpool[::2], 'nice_spectral')
+    else:
+        cmap3 = col.ListedColormap(cpool[0:N], 'nice_spectral')
+    cm.register_cmap(cmap=cmap3)
 
 # TODO: make this more general...
 def emcee_plot(sampler, params, converged_idx, 
