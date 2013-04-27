@@ -127,3 +127,26 @@ def sgr_to_galactic(sgr_coord):
 
     return coord.GalacticCoordinates(l, b, distance=sgr_coord.distance, 
                                      unit=(u.degree, u.degree))
+
+def distance_to_sgr_plane(ra, dec, heliocentric_distance):
+    """ Given an RA, Dec, and Heliocentric distance, compute the distance
+        to the midplane of the Sgr plane (defined by Law & Majewski 2010).
+
+        Parameters
+        ----------
+        ra : float
+            A right ascension in decimal degrees
+        dec : float
+            A declination in decimal degrees
+        heliocentric_distance : float
+            The distance from the sun to a star in kpc.
+
+    """
+
+    eq_coords = coord.ICRSCoordinates(ra, dec, unit=(u.degree, u.degree))
+    sgr_coords = eq_coords.transform_to(SgrCoordinates)
+    sgr_coords.distance = coord.Distance(heliocentric_distance, unit=u.kpc)
+
+    Z_sgr_sol = sgr_coords.distance.kpc * np.sin(sgr_coords.Beta.radians)
+
+    return Z_sgr_sol
