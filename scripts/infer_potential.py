@@ -60,6 +60,8 @@ def main(config_file):
     else:
         if config.has_key("threads"):
             pool = multiprocessing.Pool(config["threads"])
+        else:
+            pool = None
     
     if isinstance(config["expr"], list):
         expr = " & ".join(["({0})".format(x) for x in config["expr"]])
