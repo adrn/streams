@@ -44,11 +44,10 @@ def main(config_file):
     config = read(config_file)
     
     # Expression for selecting particles from the simulation data snapshot
-    expr = ""
     if len(config["expr"]) > 0:
-        expr += " & " + " & ".join(["({0})".format(x) for x in config["expr"]])
+        expr = config["expr"]
     else:
-        expr += "(tub > 0.)"
+        expr = "(tub > 0.)"
     
     if config["mpi"]:
         # Initialize the MPI pool
