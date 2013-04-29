@@ -10,6 +10,8 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import logging
+from subprocess import Popen, PIPE
+import cStringIO as StringIO
 
 # Project
 from streams.simulation.config import read
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 job_sh = """#!/bin/sh
 
 # Directives
-#PBS -N BootstrapLM10
+#PBS -N {name}
 #PBS -W group_list=hpcastro
 #PBS -l nodes={nodes:d}:ppn=4,walltime={time},mem={memory}
 #PBS -M amp2217@columbia.edu
@@ -42,6 +44,11 @@ def main(config_file, walltime, memory):
     # Read in simulation parameters from config file
     config = read(config_file)
     
+    if config.has_key("name"):
+        name = config["name"]
+    else:
+        name = "adrn_infer"
+    
     d = config["walkers"] / 4
     if int(d) != d:
         raise ValueError()
@@ -50,9 +57,19 @@ def main(config_file, walltime, memory):
                        nodes=config["walkers"]//4,
                        time=walltime,
                        memory=memory,
-                       config_file=os.path.basename(config_file))
+                       config_file=os.path.basename(config_file),
+                       name=name)
     
-    print(sh)
+    yn = raw_input("About to submit the following job: \n\n{0}\n\n Is "
+                   "this right? [y]/n: ".format(sh))
+    
+    if yn.strip().lower() == "y" or yn.strip() == "":
+        p = Popen(['qsub -'], stdout=PIPE, stdin=PIPE, stderr=PIPE, shell=True)
+        stdout_data = p.communicate(input=sh)[0]
+        print("\n\n")
+        print("Job started: {0}".format(stdout_data.split(".")[0]))
+    else:
+        sys.exit(1)
     
 if __name__ == "__main__":
     from argparse import ArgumentParser
