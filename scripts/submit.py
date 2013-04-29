@@ -86,6 +86,7 @@ if __name__ == "__main__":
     
     logging.basicConfig(level=logging.DEBUG)
     
-    main(args.file, walltime=args.time, memory=args.memory)
+    filename = os.path.join("/hpc/astro/users/amp2217/projects/streams/config", args.file)
+    main(filename, walltime=args.time, memory=args.memory)
     sys.exit(0)
  
