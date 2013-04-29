@@ -108,7 +108,7 @@ def main(config_file):
                             datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         
         if config.has_key("name"):
-            path = path + "-" + config["name"]
+            path = config["name"] + "-" + path
             
         os.mkdir(path)
     
