@@ -35,6 +35,8 @@ from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle
 from streams.potential.lm10 import halo_params
 
+global pool
+
 # Create logger
 logger = logging.getLogger(__name__)
 
@@ -104,12 +106,9 @@ def main(config_file):
     
     # Create a new path for the output
     if config["make_plots"]:
-        path = os.path.join(config["output_path"], 
-                            datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-        
-        if config.has_key("name"):
-            path = config["name"] + "-" + path
-            
+        iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        dirname = "{0}{1}".format(config.get("name", ""), iso_now)
+        path = os.path.join(config["output_path"], dirname)
         os.mkdir(path)
     
     # Get the number of bootstrap reamples. if not specified, it's just 1
@@ -222,5 +221,9 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
     
-    main(args.file)
+    try:
+        main(args.file)
+    except:
+        pool.close()
+        raise()
     sys.exit(0)
