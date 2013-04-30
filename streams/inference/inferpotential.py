@@ -84,7 +84,8 @@ def infer_potential(particles, satellite_ic, t, model_parameters,
    
     # If no pool is specified, just create a single-processor pool
     if pool == None:
-        pool = Pool(processes=1)
+        #pool = Pool(processes=1)
+        pool = None
     
     # Construct an ensemble sampler to walk through dat model parameter space
     sampler = emcee.EnsembleSampler(nwalkers=walkers, 

@@ -36,6 +36,7 @@ from streams.plot import plot_sampler_pickle
 from streams.potential.lm10 import halo_params
 
 global pool
+pool = None
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -224,6 +225,7 @@ if __name__ == "__main__":
     try:
         main(args.file)
     except:
-        pool.close()
+        if pool is not None:
+            pool.close()
         raise()
     sys.exit(0)
