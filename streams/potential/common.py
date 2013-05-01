@@ -120,12 +120,12 @@ def _cartesian_miyamoto_nagai_model(bases):
         zz = (z-origin[2])
         
         fac = _G*m*((xx**2 + yy**2) + (a + np.sqrt(zz**2 + b**2))**2)**-1.5
-        
+                
         dx = fac*xx
         dy = fac*yy
         _tmp = a/(np.sqrt(zz**2 + b**2))
         dz = fac*zz * (1.+_tmp)
-                
+        
         return np.array([dx,dy,dz])
         
     return (f, df)
