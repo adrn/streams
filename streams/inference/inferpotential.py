@@ -80,12 +80,10 @@ def infer_potential(particles, satellite_ic, t, model_parameters,
     p0 = p0.T
     
     # Construct the log posterior probability function to pass in to emcee
-    #args = model_parameters, particles, satellite_ic, t
     args = particles, satellite_ic, t
    
     # If no pool is specified, just create a single-processor pool
     if pool == None:
-        #pool = Pool(processes=1)
         pool = None
     
     # Construct an ensemble sampler to walk through dat model parameter space

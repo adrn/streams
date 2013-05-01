@@ -64,9 +64,10 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t=None,
     rs = np.zeros((Ntimesteps,) + r_i.shape, dtype=np.float64)
     vs = np.zeros((Ntimesteps,) + v_i.shape, dtype=np.float64)
 
+    a_ip1 = acceleration_function(r_i).T
     for ii in range(Ntimesteps):
         t = times[ii]
-        a_i = acceleration_function(r_i).T
+        a_i = a_ip1
         
         r_ip1 = r_i + v_i*dt + 0.5*a_i*dt*dt        
         a_ip1 = acceleration_function(r_ip1).T
@@ -75,7 +76,6 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t=None,
         rs[ii,:,:] = r_i
         vs[ii,:,:] = v_i
 
-        a_i = a_ip1
         r_i = r_ip1
         v_i = v_ip1
 
