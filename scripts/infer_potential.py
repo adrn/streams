@@ -227,5 +227,5 @@ if __name__ == "__main__":
     except:
         if pool is not None:
             pool.close()
-        raise()
+        raise
     sys.exit(0)
