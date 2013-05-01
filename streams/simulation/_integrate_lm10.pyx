@@ -3,11 +3,14 @@ Deimos:
 cython -a _integrate_lm10.pyx
 gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I/usr/local/lib/python2.7/dist-packages/numpy/core/include -o _integrate_lm10.so _integrate_lm10.c
 
+cd -; cython -a _integrate_lm10.pyx; gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I/usr/local/lib/python2.7/dist-packages/numpy/core/include -o _integrate_lm10.so _integrate_lm10.c; cd -
+
 Laptop:
 gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I /usr/include/python2.7 -L /usr/lib/python2.7 -l python -I/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include -o _integrate_lm10.so _integrate_lm10.c
 """
 from __future__ import division
 
+import sys
 import numpy as np
 cimport numpy as np
 cimport cython
@@ -23,6 +26,9 @@ cdef extern from "math.h":
     double cos(double)
     int isnan(double)
     double fabs(double)
+
+DTYPE = float
+ctypedef np.double_t DTYPE_t
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 def lm10_acceleration(np.ndarray[double, ndim=2] r, long Nparticles, 
@@ -62,28 +68,32 @@ def lm10_acceleration(np.ndarray[double, ndim=2] r, long Nparticles,
         zz = z*z
         
         # Disk
-        fac1 = G*m_disk*((xx + yy) + (a + sqrt(zz + b**2))**2)**-1.5
+        fac1 = -G*m_disk*((xx + yy) + (a + sqrt(zz + b**2))**2)**-1.5
         _tmp = a/(sqrt(zz + b**2))
         
         # Bulge
         R = sqrt(xx + yy + zz)
-        fac2 = G*m_bulge / ((R + c)**2 * R)
+        fac2 = -G*m_bulge / ((R + c)**2 * R)
         
         # Halo
         C1 = cos(phi)**2/q1_sq + sin(phi)**2/q2_sq
         C2 = cos(phi)**2/q2_sq + sin(phi)**2/q1_sq
         C3 = 2.*sin(phi)*cos(phi)*(1./q1_sq - 1./q2_sq)
-        
-        fac3 = v_halo_sq / (C1*xx + C2*yy + C3*x*y + zz/qz_sq + r_halo_sq)
+
+        fac3 = -v_halo_sq / (C1*xx + C2*yy + C3*x*y + zz/qz_sq + r_halo_sq)
         
         data[ii][0] = fac1*x + fac2*x + fac3*(2.*C1*x + C3*y)
-        data[ii][1] = fac1*yy + fac2*yy + fac3*(2.*C2*y + C3*x)
-        data[ii][2] = fac1*zz * (1.+_tmp) + fac2*zz + 2.*fac3*z/qz_sq
+        data[ii][1] = fac1*y + fac2*y + fac3*(2.*C2*y + C3*x)
+        data[ii][2] = fac1*z * (1.+_tmp) + fac2*z + 2.*fac3*z/qz_sq
             
     return data
 
-def leapfrog_lm10(initial_position, initial_velocity, q1, qz, phi, v_halo,
-                  t=None, t1=None, t2=None, dt=None):
+# TODO: Then: wtf if this takes <1 second what is so damn slow!???
+@cython.boundscheck(False) # turn of bounds-checking for entire function
+def leapfrog_lm10(np.ndarray[double, ndim=2] r_i, 
+                  np.ndarray[double, ndim=2] v_i, 
+                  np.ndarray[double, ndim=1] t, 
+                  double q1, double qz, double phi, double v_halo):
              
     """ Given initial conditions, integrate the particles in the Law & Majewski 
         potential from  t1 to t2 with a timestep dt using Leapfrog integration. 
@@ -99,49 +109,32 @@ def leapfrog_lm10(initial_position, initial_velocity, q1, qz, phi, v_halo,
             A list or array of initial velocities.
     """
     
-    if initial_position.shape != initial_velocity.shape:
-        raise ValueError("initial_position shape must match initial_velocity "
-                         "shape! {0} != {1}"
-                         .format(initial_position.shape, 
-                                 initial_velocity.shape))
-
-    if initial_position.ndim == 1:
-        # r_i just stands for positions, it's actually a vector
-        r_i = np.array(initial_position)\
-                .reshape(1, len(initial_position))
-        v_i = np.array(initial_velocity)\
-                .reshape(1, len(initial_position))
-    else:
-        r_i = initial_position
-        v_i = initial_velocity
+    cdef double dt
+    dt = t[1]-t[0]
     
-    if t == None:           
-        times = np.arange(t1, t2+dt, dt)
-        #times = np.arange(t1, t2, dt)
-    else:
-        times = t
-        dt = times[1]-times[0]
-    
-    Ntimesteps = len(times)
+    cdef long Ntimesteps, Nparticles
+    Ntimesteps = len(t)
     Nparticles = len(r_i)
     
-    # Shape of final object should be (Ntimesteps, Ndim, Nparticles)
-    rs = np.zeros((Ntimesteps,) + r_i.shape, dtype=np.float64)
-    vs = np.zeros((Ntimesteps,) + v_i.shape, dtype=np.float64)
-
+    cdef np.ndarray[DTYPE_t, ndim=3] rs, vs 
+    rs = np.zeros((Ntimesteps, Nparticles, 3), dtype=DTYPE)
+    vs = np.zeros((Ntimesteps, Nparticles, 3), dtype=DTYPE)
+    
+    cdef np.ndarray[DTYPE_t, ndim=2] a_i, r_ip1, v_ip1, a_ip1
+    
+    a_ip1 = lm10_acceleration(r_i, Nparticles, q1, qz, phi, v_halo)
     for ii in range(Ntimesteps):
-        t = times[ii]
-        a_i = lm10_acceleration(r_i, Nparticles, q1, qz, phi, v_halo)
+        #a_i = lm10_acceleration(r_i, Nparticles, q1, qz, phi, v_halo)
+        a_i = a_ip1[:,:]
         
         r_ip1 = r_i + v_i*dt + 0.5*a_i*dt*dt
-        a_ip1 = lm10_acceleration(r_i, Nparticles, q1, qz, phi, v_halo)
+        a_ip1 = lm10_acceleration(r_ip1, Nparticles, q1, qz, phi, v_halo)
         v_ip1 = v_i + 0.5*(a_i + a_ip1)*dt
 
-        rs[ii,:,:] = r_i
-        vs[ii,:,:] = v_i
+        rs[ii] = r_i
+        vs[ii] = v_i
 
-        a_i = a_ip1
-        r_i = r_ip1
-        v_i = v_ip1
+        r_i = r_ip1[:,:]
+        v_i = v_ip1[:,:]
 
-    return times, rs, vs
+    return t, rs, vs
