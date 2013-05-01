@@ -17,6 +17,7 @@ from scipy import interpolate
 
 from ..potential import CartesianPotential
 from ..integrate import leapfrog
+from ._integrate_lm10 import leapfrog_lm10
 from ..plot.data import scatter_plot_matrix
 
 __all__ = ["TestParticle", "TestParticleOrbit"]
@@ -76,6 +77,26 @@ class TestParticle(object):
     def __len__(self):
         return len(self.r)
     
+    def add_particle(self, particle):
+        """ Return a new TestParticle combining the current instance with 
+            the other.
+        """
+        if self.r.unit != particle.r.unit:
+            # TODO: don't be lazy..
+            raise ValueError("Units don't match")
+        
+        if particle.r.value.ndim == 1:
+            p_r = particle.r.value.reshape((1,3))
+            p_v = particle.v.value.reshape((1,3))
+        else:
+            p_r = particle.r.value
+            p_v = particle.v.value
+        
+        new_r = np.vstack((self.r.value, p_r))
+        new_v = np.vstack((self.v.value, p_v))
+        
+        return TestParticle(new_r*self.r.unit, new_v*self.v.unit)
+    
     def integrate(self, potential, t, integrator=leapfrog):
         """ Integrate the particle(s) from time t1 to t2 in the given 
             potential. 
@@ -108,6 +129,20 @@ class TestParticle(object):
         return TestParticleOrbit(_t*potential.units["time"], 
                                  r*potential.units["length"],
                                  v*potential.units["length"]/potential.units["time"])
+    
+    def _lm10_integrate(self, t, q1, qz, phi, v_halo):
+        """ Use Cython """
+        
+        r = self.r.value
+        v = self.v.value
+        t = t.value
+        
+        _t, r, v = leapfrog_lm10(r, v, t, q1, qz, phi, v_halo)
+        
+        return TestParticleOrbit(_t*u.Myr, 
+                                 r*u.kpc,
+                                 v*u.kpc/u.Myr)
+    
     
     def energy(self, potential):
         """ Compute the sum of the kinetic energy and potential energy of the
