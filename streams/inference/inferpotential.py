@@ -21,7 +21,7 @@ import emcee
 
 # Project
 from streams.potential.lm10 import param_ranges
-from streams.inference import ln_posterior
+from streams.inference import ln_posterior, ln_posterior_lm10
 
 __all__ = ["infer_potential", "max_likelihood_parameters"]
 
@@ -80,7 +80,8 @@ def infer_potential(particles, satellite_ic, t, model_parameters,
     p0 = p0.T
     
     # Construct the log posterior probability function to pass in to emcee
-    args = model_parameters, particles, satellite_ic, t
+    #args = model_parameters, particles, satellite_ic, t
+    args = particles, satellite_ic, t
    
     # If no pool is specified, just create a single-processor pool
     if pool == None:
@@ -88,9 +89,10 @@ def infer_potential(particles, satellite_ic, t, model_parameters,
         pool = None
     
     # Construct an ensemble sampler to walk through dat model parameter space
+    # 2013-05-01: chaned ln_posterior to ln_posterior_lm10
     sampler = emcee.EnsembleSampler(nwalkers=walkers, 
                                     dim=len(model_parameters), 
-                                    lnpostfn=ln_posterior, 
+                                    lnpostfn=ln_posterior_lm10, 
                                     pool=pool, 
                                     args=args)
     
