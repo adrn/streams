@@ -59,7 +59,7 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t=None,
         dt = times[1]-times[0]
     
     Ntimesteps = len(times)
-
+    
     # Shape of final object should be (Ntimesteps, Ndim, Nparticles)
     rs = np.zeros((Ntimesteps,) + r_i.shape, dtype=np.float64)
     vs = np.zeros((Ntimesteps,) + v_i.shape, dtype=np.float64)

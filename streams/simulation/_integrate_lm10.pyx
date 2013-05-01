@@ -1,10 +1,10 @@
 """
 Deimos:
-cython -a _common.pyx
-gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I/usr/local/lib/python2.7/dist-packages/numpy/core/include -o _common.so _common.c
+cython -a _integrate_lm10.pyx
+gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I/usr/local/lib/python2.7/dist-packages/numpy/core/include -o _integrate_lm10.so _integrate_lm10.c
 
 Laptop:
-gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I /usr/include/python2.7 -L /usr/lib/python2.7 -l python -I/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include -o _common.so _common.c
+gcc -shared -pthread -fPIC -fwrapv -O2 -Wall -fno-strict-aliasing -I /usr/include/python2.7 -L /usr/lib/python2.7 -l python -I/System/Library/Frameworks/Python.framework/Versions/2.7/Extras/lib/python/numpy/core/include -o _integrate_lm10.so _integrate_lm10.c
 """
 from __future__ import division
 
@@ -28,6 +28,7 @@ cdef extern from "math.h":
 def lm10_acceleration(np.ndarray[double, ndim=2] r, long Nparticles, 
                       double q1, double qz, double phi, double v_halo):
     
+    cdef np.ndarray[double, ndim=2] data
     data = np.zeros((Nparticles,3), dtype=np.float64)
     cdef double _tmp, x, y, z, xx, yy, zz, fac, R
     
@@ -69,8 +70,8 @@ def lm10_acceleration(np.ndarray[double, ndim=2] r, long Nparticles,
         fac2 = G*m_bulge / ((R + c)**2 * R)
         
         # Halo
-        C1 = (cos(phi)/q1)**2+(sin(phi)/q2)**2
-        C2 = (cos(phi)/q2)**2+(sin(phi)/q1)**2
+        C1 = cos(phi)**2/q1_sq + sin(phi)**2/q2_sq
+        C2 = cos(phi)**2/q2_sq + sin(phi)**2/q1_sq
         C3 = 2.*sin(phi)*cos(phi)*(1./q1_sq - 1./q2_sq)
         
         fac3 = v_halo_sq / (C1*xx + C2*yy + C3*x*y + zz/qz_sq + r_halo_sq)
@@ -81,22 +82,17 @@ def lm10_acceleration(np.ndarray[double, ndim=2] r, long Nparticles,
             
     return data
 
-'''
-
-def leapfrog(acceleration_function, initial_position, initial_velocity, t=None, 
-             t1=None, t2=None, dt=None):
+def leapfrog_lm10(initial_position, initial_velocity, q1, qz, phi, v_halo,
+                  t=None, t1=None, t2=None, dt=None):
              
-    """ Given an acceleration function and initial conditions, integrate from 
-        t1 to t2 with a timestep dt using Leapfrog integration. Alternatively,
-        specify the full time array with 't'. The integration always *includes* 
-        the final timestep!
+    """ Given initial conditions, integrate the particles in the Law & Majewski 
+        potential from  t1 to t2 with a timestep dt using Leapfrog integration. 
+        Alternatively, specify the full time array with 't'. The integration 
+        always *includes* the final timestep!
         See: http://ursa.as.arizona.edu/~rad/phys305/ODE_III/node11.html
 
         Parameters
         ----------
-        acceleration_function : function
-            A function that accepts a position or an array of positions and computes
-            the acceleration at that position.
         initial_position : array, list
             A list or array of initial positions.
         initial_velocity : array, list
@@ -127,17 +123,18 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t=None,
         dt = times[1]-times[0]
     
     Ntimesteps = len(times)
-
+    Nparticles = len(r_i)
+    
     # Shape of final object should be (Ntimesteps, Ndim, Nparticles)
     rs = np.zeros((Ntimesteps,) + r_i.shape, dtype=np.float64)
     vs = np.zeros((Ntimesteps,) + v_i.shape, dtype=np.float64)
 
     for ii in range(Ntimesteps):
         t = times[ii]
-        a_i = acceleration_function(r_i).T
+        a_i = lm10_acceleration(r_i, Nparticles, q1, qz, phi, v_halo)
         
-        r_ip1 = r_i + v_i*dt + 0.5*a_i*dt*dt        
-        a_ip1 = acceleration_function(r_ip1).T
+        r_ip1 = r_i + v_i*dt + 0.5*a_i*dt*dt
+        a_ip1 = lm10_acceleration(r_i, Nparticles, q1, qz, phi, v_halo)
         v_ip1 = v_i + 0.5*(a_i + a_ip1)*dt
 
         rs[ii,:,:] = r_i
@@ -148,4 +145,3 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t=None,
         v_i = v_ip1
 
     return times, rs, vs
-'''
