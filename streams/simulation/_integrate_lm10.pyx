@@ -88,7 +88,6 @@ def lm10_acceleration(np.ndarray[double, ndim=2] r, long Nparticles,
             
     return data
 
-# TODO: Then: wtf if this takes <1 second what is so damn slow!???
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 def leapfrog_lm10(np.ndarray[double, ndim=2] r_i, 
                   np.ndarray[double, ndim=2] v_i, 
