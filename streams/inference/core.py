@@ -23,7 +23,7 @@ from ..potential.lm10 import halo_params as true_halo_params
 from ..potential.lm10 import param_ranges, param_units
 from ..data import SgrCen, SgrSnapshot
 
-__all__ = ["ln_posterior", "ln_posterior_lm10"]
+__all__ = ["ln_posterior", "ln_posterior_lm10", "ln_likelihood", "ln_likelihood_lm10"]
 
 def ln_p_qz(qz):
     """ Flat prior on vertical (z) axis flattening parameter. """
@@ -128,7 +128,9 @@ def ln_likelihood_lm10(p, particles, satellite_ic, t):
     
     #satellite_orbit = satellite_ic._lm10_integrate(t,q1,qz,phi,v_halo)
     #particle_orbits = particles._lm10_integrate(t,q1,qz,phi,v_halo)
-    orbits = sat_and_particles._lm10_integrate(t,q1,qz,phi,v_halo)
+    orbits = sat_and_particles._lm10_integrate(t,q1,
+                                               qz,phi,
+                                               (v_halo*u.km/u.s).to(u.kpc/u.Myr).value)
     
     p_t = orbits.t
     p_r = orbits.r[:,:-1,:]
@@ -144,7 +146,7 @@ def ln_likelihood_lm10(p, particles, satellite_ic, t):
     halo_params = true_halo_params.copy()
     halo_params["q1"] = q1
     halo_params["qz"] = qz
-    halo_params["v_halo"] = v_halo*u.kpc/u.Myr
+    halo_params["v_halo"] = v_halo*u.km/u.s
     halo_params["phi"] = phi*u.radian
     potential = LawMajewski2010(**halo_params)
     

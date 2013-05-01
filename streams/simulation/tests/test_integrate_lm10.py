@@ -22,7 +22,16 @@ from .._integrate_lm10 import lm10_acceleration, leapfrog_lm10
 from ...potential.lm10 import LawMajewski2010, halo_params
 from ...integrate import leapfrog
 from ...data import read_lm10
-from ...simulation import TestParticleOrbit
+from ...simulation import TestParticleOrbit, generalized_variance
+
+np.random.seed(5)
+satellite_ic, particles = read_lm10(N=100, expr="(Pcol > 0) & (dist < 100)")
+t = np.arange(satellite_ic.t1,
+              satellite_ic.t2,
+              -5.)*u.Myr
+
+# LawMajewski2010 contains a disk, bulge, and logarithmic halo 
+potential = LawMajewski2010(**halo_params)
 
 def test_cython_vs_python1():
     r = np.random.random((100,3))
@@ -75,16 +84,7 @@ def test_cython_vs_python2():
     assert cython < pure_python
 
 def test_compare_satellite_orbit():
-    
-    np.random.seed(5)
-    satellite_ic, particles = read_lm10(N=100, expr="(Pcol > 0) & (dist < 100)")
-    t = np.arange(satellite_ic.t1,
-                  satellite_ic.t2,
-                  -5.)*u.Myr
-    
-    # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
-    potential = LawMajewski2010(**halo_params)
-    
+        
     py_satellite_orbit = satellite_ic.integrate(potential, t)
     py_particle_orbits = particles.integrate(potential, t)
        
@@ -109,4 +109,23 @@ def test_compare_satellite_orbit():
         axes[ii].plot(t.value, py_satellite_orbit.r[:,0,ii].value, 'r-')
         axes[ii].plot(t.value, cy_satellite_orbit.r[:,0,ii].value, 'b-')
     
+    
+    py_var = generalized_variance(potential, py_particle_orbits, py_satellite_orbit)
+    cy_var = generalized_variance(potential, cy_particle_orbits, cy_satellite_orbit)
+    
     plt.savefig("/var/www/scratch/cython_test.png")
+
+def test_likelihood():
+    from streams.inference import ln_likelihood, ln_likelihood_lm10, \
+                                  ln_posterior, ln_posterior_lm10
+    
+    p = halo_params["q1"], halo_params["qz"], \
+        halo_params["phi"].value, halo_params["v_halo"].to(u.km/u.s).value
+    p_names = ["q1", "qz", "phi", "v_halo"]
+    
+    py_like = ln_likelihood(p, p_names, particles, satellite_ic, t)
+    cy_like = ln_likelihood_lm10(p, particles, satellite_ic, t)
+    
+    print("python likelihood: ", py_like)
+    print("cython likelihood: ", cy_like)
+    
