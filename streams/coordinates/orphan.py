@@ -89,8 +89,6 @@ def galactic_to_orphan(galactic_coord):
     # Calculate X,Y,Z,distance in the Sgr system
     Xs, Ys, Zs = sgr_matrix.dot(np.array([X, Y, Z]))
 
-    Zs = -Zs
-
     # Calculate the angular coordinates lambda,beta
     Lambda = degrees(np.arctan2(Ys,Xs))
     if Lambda<0:
@@ -109,7 +107,6 @@ def orphan_to_galactic(orphan_coord):
     Xs = cos(B)*cos(L)
     Ys = cos(B)*sin(L)
     Zs = sin(B)
-    Zs = -Zs
 
     X, Y, Z = sgr_matrix.T.dot(np.array([Xs, Ys, Zs]))
 
