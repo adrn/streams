@@ -14,7 +14,7 @@ import astropy.coordinates as coord
 import astropy.units as u
 
 from ..sgr import SgrCoordinates
-from ...data import LM10
+from ...data import read_lm10
 
 def test_simple():
     c = coord.ICRSCoordinates(coord.Angle(217.2141, u.degree),
@@ -39,64 +39,18 @@ def test_against_David_Law():
 
     """
 
-    law_data = np.genfromtxt("streams/coordinates/tests/SgrCoord_data", names=True, delimiter=",")
+    law_data = np.genfromtxt("streams/coordinates/tests/SgrCoord_data", 
+                             names=True, delimiter=",")
 
     for row in law_data:
         c = coord.GalacticCoordinates(coord.Angle(row["l"], u.degree),
                                       coord.Angle(row["b"], u.degree))
         sgr_coords = c.transform_to(SgrCoordinates)
-        law_sgr_coords = SgrCoordinates(row["lambda"], row["beta"], unit=(u.degree, u.degree))
-        print(sgr_coords,law_sgr_coords)
-        #print(sgr_coords.separation(law_sgr_coords))
-
-    assert False
-
-def test_against_David_Law():
-    """ Test my code against an output file from using David Law's cpp code. Do:
-
-            g++ SgrCoord.cpp; ./a.out
-
-        to generate the data file, SgrCoord_data.
-
-    """
-
-    law_data = np.genfromtxt("streams/coordinates/tests/SgrCoord_data", names=True, delimiter=",")
-
-    for row in law_data:
-        c = coord.GalacticCoordinates(coord.Angle(row["l"], u.degree),
-                                      coord.Angle(row["b"], u.degree))
-
-        law_sgr_coords = SgrCoordinates(row["lambda"], row["beta"], unit=(u.degree, u.degree))
-        assert c.separation(law_sgr_coords.transform_to(coord.GalacticCoordinates)).degrees < 3.
-
-def test_with_simulation_data():
-    import matplotlib.pyplot as plt
-
-    lm10_data = LM10().data[::100]
-    X = lm10_data["xsun"] - 8. #kpc
-    Y = lm10_data["ysun"]
-    Z = lm10_data["zsun"]
-
-    # Convert XYZ to Galactic latitude, longitude. Then convert to SgrCoordinates
-    cps = [coord.CartesianPoints(x=X[ii], y=Y[ii], z=Z[ii], unit=u.kpc) for ii in range(len(X))]
-    sgr_coords = [coord.GalacticCoordinates(cp).transform_to(SgrCoordinates) for cp in cps]
-
-    lambdas = np.array([sgr.Lambda.degrees%360. for sgr in sgr_coords])
-    betas = np.array([sgr.Beta.degrees for sgr in sgr_coords])
-
-    lambdas -= 180.
-    x = 2*np.sqrt(2)*np.cos(np.radians(betas))*np.sin(np.radians(lambdas/2.)) / np.sqrt(1 + np.cos(np.radians(betas))*np.cos(np.radians(lambdas/2.)))
-    y = np.sqrt(2)*np.sin(np.radians(betas)) / np.sqrt(1 + np.cos(np.radians(betas))*np.cos(np.radians(lambdas/2.)))
-    dists = np.array([sgr.distance.kpc for sgr in sgr_coords])
-
-    # Plot in Galactic X-Y plane coordinates
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter([sgr.x for sgr in sgr_coords], [sgr.y for sgr in sgr_coords], c='k', marker='.', s=1.)
-    plt.show()
-
-    # Plot in Galactic Spherical coordinates
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(np.degrees(x), np.degrees(y), c='k', marker='.', s=1.)
-    plt.show()
+        law_sgr_coords = SgrCoordinates(row["lambda"], row["beta"], 
+                                        unit=(u.degree, u.degree))
+        
+        print(sgr_coords, law_sgr_coords)
+        
+        sep = sgr_coords.separation(law_sgr_coords).arcsecs*u.arcsec
+        print(sep)
+        assert sep < 1.*u.arcsec

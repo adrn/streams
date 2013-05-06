@@ -48,6 +48,8 @@ if not os.path.exists(plot_path):
 all_surveys_filename = os.path.join('data','catalog','all_surveys_rrlyr.txt ')
 surveys = ["catalina", "quest", "asas", "nsvs", "stripe82"]
 
+# TODO: Add a distance function for LINEAR, and add to here.
+
 def compile_surveys():
     """ Compile RR Lyrae data from all surveys into one txt file """
     

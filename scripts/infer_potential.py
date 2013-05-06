@@ -35,6 +35,9 @@ from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle
 from streams.potential.lm10 import halo_params
 
+global pool
+pool = None
+
 # Create logger
 logger = logging.getLogger(__name__)
 
@@ -44,11 +47,10 @@ def main(config_file):
     config = read(config_file)
     
     # Expression for selecting particles from the simulation data snapshot
-    expr = ""
     if len(config["expr"]) > 0:
-        expr += " & " + " & ".join(["({0})".format(x) for x in config["expr"]])
+        expr = config["expr"]
     else:
-        expr += "(tub > 0.)"
+        expr = "(tub > 0.)"
     
     if config["mpi"]:
         # Initialize the MPI pool
@@ -61,6 +63,8 @@ def main(config_file):
     else:
         if config.has_key("threads"):
             pool = multiprocessing.Pool(config["threads"])
+        else:
+            pool = None
     
     if isinstance(config["expr"], list):
         expr = " & ".join(["({0})".format(x) for x in config["expr"]])
@@ -103,12 +107,9 @@ def main(config_file):
     
     # Create a new path for the output
     if config["make_plots"]:
-        path = os.path.join(config["output_path"], 
-                            datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-        
-        if config.has_key("name"):
-            path = path + "-" + config["name"]
-            
+        iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        dirname = "{0}{1}".format(config.get("name", ""), iso_now)
+        path = os.path.join(config["output_path"], dirname)
         os.mkdir(path)
     
     # Get the number of bootstrap reamples. if not specified, it's just 1
@@ -221,5 +222,10 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
     
-    main(args.file)
+    try:
+        main(args.file)
+    except:
+        if pool is not None:
+            pool.close()
+        raise
     sys.exit(0)

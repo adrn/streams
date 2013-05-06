@@ -360,7 +360,7 @@ def read_lm10(N=None, expr=None):
                                      "data",
                                      "simulation", 
                                      "SgrTriax_DYN.dat")
-    particle_colnames = ["lambda", "beta", "ra", "dec", "l", "b", \
+    particle_colnames = ["Lambda", "Beta", "ra", "dec", "l", "b", \
                          "xgc", "ygc", "zgc", "xsun", "ysun", "zsun", \
                          "x4", "y4", "z4", "u", "v", "w", "dist", "vgsr", \
                          "mul", "mub", "mua", "mud", "Pcol", "Lmflag"]

@@ -10,3 +10,4 @@ a.out
 data/*
 config/*
 plots/*
+build/*

@@ -15,6 +15,7 @@
 // orbital pole of Sgr (i.e., match the convention already used for beta)
 
 #include <cmath>
+#include <fstream>
 using namespace std;
 
 // Transform positions from standard left handed Galactocentric XYZ to
@@ -42,7 +43,7 @@ void XYZtoSgr(double X,double Y,double Z,double &Xs,double &Ys,double &Zs,double
 
   X=-X; // Make the input system right-handed
   X=X+Xsun; // Transform the input system to heliocentic right handed coordinates
-
+  
   // Calculate X,Y,Z,distance in the Sgr system
   Xs=rot11*X+rot12*Y+rot13*Z;
   Ys=rot21*X+rot22*Y+rot23*Z;
@@ -79,7 +80,7 @@ void LBRtoSgr(double l,double b,double r,double &Xs,double &Ys,double &Zs,double
   X=X+Xsun;
 
   // Transform from left handed Galactocentric to Sgr coordinates
-  XYZtoSgr(X,Y,Z,Xs,Ys,Zs,r,lambda,beta);
+  XYZtoSgr(X,Y,Z,Xs,Ys,Zs,r,lambda,beta,Xsun);
   }
 
 

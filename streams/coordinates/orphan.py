@@ -18,7 +18,7 @@ import astropy.units as u
 from astropy.coordinates import transformations
 from astropy.coordinates.angles import rotation_matrix
 
-__all__ = ["OrphanCoordinates"]
+__all__ = ["OrphanCoordinates", "distance_to_orphan_plane"]
 
 class OrphanCoordinates(coord.SphericalCoordinatesBase):
     """ A spherical coordinate system defined by the orbit of the Orphan stream
@@ -89,8 +89,6 @@ def galactic_to_orphan(galactic_coord):
     # Calculate X,Y,Z,distance in the Sgr system
     Xs, Ys, Zs = sgr_matrix.dot(np.array([X, Y, Z]))
 
-    Zs = -Zs
-
     # Calculate the angular coordinates lambda,beta
     Lambda = degrees(np.arctan2(Ys,Xs))
     if Lambda<0:
@@ -109,7 +107,6 @@ def orphan_to_galactic(orphan_coord):
     Xs = cos(B)*cos(L)
     Ys = cos(B)*sin(L)
     Zs = sin(B)
-    Zs = -Zs
 
     X, Y, Z = sgr_matrix.T.dot(np.array([Xs, Ys, Zs]))
 
@@ -121,3 +118,26 @@ def orphan_to_galactic(orphan_coord):
 
     return coord.GalacticCoordinates(l, b, distance=orphan_coord.distance, 
                                      unit=(u.degree, u.degree))
+
+def distance_to_orphan_plane(ra, dec, heliocentric_distance):
+    """ Given an RA, Dec, and Heliocentric distance, compute the distance
+        to the midplane of the Orphan plane 
+
+        Parameters
+        ----------
+        ra : float
+            A right ascension in decimal degrees
+        dec : float
+            A declination in decimal degrees
+        heliocentric_distance : float
+            The distance from the sun to a star in kpc.
+
+    """
+
+    eq_coords = coord.ICRSCoordinates(ra, dec, unit=(u.degree, u.degree))
+    orphan_coords = eq_coords.transform_to(OrphanCoordinates)
+    orphan_coords.distance = coord.Distance(heliocentric_distance, unit=u.kpc)
+
+    Z_orp_sol = orphan_coords.distance.kpc * np.sin(orphan_coords.Beta.radians)
+
+    return Z_orp_sol
