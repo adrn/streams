@@ -14,7 +14,7 @@ import astropy.coordinates as coord
 import astropy.units as u
 
 from ..sgr import SgrCoordinates
-from ...data import LM10
+from ...data import read_lm10
 
 def test_simple():
     c = coord.ICRSCoordinates(coord.Angle(217.2141, u.degree),
@@ -39,19 +39,23 @@ def test_against_David_Law():
 
     """
 
-    law_data = np.genfromtxt("streams/coordinates/tests/SgrCoord_data", names=True, delimiter=",")
+    law_data = np.genfromtxt("streams/coordinates/tests/SgrCoord_data", 
+                             names=True, delimiter=",")
 
     for row in law_data:
         c = coord.GalacticCoordinates(coord.Angle(row["l"], u.degree),
                                       coord.Angle(row["b"], u.degree))
         sgr_coords = c.transform_to(SgrCoordinates)
-        law_sgr_coords = SgrCoordinates(row["lambda"], row["beta"], unit=(u.degree, u.degree))
-        print(sgr_coords,law_sgr_coords)
-        #print(sgr_coords.separation(law_sgr_coords))
+        law_sgr_coords = SgrCoordinates(row["lambda"], row["beta"], 
+                                        unit=(u.degree, u.degree))
+        
+        print(sgr_coords, law_sgr_coords)
+        
+        sep = sgr_coords.separation(law_sgr_coords).arcsecs*u.arcsec
+        print(sep)
+        assert sep < 1.*u.arcsec
 
-    assert False
-
-def test_against_David_Law():
+def test_against_David_Lrw2():
     """ Test my code against an output file from using David Law's cpp code. Do:
 
             g++ SgrCoord.cpp; ./a.out
