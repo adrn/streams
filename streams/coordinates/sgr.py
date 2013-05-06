@@ -18,7 +18,7 @@ import astropy.units as u
 from astropy.coordinates import transformations
 from astropy.coordinates.angles import rotation_matrix
 
-__all__ = ["SgrCoordinates"]
+__all__ = ["SgrCoordinates", "distance_to_sgr_plane"]
 
 class SgrCoordinates(coord.SphericalCoordinatesBase):
     """ A spherical coordinate system defined by the orbit of the Sagittarius 

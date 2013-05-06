@@ -19,32 +19,9 @@ import os, sys
 import numpy as np
 from numpy import radians, degrees, cos, sin
 import astropy.coordinates as coord
-from astropy.coordinates import OrphanCoordinates
+from astropy.coordinates import OrphanCoordinates, distance_to_orphan_plane
 import astropy.units as u
 from astropy.io import ascii
-
-def distance_to_orphan_plane(ra, dec, heliocentric_distance):
-    """ Given an RA, Dec, and Heliocentric distance, compute the distance
-        to the midplane of the Orphan plane 
-
-        Parameters
-        ----------
-        ra : float
-            A right ascension in decimal degrees
-        dec : float
-            A declination in decimal degrees
-        heliocentric_distance : float
-            The distance from the sun to a star in kpc.
-
-    """
-
-    eq_coords = coord.ICRSCoordinates(ra, dec, unit=(u.degree, u.degree))
-    orphan_coords = eq_coords.transform_to(OrphanCoordinates)
-    orphan_coords.distance = coord.Distance(heliocentric_distance, unit=u.kpc)
-
-    Z_orp_sol = orphan_coords.distance.kpc * np.sin(orphan_coords.Beta.radians)
-
-    return Z_orp_sol
 
 def test_table():
     """ Test the script against table 2 values from Newberg et al. 2010 """
