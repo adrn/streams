@@ -17,7 +17,7 @@ from astropy.utils.misc import isiterable
 
 from ..simulation import TestParticle
 
-__all__ = ["parallax_error", "proper_motion_error", "rr_lyrae_M_V", \
+__all__ = ["parallax_error", "proper_motion_error",  \
            "apparent_magnitude", "rr_lyrae_add_observational_uncertainties", \
            "add_uncertainties_to_particles"]
 
@@ -25,42 +25,6 @@ __all__ = ["parallax_error", "proper_motion_error", "rr_lyrae_M_V", \
 # Guldenschuh et al. (2005 PASP 117, 721), pg. 725
 # (V-I)_min = 0.579 +/- 0.006 mag
 rr_lyrae_V_minus_I = 0.579
-
-def rr_lyrae_M_V(fe_h, dfe_h=0.):
-    """ Given an RR Lyra metallicity, return the V-band absolute magnitude. 
-        
-        This expression comes from Benedict et al. 2011 (AJ 142, 187), 
-        equation 14 reads:
-            M_v = (0.214 +/- 0.047)([Fe/H] + 1.5) + a_7
-        
-        where
-            a_7 = 0.45 +/- 0.05
-            
-        From that, we take the absolute V-band magnitude to be:
-            Mabs = 0.214 * ([Fe/H] + 1.5) + 0.45
-            δMabs = sqrt[(0.047*(δ[Fe/H]))**2 + (0.05)**2]
-        
-        Parameters
-        ----------
-        fe_h : numeric or iterable
-            Metallicity.
-        dfe_h : numeric or iterable
-            Uncertainty in the metallicity.
-        
-    """
-    
-    if isiterable(fe_h):
-        fe_h = np.array(fe_h)
-        dfe_h = np.array(dfe_h)
-        
-        if not fe_h.shape == dfe_h.shape:
-            raise ValueError("Shape mismatch: fe_h and dfe_h must have the same shape.")
-    
-    # V abs mag for RR Lyrae
-    Mabs = 0.214*(fe_h + 1.5) + 0.45
-    dMabs = np.sqrt((0.047*dfe_h)**2 + (0.05)**2)
-    
-    return (Mabs, dMabs)
 
 def apparent_magnitude(M_V, d):
     """ Compute the apparent magnitude of a source given an absolute magnitude
@@ -80,17 +44,6 @@ def apparent_magnitude(M_V, d):
     
     # Compute the apparent magnitude -- ignores extinction
     return M_V - 5.*(1. - np.log10(d.to(u.pc).value))
-
-def rr_lyrae_photometric_distance(m_V, fe_h):
-    """ Estimate the distance to an RR Lyrae given its apparent V-band
-        magnitude and metallicity.
-    """
-    M_V, dM_V = rr_lyrae_M_V(fe_h)
-    mu = m_V - M_V
-    
-    d = 10**(mu/5. + 1) * u.pc
-    
-    return d.to(u.kpc)
     
 def parallax_error(V, V_minus_I):
     """ Compute the estimated GAIA parallax error as a function of apparent 
@@ -242,7 +195,7 @@ def add_uncertainties_to_particles(particles):
     new_r[:,1] = y.value
     new_r[:,2] = z.value
     
-    new_v = np.zeros_like(particles.r.value)
+    new_v = np.zeros_like(particles.v.value)
     new_v[:,0] = vx.value
     new_v[:,1] = vy.value
     new_v[:,2] = vz.value

@@ -24,7 +24,6 @@ from scipy import interpolate
 from ..util import project_root
 from .gaia import rr_lyrae_add_observational_uncertainties
 from ..plot.data import scatter_plot_matrix
-from .core import _make_npy_file
 from ..simulation import TestParticle, TestParticleOrbit
 
 __all__ = ["LM10Cen", "LM10Snapshot", "SgrCen", "SgrSnapshot", "read_lm10"]
