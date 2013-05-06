@@ -6,7 +6,7 @@ int main()
     using namespace std;
 
     double l, b, r;
-    double Xs, Ys, Zs, lambda, beta;
+    double Xs, Ys, Zs, lambda, beta, lambda_gc, beta_gc, d;
     double Xsun = 8.0;
 
     r = 1.0;
@@ -16,7 +16,7 @@ int main()
     ofstream output_file;
     output_file.open ("SgrCoord_data");
 
-    output_file << "# l,b,lambda,beta\n";
+    output_file << "# l,b,lambda,beta,lambda_gc,beta_gc\n";
     for (int i=0; i < 10; i++) {
         char buffer [50];
 
@@ -24,7 +24,7 @@ int main()
         b = bs[i];
         LBRtoSgr(l,b,r,Xs,Ys,Zs,lambda,beta,Xsun);
 
-        sprintf(buffer, "%f,%f,%f,%f\n", l, b, lambda, beta);
+        sprintf(buffer, "%f,%f,%f,%f,\n", l, b, lambda, beta);
         output_file << buffer;
     }
 
