@@ -16,6 +16,7 @@ import astropy.units as u
 from astropy.utils.misc import isiterable
 
 from ..simulation import TestParticle
+from .rrlyrae import rrl_M_V
 
 __all__ = ["parallax_error", "proper_motion_error",  \
            "apparent_magnitude", "rr_lyrae_add_observational_uncertainties", \
@@ -131,7 +132,7 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz):
         raise TypeError("Velocities must be Astropy Quantity objects!")
     
     # assuming [Fe/H] = -0.5 for Sgr
-    M_V, dM_V = rr_lyrae_M_V(-0.5)
+    M_V, dM_V = rrl_M_V(-0.5)
     
     # Transform to heliocentric coordinates
     rsun = 8.*u.kpc

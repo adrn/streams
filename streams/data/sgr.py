@@ -21,8 +21,9 @@ import astropy.units as u
 from scipy import interpolate
 
 # Project
-from ..util import project_root
+from .core import _make_npy_file
 from .gaia import rr_lyrae_add_observational_uncertainties
+from ..util import project_root
 from ..plot.data import scatter_plot_matrix
 from ..simulation import TestParticle, TestParticleOrbit
 
