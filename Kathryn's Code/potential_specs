@@ -1,9 +1,0 @@
-C triaxial halo
-	   q1=1.38
-	      q2=1.0
-	      qz=1.36
-	      phi=1.692969 # in radians (97 degrees)
-	      C1 = (COS(phi)/q1)**2+(SIN(phi)/q2)**2
-	      C2 = (COS(phi)/q2)**2+(SIN(phi)/q1)**2
-	      C3 = 2.*SIN(phi)*COS(phi)*(1./q1/q1-1./q2/q2)
-	   ENDIF
