@@ -106,7 +106,7 @@ def proper_motion_error(V, V_minus_I):
 
     return dmu.to(u.radian/u.yr)
 
-def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz):
+def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     """ Given 3D galactocentric position and velocity, transform to heliocentric
         coordinates, apply observational uncertainty estimates, then transform
         back to galactocentric frame.
@@ -157,10 +157,22 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz):
     sinl = y/rad
     
     # DISTANCE ERROR -- assuming 2% distances from RR Lyrae mid-IR
-    d += np.random.normal(0., 0.02*d.value)*d.unit
+    if kwargs.has_key("distance_error_percent") and \
+        kwargs["distance_error_percent"] is not None:
+        d_err = kwargs["distance_error_percent"] / 100.
+    else:
+        d_err = 0.02
+    d += np.random.normal(0., d_err*d.value)*d.unit
     
-    # VELOCITY ERROR -- 5 km/s (TODO: ???)
-    vr += np.random.normal(0., 5.)*u.km/u.s
+    # RADIAL VELOCITY ERROR -- 5 km/s
+    if kwargs.has_key("radial_velocity_error") and \
+        kwargs["radial_velocity_error"] is not None:
+        rv_err = kwargs["radial_velocity_error"]
+    else:
+        rv_err = 5.*u.km/u.s
+    
+    rv_err = rv_err.to(u.km/u.s)
+    vr += np.random.normal(0., rv_err.value)*rv_err.unit
 
     dmu = proper_motion_error(V, rr_lyrae_V_minus_I)
         
@@ -179,7 +191,7 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz):
     return (new_x*x.unit, new_y*x.unit, new_z*x.unit, 
             new_vx*vx.unit, new_vy*vx.unit, new_vz*vx.unit)
 
-def add_uncertainties_to_particles(particles):
+def add_uncertainties_to_particles(particles, **kwargs):
     """ Given a TestParticle object, add RR Lyrae-like uncertainties and return
         a new TestParticle with the errors.
     """
@@ -189,7 +201,8 @@ def add_uncertainties_to_particles(particles):
                                                               particles.r[:,2],
                                                               particles.v[:,0],
                                                               particles.v[:,1],
-                                                              particles.v[:,2])
+                                                              particles.v[:,2],
+                                                              **kwargs)
     
     new_r = np.zeros_like(particles.r.value)
     new_r[:,0] = x.value

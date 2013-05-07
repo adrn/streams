@@ -114,7 +114,11 @@ def main(config_file):
     B = config.get("bootstrap_resamples", 1)
     
     if config["observational_errors"]:
-        particles = add_uncertainties_to_particles(particles)
+        rv_error = config.get("radial_velocity_error", None)
+        d_error = config.get("distance_error_percent", None)
+        particles = add_uncertainties_to_particles(particles, 
+                                                radial_velocity_error=rv_error,
+                                                distance_error_percent=d_error)
     
     all_best_parameters = []
     for bb in range(B):    
