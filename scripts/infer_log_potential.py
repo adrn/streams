@@ -12,6 +12,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import copy
 import logging
 from datetime import datetime
 import multiprocessing
@@ -48,9 +49,12 @@ def main(config_file):
     
     # Expression for selecting particles from the simulation data snapshot
     if len(config["expr"]) > 0:
-        expr = config["expr"]
+        if isinstance(config["expr"], list):
+            expr = " & ".join(["({0})".format(x) for x in expr])
+        else:
+            expr = config["expr"]
     else:
-        expr = "(tub > 0.)"
+        expr = None
     
     if config["mpi"]:
         # Initialize the MPI pool
@@ -66,11 +70,6 @@ def main(config_file):
         else:
             pool = None
     
-    if isinstance(config["expr"], list):
-        expr = " & ".join(["({0})".format(x) for x in config["expr"]])
-    else:
-        expr = config["expr"]
-    
     np.random.seed(config["seed"])
     
     # Read in Sagittarius simulation data
@@ -79,7 +78,7 @@ def main(config_file):
         satellite_ic = satellite_orbit[-1]
         
         sgr_snap = SgrSnapshot(N=config["particles"],
-                               expr=config["expr"])
+                               expr=expr)
         
         # Define new time grid
         time_grid = np.arange(max(satellite_orbit.t.value), 
@@ -116,7 +115,12 @@ def main(config_file):
     B = config.get("bootstrap_resamples", 1)
     
     if config["observational_errors"]:
-        particles = add_uncertainties_to_particles(particles)
+        rv_error = config.get("radial_velocity_error", None)
+        d_error = config.get("distance_error_percent", None)
+        pre_error_particles = copy.copy(particles)
+        particles = add_uncertainties_to_particles(particles, 
+                                                radial_velocity_error=rv_error,
+                                                distance_error_percent=d_error)
     
     all_best_parameters = []
     for bb in range(B):    
@@ -142,8 +146,17 @@ def main(config_file):
         # Create a new path for the output
         if config["make_plots"]:
             # Plot the positions of the particles in galactic XYZ coordinates
-            fig,axes = particles.plot_positions()
-            fig.savefig(os.path.join(path, "particles.png"))
+            fig,axes = pre_error_particles.plot_positions(
+                                        subplots_kwargs=dict(figsize=(16,16)),
+                                        scatter_kwargs={"c":"k"})
+            particles.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
+            fig.savefig(os.path.join(path, "positions.png"))
+            
+            fig,axes = pre_error_particles.plot_velocities(
+                                        subplots_kwargs=dict(figsize=(16,16)),
+                                        scatter_kwargs={"c":"k"})
+            particles.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
+            fig.savefig(os.path.join(path, "velocities.png"))
             
             # write the sampler to a pickle file
             data_file = os.path.join(path, "sampler_data.pickle")

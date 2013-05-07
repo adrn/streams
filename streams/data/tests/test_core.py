@@ -18,14 +18,3 @@ import pytest
 
 from ..core import *
 
-@pytest.mark.parametrize(("reader", ), [(read_linear,), 
-                                        (read_catalina,), 
-                                        (read_quest,), 
-                                        (read_asas,), 
-                                        (read_nsvs,),
-                                        (read_stripe82,)])
-def test_readers(reader):
-    data = reader()
-    data["ra"]
-    data["dec"]
-    data["V"]

@@ -34,7 +34,7 @@ job_sh = """#!/bin/sh
 #PBS -e localhost:/hpc/astro/users/amp2217/jobs/output
 
 #Command to execute Python program
-mpirun -n {walkers:d} /hpc/astro/users/amp2217/projects/streams/scripts/infer_potential.py -f /hpc/astro/users/amp2217/projects/streams/config/{config_file}
+mpirun -n {walkers:d} /hpc/astro/users/amp2217/projects/streams/scripts/{script} -f /hpc/astro/users/amp2217/projects/streams/config/{config_file}
 
 #End of script
 """
@@ -47,7 +47,7 @@ def main(config_file, walltime, memory):
     if config.has_key("name"):
         name = config["name"]
     else:
-        name = "adrn_infer"
+        name = "adrn"
     
     d = config["walkers"] / 4
     if int(d) != d:
@@ -58,7 +58,8 @@ def main(config_file, walltime, memory):
                        time=walltime,
                        memory=memory,
                        config_file=os.path.basename(config_file),
-                       name=name)
+                       name=name,
+                       script=config["script"])
     
     yn = raw_input("About to submit the following job: \n\n{0}\n\n Is "
                    "this right? [y]/n: ".format(sh))

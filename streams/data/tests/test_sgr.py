@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 from .. import LM10Snapshot, SgrCen, SgrSnapshot
+from ..gaia import add_uncertainties_to_particles
 
 class TestSgrCen(object):
     sgr_cen = SgrCen()
@@ -87,7 +88,7 @@ class TestSgrSnap(object):
         p_we = with_errors.as_particles()
         
         fig,axes = p.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
-        p.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
+        p_we.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
         
         fig.savefig("plots/tests/sgrsnap_uncertainties_position.png")
         
@@ -100,7 +101,45 @@ class TestSgrSnap(object):
         sgr_snap = SgrSnapshot(N=100, 
                                expr="(tub > 0)")
         p = sgr_snap.as_particles()
-        print(p)
 
-def test_lm10():
-    lm10 = LM10Snapshot()
+class TestLM10Snap(object):
+    
+    def test_create(self):
+        snap = LM10Snapshot(N=100, 
+                            expr="(dist<30) & (Pcol > 0)")
+        
+        assert np.max(snap["dist"]) < 30.
+        assert len(snap) == 100
+        
+        snap = LM10Snapshot(N=100, 
+                               expr="(dist<20) & (Pcol > 0)")
+        assert np.max(snap['dist']) < 20.
+        assert np.all(snap["Pcol"] > 0)
+        assert len(snap) == 100
+        
+        snap = LM10Snapshot(N=100, 
+                               expr="(Pcol > 0)")
+        assert np.all(snap["Pcol"] > 0)
+        assert len(snap) == 100
+
+    def test_uncertainties(self):
+        snap = LM10Snapshot(N=100, 
+                               expr="(Pcol > 0)")
+        
+        p = snap.as_particles()
+        p_we = add_uncertainties_to_particles(p)
+        
+        fig,axes = p.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
+        p_we.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
+        
+        fig.savefig("plots/tests/sgrsnap_uncertainties_position_lm10.png")
+        
+        fig,axes = p.plot_velocities(subplots_kwargs=dict(figsize=(16,16)))
+        p_we.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
+        
+        fig.savefig("plots/tests/sgrsnap_uncertainties_velocity_lm10.png")
+    
+    def test_as_particles(self):
+        sgr_snap = LM10Snapshot(N=100, 
+                               expr="(Pcol > 0)")
+        p = sgr_snap.as_particles()
