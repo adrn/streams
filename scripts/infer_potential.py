@@ -48,9 +48,12 @@ def main(config_file):
     
     # Expression for selecting particles from the simulation data snapshot
     if len(config["expr"]) > 0:
-        expr = config["expr"]
+        if isinstance(expr, list):
+            expr = " & ".join(["({0})".format(x) for x in expr])
+        else:
+            expr = config["expr"]
     else:
-        expr = "(tub > 0.)"
+        expr = None
     
     if config["mpi"]:
         # Initialize the MPI pool
@@ -66,11 +69,6 @@ def main(config_file):
         else:
             pool = None
     
-    if isinstance(config["expr"], list):
-        expr = " & ".join(["({0})".format(x) for x in config["expr"]])
-    else:
-        expr = config["expr"]
-    
     np.random.seed(config["seed"])
     
     # Read in Sagittarius simulation data
@@ -79,7 +77,7 @@ def main(config_file):
         satellite_ic = satellite_orbit[-1]
         
         sgr_snap = SgrSnapshot(N=config["particles"],
-                               expr=config["expr"])
+                               expr=expr)
         
         # Define new time grid
         time_grid = np.arange(max(satellite_orbit.t.value), 
