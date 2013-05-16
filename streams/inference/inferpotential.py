@@ -87,7 +87,7 @@ def infer_potential(particles, satellite_ic, t, model_parameters,
         pool = None
     
     # Construct an ensemble sampler to walk through dat model parameter space
-    # 2013-05-01: chaned ln_posterior to ln_posterior_lm10
+    # 2013-05-01: changed ln_posterior to ln_posterior_lm10
     sampler = emcee.EnsembleSampler(nwalkers=walkers, 
                                     dim=len(model_parameters), 
                                     lnpostfn=ln_posterior_lm10, 
