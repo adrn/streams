@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 
 def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
-                            scatter_kwargs=dict()):
+                            scatter_kwargs=dict(), triangle="lower"):
     """ Create a scatter plot matrix from the given data. 
         
         Parameters
@@ -35,6 +35,9 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
         scatter_kwargs : dict (optional)
             A dictionary of keyword arguments to pass to the 
             matplotlib.pyplot.scatter function calls. 
+        triangle : str (optional)
+            Upper right triangle of plots or lower left triangle, since
+            it's symmetric.
     """
     
     if isinstance(obj, u.Quantity):
@@ -66,6 +69,19 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
     xticks = yticks = None
     for ii in range(M):
         for jj in range(M):
+            if triangle == "lower":
+                if ii < jj:
+                    axes[ii,jj].set_visible(False)
+                    continue
+            else:
+                if ii > jj:
+                    axes[ii,jj].set_visible(False)
+                    continue
+            
+            if ii == jj:
+                axes[ii,jj].set_visible(False)
+                continue
+                
             axes[ii,jj].scatter(data[jj], data[ii], **sc_kwargs)
             
             if yticks == None:
@@ -75,7 +91,7 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
                 xticks = axes[ii,jj].get_xticks()[1:-1]
             
             # first column
-            if jj == 0:
+            if jj == 0 and ii != 0:
                 axes[ii,jj].set_ylabel(labels[ii])
                 
                 # Hack so ticklabels don't overlap
