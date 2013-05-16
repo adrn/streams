@@ -15,14 +15,20 @@ import astropy.units as u
 
 __all__ = ["leapfrog"]
 
-def leapfrog(acceleration_function, initial_position, initial_velocity, t=None, 
-             t1=None, t2=None, dt=None):
+def leapfrog(acceleration_function, initial_position, initial_velocity, 
+             t=None, t1=None, t2=None, dt=None):
              
     """ Given an acceleration function and initial conditions, integrate from 
         t1 to t2 with a timestep dt using Leapfrog integration. Alternatively,
         specify the full time array with 't'. The integration always *includes* 
-        the final timestep!
-        See: http://ursa.as.arizona.edu/~rad/phys305/ODE_III/node11.html
+        the final timestep.
+        
+        'acceleration_function' should accept a single parameter -- an array of
+        position(s). The array should have shape (Npositions,Ndimensions), e.g.,
+        for 100 particles in XYZ, the position array should be shape (100,3).
+        
+        For details on the algorithm, see: 
+            http://ursa.as.arizona.edu/~rad/phys305/ODE_III/node11.html
 
         Parameters
         ----------
@@ -60,7 +66,7 @@ def leapfrog(acceleration_function, initial_position, initial_velocity, t=None,
     
     Ntimesteps = len(times)
     
-    # Shape of final object should be (Ntimesteps, Ndim, Nparticles)
+    # Shape of final object should be (Ntimesteps, Nparticles, Ndim)
     rs = np.zeros((Ntimesteps,) + r_i.shape, dtype=np.float64)
     vs = np.zeros((Ntimesteps,) + v_i.shape, dtype=np.float64)
 
