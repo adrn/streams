@@ -65,7 +65,7 @@ def main(config_file):
             pool.wait()
             sys.exit(0)
     else:
-        if config.has_key("threads"):
+        if config.has_key("threads") and config["threads"] > 1:
             pool = multiprocessing.Pool(config["threads"])
         else:
             pool = None
@@ -100,9 +100,6 @@ def main(config_file):
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
-    
-    # Interpolate satellite_orbit onto new time grid
-    #satellite_orbit = satellite_orbit.interpolate(time_grid)
     
     # Create a new path for the output
     if config["make_plots"]:
