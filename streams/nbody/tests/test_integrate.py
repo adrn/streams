@@ -49,7 +49,7 @@ def test_api():
     
     # Create time grid to integrate on
     t = np.arange(0., 10., 0.02) * u.yr
-    r,v = nbody_integrate(pc, time_steps=t, merge_length=1.E-3*u.au)
+    r,v = nbody_integrate(pc, time_steps=t, e=0.1)
     
     plt.figure(figsize=(8,8))
     plt.plot(r[:,0,0], r[:,0,1], 'b-')
@@ -57,43 +57,45 @@ def test_api():
     plt.show()
 
 def test_collection():
+    ffmpeg_cmd = "ffmpeg -i {0} -r 12 -b 5000 -vcodec libx264 -vpre medium -b 3000k {1}"
+    this_path = "/Users/adrian/Downloads/nbody/"
+    N = 1000
+    
+    def acc(G, r):
+        a = 0.7
+        return -G * 1E12 * r / (np.sqrt(np.sum(r**2,axis=0)) + a)**3.
     
     # Create particles
     particles = []
-    p1 = Particle(r=np.array([1., 0., 0.])*u.au,
-                  v=np.array([0., 2.*np.pi, 0.])*u.au/u.yr,
-                  m=1.*u.M_sun)
-    particles.append(p1)
+    for ii in range(N):
+        R = np.sqrt(np.random.uniform())*9. + 1.
+        theta = np.random.uniform(0., 2*np.pi)
+        r = R*np.array([np.cos(theta), np.sin(theta)])*u.kpc
+        
+        V = 15.
+        v = V * np.array([-np.sin(theta), np.cos(theta)])*u.km/u.s
+        
+        p = Particle(r=r,
+                     v=v,
+                     m=np.random.uniform(0.05, 10.)*u.M_sun)
+        particles.append(p)
     
-    p2 = Particle(r=np.array([0., 1., 0.])*u.au,
-                  v=np.array([-2.*np.pi, 0., 0.])*u.au/u.yr,
-                  m=1.*u.M_sun)
-    particles.append(p2)
-    
-    p3 = Particle(r=np.array([-1., 0., 0.])*u.au,
-                  v=np.array([0., -2.*np.pi, 0.])*u.au/u.yr,
-                  m=1.*u.M_sun)
-    particles.append(p3)
-    
-    p4 = Particle(r=np.array([0., -1., 0.])*u.au,
-                  v=np.array([2.*np.pi, 0., 0.])*u.au/u.yr,
-                  m=1.*u.M_sun)
-    particles.append(p4)
-    
-    p5 = Particle(r=np.array([0., 0., 0.])*u.au,
-                  v=np.array([0., 0., 0.])*u.au/u.yr,
-                  m=10.*u.M_sun)
-    particles.append(p5)
-    
-    pc = ParticleCollection(particles=particles, units=[u.au, u.yr, u.M_sun])
+    pc = ParticleCollection(particles=particles, units=[u.kpc, u.Myr, u.M_sun])
     
     # Create time grid to integrate on
-    t = np.arange(0., 10., 0.01) * u.yr
-    r,v = nbody_integrate(pc, time_steps=t, merge_length=1.E-3*u.au)
+    t = np.arange(0., 10., 0.5) * u.Myr
+    r,v = nbody_integrate(pc, time_steps=t, e=0.1, external_acceleration=acc)
     
-    plt.figure(figsize=(8,8))
-    plt.plot(r[:,0,0], r[:,0,1], 'k-')
-    plt.plot(r[:,1,0], r[:,1,1], 'b-')
-    plt.plot(r[:,2,0], r[:,2,1], 'r-')
-    plt.plot(r[:,3,0], r[:,3,1], 'g-')
-    plt.show()
+    plt.figure(figsize=(10,10))
+    for jj in range(r.shape[0]):
+        plt.clf()
+        plt.scatter(r[jj,:,0], r[jj,:,1], c='k', edgecolor='none', 
+                    s=pc.m.M_sun+5., alpha=0.4)
+        plt.xlim(-15, 15)
+        plt.ylim(-15, 15)
+        plt.savefig(os.path.join(this_path,"{0:04d}.png".format(jj)))
+ 
+    os.system(ffmpeg_cmd
+              .format(os.path.join(this_path, "%4d.png"), 
+                      os.path.join(this_path, "anim.mp4")))
+    

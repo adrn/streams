@@ -16,8 +16,7 @@ from astropy.constants import G
 
 __all__ = ["nbody_integrate"]
 
-
-def _nbody_acceleration(G, R, M):
+def _nbody_acceleration(G, R, M, e=0.1):
     a = np.zeros_like(R)
     for ii in range(R.shape[0]):
         other_r = np.delete(R, ii, axis=0)
@@ -25,13 +24,21 @@ def _nbody_acceleration(G, R, M):
         
         rr = R[ii] - other_r
         num = (-G * other_m * rr).sum(axis=0)
-        denom = (np.sum(rr**2,axis=0)**1.5).sum(axis=0)
+        denom = (np.sqrt(np.sum(rr**2,axis=0)) + e**2).sum(axis=0)**1.5
         a[ii] = num / denom
     
     return a
 
-def nbody_integrate(particle_collection, time_steps, merge_length):
-    """ TODO """
+# TODO: Below is just a wish-list API, it doesn't necessarily work
+
+def nbody_integrate(particle_collection, time_steps, 
+                    external_acceleration=None, e=0.1):
+    """ Direct N-body integration of the given ParticleCollection over the 
+        specified time steps. Softening length is specified by 'e'. 
+        
+        Parameters
+        ----------
+    """
     
     dt = (time_steps[1]-time_steps[0])\
             .decompose(bases=particle_collection._units.values()).value
@@ -46,12 +53,18 @@ def nbody_integrate(particle_collection, time_steps, merge_length):
     rs = np.zeros((Nsteps,) + r_i.shape, dtype=np.float64)
     vs = np.zeros((Nsteps,) + v_i.shape, dtype=np.float64)
     
-    a_ip1 = _nbody_acceleration(_G, r_i, m)
+    if external_acceleration is not None:
+        acc = lambda _G, r_i, m, e: _nbody_acceleration(_G, r_i, m, e) + \
+                                        external_acceleration(_G, r_i)
+    else:
+        acc = _nbody_acceleration
+    
+    a_ip1 = acc(_G, r_i, m, e)
     for ii in range(Nsteps):
         a_i = a_ip1
         
         r_ip1 = r_i + v_i*dt + 0.5*a_i*dt*dt
-        a_ip1 = _nbody_acceleration(_G, r_ip1, m)
+        a_ip1 = acc(_G, r_ip1, m, e)
         v_ip1 = v_i + 0.5*(a_i + a_ip1)*dt
         
         rs[ii,:,:] = r_i
