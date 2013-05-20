@@ -82,7 +82,7 @@ def ln_p_r_halo(r_halo):
         return 0.
 
 def ln_prior(p, param_names):
-    """ Join prior over all parameters. """
+    """ Joint prior over all parameters. """
     
     sum = 0.
     for ii,param in enumerate(param_names):
@@ -115,7 +115,7 @@ def ln_posterior(p, *args):
     return ln_prior(p, param_names) + ln_likelihood(p, *args)
 
 def ln_prior_lm10(p):
-    """ Join prior over all parameters. """
+    """ Joint prior over all parameters. """
     return ln_p_q1(p[0]) + ln_p_qz(p[1]) + ln_p_phi(p[2]) + ln_p_v_halo(p[3])
 
 def ln_likelihood_lm10(p, particles, satellite_ic, t):
