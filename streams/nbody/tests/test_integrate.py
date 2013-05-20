@@ -58,7 +58,10 @@ def test_api():
 
 def test_collection():
     ffmpeg_cmd = "ffmpeg -i {0} -r 12 -b 5000 -vcodec libx264 -vpre medium -b 3000k {1}"
-    this_path = "/Users/adrian/Downloads/nbody/"
+    this_path = "plots/tests/nbody/disk"
+    if not os.path.exists(this_path):
+        os.makedirs(this_path)
+        
     N = 1000
     
     def acc(G, r):
@@ -72,7 +75,7 @@ def test_collection():
         theta = np.random.uniform(0., 2*np.pi)
         r = R*np.array([np.cos(theta), np.sin(theta)])*u.kpc
         
-        V = 15.
+        V = 5.
         v = V * np.array([-np.sin(theta), np.cos(theta)])*u.km/u.s
         
         p = Particle(r=r,
@@ -83,7 +86,7 @@ def test_collection():
     pc = ParticleCollection(particles=particles, units=[u.kpc, u.Myr, u.M_sun])
     
     # Create time grid to integrate on
-    t = np.arange(0., 10., 0.5) * u.Myr
+    t = np.arange(0., 6000., 10.) * u.Myr
     r,v = nbody_integrate(pc, time_steps=t, e=0.1, external_acceleration=acc)
     
     plt.figure(figsize=(10,10))
