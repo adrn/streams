@@ -17,10 +17,11 @@ import emcee
 from emcee.utils import MPIPool
 import astropy.units as u
 
-from ..simulation import generalized_variance, TestParticleOrbit
+from ..simulation import generalized_variance
 from ..potential import LawMajewski2010
 from ..potential.lm10 import halo_params as true_halo_params
 from ..potential.lm10 import param_ranges, param_units
+from ..nbody import Orbit, OrbitCollection
 from ..data import SgrCen, SgrSnapshot
 from ._lm10 import lm10_acceleration
 
@@ -104,10 +105,16 @@ def ln_likelihood(p, param_names, particles, satellite, t):
     for ii,param in enumerate(param_names):
         halo_params[param] = p[ii]*param_units[param]
     
-    lm10_acceleration()
+    # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
+    potential = LawMajewski2010(**halo_params)
     
-    satellite_orbit = satellite.integrate(potential, t)
-    particle_orbits = particles.integrate(potential, t)
+    t,r,v = leapfrog(lm10_acceleration, satellite.r, satellite.v, t=t)
+    satellite_orbit = Orbit(t=t, r=r, v=v, m=1.*u.M_sun)
+    
+    t,r,v = leapfrog(lm10_acceleration, particles.r, particles.v, t=t)
+    particle_orbits = OrbitCollection(t=t, r=r, v=v, m=np.ones(len(r))*u.M_sun,
+                                      units=[u.kpc, u.Myr, u.M_sun])
+    
     return -generalized_variance(potential, particle_orbits, satellite_orbit)
 
 def ln_posterior(p, *args):
