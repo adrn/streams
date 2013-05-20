@@ -133,10 +133,7 @@ def main(config_file):
     p0 = p0.T
     
     all_best_parameters = []
-    for bb in range(B):
-        # Create the starting points for all walkers
-        particles, satellite, t
-        
+    for bb in range(B):        
         try:
             sampler = infer_potential(ln_posterior, p0, steps=config["steps"],
                                       burn_in=config["burn_in"], pool=pool,
