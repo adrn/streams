@@ -99,7 +99,7 @@ class ParticleCollection(object):
         """ A collection of Particles. Stores values as arrays internally
             so it is faster than dealing with a list of Particle objects.
         """
-        
+            
         self._units = _validate_units(units)
         
         # If particles are specified, loop over the particles and separate
