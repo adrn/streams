@@ -22,6 +22,7 @@ from ..potential import LawMajewski2010
 from ..potential.lm10 import halo_params as true_halo_params
 from ..potential.lm10 import param_ranges, param_units
 from ..data import SgrCen, SgrSnapshot
+from ._lm10 import lm10_acceleration
 
 __all__ = ["ln_posterior", "ln_posterior_lm10", "ln_likelihood", "ln_likelihood_lm10"]
 
@@ -103,8 +104,7 @@ def ln_likelihood(p, param_names, particles, satellite_ic, t):
     for ii,param in enumerate(param_names):
         halo_params[param] = p[ii]*param_units[param]
     
-    # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
-    potential = LawMajewski2010(**halo_params)
+    lm10_acceleration()
     
     satellite_orbit = satellite_ic.integrate(potential, t)
     particle_orbits = particles.integrate(potential, t)
@@ -113,44 +113,3 @@ def ln_likelihood(p, param_names, particles, satellite_ic, t):
 def ln_posterior(p, *args):
     param_names, particles, satellite_ic, t = args
     return ln_prior(p, param_names) + ln_likelihood(p, *args)
-
-def ln_prior_lm10(p):
-    """ Joint prior over all parameters. """
-    return ln_p_q1(p[0]) + ln_p_qz(p[1]) + ln_p_phi(p[2]) + ln_p_v_halo(p[3])
-
-def ln_likelihood_lm10(p, particles, satellite_ic, t):
-    """ Evaluate the likelihood function for a given set of halo 
-        parameters.
-    """
-    q1,qz,phi,v_halo = p
-    
-    sat_and_particles = particles.add_particle(satellite_ic)
-    
-    #satellite_orbit = satellite_ic._lm10_integrate(t,q1,qz,phi,v_halo)
-    #particle_orbits = particles._lm10_integrate(t,q1,qz,phi,v_halo)
-    orbits = sat_and_particles._lm10_integrate(t,q1,
-                                               qz,phi,
-                                               (v_halo*u.km/u.s).to(u.kpc/u.Myr).value)
-    
-    p_t = orbits.t
-    p_r = orbits.r[:,:-1,:]
-    p_v = orbits.v[:,:-1,:]
-    particle_orbits = TestParticleOrbit(p_t, p_r, p_v)
-    
-    s_t = orbits.t
-    s_r = orbits.r[:,-1,:][:,np.newaxis,:]
-    s_v = orbits.v[:,-1,:][:,np.newaxis,:]
-    satellite_orbit = TestParticleOrbit(s_t, s_r, s_v) 
-    
-    # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
-    halo_params = true_halo_params.copy()
-    halo_params["q1"] = q1
-    halo_params["qz"] = qz
-    halo_params["v_halo"] = v_halo*u.km/u.s
-    halo_params["phi"] = phi*u.radian
-    potential = LawMajewski2010(**halo_params)
-    
-    return -generalized_variance(potential, particle_orbits, satellite_orbit)
-
-def ln_posterior_lm10(p, *args):
-    return ln_prior_lm10(p) + ln_likelihood_lm10(p, *args)
