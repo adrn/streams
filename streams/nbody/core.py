@@ -72,7 +72,9 @@ class Particle(object):
 class ParticleCollection(object):
     
     def __init__(self, particles=None, r=None, v=None, m=None, units=None):
-        """ TODO: """
+        """ A collection of Particles. Stores values as arrays internally
+            so it is faster than dealing with a list of Particle objects.
+        """
         
         required_types = ["time", "length", "mass"]
         if units == None or not isiterable(units):
@@ -136,7 +138,10 @@ class ParticleCollection(object):
             for x in ['r', 'v', 'm']:
                 setattr(self, "_{0}".format(x), 
                         eval(x).decompose(bases=self._units.values()).value)
-    
+        
+        # Create internal G in the correct unit system
+        self._G = G.decompose(bases=self._units.values()).value
+        
     @property
     def r(self):
         return self._r * self._units['length']
@@ -151,7 +156,15 @@ class ParticleCollection(object):
         
     def acceleration_at(self, r, m):
         """ Compute the acceleration at a given position due to the 
-            collection of particles. 
+            collection of particles. Inputs must be Quantity objects.
+            
+            Parameters
+            ----------
+            r : astropy.units.Quantity
+                Position.
+            v : astropy.units.Quantity
+                Velocity.
+                
         """
         _validate_quantity(r, unit_like=u.km)
         _validate_quantity(m, unit_like=u.kg)
@@ -161,23 +174,73 @@ class ParticleCollection(object):
                                   G.decompose(bases=self._units.values()).value)
         return a * self._units['length'] / self._units['time']**2
     
-    def _acceleration_at(self, _r, _m, _G):
-        """ """
+    def _acceleration_at(self, _r):
+        """ Compute the acceleration at a given position due to the 
+            collection of particles. Inputs are arrays, and assumes they 
+            are in the correct system of units.
+        """
         if _r.ndim == 1:
             rr = _r - self._r
-            a = _G * _m * self._m * rr / np.linalg.norm(rr)**3  
+            a = self._G * self._m * rr / np.linalg.norm(rr)**3  
             return np.sum(a, axis=0)
             
         elif _r.ndim == 2:
             # could do: (np.repeat(_r[np.newaxis], self._r.shape[0], axis=0) - \
             #                self._r[...,np.newaxis]).sum(axis=0)
+            #   but this involves making a potentially big array in memory...
             a = np.zeros_like(_r)
             for ii in range(_r.shape[0]):
                 rr = _r[ii] - self._r
-                a[ii] = (_G * _m[ii] * self._m * rr / np.sum(rr**2,axis=0)**1.5).sum(axis=0)
+                a[ii] = (self._G * self._m * rr / np.sum(rr**2,axis=0)**1.5).sum(axis=0)
         
             return a
             
         else:
             raise ValueError()
+    
+    def __repr__(self):
+        return "<ParticleCollection N={0}>".format(len(self._r))
+    
+    def plot_r(self, coord_names, **kwargs):
+        """ Make a scatter-plot of 3 projections of the positions of the 
+            particle coordinates.
             
+            Parameters
+            ----------
+            coord_names : list
+                Name of each axis, e.g. ['x','y','z']
+            kwargs (optional)
+                Keyword arguments that get passed to scatter_plot_matrix
+        """   
+        assert len(coord_names) == self.ndim, "Must pass a coordinate name for "
+                                              "each dimension."
+        
+        labels = [r"{0} [{1}]".format(nm, self.r.unit)
+                    for nm in coord_names]
+        
+        fig,axes = scatter_plot_matrix(self._r.T, 
+                                       labels=labels,
+                                       **kwargs)
+        return fig, axes
+    
+    def plot_v(self, coord_names, **kwargs):
+        """ Make a scatter-plot of 3 projections of the velocities of the 
+            particle coordinates.
+            
+            Parameters
+            ----------
+            coord_names : list
+                Name of each axis, e.g. ['Vx','Vy','Vz']
+            kwargs (optional)
+                Keyword arguments that get passed to scatter_plot_matrix
+        """   
+        assert len(coord_names) == self.ndim, "Must pass a coordinate name for "
+                                              "each dimension."
+        
+        labels = [r"{0} [{1}]".format(nm, self.r.unit)
+                    for nm in coord_names]
+        
+        fig,axes = scatter_plot_matrix(self._v.T, 
+                                       labels=labels,
+                                       **kwargs)
+        return fig, axes
