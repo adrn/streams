@@ -355,7 +355,7 @@ def read_lm10(N=None, expr=None):
     r = [satellite_data[-1]['x'], satellite_data[-1]['y'], satellite_data[-1]['z']]*u.kpc # kpc
     v = ([230., -35., 195.]*u.km/u.s).to(u.kpc/u.Myr)
     
-    satellite = Particle(r=r, v=v, m=1.*u.M_sun)
+    satellite = Particle(r=r, v=v, m=0.*u.M_sun, units=[u.kpc,u.Myr,u.M_sun])
     satellite.t1 = (satellite_data[-1]['t'] + abs(satellite_data[0]['t'])) * 1000. # Myr
     satellite.t2 = 0.
     
@@ -395,10 +395,10 @@ def read_lm10(N=None, expr=None):
     v[:,0] = np.array(particle_data["vx"])
     v[:,1] = np.array(particle_data["vy"])
     v[:,2] = np.array(particle_data["vz"])
-    v = v*u.km/u.s
         
     particles = ParticleCollection(r=r*u.kpc,
-                                   v=v.to(u.kpc/u.Myr),
-                                   m=np.ones(len(r))*u.M_sun)
+                                   v=v*u.km/u.s,
+                                   m=np.zeros(len(r))*u.M_sun,
+                                   units=[u.kpc,u.Myr,u.M_sun])
     
     return satellite, particles
