@@ -29,7 +29,6 @@ from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
 from streams.simulation.config import read
-from streams.simulation import TestParticle
 from streams.data import SgrSnapshot, SgrCen, read_lm10
 from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
