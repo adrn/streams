@@ -45,15 +45,6 @@ class TestSgrCen(object):
         assert sgr_cen["vx"].shape == sgr_cen["vy"].shape
         assert sgr_cen["vy"].shape == sgr_cen["vz"].shape
     
-    def test_interpolate(self):
-        sgr_cen = self.sgr_cen
-        
-        new_ts = np.linspace(0, 500, 100)*u.Myr
-        orb = sgr_cen.as_orbit()
-        new_orb = orb.interpolate(new_ts)
-        
-        assert (new_orb.t.value == new_ts.value).all()
-    
     def test_orbit(self):
         sgr_cen = self.sgr_cen
         
@@ -87,13 +78,17 @@ class TestSgrSnap(object):
         with_errors = sgr_snap.add_errors()
         p_we = with_errors.as_particles()
         
-        fig,axes = p.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
-        p_we.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
+        fig,axes = p.plot_r(coord_names=["X","Y","Z"], 
+                            subplots_kwargs=dict(figsize=(16,16)))
+        p_we.plot_r(coord_names=["X","Y","Z"], 
+                    axes=axes, scatter_kwargs={"c":"r"})
         
         fig.savefig("plots/tests/sgrsnap_uncertainties_position.png")
         
-        fig,axes = p.plot_velocities(subplots_kwargs=dict(figsize=(16,16)))
-        p_we.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
+        fig,axes = p.plot_v(coord_names=["Vx","Vy","Vz"], 
+                            subplots_kwargs=dict(figsize=(16,16)))
+        p_we.plot_v(coord_names=["Vx","Vy","Vz"], 
+                    axes=axes, scatter_kwargs={"c":"r"})
         
         fig.savefig("plots/tests/sgrsnap_uncertainties_velocity.png")
     
@@ -129,13 +124,17 @@ class TestLM10Snap(object):
         p = snap.as_particles()
         p_we = add_uncertainties_to_particles(p)
         
-        fig,axes = p.plot_positions(subplots_kwargs=dict(figsize=(16,16)))
-        p_we.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
+        fig,axes = p.plot_r(coord_names=["X","Y","Z"], 
+                            subplots_kwargs=dict(figsize=(16,16)))
+        p_we.plot_r(coord_names=["X","Y","Z"], 
+                    axes=axes, scatter_kwargs={"c":"r"})
         
         fig.savefig("plots/tests/sgrsnap_uncertainties_position_lm10.png")
         
-        fig,axes = p.plot_velocities(subplots_kwargs=dict(figsize=(16,16)))
-        p_we.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
+        fig,axes = p.plot_v(coord_names=["Vx","Vy","Vz"], 
+                            subplots_kwargs=dict(figsize=(16,16)))
+        p_we.plot_v(coord_names=["Vx","Vy","Vz"],
+                    axes=axes, scatter_kwargs={"c":"r"})
         
         fig.savefig("plots/tests/sgrsnap_uncertainties_velocity_lm10.png")
     

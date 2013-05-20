@@ -25,7 +25,7 @@ from .core import _make_npy_file
 from .gaia import rr_lyrae_add_observational_uncertainties
 from ..util import project_root
 from ..plot.data import scatter_plot_matrix
-from ..nbody import Particle, ParticleCollection, OrbitCollection
+from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
 
 __all__ = ["LM10Cen", "LM10Snapshot", "SgrCen", "SgrSnapshot", "read_lm10"]
 
@@ -117,7 +117,8 @@ class KVJSgrData(Table):
         
         return ParticleCollection(r=r*self.r_unit, 
                                   v=v*self.v_unit,
-                                  m=np.ones(len(r))*u.M_sun)
+                                  m=np.ones(len(r))*u.M_sun,
+                                  units=[self.t_unit,self.r_unit,self.v_unit, u.M_sun])
 
 class SgrCen(KVJSgrData):
     
@@ -150,10 +151,10 @@ class SgrCen(KVJSgrData):
         v[:,2] = np.array(self["vz"])
         
         t = np.array(self["t"])
-        return OrbitCollection(t=t*self.t_unit,
-                               r=r*self.r_unit,
-                               v=v*self.v_unit,
-                               m=np.ones(len(r))*u.M_sun)
+        return Orbit(t=t*self.t_unit,
+                     r=r*self.r_unit,
+                     v=v*self.v_unit,
+                     m=np.ones(len(r))*u.M_sun)
         
 class SgrSnapshot(KVJSgrData):
 
@@ -327,7 +328,8 @@ class LM10Cen(KVJSgrData):
         return OrbitCollection(t=t*self.t_unit,
                                r=r*self.r_unit,
                                v=v*self.v_unit,
-                               m=np.ones(len(r))*u.M_sun)
+                               m=np.ones(len(r))*u.M_sun,
+                               units=[self.t_unit,self.r_unit,self.v_unit, u.M_sun])
         
 def read_lm10(N=None, expr=None):
     """ """

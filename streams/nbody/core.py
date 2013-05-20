@@ -15,7 +15,9 @@ import astropy.units as u
 from astropy.constants import G
 from astropy.utils.misc import isiterable
 
-__all__ = ["Particle", "ParticleCollection", "OrbitCollection"]
+from ..plot.data import scatter_plot_matrix
+
+__all__ = ["Particle", "ParticleCollection", "Orbit", "OrbitCollection"]
 
 def _validate_quantity(q, unit_like=None):
     """ Validate that the input is a Quantity object. An optional parameter is
@@ -90,7 +92,7 @@ class Particle(object):
         
         # dimensionality
         self.ndim = len(self.r)
-    
+
 class ParticleCollection(object):
     
     def __init__(self, particles=None, r=None, v=None, m=None, units=None):
@@ -147,7 +149,11 @@ class ParticleCollection(object):
         
         # Create internal G in the correct unit system
         self._G = G.decompose(bases=self._units.values()).value
-        
+    
+    @property
+    def units(self):
+        return self._units.values()
+    
     @property
     def r(self):
         return self._r * self._units['length']
@@ -218,8 +224,7 @@ class ParticleCollection(object):
             kwargs (optional)
                 Keyword arguments that get passed to scatter_plot_matrix
         """   
-        assert len(coord_names) == self.ndim, "Must pass a coordinate name for "
-                                              "each dimension."
+        assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
         
         labels = [r"{0} [{1}]".format(nm, self.r.unit)
                     for nm in coord_names]
@@ -240,8 +245,7 @@ class ParticleCollection(object):
             kwargs (optional)
                 Keyword arguments that get passed to scatter_plot_matrix
         """   
-        assert len(coord_names) == self.ndim, "Must pass a coordinate name for "
-                                              "each dimension."
+        assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
         
         labels = [r"{0} [{1}]".format(nm, self.r.unit)
                     for nm in coord_names]
@@ -251,9 +255,49 @@ class ParticleCollection(object):
                                        **kwargs)
         return fig, axes
 
+class Orbit(object):
+    
+    def __init__(self, t, r, v, m):
+        """ Represents a massive particle at a given position with a velocity.
+            
+            Parameters
+            ----------
+            t : astropy.units.Quantity
+                Time.
+            r : astropy.units.Quantity
+                Position.
+            v : astropy.units.Quantity
+                Velocity.
+            m : astropy.units.Quantity
+                Mass.
+        """
+        
+        _validate_quantity(t, unit_like=u.s)
+        _validate_quantity(r, unit_like=u.km)
+        _validate_quantity(v, unit_like=u.km/u.s)
+        _validate_quantity(m, unit_like=u.kg)
+        
+        self.t = t
+        self.r = r
+        self.v = v
+        self.m = m
+        
+        if self.r.value.ndim > 2 or self.v.value.ndim > 2:
+            raise ValueError("The Orbit class represents a single orbit."
+                             "For a collection of orbits, use "
+                             "OrbitCollection.")
+        
+        if self.r.value.shape != self.v.value.shape:
+            raise ValueError("Position vector and velocity vector must have the"
+                             "same shape ({0} vs {1})".format(self.r.value.shape,
+                                                              self.v.value.shape))
+        
+        # dimensionality
+        self.ndim = self.r.value.shape[1]
+
 class OrbitCollection(object):
         
-    def __init__(self, orbits=None, t, r=None, v=None, m=None, units=None):
+    def __init__(self, orbits=None, t=None, r=None, v=None, m=None, units=None):
         """ Represents a collection of orbits, e.g. positions and velocities 
             over time for a set of particles.
             
@@ -305,24 +349,3 @@ class OrbitCollection(object):
     def t(self):
         return self._t * self._units['time']
     
-    def interpolate(self, t):
-        """ Interpolate the orbit onto the specified time grid. 
-        
-            Parameters
-            ----------
-            t : astropy.units.Quantity
-                The new grid of times to interpolate on to.
-        """
-        
-        if not isinstance(t, u.Quantity):
-            raise TypeError("New time grid must be an Astropy Quantity object.")
-        
-        new_t = t.to(self.t.unit)
-        
-        new_r = np.zeros((len(new_t), 3))
-        new_v = np.zeros((len(new_t), 3))
-        for i in range(3):
-            new_r[:,i] = interpolate.interp1d(self.t.value, self.r[:,i].value, kind='cubic')(new_t.value)
-            new_v[:,i] = interpolate.interp1d(self.t.value, self.v[:,i].value, kind='cubic')(new_t.value)
-        
-        return Orbit(t=new_t, r=new_r*self.r.unit, v=new_v*self.v.unit, m=self.m)
