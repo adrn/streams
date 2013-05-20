@@ -24,7 +24,7 @@ __all__ = ["infer_potential", "max_likelihood_parameters"]
 logger = logging.getLogger(__name__)
 
 def infer_potential(ln_posterior, p0, steps=100, 
-                    burn_in=None, pool=None, args=None):
+                    burn_in=None, pool=None, args=()):
     
     """ Given a set of particles and the orbit of the progenitor system, 
         infer the model halo parameters by using MCMC to optimize the 

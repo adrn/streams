@@ -24,6 +24,7 @@ from ..potential.lm10 import param_ranges, param_units
 from ..nbody import Orbit, OrbitCollection
 from ..data import SgrCen, SgrSnapshot
 from ._lm10 import lm10_acceleration
+from ..integrate import leapfrog
 
 __all__ = ["ln_posterior", "ln_posterior_lm10", "ln_likelihood", "ln_likelihood_lm10"]
 
@@ -108,10 +109,11 @@ def ln_likelihood(p, param_names, particles, satellite, t):
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     potential = LawMajewski2010(**halo_params)
     
-    t,r,v = leapfrog(lm10_acceleration, satellite.r, satellite.v, t=t)
+    t,r,v = leapfrog(lm10_acceleration, satellite.r.value, 
+                     satellite.v.value, t=t)
     satellite_orbit = Orbit(t=t, r=r, v=v, m=1.*u.M_sun)
     
-    t,r,v = leapfrog(lm10_acceleration, particles.r, particles.v, t=t)
+    t,r,v = leapfrog(lm10_acceleration, particles.r.value, particles.v.value, t=t)
     particle_orbits = OrbitCollection(t=t, r=r, v=v, m=np.ones(len(r))*u.M_sun,
                                       units=[u.kpc, u.Myr, u.M_sun])
     
