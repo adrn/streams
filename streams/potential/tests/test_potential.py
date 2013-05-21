@@ -72,7 +72,14 @@ class TestPointMass(object):
         grid = np.linspace(-5.,5)*u.au
         fig,axes = potential.plot(ndim=2, grid=grid)
         fig.savefig(os.path.join(plot_path, "point_mass_2d.png"))
-    
+        
+        # 3-d case
+        potential = PointMassPotential(unit_system=self.usys,
+                                       m=1.*u.M_sun, 
+                                       r_0=[0.,0.,0.]*u.au)
+        grid = np.linspace(-5.,5)*u.au
+        fig,axes = potential.plot(ndim=3, grid=grid)
+        fig.savefig(os.path.join(plot_path, "point_mass_3d.png"))
     
     
 def test_composite(self):
