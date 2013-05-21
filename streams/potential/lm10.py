@@ -13,8 +13,9 @@ import os, sys
 import numpy as np
 import astropy.units as u
 
-from .core import CompositePotential, UnitSystem
+from .core import CartesianPotential, CompositePotential, UnitSystem
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
+from ._lm10_acceleration import lm10_acceleration
 
 true_params = dict(v_halo=(121.858*u.km/u.s),
                    q1=1.38,
@@ -88,35 +89,48 @@ class LawMajewski2010(CompositePotential):
                                               disk=disk,
                                               halo=halo)
 
-def DerpLawMajewski2010(**halo_parameters):
-    """ Construct the Milky Way gravitational potential used by 
-        Law & Majewski 2010 for their Nbody simulation with Sgr.
-    """
+class CLawMajewski2010(CartesianPotential):
     
-    if len(halo_parameters) == 0:
-        halo_parameters = halo_params
-    
-    gal_units = [u.radian, u.Myr, u.kpc, u.M_sun]
-    potential = CompositePotential(units=gal_units, 
-                                   origin=[0.,0.,0.]*u.kpc)
-    potential["disk"] = MiyamotoNagaiPotential(gal_units,
-                                  m=1.E11*u.M_sun, 
-                                  a=6.5*u.kpc,
-                                  b=0.26*u.kpc,
-                                  origin=[0.,0.,0.]*u.kpc)
-    
-    potential["bulge"] = HernquistPotential(gal_units,
-                               m=3.4E10*u.M_sun,
-                               c=0.7*u.kpc,
-                               origin=[0.,0.,0.]*u.kpc)
+    def __init__(self, unit_system, **parameters):
+        """ Represents the functional form of the Galaxy potential used by 
+            Law and Majewski 2010. 
+            
+            Note::
+                For this function, the evaluation and acceleration functions
+                are implemented in Cython!
+            
+            Miyamoto-Nagai disk
+            Hernquist bulge
+            Logarithmic halo
+            
+            Model parameters: q1, qz, phi, v_halo
+            
+            Parameters
+            ----------
+            parameters : dict
+                A dictionary of parameters for the potential definition.
+        """
         
-    params = halo_params.copy()
-    for key,val in halo_parameters.items():
-        params[key] = val
+        latex = ""
+        
+        unit_system = UnitSystem(u.kpc, u.Myr, u.radian, u.M_sun)
+        unit_system = self._validate_unit_system(unit_system)
+        
+        ###
+        
+        if "r_0" not in parameters.keys():
+            parameters["r_0"] = [0.,0.,0.]*unit_system._reg["length"]
+        
+        for p in ["q1", "q2", "qz", "phi", "v_halo", "r_halo"]:
+            assert p in parameters.keys(), \
+                    "You must specify the parameter '{0}'.".format(p)
+        
+        # get functions for evaluating potential and derivatives
+        f,df = _cartesian_logarithmic_lj_model(unit_system.bases)
+        super(LogarithmicPotentialLJ, self).__init__(unit_system, 
+                                                     f=f, f_prime=df, 
+                                                     latex=latex, 
+                                                     parameters=parameters)
+
     
-    potential["halo"] = LogarithmicPotentialLJ(gal_units,
-                                  origin=[0.,0.,0.]*u.kpc,
-                                  **params)
-    #halo_potential = LogarithmicPotentialLJ(bases, **params)
     
-    return potential
