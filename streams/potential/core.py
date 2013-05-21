@@ -278,7 +278,82 @@ class CartesianPotential(Potential):
         fig.suptitle(self._repr_latex_(), fontsize=24)
 
         return fig, axes
+    
+    def plot_acceleration(self, ndim, grid, axes=None, **kwargs):
+        """ Plot equipotentials of the acceleration field. Must pass in a grid 
+            array to evaluate the potential over. This function takes care of 
+            the meshgridding...
+            
+            Parameters
+            ----------
+            ndim : int
+                Number of dimensions. TODO: this is not quite right...
+            grid : astropy.units.Quantity
+                Coordinate grid to compute the potential on. Should be a 1D
+                array, and is used for all dimensions.
+            axes : matplotlib.Axes (optional)
+            kwargs : dict
+                kwargs passed to either contourf() or plot().
+
+        """
+                
+        if not hasattr(grid, 'unit'):
+            raise TypeError("grid must be a Quantity object")
         
+        if axes == None:
+            if ndim > 1:
+                fig, axes = plt.subplots(ndim-1, ndim-1, 
+                                         sharex=True, sharey=True, 
+                                         figsize=(12,12))
+            else:
+                fig, axes = plt.subplots(1, 1, figsize=(12,12))
+        
+        try:
+            axes[0,0]
+        except TypeError:
+            axes = np.array([[axes]])
+        
+        fig = axes[0,0].figure
+        
+        if ndim == 1:
+            raise NotImplementedError("1D potential not implemented")
+            axes[0,0].plot(grid, self.value_at(grid))
+            axes[0,0].set_xlabel("[{0}]".format(grid.unit))
+            axes[0,0].set_ylabel(self._repr_latex_())
+            return fig,axes    
+                
+        else:
+            for i in range(1,ndim):
+                for jj in range(ndim-1):
+                    ii = i-1
+                    if jj > ii:
+                        axes[ii,jj].set_visible(False)
+                        continue
+
+                    X1, X2 = np.meshgrid(grid.value,grid.value)
+
+                    r = np.array([np.zeros_like(X1.ravel()) for xx in range(ndim)])
+                    r[jj] = X1.ravel()
+                    r[i] = X2.ravel()
+                    r = r.T*grid.unit
+                    
+                    acc = self.acceleration_at(r).value
+                    cs = axes[ii,jj].contourf(X1, X2, 
+                                              np.sqrt(np.sum(acc**2,axis=1)).reshape(X1.shape), 
+                                              cmap=cm.bone_r, **kwargs)
+
+            cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
+            fig.colorbar(cs, cax=cax)
+
+            # Label the axes
+            for jj in range(ndim-1):
+                axes[-1,jj].set_xlabel("[{0}]".format(r.unit))
+                axes[jj,0].set_ylabel("[{0}]".format(r.unit))
+
+        fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
+        fig.suptitle(self._repr_latex_(), fontsize=24)
+
+        return fig, axes
         
 class CompositePotential(dict, CartesianPotential):
     
@@ -327,7 +402,7 @@ class CompositePotential(dict, CartesianPotential):
             r : ndarray
                 Position to compute the value at in same units as Potential.
         """
-        return sum([p._value_at(r) for p in self.values()])
+        return np.sum([p._value_at(r) for p in self.values()], axis=0)
     
     def _acceleration_at(self, r):
         """ Compute the acceleration due to the potential at the given 
@@ -339,4 +414,4 @@ class CompositePotential(dict, CartesianPotential):
             r : ndarray
                 Position to compute the value at in same units as Potential.
         """
-        return sum([p._acceleration_at(r) for p in self.values()])
+        return np.sum([p._acceleration_at(r) for p in self.values()], axis=0)

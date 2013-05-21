@@ -73,6 +73,9 @@ class TestPointMass(object):
         fig,axes = potential.plot(ndim=2, grid=grid)
         fig.savefig(os.path.join(plot_path, "point_mass_2d.png"))
         
+        fig,axes = potential.plot_acceleration(ndim=2, grid=grid)
+        fig.savefig(os.path.join(plot_path, "point_mass_2d_acceleration.png"))
+        
         # 3-d case
         potential = PointMassPotential(unit_system=self.usys,
                                        m=1.*u.M_sun, 
@@ -80,6 +83,9 @@ class TestPointMass(object):
         grid = np.linspace(-5.,5)*u.au
         fig,axes = potential.plot(ndim=3, grid=grid)
         fig.savefig(os.path.join(plot_path, "point_mass_3d.png"))
+        
+        fig,axes = potential.plot_acceleration(ndim=3, grid=grid)
+        fig.savefig(os.path.join(plot_path, "point_mass_3d_acceleration.png"))
 
 class TestComposite(object):
     usys = UnitSystem(u.au, u.M_sun, u.yr)
@@ -121,6 +127,9 @@ class TestComposite(object):
         grid = np.linspace(-5.,5)*u.au
         fig,axes = potential.plot(ndim=3, grid=grid)
         fig.savefig(os.path.join(plot_path, "two_equal_point_masses.png"))
+        
+        fig,axes = potential.plot_acceleration(ndim=3, grid=grid)
+        fig.savefig(os.path.join(plot_path, "two_equal_point_masses_acceleration.png"))
     
     def test_plot_composite2(self):
         potential = CompositePotential(unit_system=self.usys)
@@ -136,6 +145,9 @@ class TestComposite(object):
         grid = np.linspace(-5.,5)*u.au
         fig,axes = potential.plot(ndim=3, grid=grid)
         fig.savefig(os.path.join(plot_path, "two_different_point_masses.png"))
+        
+        fig,axes = potential.plot_acceleration(ndim=3, grid=grid)
+        fig.savefig(os.path.join(plot_path, "two_different_point_masses_acceleration.png"))
 
     def test_many_point_masses(self, N=20):
         potential = CompositePotential(unit_system=self.usys)
@@ -150,6 +162,9 @@ class TestComposite(object):
         grid = np.linspace(-1.,1,50)*u.au
         fig,axes = potential.plot(ndim=3, grid=grid)
         fig.savefig(os.path.join(plot_path, "many_point_mass.png"))
+        
+        fig,axes = potential.plot_acceleration(ndim=3, grid=grid)
+        fig.savefig(os.path.join(plot_path, "many_point_mass_acceleration.png"))
 
 class TestMiyamotoNagai(object):
     usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
@@ -168,6 +183,9 @@ class TestMiyamotoNagai(object):
         grid = np.linspace(-20.,20, 50)*u.kpc
         fig,axes = potential.plot(ndim=3, grid=grid)
         fig.savefig(os.path.join(plot_path, "miyamoto_nagai.png"))
+        
+        fig,axes = potential.plot_acceleration(ndim=3, grid=grid)
+        fig.savefig(os.path.join(plot_path, "miyamoto_nagai_acceleration.png"))
     
     def test_composite(self):
         potential = CompositePotential(unit_system=self.usys)
@@ -183,6 +201,9 @@ class TestMiyamotoNagai(object):
         grid = np.linspace(-20.,20, 50)*u.kpc
         fig,axes = potential.plot(ndim=3, grid=grid)
         fig.savefig(os.path.join(plot_path, "miyamoto_nagai_imbh.png"))
+        
+        fig,axes = potential.plot_acceleration(ndim=3, grid=grid)
+        fig.savefig(os.path.join(plot_path, "miyamoto_nagai_imbh_acceleration.png"))
 
 class TestHernquist(object):
     usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
@@ -199,6 +220,9 @@ class TestHernquist(object):
         grid = np.linspace(-20.,20, 50)*u.kpc
         fig,axes = potential.plot(grid=grid,ndim=3)
         fig.savefig(os.path.join(plot_path, "hernquist.png"))
+        
+        fig,axes = potential.plot_acceleration(grid=grid,ndim=3)
+        fig.savefig(os.path.join(plot_path, "hernquist_acceleration.png"))
         
 class TestLogarithmicPotentialLJ(object):
     usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
@@ -219,6 +243,9 @@ class TestLogarithmicPotentialLJ(object):
         grid = np.linspace(-20.,20, 50)*u.kpc
         fig,axes = potential.plot(grid=grid,ndim=3)
         fig.savefig(os.path.join(plot_path, "log_halo_lj.png"))
+        
+        fig,axes = potential.plot_acceleration(grid=grid,ndim=3)
+        fig.savefig(os.path.join(plot_path, "log_halo_lj_acceleration.png"))
 
 class TestCompositeGalaxy(object):
     usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
@@ -249,3 +276,6 @@ class TestCompositeGalaxy(object):
         grid = np.linspace(-20.,20, 50)*u.kpc
         fig,axes = potential.plot(grid=grid, ndim=3)
         fig.savefig(os.path.join(plot_path, "composite_galaxy.png"))
+        
+        fig,axes = potential.plot_acceleration(grid=grid, ndim=3)
+        fig.savefig(os.path.join(plot_path, "composite_galaxy_acceleration.png"))
