@@ -11,10 +11,6 @@ import os, sys
 
 # Third-party
 import numpy as np
-from astropy.table import Table, Column
-import astropy.io.fits as fits
-import astropy.io.ascii as ascii
-import astropy.coordinates as coord
 import astropy.units as u
 from astropy.utils.misc import isiterable
 
