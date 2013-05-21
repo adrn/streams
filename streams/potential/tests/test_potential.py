@@ -64,10 +64,14 @@ class TestPointMass(object):
                                              [-39.487906,0.,0.], decimal=5)
     
     def test_pointmass_plot(self):
-    
+        
+        # 2-d case
+        potential = PointMassPotential(unit_system=self.usys,
+                                       m=1.*u.M_sun, 
+                                       r_0=[0.,0.]*u.au)
         grid = np.linspace(-5.,5)*u.au
-        fig,axes = potential.plot(grid,grid,grid)
-        fig.savefig(os.path.join(plot_path, "one_point_mass.png"))
+        fig,axes = potential.plot(ndim=2, grid=grid)
+        fig.savefig(os.path.join(plot_path, "point_mass_2d.png"))
     
     
     

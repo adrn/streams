@@ -191,106 +191,89 @@ class CartesianPotential(Potential):
         return self._acceleration_at(_r) * u.CompositeUnit(1., c.bases, 
                                                            c.powers)
     
-    ####
     def _repr_latex_(self):
         """ Generate a latex representation of the potential. This is used by
             the IPython notebook to render nice latex equations.
         """
-        # TODO: some way to also show parameter values?
         return u'${0}$'.format(self._latex)
 
-    def _r_to_xyz(self, r):
-        #if isinstance(r, u.Quantity):
-        #    r = r.decompose(bases=self.units.values()).value
-        
-        if len(r.shape) == 1: 
-            x,y,z = r
-        else:
-            x = r[:,0]
-            y = r[:,1]
-            z = r[:,2]
-        
-        return x,y,z
-
-    def plot(self, x, y, z, axes=None, plot_kwargs=dict()):
+    def plot(self, ndim, grid, axes=None, **kwargs):
         """ Plot equipotentials lines. Must pass in grid arrays to evaluate the
             potential over (positional args). This function takes care of the
             meshgridding...
             
             Parameters
             ----------
-            x,y,z : astropy.units.Quantity
-                Coordinate grids to compute the potential over.
+            ndim : int
+                Number of dimensions. TODO: this is not quite right...
+            grid : astropy.units.Quantity
+                Coordinate grid to compute the potential on. Should be a 1D
+                array, and is used for all dimensions.
             axes : matplotlib.Axes (optional)
-            plot_kwargs : dict
+            kwargs : dict
                 kwargs passed to either contourf() or plot().
 
         """
-        
-        coords = [x,y,z]
-        
-        assert x.unit == y.unit
-        assert z.unit == z.unit
+                
+        if not hasattr(grid, 'unit'):
+            raise TypeError("grid must be a Quantity object")
         
         if axes == None:
-            if self.ndim > 1:
-                fig, axes = plt.subplots(self.ndim-1, self.ndim-1, sharex=True, sharey=True, figsize=(12,12))
+            if ndim > 1:
+                fig, axes = plt.subplots(ndim-1, ndim-1, 
+                                         sharex=True, sharey=True, 
+                                         figsize=(12,12))
             else:
                 fig, axes = plt.subplots(1, 1, figsize=(12,12))
+        
+        try:
+            axes[0,0]
+        except TypeError:
+            axes = np.array([[axes]])
+        
+        fig = axes[0,0].figure
+        
+        if ndim == 1:
+            raise NotImplementedError("1D potential not implemented")
+            axes[0,0].plot(grid, self.value_at(grid))
+            axes[0,0].set_xlabel("[{0}]".format(grid.unit))
+            axes[0,0].set_ylabel(self._repr_latex_())
+            return fig,axes    
+                
         else:
-            if self.ndim > 1:
-                fig = axes[0,0].figure
-            else:
-                fig = axes.figure
-
-        if self.ndim > 2:
-            for ii in range(self.ndim):
-                for jj in range(self.ndim):
-                    if jj > ii or jj == 2:
-                        try:
-                            axes[ii,jj].set_visible(False)
-                        except:
-                            pass
+            for i in range(1,ndim):
+                for jj in range(ndim-1):
+                    ii = i-1
+                    print(ii,jj)
+                    if jj > ii:
+                        axes[ii,jj].set_visible(False)
                         continue
 
-                    bottom = coords[jj]
-                    side = coords[ii]
-                    X1, X2 = np.meshgrid(bottom,side)
+                    X1, X2 = np.meshgrid(grid.value,grid.value)
 
-                    r = np.array([np.zeros_like(X1.ravel()) for xx in range(self.ndim)])
+                    r = np.array([np.zeros_like(X1.ravel()) for xx in range(ndim)])
                     r[jj] = X1.ravel()
-                    r[ii] = X2.ravel()
-                    r = r.T*x.unit
+                    r[i] = X2.ravel()
+                    r = r.T*grid.unit
                     
-                    cs = axes[ii-1,jj].contourf(X1, X2, 
-                                                self.value_at(r).reshape(X1.shape), 
-                                                cmap=cm.bone_r, **plot_kwargs)
+                    cs = axes[ii,jj].contourf(X1, X2, 
+                                              self.value_at(r).value.reshape(X1.shape), 
+                                              cmap=cm.bone_r, **kwargs)
 
             cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
             fig.colorbar(cs, cax=cax)
 
             # Label the axes
-            axes[0,0].set_ylabel("{0} [{1}]".format("y", x.unit))
-            axes[1,0].set_xlabel("{0} [{1}]".format("x", x.unit))
-            axes[1,0].set_ylabel("{0} [{1}]".format("z", x.unit))
-            axes[1,1].set_xlabel("{0} [{1}]".format("y", x.unit))
-
-        elif self.ndim == 2:
-            raise NotImplementedError()
-            bottom = coord_array[:, 0]
-            side = coord_array[:, 1]
-            X, Y = np.meshgrid(bottom,side)
-            cs = axes.contourf(X, Y, self.value_at(X.ravel(),Y.ravel()).reshape(X.shape), cmap=cm.Blues, **kwargs)
-            fig.colorbar(cs, shrink=0.9)
-        elif self.ndim == 1:
-            raise NotImplementedError()
-            axes.plot(coord_array, self.value_at(coord_array))
+            for jj in range(ndim-1):
+                axes[-1,jj].set_xlabel("[{0}]".format(r.unit))
+                axes[jj,0].set_ylabel("[{0}]".format(r.unit))
 
         fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
         fig.suptitle(self._repr_latex_(), fontsize=24)
 
         return fig, axes
-
+        
+        
 class CompositePotential(dict, CartesianPotential):
     
     def __init__(self, units, origin, *args, **kwargs):
@@ -367,5 +350,3 @@ class CompositePotential(dict, CartesianPotential):
             except NameError:
                 value = -potential.f_prime(x,y,z)
         return value
-
-    
