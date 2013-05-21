@@ -339,7 +339,7 @@ class CartesianPotential(Potential):
                     
                     acc = self.acceleration_at(r).value
                     cs = axes[ii,jj].contourf(X1, X2, 
-                                              np.sqrt(np.sum(acc**2,axis=1)).reshape(X1.shape), 
+                                              np.log(np.sum(acc**2,axis=1)).reshape(X1.shape), 
                                               cmap=cm.bone_r, **kwargs)
 
             cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
