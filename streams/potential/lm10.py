@@ -91,7 +91,7 @@ class LawMajewski2010(CompositePotential):
 
 class CLawMajewski2010(CartesianPotential):
     
-    def __init__(self, unit_system, **parameters):
+    def __init__(self, **parameters):
         """ Represents the functional form of the Galaxy potential used by 
             Law and Majewski 2010. 
             
@@ -116,21 +116,16 @@ class CLawMajewski2010(CartesianPotential):
         unit_system = UnitSystem(u.kpc, u.Myr, u.radian, u.M_sun)
         unit_system = self._validate_unit_system(unit_system)
         
-        ###
-        
-        if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system._reg["length"]
-        
         for p in ["q1", "q2", "qz", "phi", "v_halo", "r_halo"]:
-            assert p in parameters.keys(), \
-                    "You must specify the parameter '{0}'.".format(p)
+            if p not in parameters.keys():
+                parameters[p] = true_params[p]
         
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_logarithmic_lj_model(unit_system.bases)
-        super(LogarithmicPotentialLJ, self).__init__(unit_system, 
-                                                     f=f, f_prime=df, 
-                                                     latex=latex, 
-                                                     parameters=parameters)
+        f = lambda *args,**kwargs: None
+        super(CLawMajewski2010, self).__init__(unit_system, 
+                                               f=f, f_prime=lm10_acceleration, 
+                                               latex=latex, 
+                                               parameters=parameters)
 
     
     

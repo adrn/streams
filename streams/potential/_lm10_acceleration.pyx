@@ -36,7 +36,8 @@ ctypedef np.double_t DTYPE_t
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True) 
 def lm10_acceleration(np.ndarray[double, ndim=2] r, 
-                      double q1, double qz, double phi, double v_halo):
+                      double q1, double qz, double phi, double v_halo, 
+                      double q2, double r_halo):
     
     cdef np.ndarray[double, ndim=2] data
     
@@ -57,9 +58,9 @@ def lm10_acceleration(np.ndarray[double, ndim=2] r,
     # Halo
     cdef double q1_sq, q2_sq, qz_sq, r_halo_sq, v_halo_sq
     q1_sq = q1*q1
-    q2_sq = 1.
+    q2_sq = q2*q2
     qz_sq = qz*qz
-    r_halo_sq = 12.*12 # kpc
+    r_halo_sq = r_halo*r_halo # kpc
     v_halo_sq = v_halo*v_halo
     
     x,y,z = r[:,0],r[:,1],r[:,2]

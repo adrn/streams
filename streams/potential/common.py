@@ -121,7 +121,7 @@ def _cartesian_miyamoto_nagai_model(bases):
         
         sqrtz = np.sqrt(z*z + b*b)
         z_term = a + sqrtz
-        fac = _G*m*(x*x + y*y + z_term*z_term)**-1.5
+        fac = -_G*m*(x*x + y*y + z_term*z_term)**-1.5
 
         dx = fac*x
         dy = fac*y
@@ -205,7 +205,7 @@ def _cartesian_hernquist_model(bases):
         except IndexError:
             R = np.sqrt(np.sum((rr)**2, axis=-1))
         
-        fac = _G*m / ((R + c)**2 * R)
+        fac = -_G*m / ((R + c)**2 * R)
         return fac*rr
         
     return (f, df)
@@ -297,7 +297,7 @@ def _cartesian_logarithmic_lj_model(bases):
         dy = fac * (2.*C2*y + C3*x)
         dz = 2.* fac * z * qz**-2
         
-        return np.array([dx,dy,dz]).T
+        return -np.array([dx,dy,dz]).T
         
     return (f, df)
 

@@ -18,9 +18,10 @@ import matplotlib.pyplot as plt
 
 from ..core import *
 from ..common import *
+from ..lm10 import LawMajewski2010, CLawMajewski2010
 
 Ntrials = 100
-Nparticles = 100
+Nparticles = 10000
 
 usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
 
@@ -93,4 +94,11 @@ def test_time_composite():
                                        r_halo=12.*u.kpc)
                                            
     time_potential(potential)
+
+def test_compare_cython():
+    py = LawMajewski2010(v_halo=121*u.km/u.s)
+    cy = CLawMajewski2010(v_halo=121*u.km/u.s)
+    
+    time_potential(py)
+    time_potential(cy)
 
