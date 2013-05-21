@@ -192,7 +192,7 @@ def _cartesian_hernquist_model(bases):
     
     def f(r,r_0,m,c): 
         try:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))[:,np.newaxis]
         except IndexError:
             rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))
         val = -_G * m / (rr + c)
@@ -201,7 +201,7 @@ def _cartesian_hernquist_model(bases):
     def df(r,r_0,m,c):
         rr = r-r_0
         try:
-            R = np.sqrt(np.sum((rr)**2, axis=-1))
+            R = np.sqrt(np.sum((rr)**2, axis=-1))[:,np.newaxis]
         except IndexError:
             R = np.sqrt(np.sum((rr)**2, axis=-1))
         

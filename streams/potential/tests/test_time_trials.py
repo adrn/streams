@@ -27,6 +27,7 @@ usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
 def time_potential(potential):
     r = np.random.uniform(1, 50, size=(Nparticles, 3))*u.kpc
     print()
+    print(potential)
     
     a = time.time()
     for ii in range(Ntrials):
@@ -50,5 +51,46 @@ def test_time_miyamoto():
                                        a=6.5*u.kpc,
                                        b=0.26*u.kpc,
                                        r_0=[0.,0.,0.]*u.kpc)
+    time_potential(potential)
+
+def test_time_hernquist():
+           
+    potential = HernquistPotential(unit_system=usys,
+                                   m=1.E11*u.M_sun, 
+                                   c=0.7*u.kpc)
+    time_potential(potential)
+
+def test_time_log():
+           
+    potential = LogarithmicPotentialLJ(unit_system=usys,
+                                           q1=1.4,
+                                           q2=1.,
+                                           qz=1.5,
+                                           phi=1.69*u.radian,
+                                           v_halo=120.*u.km/u.s,
+                                           r_halo=12.*u.kpc)
+                                           
+    time_potential(potential)
+
+def test_time_composite():
+    potential = CompositePotential(unit_system=usys)
+    potential["disk"] = MiyamotoNagaiPotential(unit_system=usys,
+                                       m=1.E11*u.M_sun, 
+                                       a=6.5*u.kpc,
+                                       b=0.26*u.kpc,
+                                       r_0=[0.,0.,0.]*u.kpc)
+    
+    potential["bulge"] = HernquistPotential(unit_system=usys,
+                                   m=1.E11*u.M_sun, 
+                                   c=0.7*u.kpc)
+    
+    potential["halo"] = LogarithmicPotentialLJ(unit_system=usys,
+                                       q1=1.4,
+                                       q2=1.,
+                                       qz=1.5,
+                                       phi=1.69*u.radian,
+                                       v_halo=120.*u.km/u.s,
+                                       r_halo=12.*u.kpc)
+                                           
     time_potential(potential)
 
