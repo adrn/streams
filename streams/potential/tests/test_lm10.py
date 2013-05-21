@@ -18,5 +18,5 @@ from ..lm10 import LawMajewski2010
 
 def test_simple():
     p = LawMajewski2010()
-    
     p = LawMajewski2010(v_halo=121*u.km/u.s)
+

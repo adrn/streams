@@ -13,17 +13,16 @@ import os, sys
 import numpy as np
 import astropy.units as u
 
-from .core import CompositePotential
-#from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
+from .core import CompositePotential, UnitSystem
+from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
 
-halo_params = dict(v_halo=(121.858*u.km/u.s),
-                    q1=1.38,
-                    q2=1.0,
-                    qz=1.36,
-                    phi=1.692969*u.radian,
-                    r_halo=12.*u.kpc)
+true_params = dict(v_halo=(121.858*u.km/u.s),
+                   q1=1.38,
+                   q2=1.0,
+                   qz=1.36,
+                   phi=1.692969*u.radian,
+                   r_halo=12.*u.kpc)
 
-# RANGED MUST BE IN UNITS BELOW!!!
 param_ranges = dict(qz=(1.,2.),
                     q1=(1.,2.),
                     q2=(1.,2.),
@@ -46,7 +45,50 @@ param_to_latex = dict(q1=r"$q_1$",
                       r_halo=r"$r_{halo}$"
                       )
 
-def LawMajewski2010(**halo_parameters):
+class LawMajewski2010(CompositePotential):
+    
+    def __init__(self, **parameters):
+        """ Represents the functional form of the Galaxy potential used by 
+            Law and Majewski 2010.
+            
+            Miyamoto-Nagai disk
+            Hernquist bulge
+            Logarithmic halo
+            
+            Model parameters: q1, qz, phi, v_halo
+            
+            Parameters
+            ----------
+            parameters : dict
+                A dictionary of parameters for the potential definition.
+        """
+        
+        latex = ""
+        
+        unit_system = UnitSystem(u.kpc, u.Myr, u.radian, u.M_sun)
+        unit_system = self._validate_unit_system(unit_system)
+        
+        for p in ["q1", "q2", "qz", "phi", "v_halo", "r_halo"]:
+            if p not in parameters.keys():
+                parameters[p] = true_params[p]
+        
+        bulge = HernquistPotential(unit_system,
+                                   m=3.4E10*u.M_sun,
+                                   c=0.7*u.kpc)
+                                   
+        disk = MiyamotoNagaiPotential(unit_system,
+                                      m=1.E11*u.M_sun, 
+                                      a=6.5*u.kpc,
+                                      b=0.26*u.kpc)
+        halo =LogarithmicPotentialLJ(unit_system,
+                                     **parameters)
+        
+        super(LawMajewski2010, self).__init__(unit_system, 
+                                              bulge=bulge,
+                                              disk=disk,
+                                              halo=halo)
+
+def DerpLawMajewski2010(**halo_parameters):
     """ Construct the Milky Way gravitational potential used by 
         Law & Majewski 2010 for their Nbody simulation with Sgr.
     """
