@@ -58,6 +58,13 @@ class UnitSystem(object):
     @property
     def bases(self):
         return self._reg.values()
+    
+    def __eq__(self, other):
+        for rtype in required_units:
+            if self._reg[rtype] != other._reg[rtype]:
+                return False
+        
+        return True
 
 class Potential(object):
 
@@ -244,7 +251,6 @@ class CartesianPotential(Potential):
             for i in range(1,ndim):
                 for jj in range(ndim-1):
                     ii = i-1
-                    print(ii,jj)
                     if jj > ii:
                         axes[ii,jj].set_visible(False)
                         continue
@@ -276,77 +282,61 @@ class CartesianPotential(Potential):
         
 class CompositePotential(dict, CartesianPotential):
     
-    def __init__(self, units, origin, *args, **kwargs):
+    def __init__(self, unit_system, *args, **kwargs):
         """ Represents a potential composed of several sub-potentials. For 
             example, two point masses or a galactic disk + halo. The origins 
             of the components are *relative to the origin of the composite*.
             
             Parameters
             ----------
-            units : list, dict
-                Either a list or dictionary of base units specifying the 
-                system of units for this potential. 
+            unit_system : UnitSystem
+                Defines a system of physical base units for the potential.
         """
-        self.units = self._validate_unit_system(units)
-        self.origin = self._validate_origin(origin)
+        self.unit_system = self._validate_unit_system(unit_system)
         
         for v in kwargs.values():
             if not isinstance(v, Potential):
                 raise TypeError("Values may only be Potential objects, not "
                                 "{0}.".format(type(v)))
         
-        self.ndim = len(self.origin)
-        
         dict.__init__(self, *args, **kwargs)
     
-    def __repr__(self):
-        """ TODO: figure out what to display... """
-        
-        return "<CompositePotential ??????>"
+    def __repr__(self):        
+        return "<CompositePotential: {0}>".format(",".join(self.keys()))
     
     def __setitem__(self, key, value):
         if not isinstance(value, Potential):
             raise TypeError("Values may only be Potential objects, not "
                             "{0}.".format(type(value)))
+        
+        if self.unit_system != value.unit_system:
+            raise TypeError("Potential has a different unit system!")
+            
         super(CompositePotential, self).__setitem__(key, value)
     
     @property
     def _latex(self):
-        return "; ".join([x._latex for x in self.values()])
+        return "$\n$".join(set([x._latex for x in self.values()]))
     
-    def value_at(self, r):
-        """ Compute the value of the potential at the given position(s) 
+    def _value_at(self, r):
+        """ Compute the value of the potential at the given position(s), 
+            assumed to be in the same system of units as the Potential.
             
             Parameters
             ----------
-            r : astropy.units.Quantity
-                Position to compute the value at.
+            r : ndarray
+                Position to compute the value at in same units as Potential.
         """
-        
-        x,y,z = self._r_to_xyz(r)
-        
-        for potential in self.values():
-            try:
-                value += potential.f(x,y,z)
-            except NameError:
-                value = potential.f(x,y,z)
-        return value
-
-    def acceleration_at(self, r):
+        return sum([p._value_at(r) for p in self.values()])
+    
+    def _acceleration_at(self, r):
         """ Compute the acceleration due to the potential at the given 
-            position(s) 
+            position(s), assumed to be in the same system of units as 
+            the Potential.
             
             Parameters
             ----------
-            r : astropy.units.Quantity
-                Position to compute the acceleration at.
+            r : ndarray
+                Position to compute the value at in same units as Potential.
         """
-        
-        x,y,z = self._r_to_xyz(r)
-        
-        for potential in self.values():
-            try:
-                value += -potential.f_prime(x,y,z)
-            except NameError:
-                value = -potential.f_prime(x,y,z)
-        return value
+        return sum([p._acceleration_at(r) for p in self.values()])
