@@ -106,15 +106,25 @@ def ln_likelihood(p, param_names, particles, satellite, t):
     for ii,param in enumerate(param_names):
         halo_params[param] = p[ii]*param_units[param]
     
+    args = (halo_params['q1'], halo_params['qz'], halo_params['phi'], halo_params['v_halo'])
+    
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     potential = LawMajewski2010(**halo_params)
     
-    t,r,v = leapfrog(lm10_acceleration, satellite.r.value, 
-                     satellite.v.value, t=t)
-    satellite_orbit = Orbit(t=t, r=r, v=v, m=1.*u.M_sun)
+    xx,r,v = leapfrog(lm10_acceleration, satellite.r.value, 
+                      satellite.v.value, t=t, args=args)
+    satellite_orbit = OrbitCollection(t=t, 
+                                      r=r*satellite.r.unit,
+                                      v=v*satellite.v.unit,
+                                      m=1.*u.M_sun,
+                                      units=[u.kpc, u.Myr, u.M_sun])
     
-    t,r,v = leapfrog(lm10_acceleration, particles.r.value, particles.v.value, t=t)
-    particle_orbits = OrbitCollection(t=t, r=r, v=v, m=np.ones(len(r))*u.M_sun,
+    xx,r,v = leapfrog(lm10_acceleration, particles.r.value, 
+                     particles.v.value, t=t, args=args)
+    particle_orbits = OrbitCollection(t=t, 
+                                      r=r*particles.r.unit, 
+                                      v=v*particles.v.unit, 
+                                      m=np.ones(len(r))*u.M_sun,
                                       units=[u.kpc, u.Myr, u.M_sun])
     
     return -generalized_variance(potential, particle_orbits, satellite_orbit)
