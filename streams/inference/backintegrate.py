@@ -14,34 +14,39 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import G
 
-from streams.potential import *
-from streams.simulation import TestParticle
+from ..potential import *
 
 __all__ = ["relative_normalized_coordinates",
            "phase_space_distance",
            "minimum_distance_matrix", 
            "generalized_variance"]
 
-def relative_normalized_coordinates(particle_orbits, satellite_orbit, 
+def relative_normalized_coordinates(particle_6d, satellite_6d, 
                                     r_tide, v_esc):
     """ Compute the coordinates of particles relative to the satellite, 
         with positions normalized by the tidal radius and velocities
-        normalized by the escape velocity.
+        normalized by the escape velocity. 
+        
+        Note::
+            Assumes the particle and satellite position/velocity 
+            units are the same!
         
         Parameters
         ----------
-        particle_orbits : TestParticleOrbit
-        satellite_orbit : TestParticleOrbit
+        particle_6d : ndarray
+            An Ntimesteps x Nparticles x 6 array containing position and 
+            velocity for each particle at each timestep.
+        satellite_6d : ndarray
+            An Ntimesteps x 6 array containing the satellite position and
+            velocity at each timestep.
         r_tide : astropy.units.Quantity
         v_esc : astropy.units.Quantity
     """
-    # THE BELOW IS A HACK HACK HACK BECAUSE OF:
-    #   https://github.com/astropy/astropy/issues/974  
-    #if not (particle_orbits.t == satellite_orbit.t).all():
+    assert particle_6d.ndim == 3
+    assert satellite_6d.ndim == 2
     
-    if not (particle_orbits.t.value == satellite_orbit.t.value).all():
-        raise ValueError("Interpolation not yet supported. Time vectors must "
-                         "be aligned.")
+    # TODO: Got here, but then realize I need to re-work potential first...
+    #    -> Should compute r_tide and v_esc here!
     
     if particle_orbits.r.value.ndim == 2:
         sat_r = satellite_orbit.r
