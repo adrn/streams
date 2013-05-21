@@ -17,14 +17,102 @@ import matplotlib.pyplot as plt
 from ..core import *
 from ..common import *
 
-#np.testing.assert_array_almost_equal(new_quantity.value, 130.4164, decimal=5)
-
 plot_path = "plots/tests/potential"
 if not os.path.exists(plot_path):
-    os.mkdir(plot_path)
+    os.makedirs(plot_path)
 else:
     for plot in os.listdir(plot_path):
         os.remove(os.path.join(plot_path,plot))
+
+class TestPointMass(object):
+    usys = UnitSystem(u.au, u.M_sun, u.yr)
+    
+    def test_pointmass_creation(self):
+        potential = PointMassPotential(unit_system=self.usys,
+                                       m=1.*u.M_sun, 
+                                       r_0=[0.,0.,0.]*u.au)
+        
+        # no mass provided
+        with pytest.raises(AssertionError):
+            potential = PointMassPotential(unit_system=self.usys, 
+                                           r_0=[0.,0.,0.]*u.au)
+        
+        # no r_0 provided
+        with pytest.raises(AssertionError):
+            potential = PointMassPotential(unit_system=self.usys, 
+                                           m=1.*u.M_sun)
+    
+    
+    def test_pointmass_eval(self):
+        potential = PointMassPotential(unit_system=self.usys,
+                                       m=1.*u.M_sun, 
+                                       r_0=[0.,0.,0.]*u.au)
+                                       
+        # Test with a single position
+        r = [1.,0.,0.]*u.au
+        pot_val = potential.value_at(r)
+        assert pot_val.unit.is_equivalent(u.J/u.kg)
+        _pot_val = potential._value_at(r.value)
+        
+        np.testing.assert_array_almost_equal(_pot_val, -39.487906, decimal=5) 
+        
+        acc_val = potential.acceleration_at(r)
+        assert acc_val.unit.is_equivalent(u.m/u.s**2)
+        _acc_val = potential._acceleration_at(r.value)
+        
+        np.testing.assert_array_almost_equal(_acc_val, 
+                                             [-39.487906,0.,0.], decimal=5)
+    
+    def test_pointmass_plot(self):
+    
+        grid = np.linspace(-5.,5)*u.au
+        fig,axes = potential.plot(grid,grid,grid)
+        fig.savefig(os.path.join(plot_path, "one_point_mass.png"))
+    
+    
+    
+def test_composite(self):
+    
+    potential = CompositePotential(units=[u.au,u.yr,u.M_sun], 
+                               origin=[0.,0.,0.]*u.au)
+    potential["one"] = PointMassPotential(units=potential.units,
+                                          origin=[-1.,0.,0.]*u.au,
+                                          m=1.*u.M_sun)
+    print(potential.value_at([0.17157,0.,0.]*u.au), 
+          potential.acceleration_at([0.17157,0.,0.]*u.au))
+    
+    potential["two"] = PointMassPotential(units=potential.units,
+                                            origin=[1.,0.,0.]*u.au,
+                                            m=0.5*u.M_sun)
+    
+    # Where forces cancel
+    np.testing.assert_array_almost_equal(
+                    sum(potential.acceleration_at([0.17157,0.,0.]*u.au)),
+                    0.0, decimal=3)
+    
+    grid = np.linspace(-5.,5)*u.au
+    fig,axes = potential.plot(grid,grid,grid)
+    fig.savefig(os.path.join(plot_path, "two_point_mass.png"))
+
+def test_many_point_masses(self, N=20):
+    
+    potential = CompositePotential(units=[u.au,u.yr,u.M_sun], 
+                               origin=[0.,0.,0.]*u.au)
+    
+    for ii in range(N):
+        org = np.random.uniform(-1., 1., size=3)
+        org[2] = 0. # x-y plane
+        potential[str(ii)] = PointMassPotential(units=potential.units,
+                                          origin=org*u.au,
+                                          m=np.random.uniform()*u.M_sun)
+    
+    grid = np.linspace(-1.,1,50)*u.au
+    fig,axes = potential.plot(grid,grid,grid)
+    fig.savefig(os.path.join(plot_path, "many_point_mass.png"))
+        
+        
+        
+# BELOW HERE NEEDS TO BE CLEANED
 
 def test_failure():
     
@@ -75,72 +163,6 @@ def test_api():
     
     potential["mw"] = mw_potential
     potential["satellite"] = satellite_potential
-
-class TestPointMass(object):
-
-    def test_creation(self):
-        potential = PointMassPotential(units=[u.au, u.M_sun, u.yr],
-                                       m=1.*u.M_sun, 
-                                       origin=[0.,0.,0.]*u.au)
-        
-        with pytest.raises(AssertionError):
-            potential = PointMassPotential(units=[u.au, u.M_sun, u.yr],
-                                       origin=[0.,0.,0.]*u.au)
-        
-        r = [1.,0.,0.]*u.au
-        pot_val = potential.value_at(r)
-        
-        np.testing.assert_array_almost_equal(
-            np.sqrt(-pot_val), 2*np.pi, decimal=3) 
-        
-        acc_val = potential.acceleration_at(r)
-        
-        np.testing.assert_array_almost_equal(acc_val, 
-                                             [-39.48621,0.,0.], decimal=2)
-        
-        grid = np.linspace(-5.,5)*u.au
-        fig,axes = potential.plot(grid,grid,grid)
-        fig.savefig(os.path.join(plot_path, "one_point_mass.png"))
-    
-    def test_composite(self):
-        
-        potential = CompositePotential(units=[u.au,u.yr,u.M_sun], 
-                                   origin=[0.,0.,0.]*u.au)
-        potential["one"] = PointMassPotential(units=potential.units,
-                                              origin=[-1.,0.,0.]*u.au,
-                                              m=1.*u.M_sun)
-        print(potential.value_at([0.17157,0.,0.]*u.au), 
-              potential.acceleration_at([0.17157,0.,0.]*u.au))
-        
-        potential["two"] = PointMassPotential(units=potential.units,
-                                                origin=[1.,0.,0.]*u.au,
-                                                m=0.5*u.M_sun)
-        
-        # Where forces cancel
-        np.testing.assert_array_almost_equal(
-                        sum(potential.acceleration_at([0.17157,0.,0.]*u.au)),
-                        0.0, decimal=3)
-        
-        grid = np.linspace(-5.,5)*u.au
-        fig,axes = potential.plot(grid,grid,grid)
-        fig.savefig(os.path.join(plot_path, "two_point_mass.png"))
-    
-    def test_many_point_masses(self, N=20):
-        
-        potential = CompositePotential(units=[u.au,u.yr,u.M_sun], 
-                                   origin=[0.,0.,0.]*u.au)
-        
-        for ii in range(N):
-            org = np.random.uniform(-1., 1., size=3)
-            org[2] = 0. # x-y plane
-            potential[str(ii)] = PointMassPotential(units=potential.units,
-                                              origin=org*u.au,
-                                              m=np.random.uniform()*u.M_sun)
-        
-        grid = np.linspace(-1.,1,50)*u.au
-        fig,axes = potential.plot(grid,grid,grid)
-        fig.savefig(os.path.join(plot_path, "many_point_mass.png"))
-        
 
 gal_units = [u.kpc, u.M_sun, u.Myr, u.radian]
 class TestMiyamotoNagai(object):

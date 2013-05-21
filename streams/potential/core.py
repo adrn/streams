@@ -21,106 +21,85 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import astropy.units as u
 
-__all__ = ["CartesianPotential", "CompositePotential"]
+__all__ = ["UnitSystem", "CartesianPotential", "CompositePotential"]
 
-class Potential(object):
+required_units = ['length', 'mass', 'time']
+class UnitSystem(object):
     
-    def _validate_unit_system(self, unit_bases):
-        """ Given a list or dictionary of astropy unit objects, make sure it is
-            a valid system of units: e.g., make sure it contains a length, mass,
-            and time (at minimum).
+    def __init__(self, *bases):
+        """ Given Unit objects as positional arguments, defines a 
+            system of physical units. At minimum, must contain length,
+            time, and mass.
         """
         
-        try:
-            unit_bases = unit_bases.values()
-        except AttributeError:
-            pass
+        # Internal registry
+        self._reg = dict()
         
-        # Check that unit_bases contains at least a length, mass, and time unit
-        _base_map = dict()
-        for base in unit_bases:
-            tp = base.physical_type
-            if tp in _base_map.keys():
-                raise ValueError("You specified multiple {0} units! Only one "
-                                 "unit per physical type permitted."
-                                 .format(tp))
+        # For each unit provided, store it in the registry keyed by the
+        #   physical type of the unit
+        for ubase in bases:
+            try:
+                ptype = ubase.physical_type
+            except AttributeError:
+                raise TypeError("Non-standard Unit object '{0}'".format(ubase))
             
-            # hack because v0.2 of Astropy doesn't have a 'time' physical type
-            if tp == "unknown":
-                if base.is_equivalent(u.s):
-                    tp = "time"
-                else:
-                    raise ValueError("Unknown physical type for unit {0}."
-                                     .format(base))
+            if self._reg.has_key(ptype):
+                raise ValueError("Multiple units provided for physical type: "
+                                 "'{0}'".format(ptype))
             
-            _base_map[tp] = base
+            self._reg[ptype] = ubase
         
-        if "length" not in _base_map.keys() or \
-           "mass" not in _base_map.keys() or \
-           "time" not in _base_map.keys():
-            raise ValueError("You must specify, at minimum, a length unit, "
-                             "mass unit, and time unit.")
-        
-        return _base_map
+        # Check to make sure each of the required physical types is provided
+        for runit in required_units:
+            if runit not in self._reg.keys():
+                raise ValueError("Must define, at minimum, a system with "
+                                 "{0}".format(','.join(required_units)))
     
-    def _validate_origin(self, origin):
-        """ Make sure the origin is a Quantity and has length-like units """
+    @property
+    def bases(self):
+        return self._reg.values()
+
+class Potential(object):
+
+    def _validate_unit_system(self, unit_system):
+        """ Make sure the provided unit_system is a UnitSystem object. """
         
-        try:
-            if origin.unit.physical_type != "length":
-                raise ValueError("origin must have length units, not {0}."
-                                 .format(origin.unit.physical_type))
-        except AttributeError:
-            raise TypeError("origin must be an Astropy Quantity-like object. "
-                            "You passed a {0}.".format(type(origin)))
+        if not hasattr(unit_system, "bases"):
+            raise TypeError("unit_system must be a value UnitSystem object, "
+                            "or an astropy.units system.")
         
-        return origin
+        return unit_system
 
 class CartesianPotential(Potential):
 
-    def __init__(self, units, f, f_prime, latex=None, parameters=None, 
-                 origin=None):
+    def __init__(self, unit_system, f, f_prime, latex=None, parameters=None):
         """ A baseclass for representing gravitational potentials in Cartesian
             coordinates. You must specify the functional form of the potential
             component. You may also optionally add derivatives using the 
             f_prime keyword.
-            
-            Note::
-                Currently only supports 3D potentials.
 
             Parameters
             ----------
-            units : list, dict
-                Either a list or dictionary of base units specifying the 
-                system of units for this potential. 
+            unit_system : UnitSystem
+                Defines a system of physical base units for the potential.
             f : function
                 The functional form of the potential component. This must be a
                 function that accepts N arguments where N is the dimensionality.
             f_prime : tuple (optional)
-                A functions that computes the derivatives of the potential.
+                A function that computes the derivatives of the potential.
             latex : str (optional)
                 The latex representation of this potential component. Will be
                 used to make sexy output in iPython Notebook.
             parameters : dict (optional)
                 Any extra parameters that the potential function requires.
-            origin : astropy.units.Quantity (optional)
-                Must specify the location of the potential origin along each 
-                dimension. For example, it could look like 
-                    origin=[0,0,0]*u.kpc
             
         """
-                
-        self.units = self._validate_unit_system(units)
+            
+        self.unit_system = self._validate_unit_system(unit_system)
         
-        if origin == None:
-            origin = [0.,0.,0.] * self.units["length"]
-        
-        self.origin = self._validate_origin(origin)
-        self.ndim = len(self.origin)       
-        
-        self._unscaled_parameters = parameters
-        self.parameters = self._rescale_parameters(parameters)
-        self._scaled_origin = self.origin.decompose(bases=self.units.values()).value
+        # Convert parameters to the given unit_system
+        self.parameters = parameters
+        self._parameters = self._rescale_parameters(parameters)
         
         # Make sure the f is callable, and that the component doesn't already
         #   exist in the potential
@@ -128,17 +107,13 @@ class CartesianPotential(Potential):
             raise TypeError("'f' parameter must be a callable function! You "
                             "passed in a '{0}'".format(f.__class__))
         
-        self.f = lambda *args: f(*args, 
-                                 origin=self._scaled_origin, 
-                                 **self.parameters)
+        self.f = lambda r: f(r, **self._parameters)
         
         if f_prime != None:
             if not hasattr(f_prime, '__call__'):
                 raise TypeError("'f_prime' must be a callable function! You "
                                 "passed in a '{0}'".format(f_prime.__class__))
-            self.f_prime = lambda *args: f_prime(*args, 
-                                 origin=self._scaled_origin, 
-                                 **self.parameters)
+            self.f_prime = lambda r: f_prime(r, **self._parameters)
         else:
             self.f_prime = None
 
@@ -160,12 +135,23 @@ class CartesianPotential(Potential):
         _params = dict()
         for param_name, val in parameters.items():
             try:
-                _params[param_name] = val.decompose(bases=self.units.values()).value
+                _params[param_name] = val.decompose(bases=self.unit_system.bases).value
             except AttributeError: # not Quantity-like
                 _params[param_name] = val
         
         return _params
     
+    def _value_at(self, r):
+        """ Compute the value of the potential at the given position(s), 
+            assumed to be in the same system of units as the Potential.
+            
+            Parameters
+            ----------
+            r : ndarray
+                Position to compute the value at in same units as Potential.
+        """
+        return self.f(r)
+        
     def value_at(self, r):
         """ Compute the value of the potential at the given position(s) 
             
@@ -174,10 +160,22 @@ class CartesianPotential(Potential):
             r : astropy.units.Quantity
                 Position to compute the value at.
         """
-        
-        x,y,z = self._r_to_xyz(r)
-        return self.f(x,y,z)
-
+        _r = r.decompose(bases=self.unit_system.bases).value
+        c = (u.J/u.kg).decompose(bases=self.unit_system.bases)
+        return self._value_at(_r) * u.CompositeUnit(1., c.bases, c.powers)
+    
+    def _acceleration_at(self, r):
+        """ Compute the acceleration due to the potential at the given 
+            position(s), assumed to be in the same system of units as 
+            the Potential.
+            
+            Parameters
+            ----------
+            r : ndarray
+                Position to compute the value at in same units as Potential.
+        """
+        return self.f_prime(r)
+    
     def acceleration_at(self, r):
         """ Compute the acceleration due to the potential at the given 
             position(s) 
@@ -188,9 +186,12 @@ class CartesianPotential(Potential):
                 Position to compute the acceleration at.
         """
         
-        x,y,z = self._r_to_xyz(r)
-        return -self.f_prime(x,y,z)
-
+        _r = r.decompose(bases=self.unit_system.bases).value
+        c = (u.m/u.s**2).decompose(bases=self.unit_system.bases)
+        return self._acceleration_at(_r) * u.CompositeUnit(1., c.bases, 
+                                                           c.powers)
+    
+    ####
     def _repr_latex_(self):
         """ Generate a latex representation of the potential. This is used by
             the IPython notebook to render nice latex equations.

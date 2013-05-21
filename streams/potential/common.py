@@ -20,16 +20,13 @@ from .core import CartesianPotential
 
 #import _common # minimal gains from using Cython
 
-__all__ = ["PointMassPotential", "MiyamotoNagaiPotential", "HernquistPotential",
-           "LogarithmicPotentialLJ"]
+__all__ = ["PointMassPotential"]
 
-def _raise(ex):
-    raise ex
+#, "MiyamotoNagaiPotential", "HernquistPotential", "LogarithmicPotentialLJ"]
 
-####################################################################################
-#    Potential due to a point mass at the given position
-####################################################################################
-
+############################################################
+#    Potential due to a point mass at a given position
+#
 def _cartesian_point_mass_model(bases):
     """ Generates functions to evaluate a point mass potential and its 
         derivatives at a specified position.
@@ -39,30 +36,30 @@ def _cartesian_point_mass_model(bases):
     """
     
     # scale G to be in this unit system
-    _G = G.decompose(bases=bases.values()).value
+    _G = G.decompose(bases=bases).value
     
-    def f(x,y,z,origin,m): 
-        return -_G * m / np.sqrt((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)
+    def f(r,r_0,m): 
+        return -_G * m / np.sqrt(np.sum((r-r_0)**2, axis=-1))
     
-    def df(x,y,z,origin,m): 
-        denom = ((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)**1.5
-        
-        dx = _G * m*(x-origin[0]) / denom
-        dy = _G * m*(y-origin[1]) / denom
-        dz = _G * m*(z-origin[2]) / denom
-        
-        return np.array([dx,dy,dz])
+    def df(r,r_0,m):
+        try:
+            a = (np.sum((r-r_0)**2, axis=-1)**-1.5)[:,np.newaxis]
+        except IndexError:
+            a = (np.sum((r-r_0)**2, axis=-1)**-1.5)
+            
+        return -_G * m * (r-r_0) * a
         
     return (f, df)
 
 class PointMassPotential(CartesianPotential):
 
-    def __init__(self, units, origin=None, **parameters):
+    def __init__(self, unit_system, **parameters):
         """ Represents a point-mass potential at the given origin.
 
-            $\Phi = -\frac{GM}{x-x_0}$
+            $\Phi = -\frac{GM}{r-r_0}$
             
             The parameters dictionary should include:
+                r_0 : location of the point mass
                 m : mass
             
             Parameters
@@ -70,11 +67,6 @@ class PointMassPotential(CartesianPotential):
             units : list, iterable
                 A list of astropy Unit objects that specify the base units
                 for length, time, mass, etc.
-            origin : astropy.units.Quantity (optional)
-                Must specify the location of the point mass along each 
-                dimension. For example, it could look like 
-                    origin=[0,0,0]*u.kpc
-                Defaults to (0,0,0).
             parameters : dict
                 A dictionary of parameters for the potential definition.
 
@@ -83,13 +75,20 @@ class PointMassPotential(CartesianPotential):
         latex = "$\\Phi = -\\frac{GM}{r-r_0}$"
         
         assert "m" in parameters.keys(), "You must specify a mass."
+        assert "r_0" in parameters.keys(), "You must specify a location for the mass."
+        
+        unit_system = self._validate_unit_system(unit_system)
         
         # get functions for evaluating potential and derivatives
-        units = self._validate_unit_system(units)
-        f,df = _cartesian_point_mass_model(units)
-        super(PointMassPotential, self).__init__(units, f=f, f_prime=df, 
-                                                 latex=latex, origin=origin,
+        f,df = _cartesian_point_mass_model(unit_system.bases)
+        super(PointMassPotential, self).__init__(unit_system, 
+                                                 f=f, f_prime=df, 
+                                                 latex=latex, 
                                                  parameters=parameters)
+
+
+'''
+
 
 ####################################################################################
 #    Miyamoto-Nagai Disk potential from Miyamoto & Nagai 1975
@@ -284,6 +283,8 @@ class LogarithmicPotentialLJ(CartesianPotential):
         super(LogarithmicPotentialLJ, self).__init__(units, f=f, f_prime=df, 
                                                  latex=latex, origin=origin,
                                                  parameters=parameters)
+
+'''
 
 """
 
