@@ -19,6 +19,7 @@ import astropy.units as u
 
 # Project
 from ..util import project_root
+from .rrlyrae import *
 
 __all__ = ["read_linear", "read_quest", "read_catalina", "read_asas", \
            "read_nsvs", "read_stripe82"]

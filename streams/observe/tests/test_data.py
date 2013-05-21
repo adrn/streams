@@ -16,7 +16,7 @@ import astropy.units as u
 import numpy as np
 import pytest
 
-from ..rrlyrae import *
+from ..data import *
 
 @pytest.mark.parametrize(("reader", ), [(read_linear,),
                                         (read_quest,),
