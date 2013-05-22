@@ -9,7 +9,6 @@ numpy_incl_path = os.path.join(numpy_base_path, "core", "include")
 
 integrate = Extension("streams.potential._lm10_acceleration", 
                       ["streams/potential/_lm10_acceleration.pyx"],
-                      include_dirs=[numpy_incl_path])
 
 setup(
     name="Streams",

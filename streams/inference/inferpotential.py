@@ -19,16 +19,12 @@ scipy.seterr(all="ignore")
 import astropy.units as u
 import emcee
 
-# Project
-from streams.potential.lm10 import param_ranges
-from streams.inference import ln_posterior, ln_posterior_lm10
-
 __all__ = ["infer_potential", "max_likelihood_parameters"]
 
 logger = logging.getLogger(__name__)
 
-def infer_potential(particles, satellite_ic, t, model_parameters, 
-                    walkers=None, steps=100, burn_in=None, pool=None):
+def infer_potential(ln_posterior, p0, steps=100, 
+                    burn_in=None, pool=None, args=()):
     
     """ Given a set of particles and the orbit of the progenitor system, 
         infer the model halo parameters by using MCMC to optimize the 
@@ -37,17 +33,10 @@ def infer_potential(particles, satellite_ic, t, model_parameters,
         
         Parameters
         ----------
-        particles : TestParticle
-            A set of particles -- positions and velocities -- to integrate
-            backwards with the satellite orbit.
-        satellite_ic : TestParticle
-            The initial conditions of the progenitor satellite orbit.
-        t : numpy.ndarray
-            Array of times to integrate the particles / satellite over.
-        model_parameters : list, tuple
-            List of the names of the model parameters to infer.
-        walkers : int
-            Number of walkers to use in emcee.
+        ln_posterior : func
+            Log-posterior function.
+        p0 : array
+            2D array of starting positions for all walkers.
         steps : int (optional)
             Number of steps for each walker to take through parameter space.
         burn_in : int (optional)
@@ -55,42 +44,24 @@ def infer_potential(particles, satellite_ic, t, model_parameters,
         pool : multiprocessing.Pool, emcee.MPIPool
             A multiprocessing or MPI pool to pass to emcee for wicked awesome
             parallelization!
-            
+        args : (optional)
+            Positional arguments to be passed to the posterior function.
     """
-    
-    # If the number of walkers is not specified, default to twice the number 
-    #   of model parameters
-    if walkers == None:
-        walkers = len(model_parameters) * 2
     
     if burn_in == None:
         burn_in = steps // 10
     
-    # Create the starting points for all walkers
-    for p_name in model_parameters:
-        # sample initial parameter values from uniform distributions over 
-        #   the ranges specified in lm10.py
-        this_p = np.random.uniform(param_ranges[p_name][0], 
-                                   param_ranges[p_name][1],
-                                   size=walkers)
-        try:
-            p0 = np.vstack((p0, this_p))
-        except NameError:
-            p0 = this_p
-    p0 = p0.T
-    
-    # Construct the log posterior probability function to pass in to emcee
-    args = particles, satellite_ic, t
+    assert p0.ndim == 2
+    walkers = len(p0)
    
     # If no pool is specified, just create a single-processor pool
     if pool == None:
         pool = None
     
     # Construct an ensemble sampler to walk through dat model parameter space
-    # 2013-05-01: changed ln_posterior to ln_posterior_lm10
     sampler = emcee.EnsembleSampler(nwalkers=walkers, 
-                                    dim=len(model_parameters), 
-                                    lnpostfn=ln_posterior_lm10, 
+                                    dim=p0.shape[1], 
+                                    lnpostfn=ln_posterior, 
                                     pool=pool, 
                                     args=args)
     

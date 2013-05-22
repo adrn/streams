@@ -25,7 +25,7 @@ from .core import _make_npy_file
 from .gaia import rr_lyrae_add_observational_uncertainties
 from ..util import project_root
 from ..plot.data import scatter_plot_matrix
-from ..simulation import TestParticle, TestParticleOrbit
+from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
 
 __all__ = ["LM10Cen", "LM10Snapshot", "SgrCen", "SgrSnapshot", "read_lm10"]
 
@@ -104,7 +104,6 @@ class KVJSgrData(Table):
         """ Return a list of particles from the position and velocity 
             vectors.
         """
-        from ..simulation import TestParticle
         
         r = np.zeros((len(self), 3))
         r[:,0] = np.array(self["x"])
@@ -116,7 +115,10 @@ class KVJSgrData(Table):
         v[:,1] = np.array(self["vy"])
         v[:,2] = np.array(self["vz"])
         
-        return TestParticle(r*self.r_unit, v*self.v_unit)
+        return ParticleCollection(r=r*self.r_unit, 
+                                  v=v*self.v_unit,
+                                  m=np.ones(len(r))*u.M_sun,
+                                  units=[self.t_unit,self.r_unit,self.v_unit, u.M_sun])
 
 class SgrCen(KVJSgrData):
     
@@ -136,7 +138,7 @@ class SgrCen(KVJSgrData):
         self.dt = self["dt"][0]
     
     def as_orbit(self):
-        """ Return a TestParticleOrbit object. """
+        """ Return an OrbitCollection object. """
         
         r = np.zeros((len(self), 3))
         r[:,0] = np.array(self["x"])
@@ -149,7 +151,10 @@ class SgrCen(KVJSgrData):
         v[:,2] = np.array(self["vz"])
         
         t = np.array(self["t"])
-        return TestParticleOrbit(t*self.t_unit, r*self.r_unit, v*self.v_unit)    
+        return Orbit(t=t*self.t_unit,
+                     r=r*self.r_unit,
+                     v=v*self.v_unit,
+                     m=np.ones(len(r))*u.M_sun)
         
 class SgrSnapshot(KVJSgrData):
 
@@ -307,7 +312,7 @@ class LM10Cen(KVJSgrData):
         return self.as_orbit()[-1]
     
     def as_orbit(self):
-        """ Return a TestParticleOrbit object. """
+        """ Return an Orbit object. """
         
         r = np.zeros((len(self), 3))
         r[:,0] = -np.array(self["x_gc"])
@@ -320,8 +325,11 @@ class LM10Cen(KVJSgrData):
         v[:,2] += (195.*u.km/u.s).to(u.kpc/u.Myr).value
         
         t = np.array(self["t"])
-        
-        return TestParticleOrbit(t*self.t_unit, r*self.r_unit, v*self.v_unit)
+        return OrbitCollection(t=t*self.t_unit,
+                               r=r*self.r_unit,
+                               v=v*self.v_unit,
+                               m=np.ones(len(r))*u.M_sun,
+                               units=[self.t_unit,self.r_unit,self.v_unit, u.M_sun])
         
 def read_lm10(N=None, expr=None):
     """ """
@@ -346,13 +354,12 @@ def read_lm10(N=None, expr=None):
     satellite_data.rename_column("z_gc", "z")
     
     # initial conditions, or, position of the satellite today
-    satellite_ics = dict()
     r = [satellite_data[-1]['x'], satellite_data[-1]['y'], satellite_data[-1]['z']]*u.kpc # kpc
     v = ([230., -35., 195.]*u.km/u.s).to(u.kpc/u.Myr)
     
-    satellite_ic = TestParticle(r, v)
-    satellite_ic.t1 = (satellite_data[-1]['t'] + abs(satellite_data[0]['t'])) * 1000. # Myr
-    satellite_ic.t2 = 0.
+    satellite = Particle(r=r, v=v, m=0.*u.M_sun)
+    satellite.t1 = (satellite_data[-1]['t'] + abs(satellite_data[0]['t'])) * 1000. # Myr
+    satellite.t2 = 0.
     
     # Read in particle data -- a snapshot of particle positions, velocities at
     #   the end of the simulation
@@ -390,8 +397,10 @@ def read_lm10(N=None, expr=None):
     v[:,0] = np.array(particle_data["vx"])
     v[:,1] = np.array(particle_data["vy"])
     v[:,2] = np.array(particle_data["vz"])
-    v = v*u.km/u.s
         
-    particles = TestParticle(r*u.kpc, v.to(u.kpc/u.Myr))
+    particles = ParticleCollection(r=r*u.kpc,
+                                   v=v*u.km/u.s,
+                                   m=np.zeros(len(r))*u.M_sun,
+                                   units=[u.kpc,u.Myr,u.M_sun])
     
-    return satellite_ic, particles
+    return satellite, particles

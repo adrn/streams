@@ -15,7 +15,7 @@ import numpy as np
 import astropy.units as u
 from astropy.utils.misc import isiterable
 
-from ..simulation import TestParticle
+from ..nbody import ParticleCollection
 from .rrlyrae import rrl_M_V
 from .core import apparent_magnitude
 
@@ -174,8 +174,8 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
             new_vx*vx.unit, new_vy*vx.unit, new_vz*vx.unit)
 
 def add_uncertainties_to_particles(particles, **kwargs):
-    """ Given a TestParticle object, add RR Lyrae-like uncertainties and return
-        a new TestParticle with the errors.
+    """ Given a ParticleCollection object, add RR Lyrae-like uncertainties 
+        and return a new ParticleCollection with the errors.
     """
     
     x,y,z,vx,vy,vz = rr_lyrae_add_observational_uncertainties(particles.r[:,0],
@@ -196,4 +196,7 @@ def add_uncertainties_to_particles(particles, **kwargs):
     new_v[:,1] = vy.value
     new_v[:,2] = vz.value
     
-    return TestParticle(r=new_r*particles.r.unit, v=new_v*particles.v.unit)
+    return ParticleCollection(r=new_r*particles.r.unit, 
+                              v=new_v*particles.v.unit,
+                              m=particles.m,
+                              units=particles.units)

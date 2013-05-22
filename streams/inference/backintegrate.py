@@ -151,9 +151,9 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
         Parameters
         ----------
         potential : Potential
-        particle_orbits : TestParticleOrbit
+        particle_orbits : Orbit
             ...
-        satellite_orbit : TestParticleOrbit
+        satellite_orbit : Orbit
             ...
     """
     
@@ -217,10 +217,10 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
         ----------
         potential : Potential
             The full Milky Way potential object.
-        particle_orbits : TestParticleOrbit
+        particle_orbits : Orbit
             An object containing orbit information for a collection of 
             particles.
-        satellite_orbit : TestParticleOrbit
+        satellite_orbit : Orbit
             Data for the Sgr satellite center, interpolated onto the
             time grid for our particles.
     """

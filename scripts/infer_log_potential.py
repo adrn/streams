@@ -29,12 +29,12 @@ from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
 from streams.simulation.config import read
-from streams.simulation import TestParticle
 from streams.data import SgrSnapshot, SgrCen, read_lm10
 from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle
-from streams.potential.lm10 import halo_params
+from streams.inference.lm10 import ln_posterior
+from streams.potential.lm10 import halo_params, param_ranges
 
 global pool
 pool = None
@@ -75,7 +75,7 @@ def main(config_file):
     # Read in Sagittarius simulation data
     if config["particle_source"] == "kvj":
         satellite_orbit = SgrCen().as_orbit()
-        satellite_ic = satellite_orbit[-1]
+        satellite = satellite_orbit[-1]
         
         sgr_snap = SgrSnapshot(N=config["particles"],
                                expr=expr)
@@ -89,11 +89,11 @@ def main(config_file):
         particles = sgr_snap.as_particles()
         
     elif config["particle_source"] == "lm10":
-        satellite_ic, particles = read_lm10(N=config["particles"], expr=expr)
+        satellite, particles = read_lm10(N=config["particles"], expr=expr)
                         
         # Define new time grid -here
-        time_grid = np.arange(satellite_ic.t1,
-                              satellite_ic.t2,
+        time_grid = np.arange(satellite.t1,
+                              satellite.t2,
                               -config["dt"].to(u.Myr).value)
         time_grid *= u.Myr
         
@@ -119,16 +119,28 @@ def main(config_file):
                                                 radial_velocity_error=rv_error,
                                                 distance_error_percent=d_error)
     
-    all_best_parameters = []
-    for bb in range(B):    
+    # Create initial position array for walkers
+    for p_name in config["model_parameters"]:
+        # sample initial parameter values from uniform distributions over 
+        #   the ranges specified in lm10.py
+        this_p = np.random.uniform(param_ranges[p_name][0], 
+                                   param_ranges[p_name][1],
+                                   size=config["walkers"])
         try:
-            sampler = infer_potential(particles, satellite_ic,
-                                      t=time_grid,
-                                      model_parameters=config["model_parameters"],
-                                      walkers=config["walkers"],
-                                      steps=config["steps"],
-                                      burn_in=config["burn_in"],
-                                      pool=pool)
+            p0 = np.vstack((p0, this_p))
+        except NameError:
+            p0 = this_p
+    p0 = p0.T
+    
+    all_best_parameters = []
+    for bb in range(B):        
+        try:
+            sampler = infer_potential(ln_posterior, p0, steps=config["steps"],
+                                      burn_in=config["burn_in"], pool=pool,
+                                      args=(config["model_parameters"], 
+                                            particles, 
+                                            satellite, 
+                                            time_grid))
         except:
             if config["mpi"]: pool.close()
             raise

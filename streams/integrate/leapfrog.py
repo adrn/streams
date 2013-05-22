@@ -16,7 +16,7 @@ import astropy.units as u
 __all__ = ["leapfrog"]
 
 def leapfrog(acceleration_function, initial_position, initial_velocity, 
-             t=None, t1=None, t2=None, dt=None):
+             t=None, t1=None, t2=None, dt=None, args=()):
              
     """ Given an acceleration function and initial conditions, integrate from 
         t1 to t2 with a timestep dt using Leapfrog integration. Alternatively,
@@ -70,13 +70,13 @@ def leapfrog(acceleration_function, initial_position, initial_velocity,
     rs = np.zeros((Ntimesteps,) + r_i.shape, dtype=np.float64)
     vs = np.zeros((Ntimesteps,) + v_i.shape, dtype=np.float64)
 
-    a_ip1 = acceleration_function(r_i).T
+    a_ip1 = acceleration_function(r_i, *args).T
     for ii in range(Ntimesteps):
         t = times[ii]
         a_i = a_ip1
         
         r_ip1 = r_i + v_i*dt + 0.5*a_i*dt*dt        
-        a_ip1 = acceleration_function(r_ip1).T
+        a_ip1 = acceleration_function(r_ip1, *args).T
         v_ip1 = v_i + 0.5*(a_i + a_ip1)*dt
 
         rs[ii,:,:] = r_i
