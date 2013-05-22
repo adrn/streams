@@ -19,7 +19,7 @@ import matplotlib.gridspec as gridspec
 import astropy.units as u
 
 from ..potential.lm10 import param_to_latex, param_ranges
-from ..potential.lm10 import halo_params as true_halo_params
+from ..potential.lm10 import true_params
 
 __all__ = ["discrete_cmap", "emcee_plot", "plot_sampler_pickle"]
 
@@ -124,7 +124,7 @@ def emcee_plot(sampler, params, converged_idx,
                  edgecolor="none")
         
         if show_true:
-            val = true_halo_params[param]
+            val = true_params[param]
             if hasattr(val, "value"):
                 val = val.value
                 
