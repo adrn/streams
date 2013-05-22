@@ -81,14 +81,18 @@ class LawMajewski2010(CompositePotential):
                                       m=1.E11*u.M_sun, 
                                       a=6.5*u.kpc,
                                       b=0.26*u.kpc)
-        halo =LogarithmicPotentialLJ(unit_system,
-                                     **parameters)
+        halo = LogarithmicPotentialLJ(unit_system,
+                                      **parameters)
         
         super(LawMajewski2010, self).__init__(unit_system, 
                                               bulge=bulge,
                                               disk=disk,
                                               halo=halo)
-
+        
+        self._acceleration_at = lambda r: lm10_acceleration(r, **halo._parameters)
+        
+# NOTE: Now that I've implemented the _acceleration_at in the above, this Cython
+#   potential is obsolete.
 class CLawMajewski2010(CartesianPotential):
     
     def __init__(self, **parameters):
@@ -119,6 +123,8 @@ class CLawMajewski2010(CartesianPotential):
         for p in ["q1", "q2", "qz", "phi", "v_halo", "r_halo"]:
             if p not in parameters.keys():
                 parameters[p] = true_params[p]
+        
+        parameters["r_0"] = [0.,0.,0.]*u.kpc
         
         # get functions for evaluating potential and derivatives
         f = lambda *args,**kwargs: None

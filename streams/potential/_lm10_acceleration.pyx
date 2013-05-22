@@ -37,7 +37,7 @@ ctypedef np.double_t DTYPE_t
 @cython.cdivision(True) 
 def lm10_acceleration(np.ndarray[double, ndim=2] r, 
                       double q1, double qz, double phi, double v_halo, 
-                      double q2, double r_halo):
+                      double q2, double r_halo, np.ndarray[double, ndim=1] r_0):
     
     cdef np.ndarray[double, ndim=2] data
     
