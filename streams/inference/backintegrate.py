@@ -21,6 +21,51 @@ __all__ = ["relative_normalized_coordinates",
            "minimum_distance_matrix", 
            "generalized_variance"]
 
+def r_tide(potential, satellite, orbit):
+    """ Compute the tidal radius of the given satellite over the orbit 
+        or position provided.
+        
+        Parameters
+        ----------
+        potential : streams.CartesianPotential
+        satellite : streams.Particle
+        orbit : streams.Orbit
+    """
+    
+    # assume the satellite has the right units already...
+    m_sat = satellite.m.value # 2.5E8 * u.M_sun
+    
+    # Radius of Sgr center relative to galactic center
+    R_orbit = np.sqrt(np.sum(orbit._r**2., axis=-1)) 
+    
+    _G = 4.4997533243534949e-12 # kpc^3 / Myr^2 / M_sun
+    
+    m_halo_enc = potential["halo"]._parameters["v_halo"]**2 * R_orbit/_G
+    m_enc = potential["disk"]._parameters["m"] + \
+            potential["bulge"]._parameters["m"] + \
+            m_halo_enc
+    
+    return R_orbit * (m_sat / m_enc)**(1./3)
+
+def v_esc(potential, satellite, r_tide):
+    """ Compute the escape velocity of a satellite in a potential given
+        its tidal radius.
+        
+        Parameters
+        ----------
+        potential : streams.CartesianPotential
+        satellite : streams.Particle
+        r_tide : ndarray
+    
+    """
+    
+    # assume the satellite has the right units already...
+    m_sat = satellite.m.value # 2.5E8 * u.M_sun
+    
+    _G = 4.4997533243534949e-12 # kpc^3 / Myr^2 / M_sun
+    
+    return np.sqrt(_G * m_sat / r_tide)
+    
 def relative_normalized_coordinates(particle_6d, satellite_6d, 
                                     r_tide, v_esc):
     """ Compute the coordinates of particles relative to the satellite, 
@@ -98,7 +143,7 @@ def phase_space_distance(R,V):
     else:
         dist = np.sqrt(np.sum(R**2,axis=2) + np.sum(V**2, axis=2))
         
-    return dist
+    return dist        
 
 def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     """ Compute the Nx6 matrix of minimum phase-space distance vectors.
