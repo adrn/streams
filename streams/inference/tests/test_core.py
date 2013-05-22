@@ -30,9 +30,10 @@ def test_time_likelihood():
                                    m=np.zeros(100)*u.M_sun,
                                    units=[u.kpc,u.Myr,u.M_sun])
     
-    satellite = Particle(r=np.random.random(3)*u.kpc,
-                         v=np.random.random(3)*u.kpc/u.Myr,
-                         m=1*u.M_sun)
+    satellite = ParticleCollection(r=np.random.uniform(size=(1,3))*u.kpc,
+                                   v=np.random.uniform(size=(1,3))*u.kpc/u.Myr,
+                                   m=2.5E8*u.M_sun,
+                                   units=[u.kpc,u.Myr,u.M_sun])
     
     t = np.arange(0., 6000., 5.)*u.Myr
     

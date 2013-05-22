@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 import astropy.units as u
 
-from ...potential.lm10 import LawMajewski2010,CLawMajewski2010
+from ...potential.lm10 import LawMajewski2010
 from ...nbody import OrbitCollection
 from ..backintegrate import *
 

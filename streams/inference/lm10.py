@@ -13,17 +13,11 @@ import os, sys
 
 # Third-party
 import numpy as np
-import emcee
-from emcee.utils import MPIPool
 import astropy.units as u
 
-from ..simulation import generalized_variance
-from ..potential import LawMajewski2010
-from ..potential.lm10 import halo_params as true_halo_params
-from ..potential.lm10 import param_ranges, param_units
+from ..inference import generalized_variance
+from ..potential.lm10 import LawMajewski2010, true_params, param_ranges, param_units
 from ..nbody import Orbit, OrbitCollection
-from ..data import SgrCen, SgrSnapshot
-from ._lm10 import lm10_acceleration
 from ..integrate import leapfrog
 
 __all__ = ["ln_posterior", "ln_posterior_lm10", "ln_likelihood", "ln_likelihood_lm10"]
@@ -101,26 +95,27 @@ def ln_likelihood(p, param_names, particles, satellite, t):
     """ Evaluate the likelihood function for a given set of halo 
         parameters.
     """
+    halo_params = dict(zip(param_names, p))
     
-    halo_params = true_halo_params.copy()
-    for ii,param in enumerate(param_names):
-        halo_params[param] = p[ii]*param_units[param]
-    
-    args = (halo_params['q1'], halo_params['qz'], halo_params['phi'], halo_params['v_halo'])
+    #halo_params = true_params.copy()
+    #for ii,param in enumerate(param_names):
+    #    halo_params[param] = p[ii]*param_units[param]
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
-    potential = LawMajewski2010(**halo_params)
+    lm10 = LawMajewski2010(**halo_params)
     
-    xx,r,v = leapfrog(lm10_acceleration, satellite.r.value, 
-                      satellite.v.value, t=t, args=args)
+    xx,r,v = leapfrog(lm10._acceleration_at, 
+                      satellite._r, satellite._v,
+                      t=t)
     satellite_orbit = OrbitCollection(t=t, 
                                       r=r*satellite.r.unit,
                                       v=v*satellite.v.unit,
                                       m=1.*u.M_sun,
                                       units=[u.kpc, u.Myr, u.M_sun])
     
-    xx,r,v = leapfrog(lm10_acceleration, particles.r.value, 
-                     particles.v.value, t=t, args=args)
+    xx,r,v = leapfrog(lm10._acceleration_at, 
+                      particles._r, particles._v,
+                      t=t)
     particle_orbits = OrbitCollection(t=t, 
                                       r=r*particles.r.unit, 
                                       v=v*particles.v.unit, 
