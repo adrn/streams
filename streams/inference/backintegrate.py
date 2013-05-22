@@ -17,9 +17,10 @@ from astropy.constants import G
 from ..potential import *
 
 __all__ = ["tidal_radius", "escape_velocity",
+           "minimum_distance_matrix",
            "relative_normalized_coordinates",
-           "minimum_distance_matrix", 
            "generalized_variance"]
+
 
 def tidal_radius(potential, satellite_orbit):
     """ Compute the tidal radius of the given satellite over the orbit 
@@ -83,7 +84,7 @@ def relative_normalized_coordinates(potential, particle_orbits, satellite_orbit)
     
     # need to add a new axis to normalize each coordinate component
     r_tide = tidal_radius(potential, satellite_orbit)[:,:,np.newaxis]
-    v_esc = escape_velocity(potential, satellite_orbit, r_tide)[:,:,np.newaxis]
+    v_esc = escape_velocity(potential, satellite_orbit, r_tide)
     
     return (particle_orbits._r - satellite_orbit._r) / r_tide, \
            (particle_orbits._v - satellite_orbit._v) / v_esc
@@ -107,11 +108,13 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     min_time_idx = D_ps.argmin(axis=0)
     
     min_ps = np.zeros((Nparticles,6))
-    for jj,ii in zip(min_time_idx, range(Nparticles)):
+    xx = zip(min_time_idx, range(Nparticles))
+    for kk in range(Nparticles):
+        jj,ii = xx[kk]
         min_ps[ii] = np.append(R[jj,ii], V[jj,ii])
     
     return min_ps
-    
+
 def generalized_variance(potential, particle_orbits, satellite_orbit):
     """ Compute the variance scalar that we will minimize.
         
@@ -119,10 +122,10 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
         ----------
         potential : Potential
             The full Milky Way potential object.
-        particle_orbits : Orbit
+        particle_orbits : OrbitCollection
             An object containing orbit information for a collection of 
             particles.
-        satellite_orbit : Orbit
+        satellite_orbit : OrbitCollection
             Data for the Sgr satellite center, interpolated onto the
             time grid for our particles.
     """

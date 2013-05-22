@@ -34,7 +34,7 @@ m = [2.5E8] * u.M_sun
 satellite_orbit = OrbitCollection(t=t, r=r, v=v, m=m, 
                                   units=[u.kpc, u.Myr, u.M_sun])
 
-Nparticles = 100
+Nparticles = 1000
 t = np.arange(0., 1000., 1.)*u.Myr
 r = np.zeros((len(t),Nparticles,3))
 r[:,:,0] = np.random.uniform(size=(len(t),Nparticles)) * np.linspace(1., 50., len(t)).reshape((len(t),1))
@@ -60,4 +60,14 @@ def test_relative_normalized_coordinates():
     R,V = relative_normalized_coordinates(potential, 
                                           particle_orbits, 
                                           satellite_orbit)
-    print(time.time()-a)
+    print("R,V: {0:.3f} ms".format(1000.*(time.time()-a)))
+    
+def test_minimum_distance_matrix():
+    #a = time.time()
+    minimum_distance_matrix(potential, particle_orbits, satellite_orbit)
+    #print("min. dist. matrix: {0:.3f} ms".format(1000.*(time.time()-a)))
+
+def test_generalized_variance():
+    a = time.time()
+    generalized_variance(potential, particle_orbits, satellite_orbit)
+    print("gen. variance: {0:.3f} ms".format(1000.*(time.time()-a)))
