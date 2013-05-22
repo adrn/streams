@@ -20,7 +20,7 @@ from ..potential.lm10 import LawMajewski2010, true_params, param_ranges, param_u
 from ..nbody import Orbit, OrbitCollection
 from ..integrate import leapfrog
 
-__all__ = ["ln_posterior", "ln_posterior_lm10", "ln_likelihood", "ln_likelihood_lm10"]
+__all__ = ["ln_posterior", "ln_likelihood"]
 
 def ln_p_qz(qz):
     """ Flat prior on vertical (z) axis flattening parameter. """
