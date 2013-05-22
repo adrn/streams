@@ -88,7 +88,6 @@ def test_energy_conserve():
 
 def test_likelihood():
     # TODO: make sure likelihood for correct parameters is higher
-    
     pass
     
 if __name__ == "__main__":
