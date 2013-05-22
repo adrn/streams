@@ -7,8 +7,8 @@ import os, numpy
 numpy_base_path = os.path.split(numpy.__file__)[0]
 numpy_incl_path = os.path.join(numpy_base_path, "core", "include")
 
-integrate = Extension("streams.potential._lm10_acceleration", 
-                      ["streams/potential/_lm10_acceleration.pyx"],
+lm10_acc = Extension("streams.potential._lm10_acceleration", 
+                      ["streams/potential/_lm10_acceleration.pyx"])
 
 setup(
     name="Streams",
@@ -17,5 +17,5 @@ setup(
     author_email="adrn@astro.columbia.edu",
     license="BSD",
     cmdclass = {'build_ext': build_ext},
-    ext_modules=[integrate]
+    ext_modules=[lm10_acc]
 )
