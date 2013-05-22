@@ -85,6 +85,11 @@ def test_energy_conserve():
     ax.set_ylim(-15,15)
     fig.savefig(os.path.join(plot_path, "particles_one_orbit.png"),
                 facecolor="#444444")
+
+def test_likelihood():
+    # TODO: make sure likelihood for correct parameters is higher
+    
+    pass
     
 if __name__ == "__main__":
     import cProfile
