@@ -89,14 +89,9 @@ def main(config_file):
         particles = sgr_snap.as_particles()
         
     elif config["particle_source"] == "lm10":
-        satellite, particles = read_lm10(N=config["particles"], expr=expr)
-                        
-        # Define new time grid -here
-        time_grid = np.arange(satellite.t1,
-                              satellite.t2,
-                              -config["dt"].to(u.Myr).value)
-        time_grid *= u.Myr
-        
+        time_grid, satellite, particles = read_lm10(N=config["particles"], 
+                                                    expr=expr,
+                                                    dt=config["dt"])
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))

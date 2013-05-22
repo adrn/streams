@@ -331,7 +331,7 @@ class LM10Cen(KVJSgrData):
                                m=np.ones(len(r))*u.M_sun,
                                units=[self.t_unit,self.r_unit,self.v_unit, u.M_sun])
         
-def read_lm10(N=None, expr=None):
+def read_lm10(N=None, expr=None, dt=1.):
     """ """
     
     # Read in the file describing the orbit of the satellite.
@@ -359,8 +359,10 @@ def read_lm10(N=None, expr=None):
     
     satellite = ParticleCollection(r=r, v=v, m=[2.5E8]*u.M_sun,
                                    units=[u.kpc,u.Myr,u.M_sun])
-    satellite.t1 = (satellite_data[-1]['t'] + abs(satellite_data[0]['t'])) * 1000. # Myr
-    satellite.t2 = 0.
+    
+    t1 = (satellite_data[-1]['t'] + abs(satellite_data[0]['t'])) * 1000. # Myr
+    t2 = 0.
+    time_grid = np.arange(t1, t2, -dt)*u.Myr
     
     # Read in particle data -- a snapshot of particle positions, velocities at
     #   the end of the simulation
@@ -404,4 +406,4 @@ def read_lm10(N=None, expr=None):
                                    m=np.zeros(len(r))*u.M_sun,
                                    units=[u.kpc,u.Myr,u.M_sun])
     
-    return satellite, particles
+    return time_grid, satellite, particles
