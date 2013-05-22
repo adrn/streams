@@ -106,23 +106,23 @@ def ln_likelihood(p, param_names, particles, satellite, t):
     
     xx,r,v = leapfrog(lm10._acceleration_at, 
                       satellite._r, satellite._v,
-                      t=t)
+                      t=t.value)
     satellite_orbit = OrbitCollection(t=t, 
                                       r=r*satellite.r.unit,
                                       v=v*satellite.v.unit,
-                                      m=1.*u.M_sun,
+                                      m=[1.]*u.M_sun,
                                       units=[u.kpc, u.Myr, u.M_sun])
     
     xx,r,v = leapfrog(lm10._acceleration_at, 
                       particles._r, particles._v,
-                      t=t)
+                      t=t.value)
     particle_orbits = OrbitCollection(t=t, 
                                       r=r*particles.r.unit, 
                                       v=v*particles.v.unit, 
                                       m=np.ones(len(r))*u.M_sun,
                                       units=[u.kpc, u.Myr, u.M_sun])
     
-    return -generalized_variance(potential, particle_orbits, satellite_orbit)
+    return -generalized_variance(lm10, particle_orbits, satellite_orbit)
 
 def ln_posterior(p, *args):
     param_names, particles, satellite, t = args
