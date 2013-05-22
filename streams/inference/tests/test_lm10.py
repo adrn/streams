@@ -20,6 +20,7 @@ from streams.inference.lm10 import ln_likelihood
 from streams.nbody import Particle, ParticleCollection
 from streams.integrate import leapfrog
 from streams.potential.lm10 import LawMajewski2010
+from streams.data.sgr import read_lm10
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
@@ -88,7 +89,13 @@ def test_energy_conserve():
 
 def test_likelihood():
     # TODO: make sure likelihood for correct parameters is higher
-    pass
+    t,satellite,particles = read_lm10(N=100)
+    
+    p = [1.2, 1.2, 0.121, 1.6912]
+    param_names = ["q1", "qz", "v_halo", "phi"]
+    
+    print(ln_likelihood(p, param_names, particles, satellite, t))
+
     
 if __name__ == "__main__":
     import cProfile
