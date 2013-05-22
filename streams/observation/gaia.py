@@ -17,6 +17,7 @@ from astropy.utils.misc import isiterable
 
 from ..nbody import ParticleCollection
 from .rrlyrae import rrl_M_V
+from .core import apparent_magnitude
 
 __all__ = ["parallax_error", "proper_motion_error",  \
            "apparent_magnitude", "rr_lyrae_add_observational_uncertainties", \
@@ -26,25 +27,6 @@ __all__ = ["parallax_error", "proper_motion_error",  \
 # Guldenschuh et al. (2005 PASP 117, 721), pg. 725
 # (V-I)_min = 0.579 +/- 0.006 mag
 rr_lyrae_V_minus_I = 0.579
-
-def apparent_magnitude(M_V, d):
-    """ Compute the apparent magnitude of a source given an absolute magnitude
-        and a distance.
-        
-        Parameters
-        ----------
-        M_V : numeric or iterable
-            Absolute V-band magnitude of a source.
-        d : astropy.units.Quantity
-            The distance to the source as a Quantity object.
-            
-    """
-    
-    if not isinstance(d, u.Quantity):
-        raise TypeError("Distance must be an Astropy Quantity object!")
-    
-    # Compute the apparent magnitude -- ignores extinction
-    return M_V - 5.*(1. - np.log10(d.to(u.pc).value))
     
 def parallax_error(V, V_minus_I):
     """ Compute the estimated GAIA parallax error as a function of apparent 

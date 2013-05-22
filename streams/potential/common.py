@@ -20,61 +20,52 @@ from .core import CartesianPotential
 
 #import _common # minimal gains from using Cython
 
-__all__ = ["PointMassPotential", "MiyamotoNagaiPotential", "HernquistPotential",
-           "LogarithmicPotentialLJ"]
+__all__ = ["PointMassPotential", "MiyamotoNagaiPotential",\
+           "HernquistPotential", "LogarithmicPotentialLJ"]
 
-def _raise(ex):
-    raise ex
-
-####################################################################################
-#    Potential due to a point mass at the given position
-####################################################################################
-
+############################################################
+#    Potential due to a point mass at a given position
+#
 def _cartesian_point_mass_model(bases):
     """ Generates functions to evaluate a point mass potential and its 
         derivatives at a specified position.
         
         Physical parameters for this potential are:
-            mass
+            m : mass
+            r_0 : position of the point mass
     """
     
     # scale G to be in this unit system
-    _G = G.decompose(bases=bases.values()).value
+    _G = G.decompose(bases=bases).value
     
-    def f(x,y,z,origin,m): 
-        return -_G * m / np.sqrt((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)
+    def f(r,r_0,m): 
+        return -_G * m / np.sqrt(np.sum((r-r_0)**2, axis=-1))
     
-    def df(x,y,z,origin,m): 
-        denom = ((x-origin[0])**2 + (y-origin[1])**2 + (z-origin[2])**2)**1.5
-        
-        dx = _G * m*(x-origin[0]) / denom
-        dy = _G * m*(y-origin[1]) / denom
-        dz = _G * m*(z-origin[2]) / denom
-        
-        return np.array([dx,dy,dz])
+    def df(r,r_0,m):
+        try:
+            a = (np.sum((r-r_0)**2, axis=-1)**-1.5)[:,np.newaxis]
+        except IndexError:
+            a = (np.sum((r-r_0)**2, axis=-1)**-1.5)
+            
+        return -_G * m * (r-r_0) * a
         
     return (f, df)
 
 class PointMassPotential(CartesianPotential):
 
-    def __init__(self, units, origin=None, **parameters):
+    def __init__(self, unit_system, **parameters):
         """ Represents a point-mass potential at the given origin.
 
-            $\Phi = -\frac{GM}{x-x_0}$
+            $\Phi = -\frac{GM}{r-r_0}$
             
             The parameters dictionary should include:
+                r_0 : location of the point mass
                 m : mass
             
             Parameters
             ----------
-            units : list, iterable
-                A list of astropy Unit objects that specify the base units
-                for length, time, mass, etc.
-            origin : astropy.units.Quantity (optional)
-                Must specify the location of the point mass along each 
-                dimension. For example, it could look like 
-                    origin=[0,0,0]*u.kpc
-                Defaults to (0,0,0).
+            unit_system : UnitSystem
+                Defines a system of physical base units for the potential.
             parameters : dict
                 A dictionary of parameters for the potential definition.
 
@@ -83,81 +74,110 @@ class PointMassPotential(CartesianPotential):
         latex = "$\\Phi = -\\frac{GM}{r-r_0}$"
         
         assert "m" in parameters.keys(), "You must specify a mass."
+        assert "r_0" in parameters.keys(), "You must specify a location for the mass."
+        
+        unit_system = self._validate_unit_system(unit_system)
         
         # get functions for evaluating potential and derivatives
-        units = self._validate_unit_system(units)
-        f,df = _cartesian_point_mass_model(units)
-        super(PointMassPotential, self).__init__(units, f=f, f_prime=df, 
-                                                 latex=latex, origin=origin,
+        f,df = _cartesian_point_mass_model(unit_system.bases)
+        super(PointMassPotential, self).__init__(unit_system, 
+                                                 f=f, f_prime=df, 
+                                                 latex=latex, 
                                                  parameters=parameters)
+
 
 ####################################################################################
 #    Miyamoto-Nagai Disk potential from Miyamoto & Nagai 1975
 #    http://adsabs.harvard.edu/abs/1975PASJ...27..533M
-####################################################################################
-
+#
 def _cartesian_miyamoto_nagai_model(bases):
     """ Generates functions to evaluate a Miyamoto-Nagai potential and its 
         derivatives at a specified position.
         
         Physical parameters for this potential are:
-            mass : total mass in the potential
-            a : TODO
-            b : TODO
+            m : total mass in the potential
+            a : 
+            b : 
     """
     # scale G to be in this unit system
-    _G = G.decompose(bases=bases.values()).value
+    _G = G.decompose(bases=bases).value
     
-    def f(x,y,z,origin,m,a,b): 
-        xx = (x-origin[0])
-        yy = (y-origin[1])
-        zz = (z-origin[2])
-        return -_G * m / np.sqrt(xx**2 + yy**2 + (a + np.sqrt(zz**2 + b**2))**2)
+    def f(r,r_0,m,a,b): 
+        rr = r-r_0
+        try:
+            x,y,z = rr[:,0],rr[:,1],rr[:,2]
+        except IndexError:
+            x,y,z = rr
+            
+        z_term = a + np.sqrt(z*z + b*b)
+        return -_G * m / np.sqrt(x*x + y*y + z_term*z_term)
     
-    def df(x,y,z,origin,m,a,b): 
-        xx = (x-origin[0])
-        yy = (y-origin[1])
-        zz = (z-origin[2])
+    def df(r,r_0,m,a,b): 
+        rr = r-r_0
+        try:
+            x,y,z = rr[:,0],rr[:,1],rr[:,2]
+        except IndexError:
+            x,y,z = rr
         
-        fac = _G*m*((xx**2 + yy**2) + (a + np.sqrt(zz**2 + b**2))**2)**-1.5
-                
-        dx = fac*xx
-        dy = fac*yy
-        _tmp = a/(np.sqrt(zz**2 + b**2))
-        dz = fac*zz * (1.+_tmp)
+        sqrtz = np.sqrt(z*z + b*b)
+        z_term = a + sqrtz
+        fac = -_G*m*(x*x + y*y + z_term*z_term)**-1.5
+
+        dx = fac*x
+        dy = fac*y
         
-        return np.array([dx,dy,dz])
+        c = a / sqrtz
+        dz = fac*z * (1. + c)
+        
+        return np.array([dx,dy,dz]).T
         
     return (f, df)
 
 class MiyamotoNagaiPotential(CartesianPotential):
 
-    def __init__(self, units, origin=[0.,0.,0.]*u.kpc, **parameters):
+    def __init__(self, unit_system, **parameters):
         """ Represents the Miyamoto-Nagai potential (1975) for a disk-like
             potential.
 
             $\Phi_{disk} = -\frac{GM_{disk}}{\sqrt{R^2 + (a + sqrt{z^2 + b^2})^2}}$
+            
+            The parameters dictionary should include:
+                r_0 : location of the origin
+                m : mass in the potential
+                a : 
+                b : 
+            
+            Parameters
+            ----------
+            unit_system : UnitSystem
+                Defines a system of physical base units for the potential.
+            parameters : dict
+                A dictionary of parameters for the potential definition.
 
         """
         
         latex = "$\\Phi_{disk} = -\\frac{GM_{disk}}{\\sqrt{R^2 + (a + \\sqrt{z^2 + b^2})^2}}$"
         
+        unit_system = self._validate_unit_system(unit_system)
+        
+        if "r_0" not in parameters.keys():
+            parameters["r_0"] = [0.,0.,0.]*unit_system._reg["length"]
+            
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "a" in parameters.keys(), "You must specify the parameter 'a'."
         assert "b" in parameters.keys(), "You must specify the parameter 'b'."
         
         # get functions for evaluating potential and derivatives
-        units = self._validate_unit_system(units)
-        f,df = _cartesian_miyamoto_nagai_model(units)
-        super(MiyamotoNagaiPotential, self).__init__(units, f=f, f_prime=df, 
-                                                 latex=latex, origin=origin,
-                                                 parameters=parameters)
+        f,df = _cartesian_miyamoto_nagai_model(unit_system.bases)
+        super(MiyamotoNagaiPotential, self).__init__(unit_system, 
+                                                     f=f, f_prime=df, 
+                                                     latex=latex, 
+                                                     parameters=parameters)
 
 ####################################################################################
 #    Hernquist Spheroid potential from Hernquist 1990
 #    http://adsabs.harvard.edu/abs/1990ApJ...356..359H
-####################################################################################
-
+#
 def _cartesian_hernquist_model(bases):
     """ Generates functions to evaluate a Hernquist potential and its 
         derivatives at a specified position.
@@ -168,55 +188,71 @@ def _cartesian_hernquist_model(bases):
     """
     
     # scale G to be in this unit system
-    _G = G.decompose(bases=bases.values()).value
+    _G = G.decompose(bases=bases).value
     
-    def f(x,y,z,origin,m,c): 
-        xx = (x-origin[0])
-        yy = (y-origin[1])
-        zz = (z-origin[2])
-        val = -_G * m / (np.sqrt(xx**2 + yy**2 + zz**2) + c)
+    def f(r,r_0,m,c): 
+        try:
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))[:,np.newaxis]
+        except IndexError:
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))
+        val = -_G * m / (rr + c)
         return val
     
-    def df(x,y,z,origin,m,c):
-        xx = (x-origin[0])
-        yy = (y-origin[1])
-        zz = (z-origin[2])
+    def df(r,r_0,m,c):
+        rr = r-r_0
+        try:
+            R = np.sqrt(np.sum((rr)**2, axis=-1))[:,np.newaxis]
+        except IndexError:
+            R = np.sqrt(np.sum((rr)**2, axis=-1))
         
-        fac = _G*m / ((np.sqrt(xx**2 + yy**2 + zz**2) + c)**2 * np.sqrt(xx**2 + yy**2 + zz**2))
-        
-        dx = fac*xx
-        dy = fac*yy
-        dz = fac*zz
-        
-        return np.array([dx,dy,dz])
+        fac = -_G*m / ((R + c)**2 * R)
+        return fac*rr
         
     return (f, df)
     
 class HernquistPotential(CartesianPotential):
     
-    def __init__(self, units, origin=[0.,0.,0.]*u.kpc, **parameters):
+    def __init__(self, unit_system, **parameters):
         """ Represents the Hernquist potential (1990) for a spheroid (bulge).
 
             $\Phi_{spher} = -\frac{GM_{spher}}{r + c}$
+            
+            The parameters dictionary should include:
+                r_0 : location of the origin
+                m : mass in the potential
+                c : core concentration
+            
+            Parameters
+            ----------
+            unit_system : UnitSystem
+                Defines a system of physical base units for the potential.
+            parameters : dict
+                A dictionary of parameters for the potential definition.
+
         """
+
         
         latex = "$\\Phi_{spher} = -\\frac{GM_{spher}}{r + c}$"
+        
+        unit_system = self._validate_unit_system(unit_system)
+        
+        if "r_0" not in parameters.keys():
+            parameters["r_0"] = [0.,0.,0.]*unit_system._reg["length"]
         
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "c" in parameters.keys(), "You must specify the parameter 'c'."
         
         # get functions for evaluating potential and derivatives
-        units = self._validate_unit_system(units)
-        f,df = _cartesian_hernquist_model(units)
-        super(HernquistPotential, self).__init__(units, f=f, f_prime=df, 
-                                                 latex=latex, origin=origin,
+        f,df = _cartesian_hernquist_model(unit_system.bases)
+        super(HernquistPotential, self).__init__(unit_system, 
+                                                 f=f, f_prime=df, 
+                                                 latex=latex, 
                                                  parameters=parameters)
 
 ####################################################################################
 #    Triaxial, Logarithmic potential (see: Johnston et al. 1998)
 #    http://adsabs.harvard.edu/abs/1999ApJ...512L.109J
-####################################################################################
-
+#
 def _cartesian_logarithmic_lj_model(bases):
     """ Generates functions to evaluate a Logarithmic potential and its 
         derivatives at a specified position. This form of the log potential
@@ -231,59 +267,75 @@ def _cartesian_logarithmic_lj_model(bases):
             r_halo : radial concentration
     """
 
-    def f(x,y,z,v_halo,q1,q2,qz,phi,r_halo,origin): 
+    def f(r,r_0,v_halo,q1,q2,qz,phi,r_halo): 
         C1 = (math.cos(phi)/q1)**2+(math.sin(phi)/q2)**2
         C2 = (math.cos(phi)/q2)**2+(math.sin(phi)/q1)**2
         C3 = 2.*math.sin(phi)*math.cos(phi)*(1./q1**2 - 1./q2**2)
         
-        xx = (x-origin[0])
-        yy = (y-origin[1])
-        zz = (z-origin[2])
+        rr = r-r_0
+        try:
+            x,y,z = rr[:,0],rr[:,1],rr[:,2]
+        except IndexError:
+            x,y,z = rr
         
-        return v_halo**2 * np.log(C1*xx**2 + C2*yy**2 + C3*xx*yy + zz**2/qz**2 + r_halo**2)
+        return v_halo*v_halo * np.log(C1*x*x + C2*y*y + C3*x*y + z*z/qz**2 + r_halo**2)
     
-    def df(x,y,z,v_halo,q1,q2,qz,phi,r_halo,origin):
+    def df(r,r_0,v_halo,q1,q2,qz,phi,r_halo):
         C1 = (math.cos(phi)/q1)**2+(math.sin(phi)/q2)**2
         C2 = (math.cos(phi)/q2)**2+(math.sin(phi)/q1)**2
         C3 = 2.*math.sin(phi)*math.cos(phi)*(1./q1**2 - 1./q2**2)
         
-        xx = (x-origin[0])
-        yy = (y-origin[1])
-        zz = (z-origin[2])
+        rr = r-r_0
+        try:
+            x,y,z = rr[:,0],rr[:,1],rr[:,2]
+        except IndexError:
+            x,y,z = rr
         
-        fac = v_halo**2 / (C1*xx**2 + C2*yy**2 + C3*xx*yy + zz**2/qz**2 + r_halo**2)
+        fac = v_halo*v_halo / (C1*x*x + C2*y*y + C3*x*y + z*z/qz**2 + r_halo**2)
         
-        dx = fac * (2.*C1*xx + C3*yy)
-        dy = fac * (2.*C2*yy + C3*xx)
-        dz = 2.* fac * zz * qz**-2
+        dx = fac * (2.*C1*x + C3*y)
+        dy = fac * (2.*C2*y + C3*x)
+        dz = 2.* fac * z * qz**-2
         
-        return np.array([dx,dy,dz])
+        return -np.array([dx,dy,dz]).T
         
     return (f, df)
 
 class LogarithmicPotentialLJ(CartesianPotential):
 
-    def __init__(self, units, origin=[0.,0.,0.]*u.kpc, **parameters):
+    def __init__(self, unit_system, **parameters):
         """ Represents a triaxial Logarithmic potential (e.g. triaxial halo).
             
             $\Phi_{halo} = v_{halo}^2\ln(C1x^2 + C2y^2 + C3xy + z^2/q_z^2 + r_halo^2)$
             
-            Parameters: v_halo, q1, q2, qz, phi, r_halo, origin
-
+            Model parameters: v_halo, q1, q2, qz, phi, r_halo, origin
+            
+            Parameters
+            ----------
+            unit_system : UnitSystem
+                Defines a system of physical base units for the potential.
+            parameters : dict
+                A dictionary of parameters for the potential definition.
         """
         
         latex = "$\\Phi_{halo} = v_{halo}^2\\ln(C_1x^2 + C_2y^2 + C_3xy + z^2/q_z^2 + r_halo^2)$"
+        
+        unit_system = self._validate_unit_system(unit_system)
+        
+        if "r_0" not in parameters.keys():
+            parameters["r_0"] = [0.,0.,0.]*unit_system._reg["length"]
         
         for p in ["q1", "q2", "qz", "phi", "v_halo", "r_halo"]:
             assert p in parameters.keys(), \
                     "You must specify the parameter '{0}'.".format(p)
         
         # get functions for evaluating potential and derivatives
-        units = self._validate_unit_system(units)
-        f,df = _cartesian_logarithmic_lj_model(units)
-        super(LogarithmicPotentialLJ, self).__init__(units, f=f, f_prime=df, 
-                                                 latex=latex, origin=origin,
-                                                 parameters=parameters)
+        f,df = _cartesian_logarithmic_lj_model(unit_system.bases)
+        super(LogarithmicPotentialLJ, self).__init__(unit_system, 
+                                                     f=f, f_prime=df, 
+                                                     latex=latex, 
+                                                     parameters=parameters)
+
 
 """
 
