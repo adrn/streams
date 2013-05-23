@@ -61,7 +61,6 @@ def infer_potential(ln_posterior, p0, steps=100,
     # Construct an ensemble sampler to walk through dat model parameter space
     sampler = emcee.EnsembleSampler(nwalkers=walkers, 
                                     dim=p0.shape[1], 
-                                    p0=p0,
                                     lnpostfn=ln_posterior, 
                                     pool=pool, 
                                     args=args)

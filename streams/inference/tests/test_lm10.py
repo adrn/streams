@@ -87,15 +87,61 @@ def test_energy_conserve():
     fig.savefig(os.path.join(plot_path, "particles_one_orbit.png"),
                 facecolor="#444444")
 
-def test_likelihood():
-    # TODO: make sure likelihood for correct parameters is higher
-    t,satellite,particles = read_lm10(N=100)
+def test_compare_likelihood():
+    t,satellite,particles = read_lm10(N=1000, dt=10.)
     
     p = [1.2, 1.2, 0.121, 1.6912]
     param_names = ["q1", "qz", "v_halo", "phi"]
+    a = time.time()
+    l1 = ln_likelihood(p, param_names, particles, satellite, t)
+    print("l1: {0} ({1} seconds)".format(l1, time.time()-a))
     
-    print(ln_likelihood(p, param_names, particles, satellite, t))
+    p = [1.38, 1.36, (121.858*u.km/u.s), 1.692969*u.radian]
+    param_names = ["q1", "qz", "v_halo", "phi"]
+    a = time.time()
+    l2 = ln_likelihood(p, param_names, particles, satellite, t)
+    print("l2: {0} ({1} seconds)".format(l2, time.time()-a))
+    
+    assert l2 > l1
 
+def test_timestep_energy():
+    
+    t,satellite,particles = read_lm10(N=100, dt=1.)
+    t1,t2 = np.max(t), np.min(t)
+    
+    plt.figure(figsize=(12,12))
+    c = 'krgb'
+    for ii,dt in enumerate([1., 5., 10., 20.]):
+        t = np.arange(t1, t2, -dt)
+        tt,rr,vv = leapfrog(potential._acceleration_at, 
+                            satellite._r, satellite._v, t=t)
+        
+        pot_energy = []
+        for r in rr:
+            pot_energy.append(potential._value_at(r))
+        pot_energy = np.array(pot_energy)
+        kin_energy = 0.5*np.sum(vv**2, axis=-1)
+        
+        tot_E = pot_energy+kin_energy
+        delta_E = (tot_E[1:] - tot_E[0]) / tot_E[0]
+        
+        plt.subplot(211)
+        plt.plot(tt[1:], delta_E, c=c[ii], label="dt={0}".format(dt))
+        
+        R = np.sqrt(np.sum(rr**2, axis=-1))
+        plt.subplot(212)
+        plt.plot(tt, R, c=c[ii])
+    
+    plt.subplot(211)
+    plt.legend()
+    plt.ylabel("$\Delta E/E$")
+    
+    plt.subplot(212)
+    plt.xlabel("Time [Myr]")
+    plt.ylabel("Sgr Orbital Radius $R$")
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_path,"timestep_energy_conserv.png"))
     
 if __name__ == "__main__":
     import cProfile
