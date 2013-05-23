@@ -17,7 +17,7 @@ from .core import CartesianPotential, CompositePotential, UnitSystem
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
 from ._lm10_acceleration import lm10_acceleration
 
-true_params = dict(v_halo=(121.858*u.km/u.s),
+true_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
                    q1=1.38,
                    q2=1.0,
                    qz=1.36,
@@ -27,11 +27,12 @@ true_params = dict(v_halo=(121.858*u.km/u.s),
 param_ranges = dict(qz=(1.,2.),
                     q1=(1.,2.),
                     q2=(1.,2.),
-                    v_halo=((100.*u.km/u.s).value,(150.*u.km/u.s).value),
+                    v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr).value,
+                            (150.*u.km/u.s).to(u.kpc/u.Myr).value),
                     phi=(np.pi/4, 3*np.pi/4),
                     r_halo=(8,20)) # kpc
 
-param_units = dict(v_halo=u.km/u.s,
+param_units = dict(v_halo=u.kpc/u.Myr,
                    q1=1.,
                    q2=1.,
                    qz=1.,

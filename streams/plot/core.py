@@ -70,14 +70,17 @@ def emcee_plot(sampler, params, converged_idx,
     
     if acceptance_fraction_bounds[1] != None:
         idx &= sampler.acceptance_fraction < acceptance_fraction_bounds[1]
-        
-    chain = sampler.chain[idx]
     
+    chain = sampler.chain[idx]
+        
     # For each parameter, I want to plot each walker on one panel, and a histogram
     #   of all links from all walkers past 150 steps (approximately when the chains
     #   converged)
     for ii,param in enumerate(params):
         these_chains = chain[:,:,ii]
+        
+        #if param == "v_halo":
+        #    these_chains = (these_chains*u.kpc/u.Myr).to(u.km/u.s).value
         
         ax1 = plt.subplot(gs[ii, :2])     
         ax1.axvline(converged_idx, 
