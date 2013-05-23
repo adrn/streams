@@ -247,7 +247,7 @@ class ParticleCollection(object):
         """   
         assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
         
-        labels = [r"{0} [{1}]".format(nm, self.r.unit)
+        labels = [r"{0} [{1}]".format(nm, self.v.unit)
                     for nm in coord_names]
         
         fig,axes = scatter_plot_matrix(self._v.T, 
