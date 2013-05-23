@@ -22,7 +22,7 @@ from scipy import interpolate
 
 # Project
 from .core import _make_npy_file
-from .gaia import rr_lyrae_add_observational_uncertainties
+from ..observation.gaia import rr_lyrae_add_observational_uncertainties
 from ..util import project_root
 from ..plot.data import scatter_plot_matrix
 from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
