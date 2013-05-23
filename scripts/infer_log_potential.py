@@ -34,7 +34,7 @@ from streams.data.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle
 from streams.inference.lm10 import ln_posterior
-from streams.potential.lm10 import halo_params, param_ranges
+from streams.potential.lm10 import true_params, param_ranges
 
 global pool
 pool = None
@@ -199,9 +199,9 @@ def main(config_file):
         fig.subplots_adjust(left=0.075, right=0.95)
         for ii,name in enumerate(config["model_parameters"]):
             try:
-                p = halo_params[name].value
+                p = true_params[name].value
             except AttributeError:
-                p = halo_params[name]
+                p = true_params[name]
                 
             axes[ii].hist(best_p[name], bins=25, histtype="step", color="k", linewidth=2)
             axes[ii].axvline(p, linestyle="--", color="#EF8A62", linewidth=3)
