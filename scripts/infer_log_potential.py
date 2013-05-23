@@ -150,16 +150,16 @@ def main(config_file):
         # Create a new path for the output
         if config["make_plots"]:
             # Plot the positions of the particles in galactic XYZ coordinates
-            fig,axes = pre_error_particles.plot_positions(
+            fig,axes = pre_error_particles.plot_r(
                                         subplots_kwargs=dict(figsize=(16,16)),
                                         scatter_kwargs={"c":"k"})
-            particles.plot_positions(axes=axes, scatter_kwargs={"c":"r"})
+            particles.plot_r(axes=axes, scatter_kwargs={"c":"r"})
             fig.savefig(os.path.join(path, "positions.png"))
             
-            fig,axes = pre_error_particles.plot_velocities(
+            fig,axes = pre_error_particles.plot_v(
                                         subplots_kwargs=dict(figsize=(16,16)),
                                         scatter_kwargs={"c":"k"})
-            particles.plot_velocities(axes=axes, scatter_kwargs={"c":"r"})
+            particles.plot_v(axes=axes, scatter_kwargs={"c":"r"})
             fig.savefig(os.path.join(path, "velocities.png"))
             
             # write the sampler to a pickle file
