@@ -125,7 +125,10 @@ def main(config_file):
             p0 = np.vstack((p0, this_p))
         except NameError:
             p0 = this_p
+    
     p0 = p0.T
+    if p0.ndim == 1:
+        p0 = p0[np.newaxis].T
     
     all_best_parameters = []
     for bb in range(B):        
@@ -150,16 +153,16 @@ def main(config_file):
         # Create a new path for the output
         if config["make_plots"]:
             # Plot the positions of the particles in galactic XYZ coordinates
-            fig,axes = pre_error_particles.plot_r(
+            fig,axes = pre_error_particles.plot_r("xyz",
                                         subplots_kwargs=dict(figsize=(16,16)),
                                         scatter_kwargs={"c":"k"})
-            particles.plot_r(axes=axes, scatter_kwargs={"c":"r"})
+            particles.plot_r("xyz", axes=axes, scatter_kwargs={"c":"r"})
             fig.savefig(os.path.join(path, "positions.png"))
             
-            fig,axes = pre_error_particles.plot_v(
+            fig,axes = pre_error_particles.plot_v(['vx','vy','vz'],
                                         subplots_kwargs=dict(figsize=(16,16)),
                                         scatter_kwargs={"c":"k"})
-            particles.plot_v(axes=axes, scatter_kwargs={"c":"r"})
+            particles.plot_v(['vx','vy','vz'], axes=axes, scatter_kwargs={"c":"r"})
             fig.savefig(os.path.join(path, "velocities.png"))
             
             # write the sampler to a pickle file
