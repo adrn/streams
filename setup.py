@@ -8,7 +8,8 @@ numpy_base_path = os.path.split(numpy.__file__)[0]
 numpy_incl_path = os.path.join(numpy_base_path, "core", "include")
 
 lm10_acc = Extension("streams.potential._lm10_acceleration", 
-                      ["streams/potential/_lm10_acceleration.pyx"])
+                      ["streams/potential/_lm10_acceleration.pyx"],
+                     include_dirs=[numpy_incl_path])
 
 setup(
     name="Streams",
