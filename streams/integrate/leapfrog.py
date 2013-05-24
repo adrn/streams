@@ -11,7 +11,6 @@ import os, sys
 
 # Third-party
 import numpy as np
-import astropy.units as u
 
 __all__ = ["leapfrog"]
 
@@ -49,24 +48,22 @@ def leapfrog(acceleration_function, initial_position, initial_velocity,
 
     if initial_position.ndim == 1:
         # r_i just stands for positions, it's actually a vector
-        r_i = np.array(initial_position)\
-                .reshape(1, len(initial_position))
-        v_i = np.array(initial_velocity)\
-                .reshape(1, len(initial_position))
+        r_i = np.array(initial_position).reshape(1, len(initial_position))
+        v_i = np.array(initial_velocity).reshape(1, len(initial_position))
     else:
         r_i = initial_position
         v_i = initial_velocity
     
     if t == None:           
+        # t2+dt to include the last data point
         times = np.arange(t1, t2+dt, dt)
-        #times = np.arange(t1, t2, dt)
     else:
         times = t
         dt = times[1]-times[0]
     
     Ntimesteps = len(times)
     
-    # Shape of final object should be (Ntimesteps, Nparticles, Ndim)
+    # Shape of final objects should be (Ntimesteps, Nparticles, Ndim)
     rs = np.zeros((Ntimesteps,) + r_i.shape, dtype=np.float64)
     vs = np.zeros((Ntimesteps,) + v_i.shape, dtype=np.float64)
 
