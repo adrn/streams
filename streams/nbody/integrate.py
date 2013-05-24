@@ -29,8 +29,6 @@ def _nbody_acceleration(G, R, M, e=0.1):
     
     return a
 
-# TODO: Below is just a wish-list API, it doesn't necessarily work
-
 def nbody_integrate(particle_collection, time_steps, 
                     external_acceleration=None, e=0.1):
     """ Direct N-body integration of the given ParticleCollection over the 

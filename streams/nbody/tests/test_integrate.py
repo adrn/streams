@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from ..core import *
 from ..integrate import *
-from ..integrate import _nbody_acceleration
+from ..potential.lm10 import LawMajewski2010
 
 def test_acceleration():
     r = np.array([[1.,0.],
@@ -62,11 +62,9 @@ def test_collection():
     if not os.path.exists(this_path):
         os.makedirs(this_path)
         
-    N = 1000
+    N = 10
     
-    def acc(G, r):
-        a = 0.7
-        return -G * 1E12 * r / (np.sqrt(np.sum(r**2,axis=0)) + a)**3.
+    potential = LawMajewski2010()
     
     # Create particles
     particles = []
@@ -75,7 +73,7 @@ def test_collection():
         theta = np.random.uniform(0., 2*np.pi)
         r = R*np.array([np.cos(theta), np.sin(theta)])*u.kpc
         
-        V = 5.
+        V = 200.
         v = V * np.array([-np.sin(theta), np.cos(theta)])*u.km/u.s
         
         p = Particle(r=r,
@@ -87,7 +85,8 @@ def test_collection():
     
     # Create time grid to integrate on
     t = np.arange(0., 6000., 10.) * u.Myr
-    r,v = nbody_integrate(pc, time_steps=t, e=0.1, external_acceleration=acc)
+    r,v = nbody_integrate(pc, time_steps=t, e=0.1, 
+                          external_acceleration=potential.acceleration_at)
     
     plt.figure(figsize=(10,10))
     for jj in range(r.shape[0]):
