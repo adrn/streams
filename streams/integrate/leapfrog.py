@@ -40,6 +40,9 @@ def leapfrog(acceleration_function, initial_position, initial_velocity,
             A list or array of initial velocities.
     """
     
+    initial_position = np.array(initial_position)
+    initial_velocity = np.array(initial_velocity)
+    
     if initial_position.shape != initial_velocity.shape:
         raise ValueError("initial_position shape must match initial_velocity "
                          "shape! {0} != {1}"
@@ -65,18 +68,21 @@ def leapfrog(acceleration_function, initial_position, initial_velocity,
     half_dt = 0.5*dt
     
     # Shape of final objects should be (Ntimesteps, Nparticles, Ndim)
-    rs = np.zeros((Ntimesteps,) + r_i.shape, dtype=np.float64)
-    vs = np.zeros((Ntimesteps,) + v_i.shape, dtype=np.float64)
+    rs = np.zeros((Ntimesteps,) + r_im1.shape, dtype=np.float64)
+    vs = np.zeros((Ntimesteps,) + v_im1.shape, dtype=np.float64)
     
+    a_i = acceleration_function(r_im1, *args)
     v_im1_2 = v_im1 + 0.5*a_i*half_dt
-    for ii in range(Ntimesteps):        
+    
+    for ii in range(Ntimesteps):   
         r_i = r_im1 + v_im1_2*dt
         a_i = acceleration_function(r_i, *args)
-        v_i = v_im1 + 0.5*a_i*half_dt
-        v_ip1_2 = v_i + 0.5*a_i*half_dt
+        #v_i = v_im1_2 + 0.5*a_i*half_dt
+        #v_ip1_2 = v_i + 0.5*a_i*half_dt
+        v_ip1_2 = v_im1_2 + 0.5*a_i*dt
 
         rs[ii,:,:] = r_i
-        vs[ii,:,:] = v_i
+        #vs[ii,:,:] = v_i
 
         r_im1 = r_i
         v_im1_2 = v_ip1_2
