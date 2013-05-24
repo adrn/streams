@@ -12,13 +12,13 @@ import os, sys
 # Third-party
 import numpy as np
 
-__all__ = ["leapfrog"]
+__all__ = ["verlet"]
 
-def leapfrog(acceleration_function, initial_position, initial_velocity, 
+def verlet(acceleration_function, initial_position, initial_velocity, 
              t=None, t1=None, t2=None, dt=None, args=()):
              
     """ Given an acceleration function and initial conditions, integrate from 
-        t1 to t2 with a timestep dt using Leapfrog integration. Alternatively,
+        t1 to t2 with a timestep dt using Verlet integration. Alternatively,
         specify the full time array with 't'. The integration always *includes* 
         the final timestep.
         

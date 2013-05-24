@@ -13,7 +13,7 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from ..leapfrog import *
+from ..verlet import *
 from ...potential import *
 
 plot_path = "plots/tests/integrate"
@@ -34,7 +34,7 @@ class TestBoxOnSpring(object):
 
         acceleration = lambda x: -k/m * x + g
 
-        #ts, xs, vs = leapfrog(acceleration, [4.], [0.], 0., 100., 0.01)
+        #ts, xs, vs = verlet(acceleration, [4.], [0.], 0., 100., 0.01)
 
         dt = 0.01
         times = np.arange(0, 100, dt)
@@ -98,7 +98,7 @@ class TestIntegrate(object):
         initial_position = np.array([1.0, 0.0, 0.]) # au
         initial_velocity = np.array([0.0, 2*np.pi, 0.]) # au/yr
 
-        ts, xs, vs = leapfrog(potential.acceleration_at, 
+        ts, xs, vs = verlet(potential.acceleration_at, 
                               initial_position,
                               initial_velocity, 
                               t1=0., t2=5., dt=0.05)
@@ -113,7 +113,7 @@ class TestIntegrate(object):
         initial_position = np.array([10.0, 0.0, 0.]) # kpc
         initial_velocity = np.array([0.0, (30.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]) # kpc/Myr
 
-        ts, xs, vs = leapfrog(potential.acceleration_at, 
+        ts, xs, vs = verlet(potential.acceleration_at, 
                               initial_position,
                               initial_velocity, 
                               t1=0., t2=1000., dt=1.)
@@ -129,7 +129,7 @@ class TestIntegrate(object):
         initial_position = np.array([8.0, 0.0, 0.]) # kpc
         initial_velocity = np.array([0.0, (200.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]) # kpc/Myr
 
-        ts, xs, vs = leapfrog(potential.acceleration_at, 
+        ts, xs, vs = verlet(potential.acceleration_at, 
                               initial_position, initial_velocity, 
                               t1=0., t2=1000., dt=1.)
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
@@ -147,7 +147,7 @@ class TestIntegrate(object):
         initial_position = np.array([14.0, 0.0, 0.]) # kpc
         initial_velocity = np.array([0.0, (160.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]) # kpc/Myr
 
-        ts, xs, vs = leapfrog(potential.acceleration_at, 
+        ts, xs, vs = verlet(potential.acceleration_at, 
                               initial_position, 
                               initial_velocity, 
                               t1=0., t2=6000., dt=1.)
@@ -184,7 +184,7 @@ class TestIntegrate(object):
                                      (40.*u.km/u.s).to(u.kpc/u.Myr).value]) # kpc/Myr
         
         fig, axes = plt.subplots(3, 1, sharex=True, sharey=True)
-        ts, xs, vs = leapfrog(potential.acceleration_at, 
+        ts, xs, vs = verlet(potential.acceleration_at, 
                               initial_position, 
                               initial_velocity, 
                               t1=0., t2=6000., dt=1.)
