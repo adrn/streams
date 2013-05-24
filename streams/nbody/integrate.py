@@ -53,7 +53,7 @@ def nbody_integrate(particle_collection, time_steps,
     
     if external_acceleration is not None:
         acc = lambda _G, r_i, m, e: _nbody_acceleration(_G, r_i, m, e) + \
-                                        external_acceleration(_G, r_i)
+                                        external_acceleration(r_i)
     else:
         acc = _nbody_acceleration
     
@@ -62,6 +62,7 @@ def nbody_integrate(particle_collection, time_steps,
         a_i = a_ip1
         
         r_ip1 = r_i + v_i*dt + 0.5*a_i*dt*dt
+        # TODO: try with multiprocessing map here, if pool is supplied?
         a_ip1 = acc(_G, r_ip1, m, e)
         v_ip1 = v_i + 0.5*(a_i + a_ip1)*dt
         
