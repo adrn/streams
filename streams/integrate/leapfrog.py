@@ -73,15 +73,16 @@ def leapfrog(acceleration_function, initial_position, initial_velocity,
     
     a_i = acceleration_function(r_im1, *args)
     v_im1_2 = v_im1 + a_i*half_dt
-    
-    for ii in range(Ntimesteps):   
+    v_i = v_im1_2 + a_i*half_dt
+    r_i = r_im1
+    for ii in range(Ntimesteps):
+        rs[ii,:,:] = r_i
+        vs[ii,:,:] = v_i
+        
         r_i = r_im1 + v_im1_2*dt
         a_i = acceleration_function(r_i, *args)
         v_i = v_im1_2 + a_i*half_dt
         v_ip1_2 = v_i + a_i*half_dt
-
-        rs[ii,:,:] = r_i
-        vs[ii,:,:] = v_i
 
         r_im1 = r_i
         v_im1_2 = v_ip1_2
