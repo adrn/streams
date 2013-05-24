@@ -54,12 +54,15 @@ def plot_energies(potential, ts, xs, vs, axes1=None):
 
     axes1[0].plot(ts, E_kin[:,0])
     axes1[0].set_ylabel(r"$E_{kin}$")
-
+    axes1[0].set_ylim(-50,50)
+    
     axes1[1].plot(ts, E_pot)
     axes1[1].set_ylabel(r"$E_{pot}$")
-
+    axes1[1].set_ylim(-50,50)
+    
     axes1[2].plot(ts, (E_kin[:,0] + E_pot))
     axes1[2].set_ylabel(r"$E_{tot}$")
+    axes1[2].set_ylim(-50,50)
 
     grid = np.linspace(-10., 10., 100)*u.kpc
     fig2, axes2 = potential.plot(ndim=3, grid=grid)
@@ -84,7 +87,7 @@ class TestIntegrate(object):
         ts, xs, vs = integrator(potential._acceleration_at, 
                                 initial_position,
                                 initial_velocity, 
-                                t1=0., t2=5., dt=0.05)
+                                t1=0., t2=50., dt=0.05)
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"point_mass_energy_{0}.png".format(name)))
         fig2.savefig(os.path.join(plot_path,"point_mass_{0}.png".format(name)))
