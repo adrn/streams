@@ -153,16 +153,22 @@ def main(config_file):
         # Create a new path for the output
         if config["make_plots"]:
             # Plot the positions of the particles in galactic XYZ coordinates
-            fig,axes = pre_error_particles.plot_r("xyz",
+            if config["observational_errors"]:
+                fig,axes = pre_error_particles.plot_r("xyz",
                                         subplots_kwargs=dict(figsize=(16,16)),
                                         scatter_kwargs={"c":"k"})
-            particles.plot_r("xyz", axes=axes, scatter_kwargs={"c":"r"})
+                particles.plot_r("xyz", axes=axes, scatter_kwargs={"c":"r"})
+            else:
+                fig,axes = particles.plot_r("xyz", scatter_kwargs={"c":"r"})
             fig.savefig(os.path.join(path, "positions.png"))
             
-            fig,axes = pre_error_particles.plot_v(['vx','vy','vz'],
+            if config["observational_errors"]:
+                fig,axes = pre_error_particles.plot_v(['vx','vy','vz'],
                                         subplots_kwargs=dict(figsize=(16,16)),
                                         scatter_kwargs={"c":"k"})
-            particles.plot_v(['vx','vy','vz'], axes=axes, scatter_kwargs={"c":"r"})
+                particles.plot_v(['vx','vy','vz'], axes=axes, scatter_kwargs={"c":"r"})
+            else:
+                fig,axes = particles.plot_v(['vx','vy','vz'], scatter_kwargs={"c":"r"})
             fig.savefig(os.path.join(path, "velocities.png"))
             
             # write the sampler to a pickle file
