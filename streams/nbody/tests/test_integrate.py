@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 
 from ..core import *
 from ..integrate import *
-from ..potential.lm10 import LawMajewski2010
+from ...potential.lm10 import LawMajewski2010, true_params
+from ...potential import *
 
 def test_acceleration():
     r = np.array([[1.,0.],
@@ -62,31 +63,47 @@ def test_collection():
     if not os.path.exists(this_path):
         os.makedirs(this_path)
         
-    N = 10
+    N = 10000
+    usys = UnitSystem(u.kpc, u.Myr, u.M_sun, u.radian)
     
-    potential = LawMajewski2010()
+    #potential = LawMajewski2010()
+    bulge = HernquistPotential(usys,
+                               m=3.4E10*u.M_sun,
+                               c=0.7*u.kpc)
+                               
+    disk = MiyamotoNagaiPotential(usys,
+                                  m=1.E11*u.M_sun, 
+                                  a=6.5*u.kpc,
+                                  b=0.26*u.kpc)
+    halo = LogarithmicPotentialLJ(usys,
+                                  **true_params)
+    potential = CompositePotential(usys, bulge=bulge, disk=disk, halo=halo)
     
     # Create particles
     particles = []
     for ii in range(N):
         R = np.sqrt(np.random.uniform())*9. + 1.
         theta = np.random.uniform(0., 2*np.pi)
-        r = R*np.array([np.cos(theta), np.sin(theta)])*u.kpc
+        r = R*np.array([np.cos(theta), np.sin(theta), 0.])*u.kpc
         
-        V = 200.
-        v = V * np.array([-np.sin(theta), np.cos(theta)])*u.km/u.s
+        V = 220.
+        v = V * np.array([-np.sin(theta), np.cos(theta), 0.])*u.km/u.s
         
         p = Particle(r=r,
                      v=v,
                      m=np.random.uniform(0.05, 10.)*u.M_sun)
         particles.append(p)
     
-    pc = ParticleCollection(particles=particles, units=[u.kpc, u.Myr, u.M_sun])
+    pc = ParticleCollection(particles=particles, units=usys.bases)
     
     # Create time grid to integrate on
-    t = np.arange(0., 6000., 10.) * u.Myr
-    r,v = nbody_integrate(pc, time_steps=t, e=0.1, 
-                          external_acceleration=potential.acceleration_at)
+    t = np.arange(0., 1000., 1.) * u.Myr
+
+    import time
+    a = time.time()
+    r,v = nbody_integrate(pc, time_steps=t, e=0.01, 
+                          external_acceleration=potential._acceleration_at)
+    print("Took {0} seconds for integration".format(time.time()-a))
     
     plt.figure(figsize=(10,10))
     for jj in range(r.shape[0]):
