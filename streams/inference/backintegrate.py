@@ -33,7 +33,8 @@ def tidal_radius(potential, satellite_orbit):
     """
     
     # assume the satellite has the right units already...
-    m_sat = satellite_orbit.m.value # 2.5E8 * u.M_sun
+    #m_sat = satellite_orbit.m.value # 2.5E8 * u.M_sun
+    m_sat = 2.5E8 #* u.M_sun
     
     # Radius of Sgr center relative to galactic center
     R_orbit = np.sqrt(np.sum(satellite_orbit._r**2., axis=-1)) 
@@ -102,7 +103,7 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     Nparticles = particle_orbits._r.shape[1]
     
     R,V = relative_normalized_coordinates(potential, particle_orbits, satellite_orbit) 
-    D_ps = dist = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
+    D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
     
     # Find the index of the time of the minimum D_ps for each particle
     min_time_idx = D_ps.argmin(axis=0)
