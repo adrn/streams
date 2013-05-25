@@ -22,6 +22,7 @@ from streams.inference.backintegrate import relative_normalized_coordinates, \
                                             tidal_radius, \
                                             escape_velocity
 
+ffmpeg_cmd = "ffmpeg -i {0} -r 12 -b 5000 -vcodec libx264 -vpre medium -b 3000k {1}"
 plot_path = "plots/movies/back_integrate"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
@@ -116,8 +117,12 @@ fig,axes = plot_orbits(correct, c_s_orbit, c_p_orbit)
 fig.savefig(os.path.join(plot_path,"correct_orbits.png"))
 plot_animation(correct, c_s_orbit, c_p_orbit, filename="correct_")
 
-"""
 fig,axes = plot_orbits(wrong, w_s_orbit, w_p_orbit)
 fig.savefig(os.path.join(plot_path,"wrong_orbits.png"))
 plot_animation(wrong, w_s_orbit, w_p_orbit, filename="wrong_")
-"""
+
+os.system(ffmpeg_cmd.format(os.path.join(this_path, "correct_%4d.png"), 
+                            os.path.join(this_path, "correct.mp4")))
+
+os.system(ffmpeg_cmd.format(os.path.join(this_path, "wrong_%4d.png"), 
+                            os.path.join(this_path, "wrong.mp4")))
