@@ -88,6 +88,7 @@ def test_collection():
         
         V = 220.
         v = V * np.array([-np.sin(theta), np.cos(theta), 0.])*u.km/u.s
+        v = v * np.array([-np.sin(theta), np.cos(theta), 0.]) # add dispersion
         
         p = Particle(r=r,
                      v=v,

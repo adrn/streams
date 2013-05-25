@@ -29,9 +29,9 @@ if not os.path.exists(plot_path):
 
 # Read in particles from Law & Majewski 2010 simulation of Sgr
 #expr="(Pcol>0) & (abs(Lmflag)==1)"
-t,satellite, particles = read_lm10(N=1000, 
+t,satellite, particles = read_lm10(N=5000, 
                                   expr="(abs(Lmflag)==1)",
-                                  dt=5.*u.Myr)
+                                  dt=1.*u.Myr)
 
 def back_integrate(potential):
     xx,r,v = leapfrog(potential._acceleration_at, 
@@ -102,14 +102,14 @@ def plot_animation(potential, s, p, filename=""):
         
         axes[0,0].set_xlim(-75,75)
         axes[0,0].set_ylim(-75,75)
-        axes[0,0].scatter(s._r[ii,0,0], s._r[ii,0,1], marker='o', color='r', alpha=0.5)
-        axes[0,0].scatter(p._r[ii,:,0][idx], p._r[ii,:,1][idx], marker='.', color='w', alpha=0.1, s=5)
+        axes[0,0].scatter(s._r[ii,0,0], s._r[ii,0,1], marker='o', color='r', alpha=0.75)
+        axes[0,0].scatter(p._r[ii,:,0][idx], p._r[ii,:,1][idx], marker='.', color='w', alpha=0.2, s=8)
         
-        axes[1,0].scatter(s._r[ii,0,0], s._r[ii,0,2], marker='o', color='r', alpha=0.5)
-        axes[1,0].scatter(p._r[ii,:,0][idx], p._r[ii,:,2][idx], marker='.', color='w', alpha=0.1, s=5)
+        axes[1,0].scatter(s._r[ii,0,0], s._r[ii,0,2], marker='o', color='r', alpha=0.75)
+        axes[1,0].scatter(p._r[ii,:,0][idx], p._r[ii,:,2][idx], marker='.', color='w', alpha=0.2, s=8)
         
-        axes[1,1].scatter(s._r[ii,0,1], s._r[ii,0,2], marker='o', color='r', alpha=0.5)
-        axes[1,1].scatter(p._r[ii,:,1][idx], p._r[ii,:,2][idx], marker='.', color='w', alpha=0.1, s=5)
+        axes[1,1].scatter(s._r[ii,0,1], s._r[ii,0,2], marker='o', color='r', alpha=0.75)
+        axes[1,1].scatter(p._r[ii,:,1][idx], p._r[ii,:,2][idx], marker='.', color='w', alpha=0.2, s=8)
         
         fig.savefig(os.path.join(plot_path,"{0}{1:04d}.png".format(filename,ii)))
 
@@ -121,8 +121,8 @@ fig,axes = plot_orbits(wrong, w_s_orbit, w_p_orbit)
 fig.savefig(os.path.join(plot_path,"wrong_orbits.png"))
 plot_animation(wrong, w_s_orbit, w_p_orbit, filename="wrong_")
 
-os.system(ffmpeg_cmd.format(os.path.join(this_path, "correct_%4d.png"), 
-                            os.path.join(this_path, "correct.mp4")))
+os.system(ffmpeg_cmd.format(os.path.join(plot_path, "correct_%4d.png"), 
+                            os.path.join(plot_path, "correct.mp4")))
 
-os.system(ffmpeg_cmd.format(os.path.join(this_path, "wrong_%4d.png"), 
-                            os.path.join(this_path, "wrong.mp4")))
+os.system(ffmpeg_cmd.format(os.path.join(plot_path, "wrong_%4d.png"), 
+                            os.path.join(plot_path, "wrong.mp4")))
