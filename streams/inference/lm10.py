@@ -110,7 +110,7 @@ def ln_likelihood(p, param_names, particles, satellite, t):
     satellite_orbit = OrbitCollection(t=t, 
                                       r=r*satellite.r.unit,
                                       v=v*satellite.v.unit,
-                                      m=[1.]*u.M_sun,
+                                      m=[2.5E8]*u.M_sun,
                                       units=[u.kpc, u.Myr, u.M_sun])
     
     xx,r,v = leapfrog(lm10._acceleration_at, 
