@@ -275,7 +275,7 @@ class CartesianPotential(Potential):
                 axes[jj,0].set_ylabel("[{0}]".format(r.unit))
 
         fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
-        fig.suptitle(self._repr_latex_(), fontsize=24)
+        #fig.suptitle(self._repr_latex_(), fontsize=24)
 
         return fig, axes
     
