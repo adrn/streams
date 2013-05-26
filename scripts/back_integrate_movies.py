@@ -95,7 +95,7 @@ def plot_animation(potential, s, p, filename=""):
             fig,axes = potential.plot(ndim=3, grid=grid, axes=axes)
         
         D_ps = all_D_ps[ii]
-        idx = idx & (D_ps > 2.)
+        idx = idx & (D_ps > 2.8)
         #eja = np.argmin(D_ps)
         #print(R[ii,eja], V[ii,eja], sum(idx))
         print(sum(idx))
