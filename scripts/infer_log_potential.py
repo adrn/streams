@@ -32,7 +32,7 @@ from streams.simulation.config import read
 from streams.data import SgrSnapshot, SgrCen, read_lm10
 from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
-from streams.plot import plot_sampler_pickle
+from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
 from streams.inference.lm10 import ln_posterior
 from streams.potential.lm10 import true_params, param_ranges
 
@@ -220,7 +220,12 @@ def main(config_file):
         fig.savefig(os.path.join(path,"bootstrap_1d.png"))
         
         # Now make 2D plots of the bootstrap results
-        #fig,axes = scatter_plot_matrix()
+        if config["observational_errors"]
+            subtitle = r"$\sigma_{{RV}}={0}$ km/s; $\sigma_D={1}\%D$; {2} particles"
+            subtitle = subtitle.format(rv_error, distance_error_percent, config["particles"])
+        else:
+            subtitle = "{0} particles".format(config["particles"])
+        bootstrap_scatter_plot(d, subtitle=subtitle.format(config['']))
     
     if config["make_plots"]:
         with open(config_file) as f:
