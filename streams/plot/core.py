@@ -21,7 +21,8 @@ import astropy.units as u
 from ..potential.lm10 import param_to_latex, param_ranges
 from ..potential.lm10 import true_params
 
-__all__ = ["discrete_cmap", "emcee_plot", "plot_sampler_pickle"]
+__all__ = ["discrete_cmap", "emcee_plot", "plot_sampler_pickle", \
+           "bootstrap_scatter_plot"]
 
 def discrete_cmap(N=8):
     """create a colormap with N (N<15) discrete colors and register it"""
@@ -199,4 +200,71 @@ def plot_sampler_pickle(filename, params, **kwargs):
     fig = emcee_plot(sampler, params=params, 
                      converged_idx=0,
                      **kwargs)
+    return fig
+
+def bootstrap_scatter_plot(d, subtitle="", axis_lims=None):
+    """ """
+    
+    fig,axes = plt.subplots(3, 3, figsize=(12,12))
+    
+    # Create dictionary of true parameter values, not quantities
+    params = dict()
+    for p in d.keys():
+        params[p] = true_params[p]
+        
+        if p == 'phi':
+            params[p] = params[p].value
+        elif p == 'v_halo':
+            params[p] = params[p].to(u.km/u.s).value
+    
+    # if no limits are provided, defined default axis limits
+    axis_lims = dict(q1=(1.,2), 
+                     qz=(1.,2.), 
+                     phi=(np.pi/4, 3*np.pi/4), 
+                     v_halo=(100, 150))
+    
+    # Create latex labels for the parameters
+    labels = dict(q1="$q_1$", qz="$q_z$", 
+                  phi="$\phi$ [rad]", v_halo="$v_{halo}$ [km/s]")
+    
+    # helper function for plotting single axes
+    def plot_2params(ax, p1, p2):
+        x = d[p1]
+        y = d[p2]
+        if p1 == 'v_halo':
+            x = (d[p1]*u.kpc/u.Myr).to(u.km/u.s).value
+        elif p2 == 'v_halo':
+            y = (d[p2]*u.kpc/u.Myr).to(u.km/u.s).value
+        
+        ax.scatter(x, y, color='k', marker='.', alpha=0.5)
+        ax.set_xlim(axis_lims[p1])
+        ax.set_ylim(axis_lims[p2])
+        ax.axvline(params[p1], linestyle="--", color="#555555")
+        ax.axhline(params[p2], linestyle="--", color="#555555")
+    
+    plot_2params(axes[0,0], "q1", "qz")
+    axes[0,0].set_ylabel(labels["qz"])
+    
+    plot_2params(axes[1,0], "q1", "phi")
+    axes[1,0].set_ylabel(labels["phi"])
+    
+    plot_2params(axes[2,0], "q1", "v_halo")
+    axes[2,0].set_xlabel(labels["q1"])
+    axes[2,0].set_ylabel(labels["v_halo"])
+    
+    plot_2params(axes[1,1], "qz", "phi")
+    plot_2params(axes[2,1], "qz", "v_halo")
+    axes[2,1].set_xlabel(labels["qz"])
+    
+    plot_2params(axes[2,2], "phi", "v_halo")
+    axes[2,2].set_xlabel(labels["phi"])
+
+    axes[0,1].set_visible(False);axes[0,2].set_visible(False);axes[1,2].set_visible(False)
+    axes[0,0].set_xticklabels([]);axes[1,0].set_xticklabels([]);axes[1,1].set_xticklabels([])
+    axes[1,1].set_yticklabels([]);axes[2,1].set_yticklabels([]);axes[2,2].set_yticklabels([])
+    
+    fig.suptitle("Inferred halo parameters for 100 bootstrapped realizations", fontsize=22)
+    fig.text(.5,.93, subtitle, fontsize=18, ha='center')
+    fig.subplots_adjust(hspace=0.04, wspace=0.04)
+    
     return fig
