@@ -220,7 +220,7 @@ def main(config_file):
         fig.savefig(os.path.join(path,"bootstrap_1d.png"))
         
         # Now make 2D plots of the bootstrap results
-        if config["observational_errors"]
+        if config["observational_errors"]:
             subtitle = r"$\sigma_{{RV}}={0}$ km/s; $\sigma_D={1}\%D$; {2} particles"
             subtitle = subtitle.format(rv_error, distance_error_percent, config["particles"])
         else:
