@@ -222,10 +222,10 @@ def main(config_file):
         # Now make 2D plots of the bootstrap results
         if config["observational_errors"]:
             subtitle = r"$\sigma_{{RV}}={0}$ km/s; $\sigma_D={1}\%D$; {2} particles"
-            subtitle = subtitle.format(rv_error, distance_error_percent, config["particles"])
+            subtitle = subtitle.format(rv_error, d_error, config["particles"])
         else:
             subtitle = "{0} particles".format(config["particles"])
-        bootstrap_scatter_plot(d, subtitle=subtitle.format(config['']))
+        bootstrap_scatter_plot(d, subtitle=subtitle)
     
     if config["make_plots"]:
         with open(config_file) as f:
