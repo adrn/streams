@@ -254,6 +254,21 @@ class ParticleCollection(object):
                                        labels=labels,
                                        **kwargs)
         return fig, axes
+    
+    def merge(self, other):
+        """ Merge two particle collections"""
+        
+        if not isinstance(other, ParticleCollection):
+            raise TypeError("Can only merge two ParticleCollection objects!")
+        
+        if other._units != self._units:
+            raise ValueError("Unit systems much match!")
+        
+        r = np.vstack((self._r,other._r)) * self._units['length']
+        v = np.vstack((self._v,other._v)) * self._units['length']/self._units['time']
+        m = np.append(self._m,other._m) * self._units['mass']
+        
+        return ParticleCollection(r=r, v=v, m=m, units=self.units)
 
 class Orbit(object):
     

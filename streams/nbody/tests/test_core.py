@@ -118,3 +118,22 @@ def test_acceleration():
     
     a = pc.acceleration_at(np.array([[0.5,0.5], [0.0,0.0], [-0.5, -0.5]])*u.kpc,
                            m=[1.,1.,1.]*u.M_sun)
+
+def test_merge():
+    # test merging two particle collections
+    
+    r = np.random.random(size=(10,3))*u.kpc
+    v = np.random.random(size=(10,3))*u.km/u.s
+    m = np.random.random(10)*u.M_sun
+    
+    pc1 = ParticleCollection(r=r, v=v, m=m, units=[u.kpc, u.Myr, u.M_sun])
+    
+    r = np.random.random(size=(10,3))*u.kpc
+    v = np.random.random(size=(10,3))*u.km/u.s
+    m = np.random.random(10)*u.M_sun
+    
+    pc2 = ParticleCollection(r=r, v=v, m=m, units=[u.kpc, u.Myr, u.M_sun])
+    
+    pc_merged = pc1.merge(pc2)
+    
+    assert pc_merged._r.shape == (20,3)
