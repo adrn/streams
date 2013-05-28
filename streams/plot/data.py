@@ -93,5 +93,5 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
                 axes[ii,jj].set_xlabel(labels[jj])
     
     fig = axes[0,0].figure
-    fig.subplots_adjust(hspace=0.05, wspace=0.05, left=0.08, bottom=0.08, top=0.9, right=0.9 )
+    fig.subplots_adjust(hspace=0.06, wspace=0.06, left=0.08, bottom=0.08, top=0.9, right=0.9 )
     return fig, axes
