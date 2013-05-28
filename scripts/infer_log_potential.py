@@ -163,18 +163,18 @@ def main(config_file):
                 fig,axes = pre_error_particles.plot_r("xyz",
                                         subplots_kwargs=dict(figsize=(16,16)),
                                         scatter_kwargs={"c":"k"})
-                particles.plot_r("xyz", axes=axes, scatter_kwargs={"c":"r"})
+                particles.plot_r("xyz", axes=axes, scatter_kwargs={"c":"#CA0020"})
             else:
-                fig,axes = particles.plot_r("xyz", scatter_kwargs={"c":"r"})
+                fig,axes = particles.plot_r("xyz", scatter_kwargs={"c":"#CA0020"})
             fig.savefig(os.path.join(path, "positions.png"))
             
             if config["observational_errors"]:
                 fig,axes = pre_error_particles.plot_v(['vx','vy','vz'],
                                         subplots_kwargs=dict(figsize=(16,16)),
                                         scatter_kwargs={"c":"k"})
-                particles.plot_v(['vx','vy','vz'], axes=axes, scatter_kwargs={"c":"r"})
+                particles.plot_v(['vx','vy','vz'], axes=axes, scatter_kwargs={"c":"#CA0020"})
             else:
-                fig,axes = particles.plot_v(['vx','vy','vz'], scatter_kwargs={"c":"r"})
+                fig,axes = particles.plot_v(['vx','vy','vz'], scatter_kwargs={"c":"#CA0020"})
             fig.savefig(os.path.join(path, "velocities.png"))
             
             # write the sampler to a pickle file
