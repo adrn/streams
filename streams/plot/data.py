@@ -60,6 +60,7 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
         skwargs = subplots_kwargs.copy()
         skwargs["sharex"] = True if not skwargs.has_key("sharex") else skwargs["sharex"]
         skwargs["sharey"] = True if not skwargs.has_key("sharey") else skwargs["sharey"]
+        skwargs["figsize"] = (12,12) if not skwargs.has_key("figsize") else skwargs["figsize"]
         
         fig, axes = plt.subplots(M-1, M-1, **skwargs)
     
@@ -83,25 +84,13 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
                 
             axes[ii,jj].scatter(data[jj], data[i], **sc_kwargs)
             
-            if yticks == None:
-                yticks = axes[ii,jj].get_yticks()[1:-1]
-            
-            if xticks == None:
-                xticks = axes[ii,jj].get_xticks()[1:-1]
-            
             # first column
             if jj == 0 and i != 0:
                 axes[ii,jj].set_ylabel(labels[i])
-                
-                # Hack so ticklabels don't overlap
-                axes[ii,jj].yaxis.set_ticks(yticks)
             
             # last row
             if ii == M-2:
                 axes[ii,jj].set_xlabel(labels[jj])
-
-                # Hack so ticklabels don't overlap
-                axes[ii,jj].xaxis.set_ticks(xticks)
     
     fig = axes[0,0].figure
     fig.subplots_adjust(hspace=0.05, wspace=0.05, left=0.08, bottom=0.08, top=0.9, right=0.9 )
