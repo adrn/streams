@@ -14,6 +14,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 
+__all__ = ['scatter_plot_matrix']
+
 def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
                             scatter_kwargs=dict(), triangle="lower"):
     """ Create a scatter plot matrix from the given data. 
@@ -59,7 +61,7 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
         skwargs["sharex"] = True if not skwargs.has_key("sharex") else skwargs["sharex"]
         skwargs["sharey"] = True if not skwargs.has_key("sharey") else skwargs["sharey"]
         
-        fig, axes = plt.subplots(M, M, **skwargs)
+        fig, axes = plt.subplots(M-1, M-1, **skwargs)
     
     sc_kwargs = scatter_kwargs.copy()
     sc_kwargs["edgecolor"] = "none" if not sc_kwargs.has_key("edgecolor") else sc_kwargs["edgecolor"]
@@ -67,8 +69,9 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
     sc_kwargs["s"] = 10 if not sc_kwargs.has_key("s") else sc_kwargs["s"]
     
     xticks = yticks = None
-    for ii in range(M):
-        for jj in range(M):
+    for ii in range(M-1):
+        i = ii+1
+        for jj in range(M-1):
             if triangle == "lower":
                 if ii < jj:
                     axes[ii,jj].set_visible(False)
@@ -77,12 +80,8 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
                 if ii > jj:
                     axes[ii,jj].set_visible(False)
                     continue
-            
-            if ii == jj:
-                axes[ii,jj].set_visible(False)
-                continue
                 
-            axes[ii,jj].scatter(data[jj], data[ii], **sc_kwargs)
+            axes[ii,jj].scatter(data[jj], data[i], **sc_kwargs)
             
             if yticks == None:
                 yticks = axes[ii,jj].get_yticks()[1:-1]
@@ -91,19 +90,19 @@ def scatter_plot_matrix(obj, labels=None, axes=None, subplots_kwargs=dict(),
                 xticks = axes[ii,jj].get_xticks()[1:-1]
             
             # first column
-            if jj == 0 and ii != 0:
-                axes[ii,jj].set_ylabel(labels[ii])
+            if jj == 0 and i != 0:
+                axes[ii,jj].set_ylabel(labels[i])
                 
                 # Hack so ticklabels don't overlap
                 axes[ii,jj].yaxis.set_ticks(yticks)
             
             # last row
-            if ii == M-1:
+            if ii == M-2:
                 axes[ii,jj].set_xlabel(labels[jj])
 
                 # Hack so ticklabels don't overlap
                 axes[ii,jj].xaxis.set_ticks(xticks)
     
     fig = axes[0,0].figure
-    fig.subplots_adjust(hspace=0.0, wspace=0.0, left=0.08, bottom=0.08, top=0.9, right=0.9 )
+    fig.subplots_adjust(hspace=0.05, wspace=0.05, left=0.08, bottom=0.08, top=0.9, right=0.9 )
     return fig, axes
