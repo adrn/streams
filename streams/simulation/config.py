@@ -17,7 +17,6 @@ def _parse_key_val(key, val):
         key : str
         val : str
     """
-    
     _key = key.lower()
     
     if _key.startswith("(i)"):
@@ -46,6 +45,12 @@ def _parse_key_val(key, val):
         l,element_type = _key.split(",")
         v = val.split()
         k = element_type.split()[1]
+    elif _key.startswith("(m"):
+        # multi-line
+        l,element_type = _key.split(",")
+        k,v = _parse_key_val("({0}".format(element_type), 
+                             val)
+        v = [v]
     else:
         raise ValueError("Unknown datatype in key '{0}'.".format(key))
     
@@ -63,6 +68,7 @@ def read(file):
             (B) if boolean
             (S) if string
             (L,[I,F,U,B,S]) if list, where second letter specifies element type
+            (M,[I,F,U,B,S]) if multi-line, where second letter specifies element type
         
         Parameters
         ----------
@@ -91,41 +97,11 @@ def read(file):
             val = val.strip()
     
         k,v = _parse_key_val(key,val)
-        config[k] = v
+        if config.has_key(k) and isinstance(config[k], list):
+            config[k] += v
+        elif not config.has_key(k):
+            config[k] = v
+        else:
+            raise ValueError("Unknown derp.")
     
     return config
-
-def write(filename, clobber=False):
-    """ Write all defaults into a configuration file.
-    
-        Parameters
-        ----------
-        filename : str 
-            File to write the default values to.
-        clobber : bool (optional)
-            If the file exists, overwrite it.
-    """
-    
-    config_file = []
-    config_file.append("(I) particles: 100")
-    config_file.append("(U) dt: 5. Myr # timestep")
-    config_file.append("(B) observational_errors: yes # add observational errors")
-    config_file.append("(S) expr: tub > 0.")
-    config_file.append("(L,S) model_parameters: q1 qz v_halo phi")
-    config_file.append("(I) seed: 42")
-    config_file.append("(I) walkers: 128")
-    config_file.append("(I) burn_in: 50")
-    config_file.append("(I) steps: 100")
-    config_file.append("(B) mpi: yes")
-    config_file.append("(B) make_plots: no")
-    config_file.append("(S) output_path: /tmp/")
-    
-    if os.path.exists(filename) and clobber:
-        os.remove(filename)
-    elif os.path.exists(filename) and not clobber:
-        raise IOError("File exists and you don't want to clobber it!")
-        
-    f = open(filename, "w")
-    f.write("\n".join(config_file))
-    f.close()
-    
