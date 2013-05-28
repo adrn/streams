@@ -97,7 +97,7 @@ def main(config_file):
             
             for N_i,expr_i in zip(config["particles"], expr):
                 time_grid, satellite, these_p = read_lm10(N=N_i, 
-                                                          expr=expr,
+                                                          expr=expr_i,
                                                           dt=config["dt"])
                 try:
                     particles = particles.merge(these_p)
@@ -172,20 +172,24 @@ def main(config_file):
             # Plot the positions of the particles in galactic XYZ coordinates
             if config["observational_errors"]:
                 fig,axes = pre_error_particles.plot_r("xyz",
-                                        subplots_kwargs=dict(figsize=(16,16)),
-                                        scatter_kwargs={"c":"k"})
-                particles.plot_r("xyz", axes=axes, scatter_kwargs={"c":"r"})
+                                        subplots_kwargs=dict(figsize=(12,12)),
+                                        scatter_kwargs={"alpha":0.75,"c":"k"})
+                particles.plot_r("xyz", axes=axes, scatter_kwargs={"alpha":0.75,
+                                                                   "c":"#CA0020"})
             else:
-                fig,axes = particles.plot_r("xyz", scatter_kwargs={"c":"r"})
+                fig,axes = particles.plot_r("xyz", scatter_kwargs={"alpha":0.75,
+                                                                   "c":"rk"})
             fig.savefig(os.path.join(path, "positions.png"))
             
             if config["observational_errors"]:
                 fig,axes = pre_error_particles.plot_v(['vx','vy','vz'],
-                                        subplots_kwargs=dict(figsize=(16,16)),
-                                        scatter_kwargs={"c":"k"})
-                particles.plot_v(['vx','vy','vz'], axes=axes, scatter_kwargs={"c":"r"})
+                                        subplots_kwargs=dict(figsize=(12,12)),
+                                        scatter_kwargs={"alpha":0.75,"c":"k"})
+                particles.plot_v(['vx','vy','vz'], axes=axes, 
+                                 scatter_kwargs={"alpha":0.75, "c":"#CA0020"})
             else:
-                fig,axes = particles.plot_v(['vx','vy','vz'], scatter_kwargs={"c":"r"})
+                fig,axes = particles.plot_v(['vx','vy','vz'], 
+                                            scatter_kwargs={"alpha":0.75, "c":"k"})
             fig.savefig(os.path.join(path, "velocities.png"))
             
             # write the sampler to a pickle file
