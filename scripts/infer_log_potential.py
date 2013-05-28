@@ -178,7 +178,7 @@ def main(config_file):
                                                                    "c":"#CA0020"})
             else:
                 fig,axes = particles.plot_r("xyz", scatter_kwargs={"alpha":0.75,
-                                                                   "c":"rk"})
+                                                                   "c":"k"})
             fig.savefig(os.path.join(path, "positions.png"))
             
             if config["observational_errors"]:
@@ -243,9 +243,9 @@ def main(config_file):
         # Now make 2D plots of the bootstrap results
         if config["observational_errors"]:
             subtitle = r"$\sigma_{{RV}}={0}$ km/s; $\sigma_D={1}\%D$; {2} particles"
-            subtitle = subtitle.format(rv_error, d_error, config["particles"])
+            subtitle = subtitle.format(rv_error, d_error, Nparticles)
         else:
-            subtitle = "{0} particles".format(config["particles"])
+            subtitle = "{0} particles".format(Nparticles)
         bootstrap_scatter_plot(d, subtitle=subtitle)
     
     if config["make_plots"]:
