@@ -98,9 +98,15 @@ def main(config_file):
     
     # Create a new path for the output
     if config["make_plots"]:
-        iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        dirname = "{0}{1}".format(config.get("name", ""), iso_now)
-        path = os.path.join(config["output_path"], dirname)
+        if config.has_key("name"):
+            path = os.path.join(config["output_path"], config["name"])
+        else:    
+            iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            path = os.path.join(config["output_path"], iso_now)
+        
+        if os.path.exists(path):
+            raise IOError("Path {0} already exists!".format(path))
+            
         os.mkdir(path)
     
     # Get the number of bootstrap reamples. if not specified, it's just 1
