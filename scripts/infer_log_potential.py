@@ -49,10 +49,7 @@ def main(config_file):
     
     # Expression for selecting particles from the simulation data snapshot
     if len(config["expr"]) > 0:
-        if isinstance(config["expr"], list):
-            expr = " & ".join(["({0})".format(x) for x in expr])
-        else:
-            expr = config["expr"]
+        expr = config["expr"]
     else:
         expr = None
     
@@ -73,6 +70,7 @@ def main(config_file):
     np.random.seed(config["seed"])
     
     # Read in Sagittarius simulation data
+    """ DEPRECATE SUPPORT FOR KVJ SIMULATION DATA
     if config["particle_source"] == "kvj":
         satellite_orbit = SgrCen().as_orbit()
         satellite = satellite_orbit[-1]
@@ -87,9 +85,28 @@ def main(config_file):
         time_grid *= satellite_orbit.t.unit
         
         particles = sgr_snap.as_particles()
-        
-    elif config["particle_source"] == "lm10":
-        time_grid, satellite, particles = read_lm10(N=config["particles"], 
+    """
+    
+    if config["particle_source"] == "lm10":
+        if isinstance(expr, list):
+            if not isinstance(config["particles"], list):
+                raise ValueError("If multiple expr's provided, multiple "
+                                 "particle numbers must be provided!")
+            elif len(config["particles"]) != len(expr):
+                raise ValueError("Must supply a particle count for each expr")
+            
+            for N_i,expr_i in zip(config["particles"], expr):
+                time_grid, satellite, these_p = read_lm10(N=N_i, 
+                                                          expr=expr,
+                                                          dt=config["dt"])
+                try:
+                    particles = particles.merge(these_p)
+                except NameError:
+                    particles = these_p
+            Nparticles = sum(config["particles"])
+        else:
+            Nparticles = config["particles"]
+            time_grid, satellite, particles = read_lm10(N=Nparticles, 
                                                     expr=expr,
                                                     dt=config["dt"])
     else:
