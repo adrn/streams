@@ -254,7 +254,8 @@ def main(config_file):
             subtitle = subtitle.format(rv_error, d_error, Nparticles)
         else:
             subtitle = "{0} particles".format(Nparticles)
-        bootstrap_scatter_plot(d, subtitle=subtitle)
+        fig = bootstrap_scatter_plot(best_p, subtitle=subtitle)
+        fig.savefig(os.path.join(path,"bootstrap_2d.png"))
     
     if config["make_plots"]:
         with open(config_file) as f:
