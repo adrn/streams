@@ -49,7 +49,7 @@ def back_integrate(potential):
     
     return satellite_orbit, particle_orbits
 
-def plot_orbits(potential, s, p):
+def plot_3d_orbits(potential, s, p):
     grid = np.linspace(np.min(p._r)-2., np.max(p._r)+2., 200)*u.kpc
     fig,axes = potential.plot(ndim=3, grid=grid)
     axes[0,0].plot(s._r[:,0,0], s._r[:,0,1], color='w', alpha=0.25)
@@ -63,7 +63,41 @@ def plot_orbits(potential, s, p):
     
     return fig,axes
 
-def plot_animation(potential, s, p, filename=""):
+def plot_1d_orbits(potential, s, p):
+    grid = np.linspace(np.min(p._r)-2., np.max(p._r)+2., 200)*u.kpc
+    X1, X2 = np.meshgrid(grid.value,grid.value)
+    
+    r = np.array([np.zeros_like(X1.ravel()) for xx in range(3)])
+    r[0] = X1.ravel()
+    r[2] = X2.ravel()
+    r = r.T*grid.unit
+    
+    fig,ax = plt.subplots(1,1,figsize=(12,12))
+    cs = ax.contourf(X1, X2, 
+                     potential.value_at(r).value.reshape(X1.shape), 
+                     cmap=cm.bone_r)
+    
+    ax.plot(s._r[:,0,0], s._r[:,0,2], color='w', alpha=0.25)
+    ax.plot(p._r[:,:,0], p._r[:,:,2], color='w', alpha=0.05)
+    
+    return fig,ax
+
+def xz_potential_contours(potential, grid):
+    X1, X2 = np.meshgrid(grid.value,grid.value)
+    
+    r = np.array([np.zeros_like(X1.ravel()) for xx in range(3)])
+    r[0] = X1.ravel()
+    r[2] = X2.ravel()
+    r = r.T*grid.unit
+    
+    fig,ax = plt.subplots(1,1,figsize=(12,12))
+    cs = ax.contourf(X1, X2, 
+                     potential.value_at(r).value.reshape(X1.shape), 
+                     cmap=cm.bone_r)
+    
+    return fig, ax
+
+def plot_3d_animation(potential, s, p, filename=""):
     #grid = np.linspace(np.min(p._r)-2., np.max(p._r)+2., 200)*u.kpc
     grid = np.linspace(-81, 81, 200)*u.kpc
     fig = None
@@ -127,6 +161,47 @@ def plot_animation(potential, s, p, filename=""):
     
     print("{0} unbound at end of run.".format(sum(idx)))
 
+def plot_xz_animation(potential, s, p, filename=""):
+    grid = np.linspace(-81, 81, 200)*u.kpc
+    
+    idx = np.ones(p._r.shape[1]).astype(bool)
+    R,V = relative_normalized_coordinates(potential, p, s)
+    all_D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
+    r_tide = tidal_radius(potential, s)[:,:,np.newaxis]
+    
+    fig,ax = xz_potential_contours(potential, grid)
+    jj = 0
+    for ii in range(0,len(t),10):
+        D_ps = all_D_ps[ii]
+        idx = idx & (D_ps > 2.8)
+        
+        offsets = p._r[ii]
+        offsets[np.logical_not(idx)] = np.ones_like(offsets[np.logical_not(idx)])*10000.
+        sat_r = s._r[ii,0]
+        
+        try:
+            scatter_map[(1,0)].set_offsets(np.vstack((offsets[:,0],offsets[:,2])).T)
+            scatter_map_sat[(1,0)].center = (sat_r[0], sat_r[2])
+            scatter_map_sat[(1,0)].set_radius(r_tide[ii])
+        except NameError:
+            scatter_map = dict()
+            scatter_map_sat = dict()
+            
+            c = Circle((sat_r[0], sat_r[2]), radius=r_tide[ii], color='r', alpha=0.5)
+            ax.add_patch(c)
+            scatter_map_sat[(1,0)] = c
+            
+            scatter_map[(1,0)] = ax.scatter(offsets[:,0], offsets[:,2], 
+                                            marker='.', color='w', 
+                                            alpha=0.2, s=5)
+            
+        ax.set_xlim(-81,81)
+        ax.set_ylim(-81,81)
+        fig.savefig(os.path.join(plot_path,"{0}{1:04d}.png".format(filename,jj)))
+        jj += 1
+    
+    print("{0} unbound at end of run.".format(sum(idx)))
+
 if __name__ == "__main__":
     
     N = 10000
@@ -148,13 +223,15 @@ if __name__ == "__main__":
     c_s_orbit, c_p_orbit = back_integrate(correct) # correct
     w_s_orbit, w_p_orbit = back_integrate(wrong) # wrong
         
-    fig,axes = plot_orbits(correct, c_s_orbit, c_p_orbit)
+    fig,axes = plot_3d_orbits(correct, c_s_orbit, c_p_orbit)
     fig.savefig(os.path.join(plot_path,"correct_orbits.png"))
-    plot_animation(correct, c_s_orbit, c_p_orbit, filename="correct_")
+    #plot_3d_animation(correct, c_s_orbit, c_p_orbit, filename="correct_")
+    plot_xz_animation(correct, c_s_orbit, c_p_orbit, filename="correct_")
     
-    fig,axes = plot_orbits(wrong, w_s_orbit, w_p_orbit)
+    fig,axes = plot_3d_orbits(wrong, w_s_orbit, w_p_orbit)
     fig.savefig(os.path.join(plot_path,"wrong_orbits.png"))
-    plot_animation(wrong, w_s_orbit, w_p_orbit, filename="wrong_")
+    #plot_3d_animation(wrong, w_s_orbit, w_p_orbit, filename="wrong_")
+    plot_xz_animation(wrong, w_s_orbit, w_p_orbit, filename="wrong_")
     
     os.system(ffmpeg_cmd.format(os.path.join(plot_path, "correct_%4d.png"), 
                                 os.path.join(plot_path, "correct.mp4")))
