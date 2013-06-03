@@ -1,0 +1,436 @@
+% MDMPROP.STY -- MDM observing proposal form.
+
+% First, identifying information about this style file.
+
+\def\revtex@ver{2.3}		% Version number of this file.
+\def\revtex@date{11 Apr 2007}	% Revision date.
+\def\revtex@author{Jules}	% This file's author.
+\def\revtex@org{Columbia}	% Sponsoring organization.
+\def\revtex@jnl{}		% Applicable journal, if specific.
+\def\revtex@genre{observing proposal}	% Document "type".
+
+% provide compatibility with previous versions
+\newcommand{\lunarphase}{\lunardays}
+
+\typeout{\revtex@org\space
+    \ifx\revtex@jnl\@empty\else\revtex@jnl\space\fi
+    \revtex@genre\space substyle, v\revtex@ver\space <\revtex@date>.}
+
+\def\revtex@pageid{\xdef\@thefnmark{\null}
+    \@footnotetext{\revtex@org\space
+    \ifx\revtex@jnl\@empty\else\revtex@jnl\space\fi
+    \revtex@genre\space \LaTeX\ macros v\revtex@ver.}}
+
+\let\ltx@enddoc=\enddocument
+\def\enddocument{\vfill\revtex@pageid\ltx@enddoc}
+
+% Supporting style files.
+
+\@input{art11.sty}
+%\@input{times.sty}
+%\def\normalsize{\ifx\@currsize\normalsize \rm \else \@normalsize\fi}
+
+% Page design/layout macros.  Page sizes are at the end of the file.
+
+\def\baselinestretch{0.98}	% Tighten up baselines a little.
+
+\def\ps@mdmprophead{\def\@oddfoot{}\def\@evenfoot{}
+    \def\@oddhead{\hbox to\textwidth{\small\sl Proposal \#\@propid
+	\ifx\@empty\@rcptdate\relax\else, received \@rcptdate\fi
+	\hfill Page \thepage}}\let\@evenhead\@oddhead
+    \def\chaptermark##1{\markright {{\ifnum \c@secnumdepth>\m@ne
+	\@chapapp\ \thechapter. \ \fi ##1}}}}
+
+\def\prop@head{Observing Time Request\\MDM Observatory}
+
+\newdimen\prop@idboxwidth
+
+\def\prop@idbox{\prop@idboxwidth\textwidth
+    \advance\prop@idboxwidth by-2.3\fboxsep
+    \fbox{\hbox to\prop@idboxwidth{
+    \ifx\@rcptdate\@empty{\it Date:\/} \today
+    \else{\it Date received:\/} \@rcptdate\fi\hfil
+%    {\it Institution:\/} \@taccategory \hspace{1.4cm}
+    {\it Proposal number:\/} \@propid }}}
+
+\def\ques@font{\it}
+\def\instruct@font{\small\sl}
+
+% Proposal ID will be filled in by Jules.
+%
+%    \proposalid{NUMBER}
+%    \received{DATE}
+
+\def\received#1{\gdef\@rcptdate{#1}} \received{}
+\def\proposalid#1{\gdef\@propid{#1}} \proposalid{\hspace{1in}}
+\def\taccategory#1{\gdef\@taccategory{#1}} \taccategory{\hspace{1in}}
+
+% Below is the markup that the observing team needs to supply.
+% Instructions for filling in the form using these commands are in
+% a template proposal form file as LaTeX comments.
+%
+%    \title{TEXT}
+
+\def\title#1{\null\vspace{-2\headheight}\vspace{-\headsep}
+    \begin{center}\large\bf\prop@head\end{center}\prop@idbox\par
+    \vspace*{.2in}
+    \def\@tempa{#1}\ifx\@empty\@tempa
+    \makebox[\textwidth]{\large{\bf TITLE:} \hrulefill}\par
+    \makebox[\textwidth]{\hrulefill}\par
+    \else{{\large{\bf TITLE:}} \@tempa}\fi}
+
+\def\abstract{\par\vspace{0ex}\vbox to2.35in\bgroup\noindent
+    {\bf Abstract of Scientific Justification:}\parindent\z@}
+\let\ltx@endabstract=\endabstract
+\def\endabstract{\ltx@endabstract\vfil\egroup\vspace{\fill}}
+
+% Observer identification.  These items are buffered so that they can be
+% specified in any order, subject only to the restriction that the observer
+% name be given first.  The same commands are used to identify the PI as
+% well as the co-investigators; the formatting is controlled separately,
+% and differences arise in the use of LaTeX environments, below.
+%
+% Each member of the observing team is identified with several bits of
+% information.
+%
+%    \name{OBSERVER NAME}
+%    \emailaddress{EMAIL ADDRESS}
+%    \atthetelescope{Y/N}
+%
+% Note that the fax number does not print on the form.  There is not
+% enough room on the cover page the way it is currently laid out.
+
+\def\name#1{\gdef\obs@name{#1}}
+\def\affil#1{\gdef\obs@affil{#1}}
+\def\address#1{\gdef\obs@address{#1}}
+\def\emailaddress#1{\gdef\obs@email{#1}}
+\def\phone#1{\gdef\obs@phone{#1}}
+\def\fax#1{\gdef\obs@fax{#1}}
+\def\invstatus#1{\gdef\obs@invstatus{#1}}
+\def\gradstudent#1{\gdef\obs@gradstudent{#1}}  % for compatibility (ignored)
+\def\permaddress#1{\gdef\obs@permaddress{#1}} % for future use (ignored)
+\def\atthetelescope#1{\gdef\obs@present{#1}}
+
+\def\clear@obs{\gdef\obs@name{}\gdef\obs@affil{}\gdef\obs@address{}
+    \gdef\obs@email{}\gdef\obs@phone{}\gdef\obs@fax{}\gdef\obs@invstatus{}
+    \gdef\obs@gradstudent{}\gdef\obs@permaddress{}}
+
+% Formatting of PI and CO-I data are controlled by the next two macros.
+
+% Now here is some dicey stuff.  We want to solve a variety of problems with
+% one form and one set of macros, stemming from the need to print rational
+% forms, whether or not anything has been filled in electronically.  In
+% other words, if somebody runs a *blank* electronic form through LaTeX,
+% a usable form should emerge from the laser printer, with blanks in the
+% appropriate places, etc.  If the form is filled in electronically, the
+% rules should be replaced with the stuff the user fills in.
+%
+% Fine.  Except that real estate on the first page is quite limited, and
+% we also need a way of letting the user who fills in information with the
+% editor know when he/she is being verbose.  We achieve this by forcing
+% certain pieces of information into boxes of fixed size.  These contain
+% either an \hrulefill, or text supplied by the author.  If too much text
+% is provided, TeX will bitch about the overfull hbox.
+
+\def\yn@rule{\rule{0.3in}{0.4pt}}
+\newcount\@maxnumcois \@maxnumcois=3
+
+\def\prt@piblock{\begin{quote}\begin{tabular}{ll}
+    \bf Principal Investigator: \fld@dlm \obs@name\\
+    \bf Email: \fld@dlm \obs@email\\
+    \bf Present?: \fld@dlm \obs@present\\
+    \end{tabular}\end{quote}}
+
+\def\prt@coiblock{\begin{tabbing}
+    \makebox[.25\textwidth]{\null}\=\makebox[.25\textwidth]{\null}\=
+    \makebox[.25\textwidth]{\null}\=\kill
+    \hbox to.35\textwidth{\obs@tag\space%
+	\ifx\@empty\obs@name\hrulefill\space\else\obs@name\hfill\fi}
+    \hbox to.50\textwidth{%
+	\ifx\@empty\obs@email Email: \hrulefill\else\hfill\obs@email\fi}
+%\\[.2ex]
+    \hbox to.135\textwidth{%
+	\ifx\@empty\obs@present Present? \hrulefill\else\hfill\obs@present\fi}%
+    \end{tabbing}}
+
+% Principal investigator and co-investigator environments.
+
+% Note that after the first three CoI blocks, I quit printing the CoI
+% information.  This is not especially nice.  It would be better if the
+% names (and possibly the grad student status) of the additional CoIs
+% were listed on the proposal form someplace.  Since the cover page is
+% so full at this point, my sense is that these would have to be collected
+% into end notes somehow.  This would be hard to program, and so it should
+% be deemed a very necessary requirement.  Perhaps some other display
+% format would be acceptable, one that would require less programming.
+
+\newcounter{CoI}
+\def\obs@tag{{\bf CoI:}}
+
+\newenvironment{PI}{\clear@obs}{\def\obs@tag{{\bf PI:}}\prt@coiblock}
+\newenvironment{CoI}{\clear@obs\stepcounter{CoI}}{\ifnum\c@CoI>\@maxnumcois
+    \relax\else\vspace*{-5ex}\prt@coiblock\fi}
+
+% Questions for first page.
+%
+%   \thesis{Y or N}
+%   \longterm{Y or N}
+%   \longtermdetails{BRIEF DETAILS}
+%   \queue{Y or N}
+%   \unusabledates{BRIEF DETAILS}
+
+\def\chk@setblank#1{\def\@mdmtmpa{#1}\ifx\@empty\@mdmtmpa
+    \def\@mdmtmpa{\yn@rule}\fi\mbox{\@mdmtmpa}}
+
+\def\chk@setblankline#1{\def\@mdmtmpa{#1}\ifx\@empty\@mdmtmpa
+    \def\@mdmtmpa{\rule{\textwidth}{0.4pt}}\fi
+    \par\makebox[\textwidth][l]{\@mdmtmpa}}
+
+\def\thesis@head{{\ques@font Is this proposal part of a PhD thesis?}}
+%    If `Y', you must send a letter; see instructions.}}
+\def\longterm@head{{\ques@font Requesting long-term status?
+    If `Y', please give \# of semesters and nights on the next line.}}
+%\def\queue@head{{\ques@font Would you like these observations carried
+%    out in ``queue'' mode?}}
+\def\undates@head{{\ques@font List dates you cannot use for
+    non-astronomical reasons on the next line.}}
+
+\def\thesis#1{\par$\bullet$\space\thesis@head\quad\chk@setblank{#1}}
+\def\longterm#1{\par$\bullet$\space\longterm@head\quad\chk@setblank{#1}
+    \gdef\@longterm{#1}}
+\def\longtermdetails#1{\def\@tempa{N}\ifx\@longterm\@tempa\relax\else
+    \chk@setblankline{#1}\fi}
+%\def\queue#1{\par$\bullet$\space\queue@head\quad\chk@setblank{#1}}
+\def\unusabledates#1{\par$\bullet$\space\undates@head\par\chk@setblankline{#1}}
+
+% Observing run environment.  This is used to describe observing parameters
+% in a very succinct manner, to be presented in an abbreviated form on the
+% first page.  I have chosen to use multiple \begin{obsrun}-\end{obsrun}
+% groupings, as opposed to a repeating set of parameter identifying macros.
+
+\newcounter{obsrun}
+\newenvironment{obsrun}{\stepcounter{obsrun}}%
+    {\ifnum\c@obsrun=3\par\prt@obsruns\par\fi}
+
+% Observing run parameters to be specified by the investigators.
+%
+%   \telescope{IDENT}
+%   \instrument{IDENT(S)}
+%   \numnights{NUMBER}
+%   \numdays{NUMBER}		% removed from printed table
+%   \lunardays{NUMBER}
+%   \optimaldates{RANGE}
+%   \acceptabledates{RANGE}
+
+% These are pretty amazing-looking.  They are fake "arrays", actually.
+
+\def\telescope#1{\global\@namedef{obs\@Alph{\c@obsrun}@telid}{#1}}
+\def\instrument#1{\global\@namedef{obs\@Alph{\c@obsrun}@inst}{#1}}
+\def\numnights#1{\global\@namedef{obs\@Alph{\c@obsrun}@numnights}{#1}}
+\def\numdays#1{\global\@namedef{obs\@Alph{\c@obsrun}@numdays}{#1}}
+\def\lunardays#1{\global\@namedef{obs\@Alph{\c@obsrun}@lunardays}{#1}}
+\def\optimaldates#1{\global\@namedef{obs\@Alph{\c@obsrun}@optdates}{#1}}
+\def\acceptabledates#1{\global\@namedef{obs\@Alph{\c@obsrun}@accdates}{#1}}
+
+\def\obsrun@head{Summary of observing runs requested for this project}
+
+% This one is not actually used.  It is work in progress...
+
+\def\obsblock@mdmprop{
+\@whilenum\c@obsrun <3
+\do {\typeout{Run \the\c@obsrun.}
+\@arabic{\c@obsrun} &
+\@nameuse{obs\@Alph{\c@obsrun}@telid} &
+\@nameuse{obs\@Alph{\c@obsrun}@inst} \\
+\global\advance\c@obsrun by\@ne}
+& \@nameuse{obs\@Alph{\c@obsrun}@numnights} &
+\@nameuse{obs\@Alph{\c@obsrun}@numdays} &
+\@nameuse{obs\@Alph{\c@obsrun}@lunardays} &
+\@nameuse{obs\@Alph{\c@obsrun}@optdates} &
+\@nameuse{obs\@Alph{\c@obsrun}@accdates}
+}
+
+% Note that I am taking serious advantage of the requirement that only
+% three of these blocks may be specified: I am explicitly printing
+% three sets of obsrun data and three sets only.
+
+\def\prt@obsruns{\begin{center}{\small\bf\obsrun@head}\\[1ex]
+    \setcounter{obsrun}{1}
+    \begin{tabular*}{1.0\textwidth}
+	{|c||c|l@{\extracolsep{\fill}}c|}
+    \multicolumn{1}{c}{\scriptsize Run} &
+    \multicolumn{1}{c}{\scriptsize Telescope} &
+    \multicolumn{1}{c}{\scriptsize Instrument, detectors, grisms, gratings,
+filters, camera optics, etc.}\\
+    \hline
+    1 & \obsA@telid & \obsA@inst &\\
+    \hline
+    2 & \obsB@telid & \obsB@inst &\\
+    \hline
+    3 & \obsC@telid & \obsC@inst &\\
+    \hline
+    \end{tabular*}\\
+    \vspace{2ex}
+    \begin{tabular*}{1.0\textwidth}
+	{|c||c|c|@{\extracolsep{\fill}}*{2}{c|}}
+    \multicolumn{1}{c}{\scriptsize Run} &
+    \multicolumn{1}{c}{\scriptsize No. nights} &
+    \multicolumn{1}{c}{\scriptsize Moon age (d)} &
+    \multicolumn{1}{c}{\scriptsize Optimal dates} &
+    \multicolumn{1}{c}{\scriptsize Acceptable dates}\\
+    \hline
+    1 & \obsA@numnights & \obsA@lunardays &
+        \obsA@optdates & \obsA@accdates \\
+    \hline
+    2 & \obsB@numnights & \obsB@lunardays &
+        \obsB@optdates & \obsB@accdates  \\
+    \hline
+    3 & \obsC@numnights & \obsC@lunardays &
+        \obsC@optdates & \obsC@accdates \\
+    \hline
+    \end{tabular*}
+    \end{center}}
+
+% The scientific justification and the proposed observing program are
+% typeset (printed) as they are specified by the author.  Specific
+% observations are summarized in the "obsrun" environment (above).
+%
+%    \justification
+%    \feasibility
+%    \whymdm
+%    \thepast
+
+\newenvironment{references}{\subsubsection*{References}}{\relax}
+\let\reference=\par
+
+\def\propsection{\@startsection{section}{1}{\z@}
+    {7pt plus 4pt minus 2pt}{-1em}{\normalsize\bf}}
+\def\subsection{\@startsection{subsection}{2}{\z@}
+    {-3.25ex plus -1ex minus -.2ex}{1.5ex plus .2ex}{\normalsize\bf}}
+
+\def\justif@head{{\instruct@font Try to include overall significance
+    to astronomy.\par}}
+\def\feas@head{{\instruct@font List objects, coordinates, and magnitudes
+    (or surface brightness, if appropriate), desired S/N, wavelength
+    coverage and resolution.  Justify the number of nights requested
+    as well as the specific telescope, instruments, and lunar phase.
+    Indicate the optimal detector, as well as acceptable alternates.
+    If you've requested long-term status, justify why this is necessary
+    for successful completion of the science.\par}}
+\def\whymdm@head{{\instruct@font If other optical/IR facilities are
+being used for this project, explain the role that MDM observations
+will play.
+\par}}
+\def\past@head{{\instruct@font List your allocations of telescope time at
+    MDM during the past 3 years, together with the current
+    status of the project (cite publications where appropriate).  Mark with
+    an asterisk those allocations of time related to the current proposal.
+    For ongoing projects, are they achieving their goals?\par}}
+
+\def\justification{\newpage\propsection{\fbox{Scientific Justification}}
+    \justif@head}
+\def\feasibility{\newpage\propsection{\fbox{Technical and Scientific
+    Feasibility}}\feas@head}
+\def\whymdm{\vfill\propsection{\fbox{Why MDM?}}\whymdm@head}
+\def\thepast{\vfill\propsection{\fbox{How is it Going?}}
+    \past@head}
+
+\def\relatedwork#1{\fbox{$\star$}\space#1}
+
+%  ****************************************
+%  *           EPS INCLUSIONS             *
+%  ****************************************
+
+% Include Rokicki's epsf.sty file explicitly.
+
+\@ifundefined{epsfbox}{\input{epsf.sty}}{\relax}
+
+% Simplified EPS inclusion macros so we can see how this goes...
+% These are layered on Rokicki's dvips material, and are dependent
+% on the author's use of that DVI driver.
+%
+%    \plotone{EPSFILE}
+%    \plottwo{EPSFILE}{EPSFILE}
+%    \plotfiddle{EPSFILE}{VSIZE}{ROT}{HSF}{VSF}{HTRANS}{VTRANS}
+%
+% \plotone inserts the plot in a space that is \columnwidth wide; the
+% plot is scaled so the horizontal dimension fits in the text width,
+% and the vertical dimension is scaled to maintain the aspect ratio.
+% \plottwo inserts two plots next to each other in one \columnwidth,
+% sort of like "two-up" mode.
+%
+%    EPSFILE    name of file with EPS
+%
+% The following arguments are for the \plotfiddle macro which formats
+% the \special itself, prepares vspace, etc.  This completely bypasses
+% Rokicki's macros that attempt to rationalize the EPS BoundingBox with
+% the LaTeX page dimensions.
+%
+%    VSIZE      vertical white space to allow for plot
+%    ROT        rotation angle
+%    HSF        horiz scale factor
+%    VSF        vert scale factor
+%    HTRANS     horiz translation
+%    VTRANS     vert translation
+
+%\epsfverbosetrue
+
+\def\eps@scaling{.95}
+\def\epsscale#1{\gdef\eps@scaling{#1}}
+
+\def\plotone#1{\centering \leavevmode
+    \epsfxsize=\eps@scaling\columnwidth \epsfbox{#1}}
+
+\def\plottwo#1#2{\centering \leavevmode
+    \epsfxsize=.45\columnwidth \epsfbox{#1} \hfil
+    \epsfxsize=.45\columnwidth \epsfbox{#2}}
+
+\def\plotfiddle#1#2#3#4#5#6#7{\centering \leavevmode
+    \vbox to#2{\rule{0pt}{#2}}
+    \special{psfile=#1 voffset=#7 hoffset=#6 vscale=#5 hscale=#4 angle=#3}}
+
+% Conveniences.
+
+\def\deg{\hbox{$^\circ$}}
+\def\sun{\hbox{$\odot$}}
+\def\earth{\hbox{$\oplus$}}
+\def\lesssim{\mathrel{\hbox{\rlap{\hbox{\lower4pt\hbox{$\sim$}}}\hbox{$<$}}}}
+\def\gtrsim{\mathrel{\hbox{\rlap{\hbox{\lower4pt\hbox{$\sim$}}}\hbox{$>$}}}}
+\def\sq{\hbox{\rlap{$\sqcap$}$\sqcup$}}
+\def\arcmin{\hbox{$^\prime$}}
+\def\arcsec{\hbox{$^{\prime\prime}$}}
+\def\fd{\hbox{$.\!\!^{\rm d}$}}
+\def\fh{\hbox{$.\!\!^{\rm h}$}}
+\def\fm{\hbox{$.\!\!^{\rm m}$}}
+\def\fs{\hbox{$.\!\!^{\rm s}$}}
+\def\fdg{\hbox{$.\!\!^\circ$}}
+\def\farcm{\hbox{$.\mkern-4mu^\prime$}}
+\def\farcs{\hbox{$.\!\!^{\prime\prime}$}}
+\def\fp{\hbox{$.\!\!^{\scriptscriptstyle\rm p}$}}
+\def\micron{\hbox{$\mu$m}}
+
+\let\la=\lesssim			% For Springer A&A compliance...
+\let\ga=\gtrsim
+
+\def\ion#1#2{#1$\;${\small\rm\@Roman{#2}}\relax}
+
+% Initialization.
+
+\textwidth 6.5in
+\textheight 9.0in
+\oddsidemargin \z@
+\evensidemargin \z@
+\topmargin \z@
+\headheight .2in
+\headsep .2in
+\footheight \z@
+\parindent \z@
+\parskip 1ex
+
+\voffset=-0.25in
+%\hoffset=-0.25in
+
+\ps@mdmprophead
+\setcounter{secnumdepth}{0}
+
+\thispagestyle{empty}
