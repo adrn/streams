@@ -330,7 +330,37 @@ class LM10Cen(KVJSgrData):
                                v=v*self.v_unit,
                                m=np.ones(len(r))*u.M_sun,
                                units=[self.t_unit,self.r_unit,self.v_unit, u.M_sun])
-        
+
+def lm10_particles(N=None, expr=None):
+    # Read in particle data -- a snapshot of particle positions, velocities at
+    #   the end of the simulation
+    particle_filename = os.path.join(project_root, 
+                                     "data",
+                                     "simulation", 
+                                     "SgrTriax_DYN.dat")
+    particle_colnames = ["Lambda", "Beta", "ra", "dec", "l", "b", \
+                         "xgc", "ygc", "zgc", "xsun", "ysun", "zsun", \
+                         "x4", "y4", "z4", "u", "v", "w", "dist", "vgsr", \
+                         "mul", "mub", "mua", "mud", "Pcol", "Lmflag"]
+    
+    particle_data = ascii.read(particle_filename, names=particle_colnames)
+    particle_data.add_column(Column(data=-np.array(particle_data["xgc"]), name="x"))
+    particle_data.add_column(Column(data=np.array(particle_data["ygc"]), name="y"))
+    particle_data.add_column(Column(data=np.array(particle_data["zgc"]), name="z"))
+    particle_data.add_column(Column(data=-np.array(particle_data["u"]), name="vx"))
+    particle_data.add_column(Column(data=np.array(particle_data["v"]), name="vy"))
+    particle_data.add_column(Column(data=np.array(particle_data["w"]), name="vz"))
+    
+    if expr != None and len(expr.strip()) > 0:
+        idx = numexpr.evaluate(str(expr), particle_data)
+        particle_data = particle_data[idx]
+    
+    if N != None and N > 0:
+        idx = np.random.randint(0, len(particle_data), N)
+        particle_data = particle_data[idx]
+    
+    return particle_data
+
 def read_lm10(N=None, expr=None, dt=1.):
     """ """
     
@@ -366,30 +396,7 @@ def read_lm10(N=None, expr=None, dt=1.):
     
     # Read in particle data -- a snapshot of particle positions, velocities at
     #   the end of the simulation
-    particle_filename = os.path.join(project_root, 
-                                     "data",
-                                     "simulation", 
-                                     "SgrTriax_DYN.dat")
-    particle_colnames = ["Lambda", "Beta", "ra", "dec", "l", "b", \
-                         "xgc", "ygc", "zgc", "xsun", "ysun", "zsun", \
-                         "x4", "y4", "z4", "u", "v", "w", "dist", "vgsr", \
-                         "mul", "mub", "mua", "mud", "Pcol", "Lmflag"]
-    
-    particle_data = ascii.read(particle_filename, names=particle_colnames)
-    particle_data.add_column(Column(data=-np.array(particle_data["xgc"]), name="x"))
-    particle_data.add_column(Column(data=np.array(particle_data["ygc"]), name="y"))
-    particle_data.add_column(Column(data=np.array(particle_data["zgc"]), name="z"))
-    particle_data.add_column(Column(data=-np.array(particle_data["u"]), name="vx"))
-    particle_data.add_column(Column(data=np.array(particle_data["v"]), name="vy"))
-    particle_data.add_column(Column(data=np.array(particle_data["w"]), name="vz"))
-
-    if expr != None and len(expr.strip()) > 0:
-        idx = numexpr.evaluate(str(expr), particle_data)
-        particle_data = particle_data[idx]
-    
-    if N != None and N > 0:
-        idx = np.random.randint(0, len(particle_data), N)
-        particle_data = particle_data[idx]
+    particle_data = lm10_particles(N, expr)
     
     r = np.zeros((len(particle_data), 3))
     r[:,0] = np.array(particle_data["x"])
