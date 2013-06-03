@@ -12,6 +12,7 @@ import cPickle as pickle
 
 # Third-party
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as col
 import matplotlib.cm as cm
@@ -204,7 +205,8 @@ def plot_sampler_pickle(filename, params, **kwargs):
 
 def bootstrap_scatter_plot(d, subtitle="", axis_lims=None):
     """ """
-    
+    matplotlib.rc('xtick', labelsize=16)
+    matplotlib.rc('ytick', labelsize=16)
     fig,axes = plt.subplots(3, 3, figsize=(12,12))
     
     # Create dictionary of true parameter values, not quantities
@@ -242,29 +244,44 @@ def bootstrap_scatter_plot(d, subtitle="", axis_lims=None):
         ax.axvline(params[p1], linestyle="--", color="#555555")
         ax.axhline(params[p2], linestyle="--", color="#555555")
     
+    q_ticks = np.arange(1.2,1.8,0.2)
+    v_ticks = np.arange(105,155,10)
+    phi_ticks = np.arange(1.0,2.2,0.2)
     plot_2params(axes[0,0], "q1", "qz")
     axes[0,0].set_ylabel(labels["qz"])
+    axes[0,0].set_yticks(q_ticks)
     
     plot_2params(axes[1,0], "q1", "phi")
     axes[1,0].set_ylabel(labels["phi"])
+    axes[1,0].set_yticks(phi_ticks)
     
     plot_2params(axes[2,0], "q1", "v_halo")
     axes[2,0].set_xlabel(labels["q1"])
     axes[2,0].set_ylabel(labels["v_halo"])
+    axes[2,0].set_xticks(q_ticks)
+    axes[2,0].set_yticks(v_ticks)
     
     plot_2params(axes[1,1], "qz", "phi")
     plot_2params(axes[2,1], "qz", "v_halo")
     axes[2,1].set_xlabel(labels["qz"])
+    axes[2,1].set_xticks(q_ticks)
     
     plot_2params(axes[2,2], "phi", "v_halo")
     axes[2,2].set_xlabel(labels["phi"])
+    axes[2,2].set_xticks(phi_ticks)
 
     axes[0,1].set_visible(False);axes[0,2].set_visible(False);axes[1,2].set_visible(False)
     axes[0,0].set_xticklabels([]);axes[1,0].set_xticklabels([]);axes[1,1].set_xticklabels([])
     axes[1,1].set_yticklabels([]);axes[2,1].set_yticklabels([]);axes[2,2].set_yticklabels([])
     
-    fig.suptitle("Inferred halo parameters for 100 bootstrapped realizations", fontsize=22)
-    fig.text(.5,.93, subtitle, fontsize=18, ha='center')
+    for ax in fig.axes:
+        if ax.get_xlabel() != "":
+            ax.xaxis.label.set_size(24)
+        if ax.get_ylabel() != "":
+            ax.yaxis.label.set_size(24)
+    
+    fig.suptitle("Inferred halo parameters for 100 bootstrapped realizations", fontsize=28)
+    fig.text(.5,.91, subtitle, fontsize=24, ha='center')
     fig.subplots_adjust(hspace=0.04, wspace=0.04)
     
     return fig
