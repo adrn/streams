@@ -12,6 +12,7 @@ import os, sys
 # Third-party
 import astropy.units as u
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from matplotlib.patches import Circle
 import numpy as np
 
@@ -53,13 +54,13 @@ def plot_3d_orbits(potential, s, p):
     grid = np.linspace(np.min(p._r)-2., np.max(p._r)+2., 200)*u.kpc
     fig,axes = potential.plot(ndim=3, grid=grid)
     axes[0,0].plot(s._r[:,0,0], s._r[:,0,1], color='w', alpha=0.25)
-    axes[0,0].plot(p._r[:,:,0], p._r[:,:,1], color='w', alpha=0.05)
+    axes[0,0].plot(p._r[:,:,0], p._r[:,:,1], color='w', alpha=0.01)
     
     axes[1,0].plot(s._r[:,0,0], s._r[:,0,2], color='w', alpha=0.25)
-    axes[1,0].plot(p._r[:,:,0], p._r[:,:,2], color='w', alpha=0.05)
+    axes[1,0].plot(p._r[:,:,0], p._r[:,:,2], color='w', alpha=0.01)
     
     axes[1,1].plot(s._r[:,0,1], s._r[:,0,2], color='w', alpha=0.25)
-    axes[1,1].plot(p._r[:,:,1], p._r[:,:,2], color='w', alpha=0.05)
+    axes[1,1].plot(p._r[:,:,1], p._r[:,:,2], color='w', alpha=0.01)
     
     return fig,axes
 
@@ -81,21 +82,6 @@ def plot_1d_orbits(potential, s, p):
     ax.plot(p._r[:,:,0], p._r[:,:,2], color='w', alpha=0.05)
     
     return fig,ax
-
-def xz_potential_contours(potential, grid):
-    X1, X2 = np.meshgrid(grid.value,grid.value)
-    
-    r = np.array([np.zeros_like(X1.ravel()) for xx in range(3)])
-    r[0] = X1.ravel()
-    r[2] = X2.ravel()
-    r = r.T*grid.unit
-    
-    fig,ax = plt.subplots(1,1,figsize=(12,12))
-    cs = ax.contourf(X1, X2, 
-                     potential.value_at(r).value.reshape(X1.shape), 
-                     cmap=cm.bone_r)
-    
-    return fig, ax
 
 def plot_3d_animation(potential, s, p, filename=""):
     #grid = np.linspace(np.min(p._r)-2., np.max(p._r)+2., 200)*u.kpc
@@ -161,6 +147,21 @@ def plot_3d_animation(potential, s, p, filename=""):
     
     print("{0} unbound at end of run.".format(sum(idx)))
 
+def xz_potential_contours(potential, grid):
+    X1, X2 = np.meshgrid(grid.value,grid.value)
+    
+    r = np.array([np.zeros_like(X1.ravel()) for xx in range(3)])
+    r[0] = X1.ravel()
+    r[2] = X2.ravel()
+    r = r.T*grid.unit
+    
+    fig,ax = plt.subplots(1,1,figsize=(12,12))
+    cs = ax.contourf(X1, X2, 
+                     potential.value_at(r).value.reshape(X1.shape), 
+                     cmap=cm.Greys)
+    
+    return fig, ax
+
 def plot_xz_animation(potential, s, p, filename=""):
     grid = np.linspace(-81, 81, 200)*u.kpc
     
@@ -170,13 +171,18 @@ def plot_xz_animation(potential, s, p, filename=""):
     r_tide = tidal_radius(potential, s)[:,:,np.newaxis]
     
     fig,ax = xz_potential_contours(potential, grid)
+    ax.set_frame_on(False)
+    ax.set_xlabel("$X_{GC}$", color='w', fontsize=28)
+    ax.set_ylabel("$Z_{GC}$", color='w', fontsize=28, rotation='horizontal')
+    fig.subplots_adjust(left=0.08, right=0.98, top=0.98, bottom=0.06)
+    
     jj = 0
     for ii in range(0,len(t),10):
         D_ps = all_D_ps[ii]
         idx = idx & (D_ps > 2.8)
         
         offsets = p._r[ii]
-        offsets[np.logical_not(idx)] = np.ones_like(offsets[np.logical_not(idx)])*10000.
+        offsets[np.logical_not(idx)] = np.ones_like(offsets[np.logical_not(idx)])*len(p._r)
         sat_r = s._r[ii,0]
         
         try:
@@ -187,17 +193,21 @@ def plot_xz_animation(potential, s, p, filename=""):
             scatter_map = dict()
             scatter_map_sat = dict()
             
-            c = Circle((sat_r[0], sat_r[2]), radius=r_tide[ii], color='r', alpha=0.5)
+            c = Circle((sat_r[0], sat_r[2]), radius=r_tide[ii], 
+                       facecolor='#CA0020', alpha=0.3, edgecolor='none')
             ax.add_patch(c)
             scatter_map_sat[(1,0)] = c
             
             scatter_map[(1,0)] = ax.scatter(offsets[:,0], offsets[:,2], 
-                                            marker='.', color='w', 
-                                            alpha=0.2, s=5)
+                                            marker='.', color='#ABD9E9', 
+                                            alpha=0.4, s=8)
             
         ax.set_xlim(-81,81)
         ax.set_ylim(-81,81)
-        fig.savefig(os.path.join(plot_path,"{0}{1:04d}.png".format(filename,jj)))
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        fig.savefig(os.path.join(plot_path,"{0}{1:04d}.png".format(filename,jj)),
+                    facecolor=(21/255.,21/255.,21/255.))
         jj += 1
     
     print("{0} unbound at end of run.".format(sum(idx)))
