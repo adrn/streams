@@ -13,7 +13,7 @@ import os, sys
 import numpy as np
 from astropy.utils import isiterable
 
-__all__ = ["leapfrog", "adaptive_leapfrog"]
+__all__ = ["leapfrog"]
 
 def leapfrog(acceleration_function, initial_position, initial_velocity, 
              t=None, t1=None, t2=None, dt=None, args=()):
@@ -127,7 +127,7 @@ def _tidal_radius(potential, r):
     
     return R_orbit * (m_sat / m_enc)**(1./3)
 
-def adaptive_leapfrog(potential, initial_position, initial_velocity, 
+def _adaptive_leapfrog(potential, initial_position, initial_velocity, 
                       t1, t2, args=(), resolution=3.):
     """ Given a potential and initial conditions, integrate from t1 to t2 
         with an adaptive timestep using Leapfrog integration. The timestep is
