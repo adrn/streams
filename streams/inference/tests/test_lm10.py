@@ -20,7 +20,7 @@ from streams.inference.lm10 import ln_likelihood
 from streams.nbody import Particle, ParticleCollection
 from streams.integrate import leapfrog
 from streams.potential.lm10 import LawMajewski2010
-from streams.data.sgr import read_lm10
+from streams.data.sgr import lm10_particles, lm10_satellite
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
@@ -46,9 +46,10 @@ def test_time_likelihood():
                                    m=2.5E8*u.M_sun,
                                    units=[u.kpc,u.Myr,u.M_sun])
     
-    t = np.arange(0., 6000., 5.)*u.Myr
+    resolution = 3.
+    t1,t2 = 0., 6000.
     
-    print(ln_likelihood(p, param_names, particles, satellite, t))
+    print(ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution))
 
 def test_energy_conserve():
     N = 100
@@ -88,18 +89,19 @@ def test_energy_conserve():
                 facecolor="#444444")
 
 def test_compare_likelihood():
-    t,satellite,particles = read_lm10(N=1000, dt=10.)
+    satellite = lm10_satellite()
+    particles = lm10_particles(N=1000)
     
     p = [1.2, 1.2, 0.121, 1.6912]
     param_names = ["q1", "qz", "v_halo", "phi"]
     a = time.time()
-    l1 = ln_likelihood(p, param_names, particles, satellite, t)
+    l1 = ln_likelihood(p, param_names, particles, satellite, t1=0, t2=6000., resolution=3.)
     print("l1: {0} ({1} seconds)".format(l1, time.time()-a))
     
     p = [1.38, 1.36, (121.858*u.km/u.s), 1.692969*u.radian]
     param_names = ["q1", "qz", "v_halo", "phi"]
     a = time.time()
-    l2 = ln_likelihood(p, param_names, particles, satellite, t)
+    l2 = ln_likelihood(p, param_names, particles, satellite, t1=0, t2=6000., resolution=3.)
     print("l2: {0} ({1} seconds)".format(l2, time.time()-a))
     
     assert l2 > l1
