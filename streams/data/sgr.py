@@ -27,7 +27,7 @@ from ..util import project_root
 from ..plot.data import scatter_plot_matrix
 from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
 
-__all__ = ["read_lm10", "lm10_particles"]
+__all__ = ["lm10_particles", "lm10_satellite"]
 
 def lm10_particles(N=None, expr=None):
     """ Read in particles from the Law & Majewski 2010 simulation of Sgr. 
