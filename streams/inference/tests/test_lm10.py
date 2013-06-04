@@ -8,6 +8,8 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import time
+import cProfile
+import pstats
 
 # Third-party
 import numpy as np
@@ -145,12 +147,9 @@ def test_timestep_energy():
     
     plt.tight_layout()
     plt.savefig(os.path.join(plot_path,"timestep_energy_conserv.png"))
-    
+
 if __name__ == "__main__":
-    import cProfile
-    import pstats
+    cProfile.run("test_cprofile_time()", os.path.join(plot_path, "cprofiled"))
     
-    cProfile.run("test_cprofile_time()", "/tmp/cprof")
-    
-    p = pstats.Stats("/tmp/cprof")
+    p = pstats.Stats(os.path.join(plot_path, "cprofiled"))
     p.sort_stats('cumulative').print_stats(50)
