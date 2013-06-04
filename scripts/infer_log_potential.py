@@ -29,7 +29,7 @@ from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
 from streams.simulation.config import read
-from streams.data import SgrSnapshot, SgrCen, read_lm10
+from streams.data import lm10_particles, lm10_satellite, lm10_time
 from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
@@ -70,24 +70,9 @@ def main(config_file):
     np.random.seed(config["seed"])
     
     # Read in Sagittarius simulation data
-    """ DEPRECATE SUPPORT FOR KVJ SIMULATION DATA
-    if config["particle_source"] == "kvj":
-        satellite_orbit = SgrCen().as_orbit()
-        satellite = satellite_orbit[-1]
-        
-        sgr_snap = SgrSnapshot(N=config["particles"],
-                               expr=expr)
-        
-        # Define new time grid
-        time_grid = np.arange(max(satellite_orbit.t.value), 
-                              min(satellite_orbit.t.value),
-                              -config["dt"].to(satellite_orbit.t.unit).value)
-        time_grid *= satellite_orbit.t.unit
-        
-        particles = sgr_snap.as_particles()
-    """
-    
     if config["particle_source"] == "lm10":
+        satellite = lm10_satellite()
+        t1,t2 = lm10_time()
         if isinstance(expr, list):
             if not isinstance(config["particles"], list):
                 raise ValueError("If multiple expr's provided, multiple "
@@ -96,19 +81,16 @@ def main(config_file):
                 raise ValueError("Must supply a particle count for each expr")
             
             for N_i,expr_i in zip(config["particles"], expr):
-                time_grid, satellite, these_p = read_lm10(N=N_i, 
-                                                          expr=expr_i,
-                                                          dt=config["dt"])
+                these_p = lm10_particles(N=N_i, expr=expr_i)
+                
                 try:
                     particles = particles.merge(these_p)
                 except NameError:
                     particles = these_p
-            Nparticles = sum(config["particles"])
+            Nparticles = len(particles._r)
         else:
             Nparticles = config["particles"]
-            time_grid, satellite, particles = read_lm10(N=Nparticles, 
-                                                    expr=expr,
-                                                    dt=config["dt"])
+            particles = lm10_particles(N=Nparticles, expr=expr)
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
@@ -149,6 +131,8 @@ def main(config_file):
         except NameError:
             p0 = this_p
     
+    resolution = config.get("resolution", 3.)
+    
     p0 = p0.T
     if p0.ndim == 1:
         p0 = p0[np.newaxis].T
@@ -161,7 +145,7 @@ def main(config_file):
                                       args=(config["model_parameters"], 
                                             particles, 
                                             satellite, 
-                                            time_grid))
+                                            t1,t2,resolution))
         except:
             if config["mpi"]: pool.close()
             raise
