@@ -101,9 +101,9 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     lm10 = LawMajewski2010(**halo_params)
     
-    t,r,v = adaptive_leapfrog(lm10, 
-                      satellite._r, satellite._v,
-                      t1=t1, t2=t2, resolution=resolution)
+    t,r,v = _adaptive_leapfrog(lm10, 
+                               satellite._r, satellite._v,
+                               t1=t1, t2=t2, resolution=resolution)
     satellite_orbit = OrbitCollection(t=t*u.Myr, 
                                       r=r*satellite.r.unit,
                                       v=v*satellite.v.unit,
