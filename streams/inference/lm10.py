@@ -18,7 +18,7 @@ import astropy.units as u
 from ..inference import generalized_variance
 from ..potential.lm10 import LawMajewski2010, true_params, param_ranges, param_units
 from ..nbody import Orbit, OrbitCollection
-from ..integrate import leapfrog
+from ..integrate import leapfrog, adaptive_leapfrog
 
 __all__ = ["ln_posterior", "ln_likelihood"]
 
@@ -91,32 +91,28 @@ def ln_prior(p, param_names):
 # Note: if this doesn't work, I can always pass param_names in to each prior
 #   and if it isn't in there, return 0...
 
-def ln_likelihood(p, param_names, particles, satellite, t):
+def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     """ Evaluate the likelihood function for a given set of halo 
         parameters.
     """
     halo_params = dict(zip(param_names, p))
     
-    #halo_params = true_params.copy()
-    #for ii,param in enumerate(param_names):
-    #    halo_params[param] = p[ii]*param_units[param]
-    
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     lm10 = LawMajewski2010(**halo_params)
     
-    xx,r,v = leapfrog(lm10._acceleration_at, 
+    t,r,v = adaptive_leapfrog(lm10._acceleration_at, 
                       satellite._r, satellite._v,
-                      t=t.value)
-    satellite_orbit = OrbitCollection(t=t, 
+                      t1=t1, t2=t2, resolution=resolution)
+    satellite_orbit = OrbitCollection(t=t*u.Myr, 
                                       r=r*satellite.r.unit,
                                       v=v*satellite.v.unit,
                                       m=[2.5E8]*u.M_sun,
                                       units=[u.kpc, u.Myr, u.M_sun])
     
-    xx,r,v = leapfrog(lm10._acceleration_at, 
-                      particles._r, particles._v,
-                      t=t.value)
-    particle_orbits = OrbitCollection(t=t, 
+    t,r,v = leapfrog(lm10._acceleration_at, 
+                     particles._r, particles._v,
+                     t=t)
+    particle_orbits = OrbitCollection(t=t*u.Myr, 
                                       r=r*particles.r.unit, 
                                       v=v*particles.v.unit, 
                                       m=np.ones(len(r))*u.M_sun,
@@ -125,5 +121,5 @@ def ln_likelihood(p, param_names, particles, satellite, t):
     return -generalized_variance(lm10, particle_orbits, satellite_orbit)
 
 def ln_posterior(p, *args):
-    param_names, particles, satellite, t = args
+    param_names, particles, satellite, t1, t2, resolution = args
     return ln_prior(p, param_names) + ln_likelihood(p, *args)
