@@ -46,31 +46,34 @@ class TestBoxOnSpring(object):
         plt.savefig(os.path.join(plot_path,"box_spring_{0}.png".format(name)))
 
 def plot_energies(potential, ts, xs, vs, axes1=None):
-    E_kin = 0.5*np.sum(vs**2, axis=-1)
+    E_kin = 0.5*np.sum(vs**2, axis=-1)[:,0]
     E_pot = potential._value_at(xs[:,0,:])
+    
+    if E_pot.ndim > 1:
+        E_pot = E_pot[:,0]
     
     if axes1 == None:
         fig1, axes1 = plt.subplots(3,1,sharex=True,sharey=True,figsize=(12,8))
     
     print(E_kin.shape, E_pot.shape)
     
-    axes1[0].plot(ts, E_kin[:,0])
+    axes1[0].plot(ts, E_kin, marker=None)
     axes1[0].set_ylabel(r"$E_{kin}$")
     #axes1[0].set_ylim(-50,50)
     
-    axes1[1].plot(ts, E_pot)
+    axes1[1].plot(ts, E_pot, marker=None)
     axes1[1].set_ylabel(r"$E_{pot}$")
     #axes1[1].set_ylim(-50,50)
     
-    axes1[2].plot(ts, (E_kin[:,0] + E_pot[:,0]))
+    axes1[2].plot(ts, (E_kin + E_pot), marker=None)
     axes1[2].set_ylabel(r"$E_{tot}$")
     #axes1[2].set_ylim(-50,50)
 
     grid = np.linspace(np.min(xs)-1., np.max(xs)+1., 100)*u.kpc
     fig2, axes2 = potential.plot(ndim=3, grid=grid)
-    axes2[0,0].plot(xs[:,0,0], xs[:,0,1], color='w')
-    axes2[1,0].plot(xs[:,0,0], xs[:,0,2], color='w')
-    axes2[1,1].plot(xs[:,0,1], xs[:,0,2], color='w')
+    axes2[0,0].plot(xs[:,0,0], xs[:,0,1], color='w', marker=None)
+    axes2[1,0].plot(xs[:,0,0], xs[:,0,2], color='w', marker=None)
+    axes2[1,1].plot(xs[:,0,1], xs[:,0,2], color='w', marker=None)
     
     return fig1,fig2 
 
