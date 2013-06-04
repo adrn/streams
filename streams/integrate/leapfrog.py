@@ -166,8 +166,13 @@ def _adaptive_leapfrog(potential, initial_position, initial_velocity,
         r_im1 = initial_position
         v_im1 = initial_velocity
     
+    if t1 > t2:
+        fac = -1.
+    else:
+        fac = 1.
+    
     this_dt = _tidal_radius(potential, r_im1) / 0.102271 / resolution # kpc/Myr
-    half_dt = 0.5*this_dt
+    half_dt = 0.5*fac*this_dt
     
     # Shape of final objects should be (Ntimesteps, Nparticles, Ndim)
     rs = []
@@ -177,11 +182,11 @@ def _adaptive_leapfrog(potential, initial_position, initial_velocity,
     v_im1_2 = v_im1 + a_i*half_dt
     v_i = v_im1_2 + a_i*half_dt
     r_i = r_im1
-
+    
     t = t1
     ii = 0
     times = []
-    while t < t2:
+    while t < fac*t2:
         rs.append(r_i)
         vs.append(v_i)
         
@@ -189,14 +194,14 @@ def _adaptive_leapfrog(potential, initial_position, initial_velocity,
         a_i = acceleration_function(r_i, *args)
         v_i = v_im1_2 + a_i*this_dt*0.5
         
-        this_dt = _tidal_radius(potential, r_i) / 0.102271 / resolution
+        this_dt = fac*_tidal_radius(potential, r_i) / 0.102271 / resolution
         v_ip1_2 = v_i + a_i*this_dt*0.5
 
         r_im1 = r_i
         v_im1_2 = v_ip1_2
         
         ii += 1
-        times.append(t)
-        t += this_dt
+        times.append(fac*t)
+        t += fac*this_dt
 
     return np.array(times), np.array(rs), np.array(vs)

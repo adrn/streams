@@ -27,7 +27,7 @@ from ..util import project_root
 from ..plot.data import scatter_plot_matrix
 from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
 
-__all__ = ["lm10_particles", "lm10_satellite"]
+__all__ = ["lm10_particles", "lm10_satellite", "lm10_time"]
 
 def lm10_particles(N=None, expr=None):
     """ Read in particles from the Law & Majewski 2010 simulation of Sgr. 
@@ -91,14 +91,6 @@ def lm10_satellite():
         the Law & Majewski 2010 simulation (e.g., present day position to be
         back-integrated).
     
-        Parameters
-        ----------
-        N : int
-            Number of particles to read. None means 'all'.
-        expr : str
-            String selection condition to be fed to numexpr for selecting 
-            particles.
-        
     """
     sat_filename = os.path.join(project_root, 
                                 "data",
@@ -133,3 +125,27 @@ def lm10_satellite():
                                    units=[u.kpc,u.Myr,u.M_sun])
     
     return satellite
+    
+def lm10_time():
+    """ Read in the time information for the Law & Majewski 2010 simulation 
+        (e.g., present day isn't exactly t=0)
+        
+    """
+    sat_filename = os.path.join(project_root, 
+                                "data",
+                                "simulation", 
+                                "SgrTriax_orbit.dat")
+    sat_colnames = ["t","lambda_sun","beta_sun","ra","dec", \
+                    "x_sun","y_sun","z_sun","x_gc","y_gc","z_gc", \
+                    "dist","vgsr"]
+    
+    # read in ascii file
+    satellite_data = ascii.read(sat_filename, names=sat_colnames)
+    
+    # they integrate past present day, so only select the prior history
+    satellite_data = satellite_data[satellite_data["t"] <= 0.]
+    
+    t1 = max(satellite_data["t"])*1000.
+    t2 = min(satellite_data["t"])*1000.
+    
+    return t1, t2
