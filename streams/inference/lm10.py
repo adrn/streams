@@ -18,7 +18,8 @@ import astropy.units as u
 from ..inference import generalized_variance
 from ..potential.lm10 import LawMajewski2010, true_params, param_ranges, param_units
 from ..nbody import Orbit, OrbitCollection
-from ..integrate import leapfrog, adaptive_leapfrog
+from ..integrate import leapfrog
+from ..integrate.leapfrog import _adaptive_leapfrog
 
 __all__ = ["ln_posterior", "ln_likelihood"]
 
@@ -100,7 +101,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     lm10 = LawMajewski2010(**halo_params)
     
-    t,r,v = adaptive_leapfrog(lm10._acceleration_at, 
+    t,r,v = adaptive_leapfrog(lm10, 
                       satellite._r, satellite._v,
                       t1=t1, t2=t2, resolution=resolution)
     satellite_orbit = OrbitCollection(t=t*u.Myr, 
