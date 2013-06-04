@@ -29,7 +29,7 @@ from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
 from streams.simulation.config import read
-from streams.data import SgrSnapshot, SgrCen, read_lm10
+from streams.data import lm10_particles, lm10_satellite, lm10_time
 from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
