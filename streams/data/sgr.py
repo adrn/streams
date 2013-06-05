@@ -8,24 +8,19 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import copy
 
 # Third-party
 import numpy as np
 import numexpr
-import astropy.io.fits as fits
 import astropy.io.ascii as ascii
-from astropy.table import Table, Column
-import astropy.coordinates as coord
+from astropy.table import Column
 import astropy.units as u
-from scipy import interpolate
 
 # Project
-from .core import _make_npy_file
-from ..observation.gaia import rr_lyrae_add_observational_uncertainties
 from ..util import project_root
-from ..plot.data import scatter_plot_matrix
 from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
+from ..integrate import leapfrog
+from ..potential.lm10 import LawMajewski2010
 
 __all__ = ["lm10_particles", "lm10_satellite", "lm10_time"]
 
@@ -116,12 +111,26 @@ def lm10_satellite():
     # they use a left-handed coordinate system?
     satellite_data["x"] = -satellite_data["x"]
     
-    # TODO: Maybe skip reading in the file, and just take the position today from their paper?
-    # initial conditions, or, position of the satellite today
-    r = [[satellite_data[-1]['x'], satellite_data[-1]['y'], satellite_data[-1]['z']]]*u.kpc # kpc
-    v = [[230., -35., 195.]]*u.km/u.s
+    # initial conditions, or, position of the satellite today from the text of
+    #   the paper. i need to integrate these to the first timestep to get the
+    #   true initial conditions for the satellite
+    r0 = [[19., 2.7, -6.9]] # kpc
+    v0 = ([[230., -35., 195.]]*u.km/u.s).to(u.kpc/u.Myr).value
     
-    satellite = ParticleCollection(r=r, v=v, m=[2.5E8]*u.M_sun,
+    # get first timestep
+    t1 = max(satellite_data["t"])*1000.
+    dt = t1
+    
+    # define true potential
+    lm10 = LawMajewski2010()
+    
+    # integrate up to the first timestep
+    t,r,v = leapfrog(lm10._acceleration_at,
+                     initial_position=r0, initial_velocity=v0,
+                     t1=0, t2=t1, dt=dt)
+    
+    satellite = ParticleCollection(r=r[1]*u.kpc, v=v[1]*u.kpc/u.Myr, 
+                                   m=[2.5E8]*u.M_sun,
                                    units=[u.kpc,u.Myr,u.M_sun])
     
     return satellite
