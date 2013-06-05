@@ -51,7 +51,8 @@ def test_time_likelihood():
     resolution = 3.
     t1,t2 = lm10_time()
     
-    print(ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution))
+    print(ln_likelihood(p, param_names, particles, satellite, 2.5E8*u.M_sun, 
+                        t1, t2, resolution))
 
 def test_energy_conserve():
     N = 100
@@ -98,13 +99,13 @@ def test_compare_likelihood():
     p = [1.2, 1.2, 0.121, 1.6912]
     param_names = ["q1", "qz", "v_halo", "phi"]
     a = time.time()
-    l1 = ln_likelihood(p, param_names, particles, satellite, t1=t1, t2=t2, resolution=3.)
+    l1 = ln_likelihood(p, param_names, particles, satellite, 2.5E8*u.M_sun, t1=t1, t2=t2, resolution=3.)
     print("l1: {0} ({1} seconds)".format(l1, time.time()-a))
     
     p = [1.38, 1.36, (121.858*u.km/u.s), 1.692969*u.radian]
     param_names = ["q1", "qz", "v_halo", "phi"]
     a = time.time()
-    l2 = ln_likelihood(p, param_names, particles, satellite, t1=t1, t2=t2, resolution=3.)
+    l2 = ln_likelihood(p, param_names, particles, satellite, 2.5E8*u.M_sun, t1=t1, t2=t2, resolution=3.)
     print("l2: {0} ({1} seconds)".format(l2, time.time()-a))
     
     assert l2 > l1

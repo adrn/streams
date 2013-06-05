@@ -92,7 +92,8 @@ def ln_prior(p, param_names):
 # Note: if this doesn't work, I can always pass param_names in to each prior
 #   and if it isn't in there, return 0...
 
-def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
+def ln_likelihood(p, param_names, particles, satellite, satellite_mass,
+                  t1, t2, resolution):
     """ Evaluate the likelihood function for a given set of halo 
         parameters.
     """
@@ -107,7 +108,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     satellite_orbit = OrbitCollection(t=t*u.Myr, 
                                       r=r*satellite.r.unit,
                                       v=v*satellite.v.unit,
-                                      m=[2.5E8]*u.M_sun,
+                                      m=satellite_mass,
                                       units=[u.kpc, u.Myr, u.M_sun])
     
     t,r,v = leapfrog(lm10._acceleration_at, 
@@ -122,5 +123,5 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     return -generalized_variance(lm10, particle_orbits, satellite_orbit)
 
 def ln_posterior(p, *args):
-    param_names, particles, satellite, t1, t2, resolution = args
+    param_names, particles, satellite, satellite_mass, t1, t2, resolution = args
     return ln_prior(p, param_names) + ln_likelihood(p, *args)
