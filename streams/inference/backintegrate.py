@@ -22,7 +22,7 @@ __all__ = ["tidal_radius", "escape_velocity",
            "generalized_variance"]
 
 
-def tidal_radius(potential, satellite_orbit):
+def tidal_radius(potential, r, m_sat=2.5E8):
     """ Compute the tidal radius of the given satellite over the orbit 
         or position provided.
         
@@ -33,11 +33,9 @@ def tidal_radius(potential, satellite_orbit):
     """
     
     # assume the satellite has the right units already...
-    #m_sat = satellite_orbit.m.value # 2.5E8 * u.M_sun
-    m_sat = 2.5E8 #* u.M_sun
     
     # Radius of Sgr center relative to galactic center
-    R_orbit = np.sqrt(np.sum(satellite_orbit._r**2., axis=-1)) 
+    R_orbit = np.sqrt(np.sum(r**2., axis=-1)) 
     
     _G = 4.4997533243534949e-12 # kpc^3 / Myr^2 / M_sun
     
@@ -48,20 +46,16 @@ def tidal_radius(potential, satellite_orbit):
     
     return R_orbit * (m_sat / m_enc)**(1./3)
 
-def escape_velocity(potential, satellite_orbit, r_tide):
+def escape_velocity(potential, r_tide, m_sat):
     """ Compute the escape velocity of a satellite in a potential given
         its tidal radius.
         
         Parameters
         ----------
         potential : streams.CartesianPotential
-        satellite_orbit : streams.Particle
         r_tide : ndarray
     
     """
-    
-    # assume the satellite has the right units already...
-    m_sat = satellite_orbit.m.value # 2.5E8 * u.M_sun
     
     _G = 4.4997533243534949e-12 # kpc^3 / Myr^2 / M_sun
     
@@ -84,8 +78,8 @@ def relative_normalized_coordinates(potential, particle_orbits, satellite_orbit)
     """
     
     # need to add a new axis to normalize each coordinate component
-    r_tide = tidal_radius(potential, satellite_orbit)[:,:,np.newaxis]
-    v_esc = escape_velocity(potential, satellite_orbit, r_tide)
+    r_tide = tidal_radius(potential, satellite_orbit._r)[:,:,np.newaxis]
+    v_esc = escape_velocity(potential, r_tide, m_sat=satellite_orbit.m.value)
     
     return (particle_orbits._r - satellite_orbit._r) / r_tide, \
            (particle_orbits._v - satellite_orbit._v) / v_esc
