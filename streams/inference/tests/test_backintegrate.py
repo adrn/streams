@@ -49,10 +49,10 @@ particle_orbits = OrbitCollection(t=t, r=r, v=v, m=m,
                                   
 def test_tidal_radius_escape_velocity():
     a = time.time()
-    r_tide = tidal_radius(potential, satellite_orbit)
+    r_tide = tidal_radius(potential, satellite_orbit._r, m_sat=m.value)
     print("r_tide: {0:.3f} ms".format(1000.*(time.time()-a)))
     a = time.time()
-    v_esc = escape_velocity(potential, satellite_orbit, r_tide)
+    v_esc = escape_velocity(potential, r_tide, m_sat=m.value)
     print("v_esc: {0:.3f} ms".format(1000.*(time.time()-a)))
 
 def test_relative_normalized_coordinates():
