@@ -220,4 +220,4 @@ class LeapfrogIntegrator(object):
             rs[ii+1] = r_i
             vs[ii+1] = v_i
         
-        return rs, vs
+        return times, rs, vs
