@@ -79,7 +79,8 @@ def _parse_time_specification(dt=None, Nsteps=None, t1=None, t2=None, t=None):
 
 class LeapfrogIntegrator(object):
     
-    def __init__(self, acceleration_func, r_initial, v_initial, acceleration_args):
+    def __init__(self, acceleration_func, r_initial, v_initial, 
+                 acceleration_args=()):
         """ Initialize a leapfrog integrator given a function to compute
             the accelerations and initial conditions. 
         
@@ -90,14 +91,21 @@ class LeapfrogIntegrator(object):
                 ip1_2 -> i+1/2
             
             Initial position and velocity should have shape (Nparticles, Ndim),
-            so even 
+            e.g., for 100 particles in 3D cartesian coordinates, the position 
+            array should have shape (100,3). For a single particle, (1,3).
+            
+            `acceleration_function` should accept the array of position(s) and 
+            optionally a set of arguments specified by `acceleration_args`.
+            
+            For details on the algorithm, see: 
+                http://ursa.as.arizona.edu/~rad/phys305/ODE_III/node11.html
             
             Parameters
             ----------
             acceleration_func : func
             r_initial : array_like
             v_initial : array_like
-            acceleration_args : tuple
+            acceleration_args : tuple (optional)
                 Any extra arguments for the acceleration function.
             
         """
@@ -196,110 +204,20 @@ class LeapfrogIntegrator(object):
         times = _parse_time_specification(dt=dt, Nsteps=Nsteps, 
                                           t1=t1, t2=t2, t=t)
         dts = times[1:]-times[:-1]
+        Ntimesteps = len(times)
         
-        # HERE
         self._prime(dts[0])
         
-        rs,vs = [],[]
-        rs.append(self.r_im1)
-        vs.append(self.v_im1)
-        for dt in dts:
+        rs = np.zeros((Ntimesteps,) + self.r_im1.shape, dtype=float)
+        vs = np.zeros((Ntimesteps,) + self.v_im1.shape, dtype=float)
+        
+        # Set first step to the initial conditions
+        rs[0] = self.r_im1
+        vs[0] = self.v_im1
+
+        for ii,dt in enumerate(dts):
             r_i, v_i = self.step(dt)
-            rs.append(r_i)
-            vs.append(v_i)
+            rs[ii+1] = r_i
+            vs[ii+1] = v_i
         
-        return np.array(rs), np.array(vs)
-
-def leapfrog(acceleration_function, initial_position, initial_velocity, 
-             t=None, t1=None, t2=None, dt=None, args=()):
-             
-    """ Given an acceleration function and initial conditions, integrate from 
-        t1 to t2 with a timestep dt using Leapfrog integration. Alternatively,
-        specify the full time array with 't'. The integration always *includes* 
-        the final timestep.
-        
-        'acceleration_function' should accept a single parameter -- an array of
-        position(s). The array should have shape (Npositions,Ndimensions), e.g.,
-        for 100 particles in XYZ, the position array should be shape (100,3).
-        
-        For details on the algorithm, see: 
-            http://ursa.as.arizona.edu/~rad/phys305/ODE_III/node11.html
-
-        Parameters
-        ----------
-        acceleration_function : function
-            A function that accepts a position or an array of positions and computes
-            the acceleration at that position.
-        initial_position : array, list
-            A list or array of initial positions.
-        initial_velocity : array, list
-            A list or array of initial velocities.
-    """
-    
-    initial_position = np.array(initial_position)
-    initial_velocity = np.array(initial_velocity)
-    
-    if initial_position.shape != initial_velocity.shape:
-        raise ValueError("initial_position shape must match initial_velocity "
-                         "shape! {0} != {1}"
-                         .format(initial_position.shape, 
-                                 initial_velocity.shape))
-
-    if initial_position.ndim == 1:
-        # r_i just stands for positions, it's actually a vector
-        r_im1 = np.array(initial_position).reshape(1, len(initial_position))
-        v_im1 = np.array(initial_velocity).reshape(1, len(initial_position))
-    else:
-        r_im1 = initial_position
-        v_im1 = initial_velocity
-    
-    if t is None and t1 is not None and t2 is not None and dt is not None:
-        if not isiterable(dt):
-            times = np.arange(t1, t2+dt, dt)
-        else:
-            ii = 0
-            tt = t1
-            times = []
-            while tt < t2:
-                times.append(tt)
-                tt += dt[ii]
-                ii += 1
-            else:
-                tt += dt[ii]
-                times.append(tt)
-            times = np.array(times)
-            
-    elif t is not None:
-        times = t
-    else:
-        raise ValueError("Either specify t, or (t1, t2, and dt).")
-    
-    Ntimesteps = len(times)
-    dt = times[1] - times[0]
-    half_dt = 0.5*dt
-    
-    # Shape of final objects should be (Ntimesteps, Nparticles, Ndim)
-    rs = np.zeros((Ntimesteps,) + r_im1.shape, dtype=np.float64)
-    vs = np.zeros((Ntimesteps,) + v_im1.shape, dtype=np.float64)
-    
-    a_i = acceleration_function(r_im1, *args)
-    v_im1_2 = v_im1 + a_i*half_dt
-    v_i = v_im1_2 + a_i*half_dt
-    r_i = r_im1
-    for ii in range(Ntimesteps):
-        rs[ii,:,:] = r_i
-        vs[ii,:,:] = v_i
-        
-        r_i = r_im1 + v_im1_2*dt
-        a_i = acceleration_function(r_i, *args)
-        v_i = v_im1_2 + a_i*0.5*dt
-        try:
-            dt = times[ii+1]-times[ii]
-        except IndexError:
-            break
-        v_ip1_2 = v_i + a_i*0.5*dt
-
-        r_im1 = r_i
-        v_im1_2 = v_ip1_2
-
-    return times, rs, vs
+        return rs, vs
