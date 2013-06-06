@@ -127,9 +127,12 @@ class LeapfrogIntegrator(object):
         
         if not r_initial.shape == v_initial.shape:
             raise ValueError("Shape of positions must match velocities")
-        elif r_initial.ndim != 2:
+        elif r_initial.ndim == 1:
+            r_initial = r_initial[np.newaxis]
+            v_initial = v_initial[np.newaxis]
+        elif r_initial.ndim > 2:
             raise ValueError("Initial conditions should have shape "
-                             "(n_particles, n_dim).")
+                             "(n_particles, n_dim) or (n_dim,).")
             
         self.r_im1 = r_initial
         self.v_im1 = v_initial

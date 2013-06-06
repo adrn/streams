@@ -14,7 +14,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from ..verlet import verlet
-from ..leapfrog import leapfrog
+from ..leapfrog import LeapfrogIntegrator
 from ...potential import *
 
 plot_path = "plots/tests/integrate"
@@ -27,19 +27,18 @@ gal_units = UnitSystem(u.M_sun, u.kpc, u.Myr, u.radian)
 
 class TestBoxOnSpring(object):
     
-    @pytest.mark.parametrize(("name","integrator"), [('leapfrog',leapfrog), 
-                                                ('verlet',verlet)])
-    def test_time_series(self, name, integrator):
-
+    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ])
+    def test_time_series(self, name, Integrator):
+        
         k = 2.E1 # g/s^2
         m = 10. # g
         g = 980. # cm/s^2
 
         acceleration = lambda x: -k/m * x + g
         
-        dt = 0.1        
-        t = np.arange(0, 100, dt)
-        ts, xs, vs = integrator(acceleration, [4.], [0.], t=t)
+        dt = 0.1
+        integrator = Integrator(acceleration, [[4.]], [[0.]])
+        ts, xs, vs = integrator.run(dt=dt, Nsteps=100)
         
         plt.clf()
         plt.plot(ts, xs[:,0,0], 'k-')
@@ -79,45 +78,42 @@ def plot_energies(potential, ts, xs, vs, axes1=None):
 
 class TestIntegrate(object):
 
-    @pytest.mark.parametrize(("name","integrator"), [('leapfrog',leapfrog), 
-                                                     ('verlet',verlet)])    
-    def test_point_mass_energy(self, name, integrator):
+    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ])   
+    def test_point_mass_energy(self, name, Integrator):
         potential = PointMassPotential(unit_system=UnitSystem(u.M_sun, u.au, u.yr),
                                        m=1*u.M_sun,
                                        r_0=[0.,0.,0.]*u.au)
 
-        initial_position = np.array([1.0, 0.0, 0.]) # au
-        initial_velocity = np.array([0.0, 2*np.pi, 0.]) # au/yr
-
-        ts, xs, vs = integrator(potential._acceleration_at, 
-                                initial_position,
-                                initial_velocity, 
-                                t1=0., t2=50., dt=0.05)
+        initial_position = np.array([[1.0, 0.0, 0.]]) # au
+        initial_velocity = np.array([[0.0, 2*np.pi, 0.]]) # au/yr
+        
+        integrator = Integrator(potential._acceleration_at, 
+                                initial_position, initial_velocity)
+        ts, xs, vs = integrator.run(t1=0., t2=50., dt=0.05)
+        
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"point_mass_energy_{0}.png".format(name)))
         fig2.savefig(os.path.join(plot_path,"point_mass_{0}.png".format(name)))
         
-    @pytest.mark.parametrize(("name","integrator"), [('leapfrog',leapfrog), 
-                                                     ('verlet',verlet)])  
-    def test_hernquist_energy(self, name, integrator):
+    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ]) 
+    def test_hernquist_energy(self, name, Integrator):
         potential = HernquistPotential(unit_system=gal_units,
                                            m=1E10*u.M_sun, 
                                            c=0.7*u.kpc)
 
         initial_position = np.array([10.0, 0.0, 0.]) # kpc
         initial_velocity = np.array([0.0, (30.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]) # kpc/Myr
-
-        ts, xs, vs = integrator(potential._acceleration_at, 
-                              initial_position,
-                              initial_velocity, 
-                              t1=0., t2=1000., dt=1.)
+        
+        integrator = Integrator(potential._acceleration_at, 
+                                initial_position, initial_velocity)
+        ts, xs, vs = integrator.run(t1=0., t2=1000., dt=1.)
+        
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"hernquist_energy_{0}.png".format(name)))
         fig2.savefig(os.path.join(plot_path,"hernquist_{0}.png".format(name)))
     
-    @pytest.mark.parametrize(("name","integrator"), [('leapfrog',leapfrog), 
-                                                     ('verlet',verlet)])  
-    def test_miyamoto_energy(self, name, integrator):
+    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ]) 
+    def test_miyamoto_energy(self, name, Integrator):
         potential = MiyamotoNagaiPotential(unit_system=gal_units,
                                                m=1E11*u.M_sun, 
                                                a=6.5*u.kpc, 
@@ -125,17 +121,17 @@ class TestIntegrate(object):
 
         initial_position = np.array([8.0, 0.0, 0.]) # kpc
         initial_velocity = np.array([0.0, (200.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]) # kpc/Myr
-
-        ts, xs, vs = integrator(potential._acceleration_at, 
-                              initial_position, initial_velocity, 
-                              t1=0., t2=1000., dt=1.)
+        
+        integrator = Integrator(potential._acceleration_at, 
+                                initial_position, initial_velocity)
+        ts, xs, vs = integrator.run(t1=0., t2=1000., dt=1.)
+        
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"miyamoto_energy_{0}.png".format(name)))
         fig2.savefig(os.path.join(plot_path,"miyamoto_{0}.png".format(name)))
     
-    @pytest.mark.parametrize(("name","integrator"), [('leapfrog',leapfrog), 
-                                                     ('verlet',verlet)])  
-    def test_log_potential(self, name, integrator):
+    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ]) 
+    def test_log_potential(self, name, Integrator):
         potential = LogarithmicPotentialLJ(unit_system=gal_units,
                                                v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
                                                q1=1.38,
@@ -146,11 +142,11 @@ class TestIntegrate(object):
 
         initial_position = np.array([14.0, 0.0, 0.]) # kpc
         initial_velocity = np.array([0.0, (160.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]) # kpc/Myr
-
-        ts, xs, vs = integrator(potential._acceleration_at, 
-                              initial_position, 
-                              initial_velocity, 
-                              t1=0., t2=6000., dt=1.)
+        
+        integrator = Integrator(potential._acceleration_at, 
+                                initial_position, initial_velocity)
+        ts, xs, vs = integrator.run(t1=0., t2=6000., dt=1.)
+        
         plot_energies(potential,ts, xs, vs)
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"logarithmic_energy_{0}.png".format(name)))
