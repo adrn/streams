@@ -13,7 +13,7 @@ import os, sys
 import numpy as np
 from astropy.utils import isiterable
 
-__all__ = ["leapfrog"]
+__all__ = ["LeapfrogIntegrator"]
 
 def _parse_time_specification(dt=None, Nsteps=None, t1=None, t2=None, t=None):
     """ Return a list of times given a few combinations of kwargs that are 
