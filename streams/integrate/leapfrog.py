@@ -69,9 +69,16 @@ def _parse_time_specification(dt=None, Nsteps=None, t1=None, t2=None, t=None):
                 if t1 is None:
                     t1 = 0.
                 
+                if t2 < t1 and dt < 0.:
+                    fac = -1.
+                elif t2 > t1 and dt > 0.:
+                    fac = 1.
+                else:
+                    raise ValueError("dt must be positive or negative")
+                
                 ii = 0
                 times = [t1]
-                while (times[-1] < t2) and (ii < 1E6):
+                while (fac*times[-1] < fac*t2) and (ii < 5):
                     times.append(times[-1]+dt)
                     ii += 1
                 
