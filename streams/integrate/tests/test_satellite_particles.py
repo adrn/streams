@@ -29,5 +29,8 @@ t1,t2 = lm10_time()
 
 def test_sp():
     integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
-    integrator.run(timespec=dict(t1=t1, t2=t2),
+    integrator.run(time_spec=dict(t1=t1, t2=t2, dt=-5.))
+    
+    integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
+    integrator.run(time_spec=dict(t1=t1, t2=t2),
                    timestep_func=lambda r,v: -5.)

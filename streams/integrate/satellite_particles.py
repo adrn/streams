@@ -31,15 +31,15 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         super(SatelliteParticleIntegrator, self).__init__(potential._acceleration_at,
                                                           r_0, v_0)
     
-    def _adaptive_run(self, timespec, timestep_func, timestep_args=()):
+    def _adaptive_run(self, time_spec, timestep_func, timestep_args=()):
         """ """
         
-        if not timespec.has_key("t1") or not timespec.has_key("t2"):
+        if not time_spec.has_key("t1") or not time_spec.has_key("t2"):
             raise ValueError("You must specify t1 and t2 for adaptive "
                              "timestep integration.")
         
-        t1 = timespec['t1']
-        t2 = timespec['t2']
+        t1 = time_spec['t1']
+        t2 = time_spec['t2']
         
         dt_i = dt_im1 = timestep_func(self.r_im1, self.v_im1, *timestep_args)
         self._prime(dt_i)
@@ -52,20 +52,26 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
             raise ValueError("dt must be positive or negative.")
             
         times = [t1]
+        rs = self.r_im1[np.newaxis]
+        vs = self.v_im1[np.newaxis]
         while f*times[-1] > f*t2:
             dt = 0.5*(dt_im1 + dt_i)
             r_i, v_i = self.step(dt)
+            rs = np.vstack((rs,r_i[np.newaxis]))
+            vs = np.vstack((vs,v_i[np.newaxis]))
             
             dt_i = timestep_func(r_i, v_i, *timestep_args)
             times.append(times[-1] + dt)
             dt_im1 = dt_i
+        
+        return np.array(times), rs, vs
     
-    def run(self, timespec=dict(), timestep_func=None, timestep_args=()):
+    def run(self, time_spec=dict(), timestep_func=None, timestep_args=()):
         """ """
         
         if timestep_func is None:
             t,r,v = super(SatelliteParticleIntegrator, self)\
-                        .run(timespec=timespec)
+                        .run(time_spec=time_spec)
         else:
-            t,r,v = self._adaptive_run(timespec, timestep_func, timestep_args)
+            t,r,v = self._adaptive_run(time_spec, timestep_func, timestep_args)
         
