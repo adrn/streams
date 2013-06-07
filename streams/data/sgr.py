@@ -19,7 +19,7 @@ import astropy.units as u
 # Project
 from ..util import project_root
 from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
-from ..integrate import leapfrog
+from ..integrate.leapfrog import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
 
 __all__ = ["lm10_particles", "lm10_satellite", "lm10_time"]
@@ -125,9 +125,8 @@ def lm10_satellite():
     lm10 = LawMajewski2010()
     
     # integrate up to the first timestep
-    t,r,v = leapfrog(lm10._acceleration_at,
-                     initial_position=r0, initial_velocity=v0,
-                     t1=0, t2=t1, dt=dt)
+    integrator = LeapfrogIntegrator(lm10._acceleration_at, r0, v0)
+    t,r,v = integrator.run(t1=0., t2=t1, dt=dt)
     
     satellite = ParticleCollection(r=r[1]*u.kpc, v=v[1]*u.kpc/u.Myr, 
                                    m=[2.5E8]*u.M_sun,
