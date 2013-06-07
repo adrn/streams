@@ -1,3 +1,5 @@
+
+
 # coding: utf-8
 
 """ Special integrator for adaptively integrating a Satellite particle 
@@ -13,8 +15,9 @@ import os, sys
 
 # Third-party
 import numpy as np
+import astropy.units as u
 
-from ..nbody import Particle, ParticleCollection
+from ..nbody import Particle, ParticleCollection, OrbitCollection
 from .leapfrog import LeapfrogIntegrator
 
 __all__ = ["SatelliteParticleIntegrator"]
@@ -28,10 +31,12 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         r_0 = np.vstack((satellite._r, particles._r))
         v_0 = np.vstack((satellite._v, particles._v))
         
+        self.satellite_mass = satellite.m.value
+        
         super(SatelliteParticleIntegrator, self).__init__(potential._acceleration_at,
                                                           r_0, v_0)
     
-    def _adaptive_run(self, time_spec, timestep_func, timestep_args=()):
+    def _adaptive_run(self, time_spec, timestep_func, timestep_args=(), resolution=1.):
         """ """
         
         if not time_spec.has_key("t1") or not time_spec.has_key("t2"):
@@ -41,7 +46,7 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         t1 = time_spec['t1']
         t2 = time_spec['t2']
         
-        dt_i = dt_im1 = timestep_func(self.r_im1, self.v_im1, *timestep_args)
+        dt_i = dt_im1 = timestep_func(self.r_im1, self.v_im1, *timestep_args) / resolution
         self._prime(dt_i)
         
         if t2 < t1 and dt_i < 0.:
@@ -52,26 +57,50 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
             raise ValueError("dt must be positive or negative.")
             
         times = [t1]
-        rs = self.r_im1[np.newaxis]
-        vs = self.v_im1[np.newaxis]
-        while f*times[-1] > f*t2:
+        
+        Ntimesteps = int((792.*resolution+13) + 500)
+        rs = np.zeros((Ntimesteps,) + self.r_im1.shape, dtype=float)
+        vs = np.zeros((Ntimesteps,) + self.v_im1.shape, dtype=float)
+        rs[0] = self.r_im1
+        vs[0] = self.v_im1
+        
+        ii = 0
+        while times[-1] > t2:
             dt = 0.5*(dt_im1 + dt_i)
-            r_i, v_i = self.step(dt)
-            rs = np.vstack((rs,r_i[np.newaxis]))
-            vs = np.vstack((vs,v_i[np.newaxis]))
             
-            dt_i = timestep_func(r_i, v_i, *timestep_args)
+            r_i, v_i = self.step(dt)
+            rs[ii] = r_i
+            vs[ii] = v_i
+            
+            dt_i = timestep_func(r_i, v_i, *timestep_args) / resolution
             times.append(times[-1] + dt)
             dt_im1 = dt_i
+            ii += 1
         
-        return np.array(times), rs, vs
+        return np.array(times), rs[:ii+1], vs[:ii+1]
     
-    def run(self, time_spec=dict(), timestep_func=None, timestep_args=()):
+    def run(self, time_spec=dict(), timestep_func=None, timestep_args=(), resolution=5.):
         """ """
         
         if timestep_func is None:
             t,r,v = super(SatelliteParticleIntegrator, self)\
                         .run(time_spec=time_spec)
         else:
-            t,r,v = self._adaptive_run(time_spec, timestep_func, timestep_args)
+            t,r,v = self._adaptive_run(time_spec, timestep_func, timestep_args, resolution=resolution)
         
+        sat_r = r[:,0][:,np.newaxis,:]
+        sat_v = v[:,0][:,np.newaxis,:]
+        satellite_orbit = OrbitCollection(t=t*u.Myr, 
+                                          r=sat_r*u.kpc,
+                                          v=sat_v*u.kpc/u.Myr,
+                                          m=self.satellite_mass*u.M_sun,
+                                          units=[u.kpc, u.Myr, u.M_sun])
+    
+        nparticles = r.shape[1]-1
+        particle_orbits = OrbitCollection(t=t*u.Myr, 
+                                          r=r[:,1:]*u.kpc,
+                                          v=v[:,1:]*u.kpc/u.Myr,
+                                          m=np.ones(nparticles)*u.M_sun,
+                                          units=[u.kpc, u.Myr, u.M_sun])
+        
+        return satellite_orbit, particle_orbits
