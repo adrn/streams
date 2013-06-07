@@ -78,7 +78,7 @@ def _parse_time_specification(dt=None, Nsteps=None, t1=None, t2=None, t=None):
                 
                 ii = 0
                 times = [t1]
-                while (fac*times[-1] < fac*t2) and (ii < 5):
+                while (fac*times[-1] < fac*t2) and (ii < 1E6):
                     times.append(times[-1]+dt)
                     ii += 1
                 
@@ -173,6 +173,7 @@ class LeapfrogIntegrator(object):
         v_ip1_2 = self._velocity_halfstep(r_i, v_i, self._dt)
         
         self.r_im1 = r_i
+        self.v_im1 = v_i
         self.v_im1_2 = v_ip1_2
         
         return r_i, v_i
@@ -194,11 +195,11 @@ class LeapfrogIntegrator(object):
                                                    self.v_im1,
                                                    dt)
     
-    def run(self, dt=None, Nsteps=None, t1=None, t2=None, t=None):
+    def run(self, time_spec=dict()):
         """ Run the integrator given a time specification. There are a few
             combinations of kwargs that are accepted -- see below.
             
-            Parameters
+            time_spec Parameters
             ----------
             dt, Nsteps[, t1] : (numeric, int[, numeric])
                 A fixed timestep dt and a number of steps to run for.
@@ -211,8 +212,7 @@ class LeapfrogIntegrator(object):
             
         """
         
-        times = _parse_time_specification(dt=dt, Nsteps=Nsteps, 
-                                          t1=t1, t2=t2, t=t)
+        times = _parse_time_specification(**time_spec)
         dts = times[1:]-times[:-1]
         Ntimesteps = len(times)
         

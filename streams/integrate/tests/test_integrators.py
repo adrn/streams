@@ -38,7 +38,7 @@ class TestBoxOnSpring(object):
         
         dt = 0.1
         integrator = Integrator(acceleration, [[4.]], [[0.]])
-        ts, xs, vs = integrator.run(dt=dt, Nsteps=100)
+        ts, xs, vs = integrator.run(time_spec=dict(dt=dt, Nsteps=1000))
         
         plt.clf()
         plt.plot(ts, xs[:,0,0], 'k-')
@@ -67,6 +67,7 @@ def plot_energies(potential, ts, xs, vs, axes1=None):
     E_total = (E_kin + E_pot)
     axes1[2].plot(ts[1:], (E_total[1:]-E_total[0])/E_total[0]*100., marker=None)
     axes1[2].set_ylabel(r"$\Delta E/E \times 100$")
+    axes1[2].set_ylim(-1., 1.)
 
     grid = np.linspace(np.min(xs)-1., np.max(xs)+1., 100)*u.kpc
     fig2, axes2 = potential.plot(ndim=3, grid=grid)
@@ -89,7 +90,7 @@ class TestIntegrate(object):
         
         integrator = Integrator(potential._acceleration_at, 
                                 initial_position, initial_velocity)
-        ts, xs, vs = integrator.run(t1=0., t2=50., dt=0.05)
+        ts, xs, vs = integrator.run(time_spec=dict(t1=0., t2=10., dt=0.01))
         
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"point_mass_energy_{0}.png".format(name)))
@@ -106,7 +107,7 @@ class TestIntegrate(object):
         
         integrator = Integrator(potential._acceleration_at, 
                                 initial_position, initial_velocity)
-        ts, xs, vs = integrator.run(t1=0., t2=1000., dt=1.)
+        ts, xs, vs = integrator.run(time_spec=dict(t1=0., t2=1000., dt=1.))
         
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"hernquist_energy_{0}.png".format(name)))
@@ -124,7 +125,7 @@ class TestIntegrate(object):
         
         integrator = Integrator(potential._acceleration_at, 
                                 initial_position, initial_velocity)
-        ts, xs, vs = integrator.run(t1=0., t2=1000., dt=1.)
+        ts, xs, vs = integrator.run(time_spec=dict(t1=0., t2=1000., dt=1.))
         
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"miyamoto_energy_{0}.png".format(name)))
@@ -145,7 +146,7 @@ class TestIntegrate(object):
         
         integrator = Integrator(potential._acceleration_at, 
                                 initial_position, initial_velocity)
-        ts, xs, vs = integrator.run(t1=0., t2=6000., dt=1.)
+        ts, xs, vs = integrator.run(time_spec=dict(t1=0., t2=6000., dt=1.))
         
         plot_energies(potential,ts, xs, vs)
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
