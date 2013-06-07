@@ -45,28 +45,28 @@ class TestBoxOnSpring(object):
         plt.savefig(os.path.join(plot_path,"box_spring_{0}.png".format(name)))
 
 def plot_energies(potential, ts, xs, vs, axes1=None):
-    E_kin = 0.5*np.sum(vs**2, axis=-1)[:,0]
-    E_pot = potential._value_at(xs[:,0,:])
-    
+    E_kin = 0.5*np.sum(vs**2, axis=-1)
+    if E_kin.ndim > 1:
+        E_kin = E_kin[:,0]
+        
+    E_pot = potential._value_at(xs[:,0,:])    
     if E_pot.ndim > 1:
         E_pot = E_pot[:,0]
     
     if axes1 == None:
-        fig1, axes1 = plt.subplots(3,1,sharex=True,sharey=True,figsize=(12,8))
+        fig1, axes1 = plt.subplots(3,1,sharex=True,figsize=(12,8))
     
     print(E_kin.shape, E_pot.shape)
     
     axes1[0].plot(ts, E_kin, marker=None)
     axes1[0].set_ylabel(r"$E_{kin}$")
-    #axes1[0].set_ylim(-50,50)
     
     axes1[1].plot(ts, E_pot, marker=None)
     axes1[1].set_ylabel(r"$E_{pot}$")
-    #axes1[1].set_ylim(-50,50)
     
-    axes1[2].plot(ts, (E_kin + E_pot), marker=None)
-    axes1[2].set_ylabel(r"$E_{tot}$")
-    #axes1[2].set_ylim(-50,50)
+    E_total = (E_kin + E_pot)
+    axes1[2].plot(ts[1:], (E_total[1:]-E_total[0])/E_total[0]*100., marker=None)
+    axes1[2].set_ylabel(r"$\Delta E/E \times 100$")
 
     grid = np.linspace(np.min(xs)-1., np.max(xs)+1., 100)*u.kpc
     fig2, axes2 = potential.plot(ndim=3, grid=grid)
@@ -151,3 +151,48 @@ class TestIntegrate(object):
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"logarithmic_energy_{0}.png".format(name)))
         fig2.savefig(os.path.join(plot_path,"logarithmic_{0}.png".format(name)))
+    
+    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ]) 
+    def test_log_potential_adaptive(self, name, Integrator):
+        potential = LogarithmicPotentialLJ(unit_system=gal_units,
+                                               v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
+                                               q1=1.38,
+                                               q2=1.0,
+                                               qz=1.36,
+                                               phi=1.692969*u.radian,
+                                               r_halo=12.*u.kpc)
+
+        initial_position = np.array([[14.0, 0.0, 0.]]) # kpc
+        initial_velocity = np.array([[0.0, (160.*u.km/u.s).to(u.kpc/u.Myr).value, 0.]]) # kpc/Myr
+        
+        def timestep():
+            return np.random.random()*2.
+        
+        integrator = Integrator(potential._acceleration_at, 
+                                initial_position, initial_velocity)
+        
+        t1 = 0.
+        t2 = 6000.
+        dt_i = dt_im1 = timestep()
+        integrator._prime(dt_i)
+        
+        times = [t1]
+        xs,vs = initial_position[np.newaxis], initial_velocity[np.newaxis]
+        while times[-1] < t2:
+            dt = 0.5*(dt_im1 + dt_i)
+            r_i,v_i = integrator.step(dt)
+            
+            xs = np.vstack((xs,r_i[np.newaxis]))
+            vs = np.vstack((vs,v_i[np.newaxis]))
+            
+            dt_i = timestep()
+            times.append(times[-1] + dt)
+            dt_im1 = dt_i
+        
+        ts = np.array(times)
+        print(xs.shape, vs.shape, ts.shape)
+        
+        plot_energies(potential, ts, xs, vs)
+        fig1,fig2 = plot_energies(potential,ts, xs, vs)
+        fig1.savefig(os.path.join(plot_path,"logarithmic_energy_adaptive_{0}.png".format(name)))
+        fig2.savefig(os.path.join(plot_path,"logarithmic_adaptive_{0}.png".format(name)))
