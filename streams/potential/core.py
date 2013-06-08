@@ -21,50 +21,9 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import astropy.units as u
 
-__all__ = ["UnitSystem", "CartesianPotential", "CompositePotential"]
+from ..data.units import UnitSystem
 
-required_units = ['length', 'mass', 'time']
-class UnitSystem(object):
-    
-    def __init__(self, *bases):
-        """ Given Unit objects as positional arguments, defines a 
-            system of physical units. At minimum, must contain length,
-            time, and mass.
-        """
-        
-        # Internal registry
-        self._reg = dict()
-        
-        # For each unit provided, store it in the registry keyed by the
-        #   physical type of the unit
-        for ubase in bases:
-            try:
-                ptype = ubase.physical_type
-            except AttributeError:
-                raise TypeError("Non-standard Unit object '{0}'".format(ubase))
-            
-            if self._reg.has_key(ptype):
-                raise ValueError("Multiple units provided for physical type: "
-                                 "'{0}'".format(ptype))
-            
-            self._reg[ptype] = ubase
-        
-        # Check to make sure each of the required physical types is provided
-        for runit in required_units:
-            if runit not in self._reg.keys():
-                raise ValueError("Must define, at minimum, a system with "
-                                 "{0}".format(','.join(required_units)))
-    
-    @property
-    def bases(self):
-        return self._reg.values()
-    
-    def __eq__(self, other):
-        for rtype in required_units:
-            if self._reg[rtype] != other._reg[rtype]:
-                return False
-        
-        return True
+__all__ = ["CartesianPotential", "CompositePotential"]
 
 class Potential(object):
 
