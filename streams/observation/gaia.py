@@ -199,4 +199,4 @@ def add_uncertainties_to_particles(particles, **kwargs):
     return ParticleCollection(r=new_r*particles.r.unit, 
                               v=new_v*particles.v.unit,
                               m=particles.m,
-                              units=particles.units)
+                              unit_system=particles.unit_system)
