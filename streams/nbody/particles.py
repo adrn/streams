@@ -13,8 +13,9 @@ import os, sys
 import numpy as np
 import astropy.units as u
 from astropy.constants import G
-from ..data.units import UnitSystem
 
+from .core import _validate_quantity
+from ..misc.units import UnitSystem
 from ..plot.data import scatter_plot_matrix
 
 __all__ = ["Particle", "ParticleCollection"]

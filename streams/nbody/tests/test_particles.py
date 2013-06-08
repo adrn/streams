@@ -13,7 +13,10 @@ import astropy.units as u
 import numpy as np
 import pytest
 
-from ..core import *
+from ...misc.units import UnitSystem
+from ..particles import *
+
+usys = UnitSystem(u.kpc, u.Myr, u.M_sun)
 
 def test_particle_init():
     # Should work. Vanilla initialization
@@ -62,7 +65,6 @@ def test_particlecollection_init():
         particles.append(p)
     
     # with and without a specified unit system
-    usys = UnitSystem(u.kpc, u.Myr, u.M_sun)
     pc = ParticleCollection(particles=particles, unit_system=usys)
     assert pc.ndim == 3
     assert pc.r.unit == u.kpc

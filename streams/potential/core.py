@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import astropy.units as u
 
-from ..data.units import UnitSystem
+from ..misc.units import UnitSystem
 
 __all__ = ["CartesianPotential", "CompositePotential"]
 

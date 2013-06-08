@@ -17,7 +17,7 @@ from astropy.table import Column
 import astropy.units as u
 
 # Project
-from .units import UnitSystem
+from ..misc.units import UnitSystem
 from ..util import project_root
 from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
 from ..integrate.leapfrog import LeapfrogIntegrator
