@@ -18,88 +18,8 @@ from ..particles import *
 
 usys = UnitSystem(u.kpc, u.Myr, u.M_sun)
 
-def test_particle_init():
-    # Should work. Vanilla initialization
-    p = Particle(r=np.array([1., 3., 5.])*u.kpc, 
-                 v=np.array([50., 117., 90.])*u.km/u.s, 
-                 m=1*u.M_sun)
-    assert p.ndim == 3
-    
-    assert p.r.unit == u.kpc
-    assert p.v.unit == u.km/u.s
-    assert p.m.unit == u.M_sun
-    
-    # Vectors of different shape
-    with pytest.raises(ValueError):
-        p = Particle(r=np.array([1., 3., 5.])*u.kpc, 
-                     v=np.array([50., 117.])*u.km/u.s, 
-                     m=1*u.M_sun)
-    with pytest.raises(ValueError):
-        p = Particle(r=np.array([1., 3.])*u.kpc, 
-                     v=np.array([50., 117., 90.])*u.km/u.s, 
-                     m=1*u.M_sun)
-    
-    # Two-dimensional vectors
-    with pytest.raises(ValueError):
-        p = Particle(r=np.random.random(size=(3,5))*u.kpc, 
-                     v=np.random.random(size=(3,5))*u.km/u.s, 
-                     m=1*u.M_sun)
-    
-    # unit errors
-    r = np.array([1., 3., 5.])*u.kpc
-    v = np.array([50., 117., 90.])*u.km/u.s
-    m = 1*u.M_sun
-    
-    with pytest.raises(TypeError): p = Particle(r=r.value,v=v,m=m)
-    with pytest.raises(TypeError): p = Particle(r=r,v=v.value,m=m)
-    with pytest.raises(TypeError): p = Particle(r=r,v=v,m=m.value)
-    
 def test_particlecollection_init():
-    
-    # Init with a list of Particle object
-    particles = []
-    for ii in range(10):
-        p = Particle(r=np.random.random(3)*u.kpc, 
-                     v=np.random.random(3)*u.kpc/u.Myr,
-                     m=np.random.random()*u.M_sun)
-        particles.append(p)
-    
-    # with and without a specified unit system
-    pc = ParticleCollection(particles=particles, unit_system=usys)
-    assert pc.ndim == 3
-    assert pc.r.unit == u.kpc
-    assert pc.v.unit == u.kpc/u.Myr
-    assert pc.m.unit == u.M_sun
-    
-    pc = ParticleCollection(particles=particles)
-    assert pc.ndim == 3
-    assert pc.r.unit == u.kpc
-    assert pc.v.unit == u.kpc/u.Myr
-    assert pc.m.unit == u.M_sun
-    
-    assert pc._r.shape == (10, 3)
-    assert pc._v.shape == (10, 3)
-    
-    # position in kpc, velocity in km/s : should throw error if we don't give it
-    #   a unit system because of 2 length units
-    particles = []
-    for ii in range(10):
-        p = Particle(r=np.random.random(3)*u.kpc, 
-                     v=np.random.random(3)*u.km/u.s,
-                     m=np.random.random()*u.M_sun)
-        particles.append(p)
-    
-    with pytest.raises(ValueError):
-        pc = ParticleCollection(particles=particles)
-    
-    # one particle with wrong dimensions
-    particles.append(Particle(r=np.random.random(2)*u.kpc, 
-                              v=np.random.random(2)*u.km/u.s,
-                              m=np.random.random()*u.M_sun))
-    
-    with pytest.raises(ValueError):
-        pc = ParticleCollection(particles=particles)
-    
+
     # Init with individual arrays of ndim=1
     r = np.random.random(3)*u.kpc
     v = np.random.random(3)*u.km/u.s
@@ -120,10 +40,6 @@ def test_particlecollection_init():
     assert np.all(pc._r == r.value)
     assert np.all(pc._v == v.value)
     assert np.all(pc._m == m.value)
-    
-    with pytest.raises(ValueError): pc = ParticleCollection(r=r, v=v, unit_system=usys)
-    with pytest.raises(ValueError): pc = ParticleCollection(r=r, m=m, unit_system=usys)
-    with pytest.raises(ValueError): pc = ParticleCollection(v=v, m=m, unit_system=usys)
 
 def test_acceleration():
     r = np.array([[1.,0.],

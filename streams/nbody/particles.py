@@ -18,146 +18,71 @@ from .core import _validate_quantity
 from ..misc.units import UnitSystem
 from ..plot.data import scatter_plot_matrix
 
-__all__ = ["Particle", "ParticleCollection"]
+__all__ = ["ParticleCollection"]
     
-class Particle(object):
-    
-    def __init__(self, r, v, m=None):
-        """ Represents a particle at a given position with a velocity.
-            
-            Parameters
-            ----------
-            r : astropy.units.Quantity
-                Position.
-            v : astropy.units.Quantity
-                Velocity.
-            m : astropy.units.Quantity (optional)
-                Mass.
-        """
-        
-        # If mass is not specified, assume it is a test particle with no mass
-        if m is None:
-            m = 0.*u.kg
-        
-        _validate_quantity(r, unit_like=u.km)
-        _validate_quantity(v, unit_like=u.km/u.s)
-        _validate_quantity(m, unit_like=u.kg)
-        
-        self.r = r
-        self.v = v
-        self.m = m
-        
-        if self.r.value.ndim > 1 or self.v.value.ndim > 1:
-            raise ValueError("The Particle class represents a single particle."
-                             "For a collection of particles, use "
-                             "ParticleCollection.")
-        
-        if self.r.value.shape != self.v.value.shape:
-            raise ValueError("Position vector and velocity vector must have the"
-                             "same shape ({0} vs {1})".format(self.r.value.shape,
-                                                              self.v.value.shape))
-        
-        # dimensionality
-        self.ndim = len(self.r)
-
 class ParticleCollection(object):
     
-    def __init__(self, particles=None, r=None, v=None, m=None, unit_system=None):
-        """ A collection of Particles. Stores values as arrays internally
-            so it is faster than dealing with a list of Particle objects.
+    def __init__(self, r, v, m=None, unit_system=None):
+        """ A collection of massive or test particles. 
             
             Parameters
             ---------- 
-            particles : list of Particle objects
-            
-            or
-            
             r : astropy.units.Quantity
                 Position.
             v : astropy.units.Quantity
                 Velocity.
             m : astropy.units.Quantity (optional)
                 Mass.
-            
             unit_system : UnitSystem (optional)
                 The desired unit system for the particles. If not provided, will
                 use the units of the input Quantities.
         """
         
-        # If particles are specified, loop over the particles and separate
-        #   the attributes into collection attributes
-        if particles is not None:
-            self.ndim = particles[0].ndim
-            
-            # Empty containers 
-            self._r = np.zeros(shape=(len(particles), self.ndim))
-            self._v = np.zeros(shape=(len(particles), self.ndim))
-            self._m = np.zeros(shape=(len(particles),))
-            
-            for ii,particle in enumerate(particles):
-                if unit_system is None:
-                    unit_system = UnitSystem(particle.r.unit,
-                                             particle.v.unit,
-                                             particle.m.unit)
-                
-                if particle.ndim != self.ndim:
-                    raise ValueError("Particle {0} has {1} dimensions, others "
-                                     "have {2} dimensions!".format(ii, 
-                                                                   particle.ndim,
-                                                                   self.ndim))
-                    
-                # Loop over attributes of the particles
-                for k in ["r", "v", "m"]:
-                    v = getattr(particle, k)
-                    val = v.decompose(unit_system).value
-                    getattr(self, "_" + k)[ii] = val
+        if r is None or v is None:
+            raise ValueError("Must specify positions and velocities for all "
+                             "particles.")
         
-        else:
-            if r is None or v is None:
-                raise ValueError("If not specfying particles, must specify "
-                                 "r, and v (positions, velocities) for all "
-                                 "particles.")
-            
-            if m is None:
-                m = [0.]*len(r)*unit_system['mass']
-            
-            _validate_quantity(r, unit_like=u.km)
-            _validate_quantity(v, unit_like=u.km/u.s)
-            _validate_quantity(m, unit_like=u.kg)
-            
-            if r.value.ndim < 2:
-                raise ValueError("ParticleCollection must contain more than one"
-                                 " particle!")
-            
-            self.ndim = r.value.shape[1]
-
-            assert r.value.shape == v.value.shape
-            
-            for x in ['r', 'v', 'm']:
-                setattr(self, "_{0}".format(x), 
-                        eval(x).decompose(bases=self._units.values()).value)
+        _validate_quantity(r, unit_like=u.km)
+        _validate_quantity(v, unit_like=u.km/u.s)
         
-        # TODO:
-        #if unit_system is not None
+        if unit_system is None and m is None:
+            raise ValueError("If not specifying a unit_system, you must "
+                             "specify a mass Quantity for the particles.")
+        elif unit_system is not None and m is None:
+            m = [0.]*len(r.value)*unit_system['mass']
+            
+        _validate_quantity(m, unit_like=u.kg)
         
-        # Create internal G in the correct unit system
-        self._G = G.decompose(bases=self._units.values()).value
-    
-    @property
-    def units(self):
-        return self._units.values()
+        if unit_system is None:
+            unit_system = UnitSystem(r.unit, m.unit, *v.unit.bases)
+        
+        if r.value.ndim < 2:
+            raise ValueError("ParticleCollection must contain more than one"
+                             " particle!")
+        
+        self.nparticles, self.ndim = r.value.shape
+        assert r.value.shape == v.value.shape
+        
+        for x in ['r', 'v', 'm']:
+            setattr(self, "_{0}".format(x), 
+                    eval(x).decompose(unit_system).value)
+        
+        # Create internal G in the correct unit system for speedy acceleration
+        #   computation
+        self._G = G.decompose(unit_system).value
+        self.unit_system = unit_system
     
     @property
     def r(self):
-        return self._r * self._units['length']
+        return self._r * self.unit_system['length']
     
     @property
     def v(self):
-        return self._v * self._units['length'] / self._units['time']
+        return self._v * self.unit_system['length'] / self.unit_system['time']
     
     @property
     def m(self):
-        return self._m * self._units['mass']
+        return self._m * self.unit_system['mass']
         
     def acceleration_at(self, r, m):
         """ Compute the acceleration at a given position due to the 
@@ -174,10 +99,8 @@ class ParticleCollection(object):
         _validate_quantity(r, unit_like=u.km)
         _validate_quantity(m, unit_like=u.kg)
         
-        a = self._acceleration_at(r.decompose(bases=self._units.values()).value,
-                                  m.decompose(bases=self._units.values()).value,
-                                  G.decompose(bases=self._units.values()).value)
-        return a * self._units['length'] / self._units['time']**2
+        a = self._acceleration_at(r.decompose(self.unit_system).value)
+        return a * self.unit_system['length'] / self.unit_system['time']**2
     
     def _acceleration_at(self, _r):
         """ Compute the acceleration at a given position due to the 
@@ -204,9 +127,9 @@ class ParticleCollection(object):
             raise ValueError()
     
     def __repr__(self):
-        return "<ParticleCollection N={0}>".format(len(self._r))
+        return "<ParticleCollection N={0}>".format(self.nparticles)
     
-    def plot_r(self, coord_names, **kwargs):
+    def plot_r(self, coord_names=['x','y','z'], **kwargs):
         """ Make a scatter-plot of 3 projections of the positions of the 
             particle coordinates.
             
@@ -217,7 +140,8 @@ class ParticleCollection(object):
             kwargs (optional)
                 Keyword arguments that get passed to scatter_plot_matrix
         """   
-        assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
+        if not len(coord_names) == self.ndim:
+            raise ValueError("Must pass a coordinate name for each dimension.")
         
         labels = [r"{0} [{1}]".format(nm, self.r.unit)
                     for nm in coord_names]
@@ -227,7 +151,7 @@ class ParticleCollection(object):
                                        **kwargs)
         return fig, axes
     
-    def plot_v(self, coord_names, **kwargs):
+    def plot_v(self, coord_names=['vx','vy','vz'], **kwargs):
         """ Make a scatter-plot of 3 projections of the velocities of the 
             particle coordinates.
             
@@ -249,16 +173,19 @@ class ParticleCollection(object):
         return fig, axes
     
     def merge(self, other):
-        """ Merge two particle collections"""
+        """ Merge two particle collections. Takes unit system from the first
+            ParticleCollection.
+        """
         
         if not isinstance(other, ParticleCollection):
             raise TypeError("Can only merge two ParticleCollection objects!")
         
-        if other._units != self._units:
-            raise ValueError("Unit systems much match!")
+        other_r = other.r.decompose(self.unit_system).value
+        other_v = other.v.decompose(self.unit_system).value
+        other_m = other.m.decompose(self.unit_system).value
         
-        r = np.vstack((self._r,other._r)) * self._units['length']
-        v = np.vstack((self._v,other._v)) * self._units['length']/self._units['time']
-        m = np.append(self._m,other._m) * self._units['mass']
+        r = np.vstack((self._r,other_r)) * self.unit_system['length']
+        v = np.vstack((self._v,other_v)) * self.unit_system['length']/self.unit_system['time']
+        m = np.append(self._m,other_m) * self.unit_system['mass']
         
-        return ParticleCollection(r=r, v=v, m=m, units=self.units)
+        return ParticleCollection(r=r, v=v, m=m, unit_system=self.unit_system)
