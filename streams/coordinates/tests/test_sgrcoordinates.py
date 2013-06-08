@@ -14,7 +14,6 @@ import astropy.coordinates as coord
 import astropy.units as u
 
 from ..sgr import SgrCoordinates
-from ...data import read_lm10
 
 def test_simple():
     c = coord.ICRSCoordinates(coord.Angle(217.2141, u.degree),
