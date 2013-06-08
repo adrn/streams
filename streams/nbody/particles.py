@@ -38,12 +38,14 @@ class ParticleCollection(object):
                 use the units of the input Quantities.
         """
         
-        if r is None or v is None:
-            raise ValueError("Must specify positions and velocities for all "
-                             "particles.")
-        
         _validate_quantity(r, unit_like=u.km)
         _validate_quantity(v, unit_like=u.km/u.s)
+        
+        try:
+            self.nparticles, self.ndim = r.value.shape
+        except ValueError:
+            raise ValueError("Position and velocity should have shape "
+                             "(nparticles, ndim)")
         
         if unit_system is None and m is None:
             raise ValueError("If not specifying a unit_system, you must "
@@ -55,12 +57,7 @@ class ParticleCollection(object):
         
         if unit_system is None:
             unit_system = UnitSystem(r.unit, m.unit, *v.unit.bases)
-        
-        if r.value.ndim < 2:
-            raise ValueError("ParticleCollection must contain more than one"
-                             " particle!")
-        
-        self.nparticles, self.ndim = r.value.shape
+            
         assert r.value.shape == v.value.shape
         
         for x in ['r', 'v', 'm']:
