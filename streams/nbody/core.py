@@ -126,10 +126,13 @@ class ParticleCollection(object):
                     getattr(self, "_" + k)[ii] = val
         
         else:
-            if r is None or v is None or m is None:
+            if r is None or v is None:
                 raise ValueError("If not specfying particles, must specify "
-                                 "r, v, and m (positions, velocities, and "
-                                 "masses) for all particles.")
+                                 "r, and v (positions, velocities) for all "
+                                 "particles.")
+            
+            if m is None:
+                m = [0.]*len(r)*unit_system['mass']
             
             _validate_quantity(r, unit_like=u.km)
             _validate_quantity(v, unit_like=u.km/u.s)
