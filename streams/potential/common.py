@@ -161,7 +161,7 @@ class MiyamotoNagaiPotential(CartesianPotential):
         unit_system = self._validate_unit_system(unit_system)
         
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system._reg["length"]
+            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
             
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "a" in parameters.keys(), "You must specify the parameter 'a'."
@@ -237,7 +237,7 @@ class HernquistPotential(CartesianPotential):
         unit_system = self._validate_unit_system(unit_system)
         
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system._reg["length"]
+            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
         
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "c" in parameters.keys(), "You must specify the parameter 'c'."
@@ -323,7 +323,7 @@ class LogarithmicPotentialLJ(CartesianPotential):
         unit_system = self._validate_unit_system(unit_system)
         
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system._reg["length"]
+            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
         
         for p in ["q1", "q2", "qz", "phi", "v_halo", "r_halo"]:
             assert p in parameters.keys(), \

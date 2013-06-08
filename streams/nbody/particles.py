@@ -56,7 +56,8 @@ class ParticleCollection(object):
         _validate_quantity(m, unit_like=u.kg)
         
         if unit_system is None:
-            unit_system = UnitSystem(r.unit, m.unit, *v.unit.bases)
+            _units = [r.unit, m.unit] + v.unit.bases
+            unit_system = UnitSystem(*set(_units))
             
         assert r.value.shape == v.value.shape
         

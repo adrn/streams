@@ -100,8 +100,7 @@ def lm10_satellite():
     t,r,v = integrator.run(time_spec=dict(t1=0., t2=t1, dt=dt))
     
     satellite = ParticleCollection(r=r[1]*u.kpc, v=v[1]*u.kpc/u.Myr, 
-                                   m=[2.5E8]*u.M_sun,
-                                   units=[u.kpc,u.Myr,u.M_sun])
+                                   m=[2.5E8]*u.M_sun)
     
     return satellite
     
