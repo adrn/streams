@@ -14,6 +14,7 @@ from astropy.constants.si import G
 import astropy.units as u
 import matplotlib.pyplot as plt
 
+from ...misc.units import UnitSystem
 from ..core import *
 from ..common import *
 
