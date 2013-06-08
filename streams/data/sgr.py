@@ -50,7 +50,7 @@ def read_simulation(filename, column_names, column_map=dict(),
         data.rename_column(old_name, new_name)
     
     # rescale columns using specified dict
-    for name, scale in column_scales.items()
+    for name, scale in column_scales.items():
         data[name] = scale*data[name]
     
     return data
