@@ -18,10 +18,9 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-from streams.inference.lm10 import ln_likelihood
+from streams.inference.lm10 import ln_likelihood, old_ln_likelihood
 from streams.nbody import Particle, ParticleCollection
-from streams.integrate import leapfrog
-from streams.potential.lm10 import LawMajewski2010
+from streams.potential.lm10 import LawMajewski2010, true_params
 from streams.data.sgr import lm10_particles, lm10_satellite, lm10_time
 
 plot_path = "plots/tests/inference"
@@ -34,25 +33,68 @@ def test_cprofile_time():
     for ii in range(10):
         test_time_likelihood()
 
+np.random.seed(42)
+t1,t2 = lm10_time()
+satellite = lm10_satellite()
+particles = lm10_particles(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
+
 def test_time_likelihood():
     
+    param_names = ["q1", "qz", "v_halo", "phi"]  
+    
+    resolution = 5.
+    
     p = [1.2, 1.2, 0.121, 1.6912]
-    param_names = ["q1", "qz", "v_halo", "phi"]
-    particles = ParticleCollection(r=np.random.uniform(size=(100,3))*u.kpc,
-                                   v=np.random.uniform(size=(100,3))*u.kpc/u.Myr,
-                                   m=np.zeros(100)*u.M_sun,
-                                   units=[u.kpc,u.Myr,u.M_sun])
-    
-    satellite = ParticleCollection(r=np.random.uniform(size=(1,3))*u.kpc,
-                                   v=np.random.uniform(size=(1,3))*u.kpc/u.Myr,
-                                   m=2.5E8*u.M_sun,
-                                   units=[u.kpc,u.Myr,u.M_sun])
-    
-    resolution = 3.
-    t1,t2 = lm10_time()
-    
-    print(ln_likelihood(p, param_names, particles, satellite, 2.5E8*u.M_sun, 
+    print(ln_likelihood(p, param_names, particles, satellite, 2.5E8, 
                         t1, t2, resolution))
+    
+    p = [1.2, 1.2, 0.125, 1.6912]
+    print(ln_likelihood(p, param_names, particles, satellite, 2.5E8, 
+                        t1, t2, resolution))
+
+def test_likelihood_max():
+    
+    v_halos = np.linspace(0.124, 0.126, 10)
+    
+    old_ln_likelihood
+    old_likelihoods = []
+    for v_halo in v_halos:
+        L = old_ln_likelihood([v_halo], ['v_halo'], particles, satellite, 2.5E8, 
+                              t1, t2)
+        old_likelihoods.append(L)
+    
+    for res in np.linspace(2., 4., 10):
+        likelihoods = []
+        for v_halo in v_halos:
+            L = ln_likelihood([v_halo], ['v_halo'], particles, satellite, 2.5E8, 
+                              t1, t2, res)
+            print(res, v_halo, L)
+            likelihoods.append(L)
+        
+        plt.clf()
+        plt.plot((v_halos*u.kpc/u.Myr).to(u.km/u.s).value, likelihoods)
+        plt.plot((v_halos*u.kpc/u.Myr).to(u.km/u.s).value, old_likelihoods, color='b')
+        plt.axvline(true_params['v_halo'].to(u.km/u.s).value, color='r')
+        plt.savefig(os.path.join(plot_path, "res{0}.png".format(res)))
+
+def test_optimize():
+    from scipy.optimize import fmin_bfgs
+    
+    res = 3.
+    
+    def apw_ln_likelihood(*args, **kwargs): 
+        if args[0] < 0.1 or args[0] > 0.2:
+            return 1E6
+        print(args[0])
+        return -ln_likelihood(*args, **kwargs)
+    
+    #output = fmin_bfgs(ln_likelihood, x0=[0.12],
+    output = fmin_bfgs(apw_ln_likelihood, x0=[0.12],
+                       args=(['v_halo'], particles, satellite, 
+                             2.5E8, t1, t2, res))
+    print(output)
+
+"""
 
 def test_energy_conserve():
     N = 100
@@ -154,3 +196,4 @@ if __name__ == "__main__":
     
     p = pstats.Stats(os.path.join(plot_path, "cprofiled"))
     p.sort_stats('cumulative').print_stats(50)
+"""

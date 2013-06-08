@@ -15,11 +15,10 @@ import os, sys
 import numpy as np
 import astropy.units as u
 
-from ..inference import generalized_variance
+from ..inference import generalized_variance, tidal_radius
 from ..potential.lm10 import LawMajewski2010, true_params, param_ranges, param_units
 from ..nbody import Orbit, OrbitCollection
-from ..integrate import leapfrog
-from ..integrate.leapfrog import _adaptive_leapfrog
+from ..integrate.satellite_particles import SatelliteParticleIntegrator
 
 __all__ = ["ln_posterior", "ln_likelihood"]
 
@@ -92,6 +91,11 @@ def ln_prior(p, param_names):
 # Note: if this doesn't work, I can always pass param_names in to each prior
 #   and if it isn't in there, return 0...
 
+def timestep(r, v, potential, m_sat):
+    R_tide = tidal_radius(potential, r[0], m_sat=m_sat)
+    v_max = np.max(np.sqrt(np.sum(v[1:]**2,axis=-1)))
+    return -(R_tide / v_max)
+
 def ln_likelihood(p, param_names, particles, satellite, satellite_mass,
                   t1, t2, resolution):
     """ Evaluate the likelihood function for a given set of halo 
@@ -102,25 +106,32 @@ def ln_likelihood(p, param_names, particles, satellite, satellite_mass,
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     lm10 = LawMajewski2010(**halo_params)
     
-    t,r,v = _adaptive_leapfrog(lm10, 
-                               satellite._r, satellite._v,
-                               t1=t1, t2=t2, resolution=resolution)
-    satellite_orbit = OrbitCollection(t=t*u.Myr, 
-                                      r=r*satellite.r.unit,
-                                      v=v*satellite.v.unit,
-                                      m=satellite_mass,
-                                      units=[u.kpc, u.Myr, u.M_sun])
+    integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
     
-    t,r,v = leapfrog(lm10._acceleration_at, 
-                     particles._r, particles._v,
-                     t=t)
-    particle_orbits = OrbitCollection(t=t*u.Myr, 
-                                      r=r*particles.r.unit, 
-                                      v=v*particles.v.unit, 
-                                      m=np.ones(len(r))*u.M_sun,
-                                      units=[u.kpc, u.Myr, u.M_sun])
+    try:
+        s_orbit,p_orbits = integrator.run(time_spec=dict(t1=t1, t2=t2),
+                                 timestep_func=timestep,
+                                 timestep_args=(lm10, satellite.m.value),
+                                 resolution=resolution)
+    except IndexError:
+        return -np.inf
     
-    return -generalized_variance(lm10, particle_orbits, satellite_orbit)
+    return -generalized_variance(lm10, p_orbits, s_orbit)
+
+def old_ln_likelihood(p, param_names, particles, satellite, satellite_mass,
+                      t1, t2):
+    """ Evaluate the likelihood function for a given set of halo 
+        parameters.
+    """
+    halo_params = dict(zip(param_names, p))
+    
+    # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
+    lm10 = LawMajewski2010(**halo_params)
+    
+    integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
+    s_orbit,p_orbits = integrator.run(time_spec=dict(t1=t1, t2=t2, dt=-1.))
+    
+    return -generalized_variance(lm10, p_orbits, s_orbit)
 
 def ln_posterior(p, *args):
     param_names, particles, satellite, satellite_mass, t1, t2, resolution = args

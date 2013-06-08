@@ -58,7 +58,7 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
             
         times = [t1]
         
-        Ntimesteps = int((792.*resolution+13) + 500)
+        Ntimesteps = int(5000.*resolution)
         rs = np.zeros((Ntimesteps,) + self.r_im1.shape, dtype=float)
         vs = np.zeros((Ntimesteps,) + self.v_im1.shape, dtype=float)
         rs[0] = self.r_im1
@@ -67,7 +67,7 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         ii = 0
         while times[-1] > t2:
             dt = 0.5*(dt_im1 + dt_i)
-            
+
             r_i, v_i = self.step(dt)
             rs[ii] = r_i
             vs[ii] = v_i
@@ -77,7 +77,7 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
             dt_im1 = dt_i
             ii += 1
         
-        return np.array(times), rs[:ii+1], vs[:ii+1]
+        return np.array(times)[:ii], rs[:ii], vs[:ii]
     
     def run(self, time_spec=dict(), timestep_func=None, timestep_args=(), resolution=5.):
         """ """
