@@ -48,15 +48,15 @@ def lm10_particles(N=None, expr=None):
                                     column_map=col_map,
                                     column_scales=col_scales)
     
-    nparticles = len(particle_data)
-    
     if expr != None and len(expr.strip()) > 0:
         idx = numexpr.evaluate(str(expr), particle_data)
         particle_data = particle_data[idx]
     
-    if N != None and N > 0 and N < nparticles:
-        idx = np.random.randint(0, nparticles, N)
+    if N != None and N > 0 and N < len(particle_data):
+        idx = np.random.randint(0, len(particle_data), N)
         particle_data = particle_data[idx]
+    
+    nparticles = len(particle_data)
     
     r = np.zeros((nparticles, 3))
     r[:,0] = np.array(particle_data["x"])
