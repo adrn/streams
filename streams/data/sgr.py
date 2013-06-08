@@ -17,12 +17,44 @@ from astropy.table import Column
 import astropy.units as u
 
 # Project
+from .units import UnitSystem
 from ..util import project_root
 from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
 from ..integrate.leapfrog import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
 
 __all__ = ["lm10_particles", "lm10_satellite", "lm10_time"]
+
+def read_simulation(filename, column_names, column_map=dict(), 
+                    column_scales=dict(), path=None):
+    """ Read in simulation data from an ASCII file. 
+    
+        Parameters
+        ----------
+        filename : str
+        column_names : list
+        column_map : dict (optional)
+        path : str (optional)
+    """
+    
+    if path is None:
+        path = os.path.join(project_root, "data", "simulation")
+    
+    full_path = os.path.join(path, filename)
+    
+    # use astropy.io.ascii to read the ascii data
+    data = ascii.read(full_path, names=column_names)
+    
+    # use the column map to rename columns
+    for old_name,new_name in column_map.items():
+        data.rename_column(old_name, new_name)
+    
+    # rescale columns using specified dict
+    for name, scale in column_scales.items()
+        data[name] = scale*data[name]
+    
+    return data
+    
 
 def lm10_particles(N=None, expr=None):
     """ Read in particles from the Law & Majewski 2010 simulation of Sgr. 
@@ -36,25 +68,18 @@ def lm10_particles(N=None, expr=None):
             particles.
         
     """
-    
-    # Read in particle data -- a snapshot of particle positions, velocities at
-    #   the end of the simulation
-    particle_filename = os.path.join(project_root, 
-                                     "data",
-                                     "simulation", 
-                                     "SgrTriax_DYN.dat")
     particle_colnames = ["Lambda", "Beta", "ra", "dec", "l", "b", \
                          "xgc", "ygc", "zgc", "xsun", "ysun", "zsun", \
                          "x4", "y4", "z4", "u", "v", "w", "dist", "vgsr", \
                          "mul", "mub", "mua", "mud", "Pcol", "Lmflag"]
     
-    particle_data = ascii.read(particle_filename, names=particle_colnames)
-    particle_data.add_column(Column(data=-np.array(particle_data["xgc"]), name="x"))
-    particle_data.add_column(Column(data=np.array(particle_data["ygc"]), name="y"))
-    particle_data.add_column(Column(data=np.array(particle_data["zgc"]), name="z"))
-    particle_data.add_column(Column(data=-np.array(particle_data["u"]), name="vx"))
-    particle_data.add_column(Column(data=np.array(particle_data["v"]), name="vy"))
-    particle_data.add_column(Column(data=np.array(particle_data["w"]), name="vz"))
+    col_map = dict(xgc="x", ygc="y", zgc="z", u="vx", v="vy", w="vz")
+    col_scales = dict(x=-1., vx=-1.)
+    
+    particle_data = read_simulation(filename="SgrTriax_DYN.dat",
+                                    column_names=particle_colnames,
+                                    column_map=col_map,
+                                    column_scales=col_scales)
     
     if expr != None and len(expr.strip()) > 0:
         idx = numexpr.evaluate(str(expr), particle_data)
@@ -73,11 +98,12 @@ def lm10_particles(N=None, expr=None):
     v[:,0] = np.array(particle_data["vx"])
     v[:,1] = np.array(particle_data["vy"])
     v[:,2] = np.array(particle_data["vz"])
-        
+    
+    usys = UnitSystem(u.kpc,u.Myr,u.M_sun)
     particles = ParticleCollection(r=r*u.kpc,
                                    v=v*u.km/u.s,
                                    m=np.zeros(len(r))*u.M_sun,
-                                   units=[u.kpc,u.Myr,u.M_sun])
+                                   units=usys)
     
     return particles
 
