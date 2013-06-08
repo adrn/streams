@@ -12,49 +12,16 @@ import os, sys
 # Third-party
 import numpy as np
 import numexpr
-import astropy.io.ascii as ascii
-from astropy.table import Column
 import astropy.units as u
 
 # Project
+from .core import read_simulation
 from ..misc.units import UnitSystem
-from ..util import project_root
-from ..nbody import Particle, ParticleCollection, Orbit, OrbitCollection
+from ..nbody import ParticleCollection, OrbitCollection
 from ..integrate.leapfrog import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
 
-__all__ = ["lm10_particles", "lm10_satellite", "lm10_time"]
-
-def read_simulation(filename, column_names, column_map=dict(), 
-                    column_scales=dict(), path=None):
-    """ Read in simulation data from an ASCII file. 
-    
-        Parameters
-        ----------
-        filename : str
-        column_names : list
-        column_map : dict (optional)
-        path : str (optional)
-    """
-    
-    if path is None:
-        path = os.path.join(project_root, "data", "simulation")
-    
-    full_path = os.path.join(path, filename)
-    
-    # use astropy.io.ascii to read the ascii data
-    data = ascii.read(full_path, names=column_names)
-    
-    # use the column map to rename columns
-    for old_name,new_name in column_map.items():
-        data.rename_column(old_name, new_name)
-    
-    # rescale columns using specified dict
-    for name, scale in column_scales.items():
-        data[name] = scale*data[name]
-    
-    return data
-    
+__all__ = ["lm10_particles", "lm10_satellite", "lm10_time"]    
 
 def lm10_particles(N=None, expr=None):
     """ Read in particles from the Law & Majewski 2010 simulation of Sgr. 
@@ -81,20 +48,22 @@ def lm10_particles(N=None, expr=None):
                                     column_map=col_map,
                                     column_scales=col_scales)
     
+    nparticles = len(particle_data)
+    
     if expr != None and len(expr.strip()) > 0:
         idx = numexpr.evaluate(str(expr), particle_data)
         particle_data = particle_data[idx]
     
-    if N != None and N > 0:
-        idx = np.random.randint(0, len(particle_data), N)
+    if N != None and N > 0 and N < nparticles:
+        idx = np.random.randint(0, nparticles, N)
         particle_data = particle_data[idx]
     
-    r = np.zeros((len(particle_data), 3))
+    r = np.zeros((nparticles, 3))
     r[:,0] = np.array(particle_data["x"])
     r[:,1] = np.array(particle_data["y"])
     r[:,2] = np.array(particle_data["z"])
     
-    v = np.zeros((len(particle_data), 3))
+    v = np.zeros((nparticles, 3))
     v[:,0] = np.array(particle_data["vx"])
     v[:,1] = np.array(particle_data["vy"])
     v[:,2] = np.array(particle_data["vz"])
@@ -103,7 +72,7 @@ def lm10_particles(N=None, expr=None):
     particles = ParticleCollection(r=r*u.kpc,
                                    v=v*u.km/u.s,
                                    m=np.zeros(len(r))*u.M_sun,
-                                   units=usys)
+                                   unit_system=usys)
     
     return particles
 
@@ -112,31 +81,7 @@ def lm10_satellite():
         the Law & Majewski 2010 simulation (e.g., present day position to be
         back-integrated).
     
-    """
-    sat_filename = os.path.join(project_root, 
-                                "data",
-                                "simulation", 
-                                "SgrTriax_orbit.dat")
-    sat_colnames = ["t","lambda_sun","beta_sun","ra","dec", \
-                    "x_sun","y_sun","z_sun","x_gc","y_gc","z_gc", \
-                    "dist","vgsr"]
-    
-    # read in ascii file
-    satellite_data = ascii.read(sat_filename, names=sat_colnames)
-    
-    # they integrate past present day, so only select the prior history
-    satellite_data = satellite_data[satellite_data["t"] <= 0.]
-    
-    # convert column names to my own convention
-    satellite_data.rename_column("lambda_sun", "lambda")
-    satellite_data.rename_column("beta_sun", "beta")
-    satellite_data.rename_column("x_gc", "x")
-    satellite_data.rename_column("y_gc", "y")
-    satellite_data.rename_column("z_gc", "z")
-    
-    # they use a left-handed coordinate system?
-    satellite_data["x"] = -satellite_data["x"]
-    
+    """    
     # initial conditions, or, position of the satellite today from the text of
     #   the paper. i need to integrate these to the first timestep to get the
     #   true initial conditions for the satellite
@@ -144,7 +89,7 @@ def lm10_satellite():
     v0 = ([[230., -35., 195.]]*u.km/u.s).to(u.kpc/u.Myr).value
     
     # get first timestep
-    t1 = max(satellite_data["t"])*1000.
+    t1,t2 = lm10_time()
     dt = t1
     
     # define true potential
@@ -165,16 +110,12 @@ def lm10_time():
         (e.g., present day isn't exactly t=0)
         
     """
-    sat_filename = os.path.join(project_root, 
-                                "data",
-                                "simulation", 
-                                "SgrTriax_orbit.dat")
     sat_colnames = ["t","lambda_sun","beta_sun","ra","dec", \
                     "x_sun","y_sun","z_sun","x_gc","y_gc","z_gc", \
                     "dist","vgsr"]
     
-    # read in ascii file
-    satellite_data = ascii.read(sat_filename, names=sat_colnames)
+    satellite_data = read_simulation(filename="SgrTriax_orbit.dat",
+                                    column_names=sat_colnames)
     
     # they integrate past present day, so only select the prior history
     satellite_data = satellite_data[satellite_data["t"] <= 0.]
