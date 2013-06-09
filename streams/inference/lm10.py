@@ -17,7 +17,7 @@ import astropy.units as u
 
 from ..inference import generalized_variance, tidal_radius
 from ..potential.lm10 import LawMajewski2010, true_params, param_ranges, param_units
-from ..nbody import Orbit, OrbitCollection
+from ..nbody import OrbitCollection
 from ..integrate.satellite_particles import SatelliteParticleIntegrator
 
 __all__ = ["ln_posterior", "ln_likelihood"]
