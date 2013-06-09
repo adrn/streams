@@ -49,7 +49,6 @@ v = v*u.km/u.s
                                   
 particle_orbits = OrbitCollection(t=t, r=r, v=v, m=m, 
                                   unit_system=usys)
-                                  
 
 def test_relative_normalized_coordinates():
     a = time.time()
@@ -57,7 +56,22 @@ def test_relative_normalized_coordinates():
                                           particle_orbits, 
                                           satellite_orbit)
     print("R,V: {0:.3f} ms".format(1000.*(time.time()-a)))
+
+'''
+def test_relative_normalized_coordinates_sgr():
+    from ...data.sgr import lm10_satellite, lm10_particles
     
+    # TODO: Need to integrate both, get orbits
+    particles = lm10_particles(N=1000)
+    satellite = lm10_satellite()
+    
+    R,V = relative_normalized_coordinates(potential, 
+                                          particles, 
+                                          satellite)
+    
+    print(R.shape, V.shape)
+'''
+ 
 def test_minimum_distance_matrix():
     #a = time.time()
     minimum_distance_matrix(potential, particle_orbits, satellite_orbit)
