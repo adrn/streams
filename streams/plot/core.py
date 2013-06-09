@@ -19,8 +19,9 @@ import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 import astropy.units as u
 
-from ..potential.lm10 import param_to_latex, param_ranges
+from ..potential.lm10 import param_to_latex
 from ..potential.lm10 import true_params
+from ..inference.lm10 import param_ranges
 
 __all__ = ["discrete_cmap", "emcee_plot", "plot_sampler_pickle", \
            "bootstrap_scatter_plot"]
