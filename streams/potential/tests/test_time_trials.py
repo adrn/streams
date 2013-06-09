@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from ...misc.units import UnitSystem
 from ..core import *
 from ..common import *
-from ..lm10 import LawMajewski2010, CLawMajewski2010
+from ..lm10 import LawMajewski2010
 
 Ntrials = 100
 Nparticles = 10000
@@ -93,13 +93,12 @@ def test_time_composite():
                                        phi=1.69*u.radian,
                                        v_halo=120.*u.km/u.s,
                                        r_halo=12.*u.kpc)
-                                           
+    
+    print("Pure-python LM10")
     time_potential(potential)
 
 def test_compare_cython():
+    print("cython LM10")
     py = LawMajewski2010(v_halo=121*u.km/u.s)
-    cy = CLawMajewski2010(v_halo=121*u.km/u.s)
-    
     time_potential(py)
-    time_potential(cy)
 

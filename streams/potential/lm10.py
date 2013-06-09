@@ -24,14 +24,6 @@ true_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
                    phi=1.692969*u.radian,
                    r_halo=12.*u.kpc)
 
-param_ranges = dict(qz=(1.,2.),
-                    q1=(1.,2.),
-                    q2=(1.,2.),
-                    v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr).value,
-                            (150.*u.km/u.s).to(u.kpc/u.Myr).value),
-                    phi=(np.pi/4, 3*np.pi/4),
-                    r_halo=(8,20)) # kpc
-
 param_units = dict(v_halo=u.kpc/u.Myr,
                    q1=1.,
                    q2=1.,
@@ -92,47 +84,3 @@ class LawMajewski2010(CompositePotential):
         
         self._acceleration_at = lambda r: lm10_acceleration(r, **halo._parameters)
         
-# NOTE: Now that I've implemented the _acceleration_at in the above, this Cython
-#   potential is obsolete.
-class CLawMajewski2010(CartesianPotential):
-    
-    def __init__(self, **parameters):
-        """ Represents the functional form of the Galaxy potential used by 
-            Law and Majewski 2010. 
-            
-            Note::
-                For this function, the evaluation and acceleration functions
-                are implemented in Cython!
-            
-            Miyamoto-Nagai disk
-            Hernquist bulge
-            Logarithmic halo
-            
-            Model parameters: q1, qz, phi, v_halo
-            
-            Parameters
-            ----------
-            parameters : dict
-                A dictionary of parameters for the potential definition.
-        """
-        
-        latex = ""
-        
-        unit_system = UnitSystem(u.kpc, u.Myr, u.radian, u.M_sun)
-        unit_system = self._validate_unit_system(unit_system)
-        
-        for p in ["q1", "q2", "qz", "phi", "v_halo", "r_halo"]:
-            if p not in parameters.keys():
-                parameters[p] = true_params[p]
-        
-        parameters["r_0"] = [0.,0.,0.]*u.kpc
-        
-        # get functions for evaluating potential and derivatives
-        f = lambda *args,**kwargs: None
-        super(CLawMajewski2010, self).__init__(unit_system, 
-                                               f=f, f_prime=lm10_acceleration, 
-                                               latex=latex, 
-                                               parameters=parameters)
-
-    
-    
