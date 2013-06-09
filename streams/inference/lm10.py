@@ -15,8 +15,8 @@ import os, sys
 import numpy as np
 import astropy.units as u
 
-from ..inference import generalized_variance, tidal_radius
-from ..potential.lm10 import LawMajewski2010, true_params, param_ranges, param_units
+from ..inference import generalized_variance
+from ..potential.lm10 import LawMajewski2010, true_params, param_units
 from ..nbody import OrbitCollection
 from ..integrate.satellite_particles import SatelliteParticleIntegrator
 
@@ -97,10 +97,10 @@ def ln_prior(p, param_names):
     
     return sum
 
-def timestep(r, v, potential, m_sat):
-    R_tide = tidal_radius(potential, r[0], m_sat=m_sat)
-    v_max = np.max(np.sqrt(np.sum((v[1:]-v[0])**2,axis=-1)))
-    return -(R_tide / v_max)
+#def timestep(r, v, potential, m_sat):
+#    R_tide = tidal_radius(potential, r[0], m_sat=m_sat)
+#    v_max = np.max(np.sqrt(np.sum((v[1:]-v[0])**2,axis=-1)))
+#    return -(R_tide / v_max)
 
 def ln_likelihood(p, param_names, particles, satellite, satellite_mass,
                   t1, t2, resolution):
