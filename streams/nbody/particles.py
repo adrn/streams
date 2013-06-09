@@ -16,7 +16,7 @@ from astropy.constants import G
 
 from .core import _validate_quantity
 from ..misc.units import UnitSystem
-from ..plot.data import scatter_plot_matrix
+#from ..plot.data import scatter_plot_matrix
 
 __all__ = ["ParticleCollection"]
     
