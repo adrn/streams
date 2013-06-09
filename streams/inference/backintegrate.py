@@ -16,50 +16,9 @@ from astropy.constants import G
 
 from ..potential import *
 
-__all__ = ["tidal_radius", "escape_velocity",
-           "minimum_distance_matrix",
+__all__ = ["minimum_distance_matrix",
            "relative_normalized_coordinates",
            "generalized_variance"]
-
-
-def tidal_radius(potential, r, m_sat=2.5E8):
-    """ Compute the tidal radius of the given satellite over the orbit 
-        or position provided.
-        
-        Parameters
-        ----------
-        potential : streams.CartesianPotential
-        satellite_orbit : streams.Orbit
-    """
-    
-    # assume the satellite has the right units already...
-    
-    # Radius of Sgr center relative to galactic center
-    R_orbit = np.sqrt(np.sum(r**2., axis=-1)) 
-    
-    _G = 4.4997533243534949e-12 # kpc^3 / Myr^2 / M_sun
-    
-    m_halo_enc = potential["halo"]._parameters["v_halo"]**2 * R_orbit/_G
-    m_enc = potential["disk"]._parameters["m"] + \
-            potential["bulge"]._parameters["m"] + \
-            m_halo_enc
-    
-    return R_orbit * (m_sat / m_enc)**(1./3)
-
-def escape_velocity(potential, r_tide, m_sat):
-    """ Compute the escape velocity of a satellite in a potential given
-        its tidal radius.
-        
-        Parameters
-        ----------
-        potential : streams.CartesianPotential
-        r_tide : ndarray
-    
-    """
-    
-    _G = 4.4997533243534949e-12 # kpc^3 / Myr^2 / M_sun
-    
-    return np.sqrt(_G * m_sat / r_tide)
     
 def relative_normalized_coordinates(potential, particle_orbits, satellite_orbit):
     """ Compute the coordinates of particles relative to the satellite, 
