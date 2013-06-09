@@ -22,6 +22,15 @@ from ..integrate.satellite_particles import SatelliteParticleIntegrator
 
 __all__ = ["ln_posterior", "ln_likelihood"]
 
+# Parameter ranges to initialize the walkers over
+param_ranges = dict(v_halo=((110.*u.km/u.s).to(u.kpc/u.Myr).value,
+                            (130.*u.km/u.s).to(u.kpc/u.Myr).value),
+                    q1=(1.2,1.4),
+                    q2=(0.8,1.2),
+                    qz=(1.2,1.4),
+                    phi=(np.pi/4, 3*np.pi/4),
+                    r_halo=(8,20)) # kpc
+
 def ln_p_qz(qz):
     """ Flat prior on vertical (z) axis flattening parameter. """
     lo,hi = param_ranges["qz"]
@@ -88,12 +97,9 @@ def ln_prior(p, param_names):
     
     return sum
 
-# Note: if this doesn't work, I can always pass param_names in to each prior
-#   and if it isn't in there, return 0...
-
 def timestep(r, v, potential, m_sat):
     R_tide = tidal_radius(potential, r[0], m_sat=m_sat)
-    v_max = np.max(np.sqrt(np.sum(v[1:]**2,axis=-1)))
+    v_max = np.max(np.sqrt(np.sum((v[1:]-v[0])**2,axis=-1)))
     return -(R_tide / v_max)
 
 def ln_likelihood(p, param_names, particles, satellite, satellite_mass,
