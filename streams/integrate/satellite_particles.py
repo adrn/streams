@@ -83,7 +83,7 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         
         if timestep_func is None:
             t,r,v = super(SatelliteParticleIntegrator, self)\
-                        .run(time_spec=time_spec)
+                        .run(**time_spec)
         else:
             t,r,v = self._adaptive_run(time_spec, timestep_func, timestep_args, resolution=resolution)
         

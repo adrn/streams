@@ -38,14 +38,21 @@ class TestLM10(object):
                                                  satellite, 
                                                  particles)
         
-        s, p = integrator.run(time_spec=dict(t1=t1, t2=t2, dt=-1.))
+        s, p = integrator.run(t1=t1, t2=t2, dt=-1.)
         
         satellite_orbit = lm10_satellite_orbit()
+        R_lm10 = np.sqrt(np.sum(satellite_orbit._r**2, axis=-1))
+        R_apw = np.sqrt(np.sum(s._r**2, axis=-1))
         
-        print(satellite_orbit.t[0], s.t[-1])
-        print(satellite_orbit.t[-1], s.t[0])
-        print(satellite_orbit._r[0] - s._r[-1])
-        print(satellite_orbit._r[-1] - s._r[0])
+        plt.plot(satellite_orbit.t, R_lm10, color='k', alpha=0.5, marker=None)
+        plt.plot(s.t, R_apw, color='r', alpha=0.5, marker=None)
+        plt.savefig(os.path.join(plot_path,"lm10_vs_apw.png"))
+        
+        plt.clf()
+        plt.plot(satellite_orbit.t, R_lm10, color='k', alpha=0.5, marker=None)
+        plt.plot(s.t, R_apw, color='r', alpha=0.5, marker=None)
+        plt.xlim(-2., 0.)
+        plt.savefig(os.path.join(plot_path,"lm10_vs_apw_zoom.png"))
 
 
 """
