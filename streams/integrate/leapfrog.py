@@ -13,76 +13,9 @@ import os, sys
 import numpy as np
 from astropy.utils import isiterable
 
-__all__ = ["LeapfrogIntegrator"]
+from .timespec import _parse_time_specification
 
-def _parse_time_specification(dt=None, Nsteps=None, t1=None, t2=None, t=None):
-    """ Return a list of times given a few combinations of kwargs that are 
-        accepted -- see below.
-            
-        Parameters
-        ----------
-        dt, Nsteps[, t1] : (numeric, int[, numeric])
-            A fixed timestep dt and a number of steps to run for.
-        dt, t1, t2 : (numeric, numeric[, numeric])
-            A fixed timestep dt, an initial time, and an final time.
-        Nsteps, t1, t2 : (int, numeric, numeric)
-            Number of steps between an initial time, and a final time.
-        t : array_like
-            An array of times (dts = t[1:] - t[:-1])
-        
-        """
-    # t : array_like
-    if t is not None:
-        times = t
-        return times
-        
-    else:
-        if dt is None and t1 is None and t2 is None:
-            raise ValueError("If a full array of times is not specified"
-                             " you must specify a timestep.")
-        
-        # dt, t1 : (array_like, numeric)
-        elif isinstance(dt, np.ndarray):
-            if t1 is None or t2 is not None:
-                raise ValueError("If dt is given as an array, you must "
-                                 "specify the starting time t1 and *not* "
-                                 "the end time, t2.")
-            
-            times = np.cumsum(np.append([0.], dt)) + t1
-            return times
-            
-        else:            
-            # dt, Nsteps : (numeric, int)
-            if Nsteps is not None:
-                if t1 is None:
-                    t1 = 0.
-                
-                if t2 is None:
-                    return _parse_time_specification(dt=np.ones(Nsteps)*dt, 
-                                                     t1=t1)
-                
-                # Nsteps, t1, t2 : (int, numeric, numeric)
-                else:
-                    return np.linspace(t1, t2, Nsteps, endpoint=True)
-            
-            elif t2 is not None:
-                if t1 is None:
-                    t1 = 0.
-                
-                if t2 < t1 and dt < 0.:
-                    fac = -1.
-                elif t2 > t1 and dt > 0.:
-                    fac = 1.
-                else:
-                    raise ValueError("dt must be positive or negative")
-                
-                ii = 0
-                times = [t1]
-                while (fac*times[-1] < fac*t2) and (ii < 1E6):
-                    times.append(times[-1]+dt)
-                    ii += 1
-                
-                return np.array(times)
+__all__ = ["LeapfrogIntegrator"]
 
 class LeapfrogIntegrator(object):
     

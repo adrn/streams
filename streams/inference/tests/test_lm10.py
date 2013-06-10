@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 
 from streams.inference.lm10 import ln_likelihood, old_ln_likelihood
-from streams.nbody import Particle, ParticleCollection
+from streams.nbody import ParticleCollection
 from streams.potential.lm10 import LawMajewski2010, true_params
 from streams.data.sgr import lm10_particles, lm10_satellite, lm10_time
 

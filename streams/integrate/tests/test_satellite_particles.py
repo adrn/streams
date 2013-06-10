@@ -15,9 +15,9 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from streams.inference import tidal_radius
 from streams.potential.lm10 import LawMajewski2010
-from streams.data import lm10_particles, lm10_satellite, lm10_time
+from streams.data import lm10_particles, lm10_satellite, lm10_time, \
+                         lm10_satellite_orbit, read_simulation
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.integrate.leapfrog import LeapfrogIntegrator
 
@@ -26,10 +26,29 @@ plot_path = "plots/tests/integrate/satellite_particles"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-lm10 = LawMajewski2010()
+potential = LawMajewski2010()
 satellite = lm10_satellite()
 particles = lm10_particles(N=100, expr="(Pcol>-1) & (abs(Lmflag)==1) & (dist < 80)")
 t1,t2 = lm10_time()
+
+class TestLM10(object):
+    
+    def test_against_orbit_file(self):
+        integrator = SatelliteParticleIntegrator(potential, 
+                                                 satellite, 
+                                                 particles)
+        
+        s, p = integrator.run(time_spec=dict(t1=t1, t2=t2, dt=-1.))
+        
+        satellite_orbit = lm10_satellite_orbit()
+        
+        print(satellite_orbit.t[0], s.t[-1])
+        print(satellite_orbit.t[-1], s.t[0])
+        print(satellite_orbit._r[0] - s._r[-1])
+        print(satellite_orbit._r[-1] - s._r[0])
+
+
+"""
 
 def timestep(r, v, potential, m_sat):
     R_tide = tidal_radius(potential, r[0], m_sat=m_sat)
@@ -106,3 +125,4 @@ if __name__ == "__main__":
     cProfile.run("profile_adaptive()", os.path.join(plot_path, "cprofiled"))
     p = pstats.Stats(os.path.join(plot_path, "cprofiled"))
     p.sort_stats('cumulative').print_stats(50)
+"""

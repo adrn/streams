@@ -1,5 +1,3 @@
-
-
 # coding: utf-8
 
 """ Special integrator for adaptively integrating a Satellite particle 
@@ -17,7 +15,8 @@ import os, sys
 import numpy as np
 import astropy.units as u
 
-from ..nbody import Particle, ParticleCollection, OrbitCollection
+from ..misc.units import UnitSystem
+from ..nbody import ParticleCollection, OrbitCollection
 from .leapfrog import LeapfrogIntegrator
 
 __all__ = ["SatelliteParticleIntegrator"]
@@ -88,19 +87,21 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         else:
             t,r,v = self._adaptive_run(time_spec, timestep_func, timestep_args, resolution=resolution)
         
+        usys = UnitSystem(u.kpc, u.Myr, u.M_sun)
+        
         sat_r = r[:,0][:,np.newaxis,:]
         sat_v = v[:,0][:,np.newaxis,:]
         satellite_orbit = OrbitCollection(t=t*u.Myr, 
                                           r=sat_r*u.kpc,
                                           v=sat_v*u.kpc/u.Myr,
                                           m=self.satellite_mass*u.M_sun,
-                                          units=[u.kpc, u.Myr, u.M_sun])
+                                          unit_system=usys)
     
         nparticles = r.shape[1]-1
         particle_orbits = OrbitCollection(t=t*u.Myr, 
                                           r=r[:,1:]*u.kpc,
                                           v=v[:,1:]*u.kpc/u.Myr,
                                           m=np.ones(nparticles)*u.M_sun,
-                                          units=[u.kpc, u.Myr, u.M_sun])
+                                          unit_system=usys)
         
         return satellite_orbit, particle_orbits

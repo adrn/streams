@@ -97,10 +97,16 @@ def ln_prior(p, param_names):
     
     return sum
 
-#def timestep(r, v, potential, m_sat):
-#    R_tide = tidal_radius(potential, r[0], m_sat=m_sat)
-#    v_max = np.max(np.sqrt(np.sum((v[1:]-v[0])**2,axis=-1)))
-#    return -(R_tide / v_max)
+def timestep(r, v, potential, m_sat):
+    R_tide = potential._tidal_radius(r=r[0], m=m_sat)
+    #v_max = np.max(np.sqrt(np.sum((v[1:]-v[0])**2,axis=-1)))
+    v_max = np.max(np.sqrt(np.sum(v**2,axis=-1)))
+    dt = -(R_tide / v_max)
+    
+    if dt > -1.:
+        return -1.
+    else:
+        return dt
 
 def ln_likelihood(p, param_names, particles, satellite, satellite_mass,
                   t1, t2, resolution):
@@ -114,13 +120,10 @@ def ln_likelihood(p, param_names, particles, satellite, satellite_mass,
     
     integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
     
-    try:
-        s_orbit,p_orbits = integrator.run(time_spec=dict(t1=t1, t2=t2),
-                                 timestep_func=timestep,
-                                 timestep_args=(lm10, satellite.m.value),
-                                 resolution=resolution)
-    except IndexError:
-        return -np.inf
+    s_orbit,p_orbits = integrator.run(time_spec=dict(t1=t1, t2=t2),
+                             timestep_func=timestep,
+                             timestep_args=(lm10, satellite.m.value),
+                             resolution=resolution)
     
     return -generalized_variance(lm10, p_orbits, s_orbit)
 
