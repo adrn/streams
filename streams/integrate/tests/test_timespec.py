@@ -59,3 +59,11 @@ def test_time_parse():
     input = np.arange(0., 10., 0.1)
     t = _parse_time_specification(t=input)
     assert (t == input).all()
+
+def test_sgr():
+    dt = -0.06572
+    t1 = 0.0
+    t2 = -0.6572
+    
+    t = _parse_time_specification(dt=dt, t1=t1, t2=t2)
+    print(t)

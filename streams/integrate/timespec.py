@@ -50,27 +50,35 @@ def _parse_time_specification(dt=None, Nsteps=None, t1=None, t2=None, t=None):
             times = _parse_time_specification(dt=np.ones(Nsteps)*dt, 
                                               t1=t1)
         # dt, t1, t2 : (numeric, numeric, numeric)
-        elif dt is not None and t1 is not None and t2 is not None:            
-            if t2 < t1 and dt < 0.:
-                fac = -1.
-            elif t2 > t1 and dt > 0.:
-                fac = 1.
+        elif dt is not None and t1 is not None and t2 is not None:
+            if t2 < t1 and dt < 0:
+                
+                t_i = t1
+                times = []
+                ii = 0
+                while (t_i > t2) and (ii < 1E6):
+                    times.append(t_i)
+                    t_i += dt
+                
+                if times[-1] != t2:
+                    times.append(t2)
+                
+                return np.array(times)
+            
+            elif t2 > t1 and dt > 0:
+                
+                t_i = t1
+                times = []
+                ii = 0
+                while (t_i < t2) and (ii < 1E6):
+                    times.append(t_i)
+                    t_i += dt
+                
+                return np.array(times)
+            
             else:
                 raise ValueError("If t2 < t1, dt must be negative. If t1 < t2, "
                                  "dt should be positive.")
-            
-            ii = 0
-            next_t = t1
-            times = [next_t]
-            while (fac*next_t < fac*t2) and (ii < 1E6):
-                times.append(next_t)
-                ii += 1
-                next_t = times[-1]+dt
-            
-            if times[-1] != t2:
-                times.append(t2)
-            
-            times = np.array(times)
     
         # dt, t1 : (array_like, numeric)
         elif isinstance(dt, np.ndarray) and t1 is not None:            
