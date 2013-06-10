@@ -146,8 +146,6 @@ class LeapfrogIntegrator(object):
         """
         
         times = _parse_time_specification(**time_spec)
-        print(time_spec, times)
-        assert False
         dts = times[1:]-times[:-1]
         Ntimesteps = len(times)
         
@@ -161,9 +159,7 @@ class LeapfrogIntegrator(object):
         vs[0] = self.v_im1
 
         for ii,dt in enumerate(dts):
-            if ii == 10: assert False
             r_i, v_i = self.step(dt)
-            print(dt, r_i[0], v_i[0])
             rs[ii+1] = r_i
             vs[ii+1] = v_i
         

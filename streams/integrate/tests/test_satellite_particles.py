@@ -42,18 +42,32 @@ class TestLM10(object):
         
         satellite_orbit = lm10_satellite_orbit()
         R_lm10 = np.sqrt(np.sum(satellite_orbit._r**2, axis=-1))
+        V_lm10 = np.sqrt(np.sum(satellite_orbit._v**2, axis=-1))
         R_apw = np.sqrt(np.sum(s._r**2, axis=-1))
+        V_apw = np.sqrt(np.sum(s._v**2, axis=-1))
         
-        plt.plot(satellite_orbit.t, R_lm10, color='k', alpha=0.5, marker=None)
+        plt.plot(satellite_orbit.t, R_lm10, color='b', alpha=0.5, marker=None)
         plt.plot(s.t, R_apw, color='r', alpha=0.5, marker=None)
-        plt.savefig(os.path.join(plot_path,"lm10_vs_apw.png"))
+        plt.savefig(os.path.join(plot_path,"lm10_vs_apw_pos.png"))
         
         plt.clf()
-        plt.plot(satellite_orbit.t, R_lm10, color='k', alpha=0.5, marker=None)
+        plt.plot(satellite_orbit.t, R_lm10, color='b', alpha=0.5, marker=None)
         plt.plot(s.t, R_apw, color='r', alpha=0.5, marker=None)
         plt.xlim(-2., 0.)
-        plt.ylim(19., 21.)
-        plt.savefig(os.path.join(plot_path,"lm10_vs_apw_zoom.png"))
+        plt.ylim(20., 20.5)
+        plt.savefig(os.path.join(plot_path,"lm10_vs_apw_zoom_pos.png"))
+        
+        plt.clf()
+        plt.plot(satellite_orbit.t, V_lm10, color='b', alpha=0.5, marker=None)
+        plt.plot(s.t, V_apw, color='r', alpha=0.5, marker=None)
+        plt.savefig(os.path.join(plot_path,"lm10_vs_apw_vel.png"))
+        
+        plt.clf()
+        plt.plot(satellite_orbit.t, V_lm10, color='b', alpha=0.5, marker=None)
+        plt.plot(s.t, V_apw, color='r', alpha=0.5, marker=None)
+        plt.xlim(-2., 0.)
+        plt.ylim(0.3, 0.35)
+        plt.savefig(os.path.join(plot_path,"lm10_vs_apw_zoom_vel.png"))
 
 
 """
