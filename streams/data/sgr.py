@@ -21,7 +21,7 @@ from ..nbody import ParticleCollection, OrbitCollection
 from ..integrate.leapfrog import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
 
-__all__ = ["lm10_particles", "lm10_satellite", "lm10_time"]    
+__all__ = ["lm10_particles", "lm10_satellite", "lm10_time", "lm10_satellite_orbit"]    
 
 def lm10_particles(N=None, expr=None):
     """ Read in particles from the Law & Majewski 2010 simulation of Sgr. 
@@ -123,3 +123,35 @@ def lm10_time():
     t2 = min(satellite_data["t"])*1000.
     
     return t1, t2
+
+def lm10_satellite_orbit():
+    """ Read in the full orbit of the satellite.
+        
+    """
+    sat_colnames = ["t","lambda_sun","beta_sun","ra","dec", \
+                    "x_sun","y_sun","z_sun","x_gc","y_gc","z_gc", \
+                    "dist","vgsr"]
+    
+    col_map = dict(x_gc="x", y_gc="y", z_gc="z")
+    col_scales = dict(x=-1.)
+    
+    satellite_data = read_simulation(filename="SgrTriax_orbit.dat",
+                                    column_names=sat_colnames,
+                                    column_map=col_map,
+                                    column_scales=col_scales)
+    
+    # they integrate past present day, so only select the prior history
+    satellite_data = satellite_data[satellite_data["t"] <= 0.]
+    
+    r = np.zeros((len(satellite_data), 1, 3))
+    r[:,0,0] = np.array(satellite_data["x"])
+    r[:,0,1] = np.array(satellite_data["y"])
+    r[:,0,2] = np.array(satellite_data["z"])
+    
+    v = np.zeros_like(r)
+    
+    usys = UnitSystem(u.kpc,u.Myr,u.M_sun)    
+    return OrbitCollection(t=(satellite_data['t']*u.Gyr).to(u.Myr),
+                           r=r*u.kpc, v=v*u.km/u.s, 
+                           unit_system=usys)
+                           

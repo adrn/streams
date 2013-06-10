@@ -15,6 +15,8 @@ import astropy.io.ascii as ascii
 
 from ..util import project_root
 
+__all__ = ["read_simulation"]
+
 def read_simulation(filename, column_names, column_map=dict(), 
                     column_scales=dict(), path=None):
     """ Read in simulation data from an ASCII file. 
