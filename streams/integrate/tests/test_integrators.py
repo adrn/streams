@@ -25,25 +25,6 @@ if not os.path.exists(plot_path):
 
 gal_units = UnitSystem(u.M_sun, u.kpc, u.Myr, u.radian)
 
-class TestBoxOnSpring(object):
-    
-    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ])
-    def test_time_series(self, name, Integrator):
-        
-        k = 2.E1 # g/s^2
-        m = 10. # g
-        g = 980. # cm/s^2
-
-        acceleration = lambda x: -k/m * x + g
-        
-        dt = 0.1
-        integrator = Integrator(acceleration, [[4.]], [[0.]])
-        ts, xs, vs = integrator.run(dt=dt, Nsteps=1000)
-        
-        plt.clf()
-        plt.plot(ts, xs[:,0,0], 'k-')
-        plt.savefig(os.path.join(plot_path,"box_spring_{0}.png".format(name)))
-
 def plot_energies(potential, ts, xs, vs, axes1=None):
     E_kin = 0.5*np.sum(vs**2, axis=-1)
     if E_kin.ndim > 1:
@@ -76,6 +57,25 @@ def plot_energies(potential, ts, xs, vs, axes1=None):
     axes2[1,1].plot(xs[:,0,1], xs[:,0,2], color='w', marker=None)
     
     return fig1,fig2 
+
+class TestBoxOnSpring(object):
+    
+    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ])
+    def test_time_series(self, name, Integrator):
+        
+        k = 2.E1 # g/s^2
+        m = 10. # g
+        g = 980. # cm/s^2
+
+        acceleration = lambda x: -k/m * x + g
+        
+        dt = 0.1
+        integrator = Integrator(acceleration, [[4.]], [[0.]])
+        ts, xs, vs = integrator.run(dt=dt, Nsteps=1000)
+        
+        plt.clf()
+        plt.plot(ts, xs[:,0,0], 'k-')
+        plt.savefig(os.path.join(plot_path,"box_spring_{0}.png".format(name)))
 
 class TestIntegrate(object):
 
