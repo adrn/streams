@@ -52,6 +52,7 @@ class TestLM10(object):
         plt.plot(satellite_orbit.t, R_lm10, color='k', alpha=0.5, marker=None)
         plt.plot(s.t, R_apw, color='r', alpha=0.5, marker=None)
         plt.xlim(-2., 0.)
+        plt.ylim(19., 21.)
         plt.savefig(os.path.join(plot_path,"lm10_vs_apw_zoom.png"))
 
 
