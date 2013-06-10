@@ -90,14 +90,13 @@ def lm10_satellite():
     
     # get first timestep
     t1,t2 = lm10_time()
-    dt = t1
     
     # define true potential
     lm10 = LawMajewski2010()
     
     # integrate up to the first timestep
     integrator = LeapfrogIntegrator(lm10._acceleration_at, r0, v0)
-    t,r,v = integrator.run(t1=0., t2=t1, dt=dt)
+    t,r,v = integrator.run(t1=0., t2=t1, dt=t1/10.)
     
     satellite = ParticleCollection(r=r[1]*u.kpc, v=v[1]*u.kpc/u.Myr, 
                                    m=[2.5E8]*u.M_sun)
