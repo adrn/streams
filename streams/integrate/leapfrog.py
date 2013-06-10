@@ -128,12 +128,12 @@ class LeapfrogIntegrator(object):
                                                    self.v_im1,
                                                    dt)
     
-    def run(self, time_spec=dict()):
+    def run(self, **time_spec):
         """ Run the integrator given a time specification. There are a few
             combinations of kwargs that are accepted -- see below.
             
-            time_spec Parameters
-            ----------
+            Parameters (kwargs)
+            -------------------
             dt, Nsteps[, t1] : (numeric, int[, numeric])
                 A fixed timestep dt and a number of steps to run for.
             dt, t1, t2 : (numeric, numeric, numeric)

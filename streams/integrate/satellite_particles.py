@@ -35,7 +35,7 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         super(SatelliteParticleIntegrator, self).__init__(potential._acceleration_at,
                                                           r_0, v_0)
     
-    def _adaptive_run(self, time_spec, timestep_func, timestep_args=(), resolution=1.):
+    def _adaptive_run(self, timestep_func, timestep_args=(), resolution=1., **time_spec):
         """ """
         
         if not time_spec.has_key("t1") or not time_spec.has_key("t2"):
@@ -78,7 +78,7 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         
         return np.array(times)[:ii], rs[:ii], vs[:ii]
     
-    def run(self, time_spec=dict(), timestep_func=None, timestep_args=(), resolution=5.):
+    def run(self, timestep_func=None, timestep_args=(), resolution=5., **time_spec):
         """ """
         
         if timestep_func is None:

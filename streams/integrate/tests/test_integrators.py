@@ -13,7 +13,7 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from ..verlet import verlet
+from ...misc.units import UnitSystem
 from ..leapfrog import LeapfrogIntegrator
 from ...potential import *
 
@@ -38,7 +38,7 @@ class TestBoxOnSpring(object):
         
         dt = 0.1
         integrator = Integrator(acceleration, [[4.]], [[0.]])
-        ts, xs, vs = integrator.run(time_spec=dict(dt=dt, Nsteps=1000))
+        ts, xs, vs = integrator.run(dt=dt, Nsteps=1000)
         
         plt.clf()
         plt.plot(ts, xs[:,0,0], 'k-')
@@ -90,7 +90,7 @@ class TestIntegrate(object):
         
         integrator = Integrator(potential._acceleration_at, 
                                 initial_position, initial_velocity)
-        ts, xs, vs = integrator.run(time_spec=dict(t1=0., t2=10., dt=0.01))
+        ts, xs, vs = integrator.run(t1=0., t2=10., dt=0.01)
         
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"point_mass_energy_{0}.png".format(name)))
@@ -107,7 +107,7 @@ class TestIntegrate(object):
         
         integrator = Integrator(potential._acceleration_at, 
                                 initial_position, initial_velocity)
-        ts, xs, vs = integrator.run(time_spec=dict(t1=0., t2=1000., dt=1.))
+        ts, xs, vs = integrator.run(t1=0., t2=1000., dt=1.)
         
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"hernquist_energy_{0}.png".format(name)))
@@ -125,7 +125,7 @@ class TestIntegrate(object):
         
         integrator = Integrator(potential._acceleration_at, 
                                 initial_position, initial_velocity)
-        ts, xs, vs = integrator.run(time_spec=dict(t1=0., t2=1000., dt=1.))
+        ts, xs, vs = integrator.run(t1=0., t2=1000., dt=1.)
         
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"miyamoto_energy_{0}.png".format(name)))
@@ -146,7 +146,7 @@ class TestIntegrate(object):
         
         integrator = Integrator(potential._acceleration_at, 
                                 initial_position, initial_velocity)
-        ts, xs, vs = integrator.run(time_spec=dict(t1=0., t2=6000., dt=1.))
+        ts, xs, vs = integrator.run(t1=0., t2=6000., dt=1.)
         
         plot_energies(potential,ts, xs, vs)
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
