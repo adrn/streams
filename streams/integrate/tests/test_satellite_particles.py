@@ -38,7 +38,8 @@ class TestLM10(object):
                                                  satellite, 
                                                  particles)
         
-        s, p = integrator.run(t1=t1, t2=t2, dt=-1.)
+        #s, p = integrator.run(t1=t1, t2=t2, dt=-1.)
+        s, p = integrator.run(t1=t1, t2=t2, dt=-0.2)
         
         satellite_orbit = lm10_satellite_orbit()
         R_lm10 = np.sqrt(np.sum(satellite_orbit._r**2, axis=-1))
