@@ -14,8 +14,8 @@ import os, sys
 import numpy as np
 import pytest
 
-from ...observation import read_stripe82, read_quest
-from ..core import combine_catalogs, add_sgr_coordinates
+from ..catalogs import read_stripe82, read_quest
+from ..core import *
 
 def test_combine_catalogs():
     stripe82 = read_stripe82()
@@ -38,4 +38,14 @@ def test_add_sgr_coordinates():
     catalog = add_sgr_coordinates(catalog)
     assert None not in catalog["Lambda"]
     assert None not in catalog["Beta"]
+    assert None not in catalog["sgr_plane_dist"]
     
+def test_radial_velocity():
+    
+    r = np.array([-8., 1., 0.])
+    v = np.array([0., -220., 0.])
+    assert radial_velocity(r, v) == 451.
+    
+    r = np.array([-8., -1., 0.])
+    v = np.array([0., 220., 0.])
+    assert radial_velocity(r, v) == 11.

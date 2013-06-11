@@ -19,7 +19,7 @@ import astropy.units as u
 
 # Project
 from ..util import project_root
-from .rrlyrae import *
+from ..observation.rrlyrae import *
 
 __all__ = ["read_linear", "read_quest", "read_catalina", "read_asas", \
            "read_nsvs", "read_stripe82"]
@@ -37,6 +37,10 @@ def read_linear():
     mu = data['magAvg'] - M
     dist = (10**(mu/5. + 1)*u.pc).to(u.kpc)
     data.add_column(Column(dist, name="dist", units=u.kpc))
+    
+    data["ra"].units = u.degree
+    data["dec"].units = u.degree
+    data["dist"].units = u.kpc
     
     return data
 
@@ -61,6 +65,10 @@ def read_quest():
                            name=str("V")))
     data.add_column(Column(rrl_photometric_distance(data['V'], -1.5), 
                            name="dist", units=u.kpc))
+    
+    data["ra"].units = u.degree
+    data["dec"].units = u.degree
+    data["dist"].units = u.kpc
     
     return data
 
@@ -115,7 +123,12 @@ def read_asas():
     data.add_column(Column(decs, name="dec", dtype=float))
     data.add_column(Column(np.array(data['Vavg']).astype(float), name=str("V")))
     data.add_column(Column(rrl_photometric_distance(data['V'], -1.5), 
-                           name="dist", units=u.kpc))    
+                           name="dist", units=u.kpc))
+    
+    data["ra"].units = u.degree
+    data["dec"].units = u.degree
+    data["dist"].units = u.kpc
+    
     return data
 
 def read_nsvs():
@@ -138,7 +151,11 @@ def read_nsvs():
                            name=str("V")))
     data.add_column(Column(rrl_photometric_distance(data['V'], -1.5), 
                            name="dist", units=u.kpc))
-
+    
+    data["ra"].units = u.degree
+    data["dec"].units = u.degree
+    data["dist"].units = u.kpc
+    
     return data
 
 def read_stripe82():
@@ -158,5 +175,9 @@ def read_stripe82():
                            name=str("V")))
     data.add_column(Column(rrl_photometric_distance(data['V'], -1.5), 
                            name="dist", units=u.kpc))
+    
+    data["ra"].units = u.degree
+    data["dec"].units = u.degree
+    data["dist"].units = u.kpc
     
     return data
