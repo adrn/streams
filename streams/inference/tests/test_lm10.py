@@ -21,7 +21,7 @@ from matplotlib import cm
 from streams.inference.lm10 import ln_likelihood, old_ln_likelihood
 from streams.nbody import ParticleCollection
 from streams.potential.lm10 import LawMajewski2010, true_params
-from streams.data.sgr import lm10_particles, lm10_satellite, lm10_time
+from streams.data import lm10_particles, lm10_satellite, lm10_time
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
