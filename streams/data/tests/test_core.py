@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 from ...observation import read_stripe82, read_quest
-from ..nearby_sgr_wraps import combine_catalogs
+from ..core import combine_catalogs, add_sgr_coordinates
 
 def test_combine_catalogs():
     stripe82 = read_stripe82()
@@ -29,3 +29,13 @@ def test_combine_catalogs():
     assert None not in catalog["ra"]
     assert None not in catalog["dec"]
     assert None not in catalog["dist"]
+
+def test_add_sgr_coordinates():
+    stripe82 = read_stripe82()
+    quest = read_quest()
+    catalog = combine_catalogs(Stripe82=stripe82, QUEST=quest)
+    
+    catalog = add_sgr_coordinates(catalog)
+    assert None not in catalog["Lambda"]
+    assert None not in catalog["Beta"]
+    
