@@ -16,10 +16,10 @@ import astropy.units as u
 
 # Project
 from .core import read_simulation
-from ..misc.units import UnitSystem
-from ..nbody import ParticleCollection, OrbitCollection
-from ..integrate.leapfrog import LeapfrogIntegrator
-from ..potential.lm10 import LawMajewski2010
+from ...misc.units import UnitSystem
+from ...nbody import ParticleCollection, OrbitCollection
+from ...integrate.leapfrog import LeapfrogIntegrator
+from ...potential.lm10 import LawMajewski2010
 
 __all__ = ["lm10_particles", "lm10_satellite", "lm10_time", "lm10_satellite_orbit"]    
 

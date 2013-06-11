@@ -18,8 +18,8 @@ import astropy.units as u
 from astropy.constants import G
 
 # Project
-from ..util import project_root
-from ..nbody import ParticleCollection, OrbitCollection
+from ...util import project_root
+from ...nbody import ParticleCollection, OrbitCollection
 
 __all__ = ["orphan_particles", "orphan_satellite", "orphan_time"]
 
