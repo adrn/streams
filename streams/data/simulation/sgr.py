@@ -21,20 +21,12 @@ from ...nbody import ParticleCollection, OrbitCollection
 from ...integrate.leapfrog import LeapfrogIntegrator
 from ...potential.lm10 import LawMajewski2010
 
-__all__ = ["lm10_particles", "lm10_satellite", "lm10_time", "lm10_satellite_orbit"]    
+__all__ = ["lm10_particles", "lm10_particle_data", \
+           "lm10_satellite", "lm10_satellite_orbit", "lm10_time"]    
 
-def lm10_particles(N=None, expr=None):
-    """ Read in particles from the Law & Majewski 2010 simulation of Sgr. 
+def lm10_particle_data(N=None, expr=None):
+    """ """
     
-        Parameters
-        ----------
-        N : int
-            Number of particles to read. None means 'all'.
-        expr : str
-            String selection condition to be fed to numexpr for selecting 
-            particles.
-        
-    """
     particle_colnames = ["Lambda", "Beta", "ra", "dec", "l", "b", \
                          "xgc", "ygc", "zgc", "xsun", "ysun", "zsun", \
                          "x4", "y4", "z4", "u", "v", "w", "dist", "vgsr", \
@@ -55,6 +47,22 @@ def lm10_particles(N=None, expr=None):
     if N != None and N > 0 and N < len(particle_data):
         idx = np.random.randint(0, len(particle_data), N)
         particle_data = particle_data[idx]
+    
+    return particle_data
+
+def lm10_particles(N=None, expr=None):
+    """ Read in particles from the Law & Majewski 2010 simulation of Sgr. 
+    
+        Parameters
+        ----------
+        N : int
+            Number of particles to read. None means 'all'.
+        expr : str
+            String selection condition to be fed to numexpr for selecting 
+            particles.
+        
+    """
+    particle_data = lm10_particle_data(N=N, expr=expr)
     
     nparticles = len(particle_data)
     
