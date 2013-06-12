@@ -131,7 +131,7 @@ def main(config_file):
         except NameError:
             p0 = this_p
     
-    resolution = config.get("resolution", 3.)
+    resolution = config.get("resolution", 2.)
     
     p0 = p0.T
     if p0.ndim == 1:
@@ -145,7 +145,7 @@ def main(config_file):
                                       args=(config["model_parameters"], 
                                             particles, 
                                             satellite, 
-                                            t1,t2,resolution))
+                                            t1, t2, resolution))
         except:
             if config["mpi"]: pool.close()
             raise
