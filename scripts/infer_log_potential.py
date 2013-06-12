@@ -33,8 +33,8 @@ from streams.data import lm10_particles, lm10_satellite, lm10_time
 from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
-from streams.inference.lm10 import ln_posterior
-from streams.potential.lm10 import true_params, param_ranges
+from streams.inference.lm10 import ln_posterior, param_ranges
+from streams.potential.lm10 import true_params
 
 global pool
 pool = None
