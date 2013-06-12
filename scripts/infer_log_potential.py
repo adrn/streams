@@ -123,9 +123,15 @@ def main(config_file):
     for p_name in config["model_parameters"]:
         # sample initial parameter values from uniform distributions over 
         #   the ranges specified in lm10.py
-        this_p = np.random.uniform(param_ranges[p_name][0], 
-                                   param_ranges[p_name][1],
+        #this_p = np.random.uniform(param_ranges[p_name][0], 
+        #                           param_ranges[p_name][1],
+        #                           size=config["walkers"])
+        
+        # Dan F-M says emcee is better at expanding than contracting...
+        this_p = np.random.uniform(true_params[p_name]*0.95, 
+                                   true_params[p_name]*1.05,
                                    size=config["walkers"])
+        
         try:
             p0 = np.vstack((p0, this_p))
         except NameError:
