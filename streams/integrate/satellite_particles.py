@@ -85,7 +85,10 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
             t,r,v = super(SatelliteParticleIntegrator, self)\
                         .run(**time_spec)
         else:
-            t,r,v = self._adaptive_run(time_spec, timestep_func, timestep_args, resolution=resolution)
+            t,r,v = self._adaptive_run(timestep_func=timestep_func, 
+                                       timestep_args=timestep_args, 
+                                       resolution=resolution,
+                                       **time_spec)
         
         usys = UnitSystem(u.kpc, u.Myr, u.M_sun)
         
