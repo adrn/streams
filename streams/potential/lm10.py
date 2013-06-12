@@ -22,7 +22,7 @@ true_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
                    q1=1.38,
                    q2=1.0,
                    qz=1.36,
-                   phi=1.692969*u.radian,
+                   phi=(97.*u.degree).to(u.radian),
                    r_halo=12.*u.kpc)
 
 param_units = dict(v_halo=u.kpc/u.Myr,
