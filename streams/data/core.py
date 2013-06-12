@@ -75,18 +75,24 @@ def add_sgr_coordinates(data):
 def radial_velocity(r, v):
     """ Compute the radial velocity in the heliocentric frame. """
     
+    if r.ndim < 2:
+        r = r[np.newaxis]
+    
+    if v.ndim < 2:
+        v = v[np.newaxis]
+    
     # the sun's velocity and position
     v_circ = 220.
-    v_sun = np.array([0., v_circ, 0]) # km/s
-    v_sun += np.array([9, 11., 6.]) # km/s
-    r_sun = np.array([-8., 0, 0])
+    v_sun = np.array([[0., v_circ, 0]]) # km/s
+    v_sun += np.array([[9, 11., 6.]]) # km/s
+    r_sun = np.array([[-8., 0, 0]])
     
     # object's distance in relation to the sun(observed radius)
     r_rel = r - r_sun
-    R_obs = np.sqrt(np.sum(r_rel**2, axis=-1))
+    R_obs = np.sqrt(np.sum(r_rel**2, axis=-1))[:,np.newaxis]
     r_hat = r_rel / R_obs
     
     v_rel = v - v_sun
-    v_hel = np.sqrt(np.sum((v_rel*r_hat)**2, axis=-1))
+    v_hel = np.sum((v_rel*r_hat), axis=-1)[:,np.newaxis]
     
-    return v_hel
+    return np.squeeze(v_hel)

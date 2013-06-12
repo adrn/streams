@@ -13,6 +13,7 @@ import os, sys
 import numpy as np
 import numexpr
 import astropy.units as u
+from astropy.constants import G
 
 # Project
 from .core import read_simulation
@@ -23,6 +24,11 @@ from ...potential.lm10 import LawMajewski2010
 
 __all__ = ["lm10_particles", "lm10_particle_data", \
            "lm10_satellite", "lm10_satellite_orbit", "lm10_time"]    
+
+X = (G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value / 0.85**3 * 6.4E8)**-0.5
+length_unit = u.Unit("0.85 kpc")
+mass_unit = u.Unit("6.4E8 M_sun")
+time_unit = u.Unit("{:08f} Myr".format(X))
 
 def lm10_particle_data(N=None, expr=None):
     """ """
@@ -35,7 +41,7 @@ def lm10_particle_data(N=None, expr=None):
     col_map = dict(xgc="x", ygc="y", zgc="z", u="vx", v="vy", w="vz")
     col_scales = dict(x=-1., vx=-1.)
     
-    particle_data = read_simulation(filename="SgrTriax_DYN.dat",
+    particle_data = read_simulation(filename="LM10/SgrTriax_DYN.dat",
                                     column_names=particle_colnames,
                                     column_map=col_map,
                                     column_scales=col_scales)
@@ -90,23 +96,18 @@ def lm10_satellite():
         back-integrated).
     
     """    
+    # 2013-06-12: D. Law sent me the true Orbit file...
     # initial conditions, or, position of the satellite today from the text of
     #   the paper. i need to integrate these to the first timestep to get the
     #   true initial conditions for the satellite
-    r0 = [[19., 2.7, -6.9]] # kpc
-    v0 = ([[230., -35., 195.]]*u.km/u.s).to(u.kpc/u.Myr).value
+    #r0 = [[19., 2.7, -6.9]] # kpc
+    #v0 = ([[230., -35., 195.]]*u.km/u.s).to(u.kpc/u.Myr).value
     
-    # get first timestep
-    t1,t2 = lm10_time()
+    # Here are the true parameters from the last block in R601LOG
+    r0 = np.array([[2.3279727753E+01,2.8190329987,-6.8798148785]])*length_unit
+    v0 = np.array([[3.9481694047,-6.1942673069E-01,3.4555581435]])*length_unit/time_unit
     
-    # define true potential
-    lm10 = LawMajewski2010()
-    
-    # integrate up to the first timestep
-    integrator = LeapfrogIntegrator(lm10._acceleration_at, r0, v0)
-    t,r,v = integrator.run(t1=0., t2=t1, dt=t1/10.)
-    
-    satellite = ParticleCollection(r=r[-1]*u.kpc, v=v[-1]*u.kpc/u.Myr, 
+    satellite = ParticleCollection(r=r0.to(u.kpc), v=v0.to(u.kpc/u.Myr), 
                                    m=[2.5E8]*u.M_sun)
     
     return satellite

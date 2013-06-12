@@ -42,10 +42,14 @@ def test_add_sgr_coordinates():
     
 def test_radial_velocity():
     
-    r = np.array([-8., 1., 0.])
-    v = np.array([0., -220., 0.])
-    assert radial_velocity(r, v) == 451.
+    r1 = np.array([-8., 1., 0.])
+    v1 = np.array([0., -220., 0.])
+    assert radial_velocity(r1, v1) == -451.
     
-    r = np.array([-8., -1., 0.])
-    v = np.array([0., 220., 0.])
-    assert radial_velocity(r, v) == 11.
+    r2 = np.array([-8., -1., 0.])
+    v2 = np.array([0., 220., 0.])
+    assert radial_velocity(r2, v2) == 11.
+    
+    r = np.vstack((r1, r2))
+    v = np.vstack((v1, v2))
+    assert (radial_velocity(r, v) == np.array([-451, 11.])).all()
