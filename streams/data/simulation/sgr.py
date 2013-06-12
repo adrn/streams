@@ -96,18 +96,13 @@ def lm10_satellite():
         back-integrated).
     
     """    
-    # 2013-06-12: D. Law sent me the true Orbit file...
-    # initial conditions, or, position of the satellite today from the text of
-    #   the paper. i need to integrate these to the first timestep to get the
-    #   true initial conditions for the satellite
-    #r0 = [[19., 2.7, -6.9]] # kpc
-    #v0 = ([[230., -35., 195.]]*u.km/u.s).to(u.kpc/u.Myr).value
     
     # Here are the true parameters from the last block in R601LOG
     r0 = np.array([[2.3279727753E+01,2.8190329987,-6.8798148785]])*length_unit
     v0 = np.array([[3.9481694047,-6.1942673069E-01,3.4555581435]])*length_unit/time_unit
     
-    satellite = ParticleCollection(r=r0.to(u.kpc), v=v0.to(u.kpc/u.Myr), 
+    satellite = ParticleCollection(r=r0.to(u.kpc), 
+                                   v=v0.to(u.kpc/u.Myr), 
                                    m=[2.5E8]*u.M_sun)
     
     return satellite
@@ -117,17 +112,14 @@ def lm10_time():
         (e.g., present day isn't exactly t=0)
         
     """
-    sat_colnames = ["t","lambda_sun","beta_sun","ra","dec", \
-                    "x_sun","y_sun","z_sun","x_gc","y_gc","z_gc", \
-                    "dist","vgsr"]
-    
-    satellite_data = read_simulation(filename="SgrTriax_orbit.dat",
-                                    column_names=sat_colnames)
+    sat_colnames = ["t","x","y","z","vx","vy","vz","col8","col9","col10"]
+    satellite_data = read_simulation(filename="LM10/orb780.dat",
+                                     column_names=sat_colnames)
     
     # they integrate past present day, so only select the prior history
     satellite_data = satellite_data[satellite_data["t"] <= 0.]
     
-    t1 = max(satellite_data["t"])*1000.
+    t1 = 0.
     t2 = min(satellite_data["t"])*1000.
     
     return t1, t2
@@ -136,17 +128,9 @@ def lm10_satellite_orbit():
     """ Read in the full orbit of the satellite.
         
     """
-    sat_colnames = ["t","lambda_sun","beta_sun","ra","dec", \
-                    "x_sun","y_sun","z_sun","x_gc","y_gc","z_gc", \
-                    "dist","vgsr"]
-    
-    col_map = dict(x_gc="x", y_gc="y", z_gc="z")
-    col_scales = dict(x=-1.)
-    
-    satellite_data = read_simulation(filename="SgrTriax_orbit.dat",
-                                    column_names=sat_colnames,
-                                    column_map=col_map,
-                                    column_scales=col_scales)
+    sat_colnames = ["t","x","y","z","vx","vy","vz","col8","col9","col10"]
+    satellite_data = read_simulation(filename="LM10/orb780.dat",
+                                     column_names=sat_colnames)
     
     # they integrate past present day, so only select the prior history
     satellite_data = satellite_data[satellite_data["t"] <= 0.]
