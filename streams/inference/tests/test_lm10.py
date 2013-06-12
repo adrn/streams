@@ -33,6 +33,12 @@ def test_cprofile_time():
     for ii in range(10):
         test_time_likelihood()
 
+def time_likelihood_func():
+    a = time.time()
+    for ii in range(10):
+        test_time_likelihood()
+    print((time.time()-a) / 10., "seconds per call")
+
 np.random.seed(42)
 t1,t2 = lm10_time()
 satellite = lm10_satellite()
@@ -42,15 +48,15 @@ def test_time_likelihood():
     
     param_names = ["q1", "qz", "v_halo", "phi"]  
     
-    resolution = 5.
+    resolution = 2.
     
     p = [1.2, 1.2, 0.121, 1.6912]
-    print(ln_likelihood(p, param_names, particles, satellite, 2.5E8, 
-                        t1, t2, resolution))
+    ln_likelihood(p, param_names, particles, satellite, 2.5E8, 
+                  t1, t2, resolution)
     
-    p = [1.2, 1.2, 0.125, 1.6912]
-    print(ln_likelihood(p, param_names, particles, satellite, 2.5E8, 
-                        t1, t2, resolution))
+    #p = [1.2, 1.2, 0.125, 1.6912]
+    #print(ln_likelihood(p, param_names, particles, satellite, 2.5E8, 
+    #                    t1, t2, resolution))
 
 def test_likelihood_max():
     
@@ -88,11 +94,18 @@ def test_optimize():
         print(args[0])
         return -ln_likelihood(*args, **kwargs)
     
-    #output = fmin_bfgs(ln_likelihood, x0=[0.12],
     output = fmin_bfgs(apw_ln_likelihood, x0=[0.12],
                        args=(['v_halo'], particles, satellite, 
                              2.5E8, t1, t2, res))
     print(output)
+
+if __name__ == "__main__":
+    cProfile.run("test_cprofile_time()", os.path.join(plot_path, "cprofiled"))
+    
+    p = pstats.Stats(os.path.join(plot_path, "cprofiled"))
+    p.sort_stats('cumulative').print_stats(50)
+    
+    time_likelihood_func()
 
 """
 
