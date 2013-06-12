@@ -120,7 +120,7 @@ def lm10_time():
     satellite_data = satellite_data[satellite_data["t"] <= 0.]
     
     t1 = 0.
-    t2 = min(satellite_data["t"])*1000.
+    t2 = -8000.
     
     return t1, t2
 
