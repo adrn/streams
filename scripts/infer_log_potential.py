@@ -53,20 +53,6 @@ def main(config_file):
     else:
         expr = None
     
-    if config["mpi"]:
-        # Initialize the MPI pool
-        pool = MPIPool()
-
-        # Make sure the thread we're running on is the master
-        if not pool.is_master():
-            pool.wait()
-            sys.exit(0)
-    else:
-        if config.has_key("threads") and config["threads"] > 1:
-            pool = multiprocessing.Pool(config["threads"])
-        else:
-            pool = None
-    
     np.random.seed(config["seed"])
     
     # Read in Sagittarius simulation data
@@ -143,73 +129,91 @@ def main(config_file):
     if p0.ndim == 1:
         p0 = p0[np.newaxis].T
     
-    all_best_parameters = []
-    for bb in range(B):        
-        try:
-            sampler = infer_potential(ln_posterior, p0, steps=config["steps"],
-                                      burn_in=config["burn_in"], pool=pool,
-                                      args=(config["model_parameters"], 
-                                            particles, 
-                                            satellite, 
-                                            t1, t2, resolution))
-        except:
-            if config["mpi"]: pool.close()
-            raise
-        
-        try:
-            best_parameters = max_likelihood_parameters(sampler)
-        except:
-            continue
-            
-        all_best_parameters.append(best_parameters)
-        
-        # Create a new path for the output
-        if config["make_plots"]:
-            # Plot the positions of the particles in galactic XYZ coordinates
-            if config["observational_errors"]:
-                fig,axes = pre_error_particles.plot_r("xyz",
-                                        subplots_kwargs=dict(figsize=(12,12)),
-                                        scatter_kwargs={"alpha":0.75,"c":"k"})
-                particles.plot_r("xyz", axes=axes, scatter_kwargs={"alpha":0.75,
-                                                                   "c":"#CA0020"})
-            else:
-                fig,axes = particles.plot_r("xyz", scatter_kwargs={"alpha":0.75,
-                                                                   "c":"k"})
+    if config["mpi"]:
+        # Initialize the MPI pool
+        pool = MPIPool()
 
-            fig.savefig(os.path.join(path, "positions.png"))
+        # Make sure the thread we're running on is the master
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
+    else:
+        if config.has_key("threads") and config["threads"] > 1:
+            pool = multiprocessing.Pool(config["threads"])
+        else:
+            pool = None
+    
+    try:
+        all_best_parameters = []
+        for bb in range(B):        
+            try:
+                sampler = infer_potential(ln_posterior, p0, steps=config["steps"],
+                                          burn_in=config["burn_in"], pool=pool,
+                                          args=(config["model_parameters"], 
+                                                particles, 
+                                                satellite, 
+                                                t1, t2, resolution))
+            except:
+                if config["mpi"]: pool.close()
+                raise
             
-            if config["observational_errors"]:
-                fig,axes = pre_error_particles.plot_v(['vx','vy','vz'],
-                                        subplots_kwargs=dict(figsize=(12,12)),
-                                        scatter_kwargs={"alpha":0.75,"c":"k"})
-                particles.plot_v(['vx','vy','vz'], axes=axes, 
-                                 scatter_kwargs={"alpha":0.75, "c":"#CA0020"})
-            else:
-                fig,axes = particles.plot_v(['vx','vy','vz'], 
-                                            scatter_kwargs={"alpha":0.75, "c":"k"})
-
-            fig.savefig(os.path.join(path, "velocities.png"))
+            try:
+                best_parameters = max_likelihood_parameters(sampler)
+            except:
+                continue
+                
+            all_best_parameters.append(best_parameters)
             
-            # write the sampler to a pickle file
-            data_file = os.path.join(path, "sampler_data.pickle")
-            sampler.lnprobfn = None
-            sampler.pool = None
-            fnpickle(sampler, data_file)
-            
-            # make sexy plots from the sampler data
-            fig = plot_sampler_pickle(os.path.join(path,data_file), 
-                                      params=config["model_parameters"], 
-                                      acceptance_fraction_bounds=(0.15,0.6),
-                                      show_true=True)
-            
-            # add the max likelihood estimates to the plots                           
-            for ii,param_name in enumerate(config["model_parameters"]):
-                fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
-                                              color="#CA0020",
-                                              linestyle="--",
-                                              linewidth=2)
-            
-            fig.savefig(os.path.join(path, "emcee_sampler_{0}.png".format(bb)))
+            # Create a new path for the output
+            if config["make_plots"]:
+                # Plot the positions of the particles in galactic XYZ coordinates
+                if config["observational_errors"]:
+                    fig,axes = pre_error_particles.plot_r("xyz",
+                                            subplots_kwargs=dict(figsize=(12,12)),
+                                            scatter_kwargs={"alpha":0.75,"c":"k"})
+                    particles.plot_r("xyz", axes=axes, scatter_kwargs={"alpha":0.75,
+                                                                       "c":"#CA0020"})
+                else:
+                    fig,axes = particles.plot_r("xyz", scatter_kwargs={"alpha":0.75,
+                                                                       "c":"k"})
+    
+                fig.savefig(os.path.join(path, "positions.png"))
+                
+                if config["observational_errors"]:
+                    fig,axes = pre_error_particles.plot_v(['vx','vy','vz'],
+                                            subplots_kwargs=dict(figsize=(12,12)),
+                                            scatter_kwargs={"alpha":0.75,"c":"k"})
+                    particles.plot_v(['vx','vy','vz'], axes=axes, 
+                                     scatter_kwargs={"alpha":0.75, "c":"#CA0020"})
+                else:
+                    fig,axes = particles.plot_v(['vx','vy','vz'], 
+                                                scatter_kwargs={"alpha":0.75, "c":"k"})
+    
+                fig.savefig(os.path.join(path, "velocities.png"))
+                
+                # write the sampler to a pickle file
+                data_file = os.path.join(path, "sampler_data.pickle")
+                sampler.lnprobfn = None
+                sampler.pool = None
+                fnpickle(sampler, data_file)
+                
+                # make sexy plots from the sampler data
+                fig = plot_sampler_pickle(os.path.join(path,data_file), 
+                                          params=config["model_parameters"], 
+                                          acceptance_fraction_bounds=(0.15,0.6),
+                                          show_true=True)
+                
+                # add the max likelihood estimates to the plots                           
+                for ii,param_name in enumerate(config["model_parameters"]):
+                    fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
+                                                  color="#CA0020",
+                                                  linestyle="--",
+                                                  linewidth=2)
+                
+                fig.savefig(os.path.join(path, "emcee_sampler_{0}.png".format(bb)))
+    except:
+        if config["mpi"]: pool.close()
+        raise
     
     # if we're running with MPI, we have to close the processor pool, otherwise
     #   the script will never finish running until the end of timmmmeeeee (echo)
@@ -273,10 +277,6 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
     
-    try:
-        main(args.file)
-    except:
-        if pool is not None:
-            pool.close()
-        raise
+    main(args.file)
+    
     sys.exit(0)
