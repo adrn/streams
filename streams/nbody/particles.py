@@ -16,7 +16,6 @@ from astropy.constants import G
 
 from .core import _validate_quantity
 from ..misc.units import UnitSystem
-#from ..plot.data import scatter_plot_matrix
 
 __all__ = ["ParticleCollection"]
     
@@ -138,6 +137,7 @@ class ParticleCollection(object):
             kwargs (optional)
                 Keyword arguments that get passed to scatter_plot_matrix
         """   
+        from ..plot.data import scatter_plot_matrix
         if not len(coord_names) == self.ndim:
             raise ValueError("Must pass a coordinate name for each dimension.")
         
@@ -160,6 +160,7 @@ class ParticleCollection(object):
             kwargs (optional)
                 Keyword arguments that get passed to scatter_plot_matrix
         """   
+        from ..plot.data import scatter_plot_matrix
         assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
         
         labels = [r"{0} [{1}]".format(nm, self.v.unit)
