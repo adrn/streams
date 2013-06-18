@@ -55,6 +55,21 @@ def main(config_file):
     
     np.random.seed(config["seed"])
     
+    # This needs to go here so I don't read in the particle file 128 times!!
+    if config["mpi"]:
+        # Initialize the MPI pool
+        pool = MPIPool()
+
+        # Make sure the thread we're running on is the master
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
+    else:
+        if config.has_key("threads") and config["threads"] > 1:
+            pool = multiprocessing.Pool(config["threads"])
+        else:
+            pool = None
+    
     # Read in Sagittarius simulation data
     if config["particle_source"] == "lm10":
         satellite = lm10_satellite()
@@ -80,19 +95,6 @@ def main(config_file):
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
-    
-    # Create a new path for the output
-    if config["make_plots"]:
-        if config.has_key("name"):
-            path = os.path.join(config["output_path"], config["name"])
-        else:    
-            iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            path = os.path.join(config["output_path"], iso_now)
-        
-        if os.path.exists(path):
-            raise IOError("Path {0} already exists!".format(path))
-            
-        os.mkdir(path)
     
     # Get the number of bootstrap reamples. if not specified, it's just 1
     B = config.get("bootstrap_resamples", 1)
@@ -129,19 +131,18 @@ def main(config_file):
     if p0.ndim == 1:
         p0 = p0[np.newaxis].T
     
-    if config["mpi"]:
-        # Initialize the MPI pool
-        pool = MPIPool()
-
-        # Make sure the thread we're running on is the master
-        if not pool.is_master():
-            pool.wait()
-            sys.exit(0)
-    else:
-        if config.has_key("threads") and config["threads"] > 1:
-            pool = multiprocessing.Pool(config["threads"])
-        else:
-            pool = None
+    # Create a new path for the output
+    if config["make_plots"]:
+        if config.has_key("name"):
+            path = os.path.join(config["output_path"], config["name"])
+        else:    
+            iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            path = os.path.join(config["output_path"], iso_now)
+        
+        if os.path.exists(path):
+            raise IOError("Path {0} already exists!".format(path))
+            
+        os.mkdir(path)
     
     try:
         all_best_parameters = []
@@ -277,6 +278,11 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
     
-    main(args.file)
+    try:
+        main(args.file)
+        
+    except:
+        raise
+        sys.exit(1)
     
     sys.exit(0)
