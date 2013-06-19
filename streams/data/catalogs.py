@@ -49,12 +49,22 @@ def read_quest():
         Vivas et al. 2004. 
         
         - Covers Stripe 82
+        - Spectral data from:
+            + http://iopscience.iop.org/1538-3881/129/1/189/fulltext/204289.tables.html
+            + Spectroscopy of bright QUEST RR Lyrae stars (Vivas+, 2008)
+            
     """
     fits_filename = os.path.join(project_root, "data", "catalog", \
                                 "quest_vivas2004_RRL.fits")
+    spec_filename = os.path.join(project_root, "data", "catalog", \
+                                "quest_spectroscopy.txt")
+                                
     hdulist = fits.open(fits_filename)
     tb_data = np.array(hdulist[1].data)
     data = Table(tb_data)
+    
+    spec_data = ascii.read(spec_filename, data_start=1)
+    spec_data = spec_data[(spec_data["sigma_fit"] > 0) & (spec_data["sigma_gamma"] > 0)]
     
     # Map RA/Dec columns to easier names
     data.add_column(Column(np.array(data["RAJ2000"]).astype(float), 
@@ -65,6 +75,23 @@ def read_quest():
                            name=str("V")))
     data.add_column(Column(rrl_photometric_distance(data['V'], -1.5), 
                            name="dist", units=u.kpc))
+    data.rename_column("__VZA2004_", "ID")
+    
+    vgsr = []
+    vgsr_err = []
+    for row in data:
+        if row["ID"] in spec_data["ID"]:
+            spec_row = spec_data[spec_data["ID"] == row["ID"]]
+            vgsr.append(spec_row["vgsr"])
+            vgsr_err.append(spec_row["sigma_fit"])
+        else:
+            vgsr.append(np.nan)
+            vgsr_err.append(np.nan)
+            
+        row["dist"] = spec_data["dist"]
+    
+    data.add_column(Column(vgsr, name="vgsr", units=u.km/u.s))
+    data.add_column(Column(vgsr_err, name="vgsr_err", units=u.km/u.s))
     
     data["ra"].units = u.degree
     data["dec"].units = u.degree
