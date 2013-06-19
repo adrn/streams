@@ -12,6 +12,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import shutil
 import copy
 import logging
 from datetime import datetime
@@ -140,7 +141,10 @@ def main(config_file):
             path = os.path.join(config["output_path"], iso_now)
         
         if os.path.exists(path):
-            raise IOError("Path {0} already exists!".format(path))
+            if config.get("overwrite", False):
+                shutil.rmtree(path)
+            else:
+                raise IOError("Path {0} already exists!".format(path))
             
         os.mkdir(path)
     
