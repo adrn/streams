@@ -416,9 +416,21 @@ distance, $D_{ps}$, is computed at each timestep $t_j$, and the vector
 with the minimum phase-space distance is stored
 \begin{align}
   t^*_i &= \argmin_{t} D_{ps,i}\\
-  A_{ik} &= (\bs{q}_i(t^*_i),\bs{p}_i(t^*_i))
+  A_{ik} &= (\bs{q}_i(t^*_i),\bs{p}_i(t^*_i)) % A_ik are really samples from a distribution, or we treat them as such
 \end{align}
-where $k\in\{1,6\}$.
+where $k\in\{1,6\}$. The variance of this distribution will be larger
+for orbits integrated in an incorrect potential relative to the
+distribution computed from the `true' orbital history of the
+stars. Thus, the \emph{generalized variance} of the distribution,
+computed for a given set of potential parameters, $\bs{\theta}$, is a
+natural choice for the scalar objective function used in constraining
+the potential of the Milky Way,
+\begin{equation}
+  f(\bs{\theta})=\det(\mathrm{Cov}(A_{ik}))
+\end{equation}
+
+\subsection{Application to Simulated Data}
+
 
 % Discussion?
 One of the assumptions of orbit fitting methods for measuring the
