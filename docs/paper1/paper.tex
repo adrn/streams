@@ -363,36 +363,54 @@ Lastly, the current version of the algorithm relies on accurate knowledge of the
 \citep[for example, for the Orphan Stream][]{belokurov07}. Given sufficient data, position and motion of the original host could be solved for as additional free parameters,
 but the effectiveness of this approach has yet to be investigated.
 
+% --------------------------------------------------------------------
 % Above here is from KVJ. Below is APW.
+%
+
+\section{Context and motivation}
+\subsection{2\% distance errors for RR Lyrae in the halo}
+
+\subsection{Gaia and the age of astrometry}
+The Gaia satellite \citep{gaia2001}, planned for launch in October
+2013, is an astrometric mission which, amongst a myriad of other
+science goals, aims to measure the positions of billions of stars with
+10-100~$\mu$as accuracies. With over 50 observations of the entire sky
+over the 5-year lifetime of the mission (cite?), Gaia will
+revolutionize the field of Galactic Astronomy by providing sufficient
+proper motion accuracy to create full, six-dimensional phase-space
+maps of the Galaxy for heliocentric distances of up to \sim 10~kpc for
+xxx stars.
+
+\subsection{The Sagittarius debris system}
 
 \section{Method}
-With access to full phase-space information for stars in an associated
-debris structure, it is no longer necessary to model the full orbit of
-the stream. Instead, it is possible to use the individual stars as
-potential measures by exploting the simple fact that the stars must
-have come from the same progenitor. If the present-day orbital
-parameters of the progenitor system are known, this places an
-intuitive constraint on the potential of the Milky Way: if the orbits
-of the stars and the orbit of the progenitor are integrated
-\emph{backwards} in time, the stars should `recombine' with the
-progenitor. Conversely, if the potential is incorrect, the orbits of
-the stars will diverge from that of the progenitor and thus will not
-be recaptured by the satellite system.
+With access to full phase-space information for stars in a tidal
+stream, it is no longer necessary to model the orbit of the stream
+itself. Instead, it is possible to use the individual stars as
+potential measures by exploting the fact that the stars must have come
+from the same progenitor. If the present-day orbital parameters of the
+progenitor system are known, this places an intuitive constraint on
+the potential of the Milky Way: if the orbits of the stars and the
+orbit of the progenitor are integrated \emph{backwards} in time, the
+stars should `recombine' with the progenitor. If the potential is
+incorrect, the orbits of the stars will diverge from that of the
+progenitor and thus will not be recaptured by the satellite system.
 
-The starting point for applying this method is a sample of stars with
-known full space kinematics $(\bs{x}_i, \bs{v}_i)|_{t=0}$, the orbital
-parameters for the progenitor system $(\bs{x}_p, \bs{v}_p)|_{t=0}$,
-and a functional form for the potential, $\Phi$\footnote{Future work
-  will investigate a more general ... basis function blah blah.}. For
-a given set of potential parameters, the orbits of the stars and
+Quantifying this method requires a sample of stars with known full
+space kinematics $(\bs{x}_i, \bs{v}_i)|_{t=0}$, the orbital parameters
+for the progenitor system $(\bs{x}_p, \bs{v}_p)|_{t=0}$, and a
+functional form for the potential, $\Phi$\footnote{Future work will
+  investigate a more general ... basis function blah blah.}. For a
+given set of potential parameters, the orbits of the stars and
 progenitor are integrated backwards for some time (determined from an
-estimate of the interaction time of the system). [APW: explain that
-  this is not Nbody, just test particles!] At each timestep $t_j$, for
-each particle $i$, a set of normalized, relative phase-space
-coordinates, $(\bs{q}_i(t_j), \bs{p}_i(t_j))$, are computed using the
-instantaneous tidal radius, escape velocity, and phase-space position
-of the progenitor. At a particular timestep, these coordinates are
-defined as
+estimate of the interaction time of the system). The stars and
+progenitor system are treated as test particles, so that the debris
+stars do not become re-bound to the satellite. Instead, at each
+timestep $t_j$, for each particle $i$, a set of normalized, relative
+phase-space coordinates, $(\bs{q}_i(t_j), \bs{p}_i(t_j))$, are
+computed using the instantaneous tidal radius, escape velocity, and
+phase-space position of the progenitor. At a particular timestep,
+these coordinates are defined as
 \begin{equation}
   \bs{q}_i = \frac{\bs{x}_i -
     \bs{x}_p}{R_{tide}}\,\,\,\,\,\,\,\,\bs{p}_i = \frac{\bs{v}_i -
@@ -408,7 +426,7 @@ velocity,
 \end{equation}
 
 Qualitatively, when $D_{ps}=\sqrt{|\bs{q}_i|^2+|\bs{p}_i|^2} <
-\sqrt{2}$, the star is probably recaptured by the satellite, however
+\sqrt{2}$, the star is probably recaptured by the satellite, however,
 this is not imposed as a hard constraint. Instead, we construct a 6D
 distribution of the minimum phase-space vectors for each star over the
 individual, integrated orbits. For each star, $i$, the phase-space
@@ -418,15 +436,15 @@ with the minimum phase-space distance is stored
   t^*_i &= \argmin_{t} D_{ps,i}\\
   A_{ik} &= (\bs{q}_i(t^*_i),\bs{p}_i(t^*_i)) % A_ik are really samples from a distribution, or we treat them as such
 \end{align}
-where $k\in\{1,6\}$. The variance of this distribution will be larger
-for orbits integrated in an incorrect potential relative to the
-distribution computed from the `true' orbital history of the
-stars. Thus, the \emph{generalized variance} of the distribution,
-computed for a given set of potential parameters, $\bs{\theta}$, is a
-natural choice for the scalar objective function used in constraining
-the potential of the Milky Way,
+where $k\in\{1,6\}$. Intuitively, the variance of this distribution
+will be larger for orbits integrated in an incorrect potential
+relative to the distribution computed from the `true' orbital history
+of the stars. Thus, the \emph{generalized variance} of the
+distribution, computed for a given set of potential parameters,
+$\bs{\theta}$, is a natural choice for the scalar objective function
+used in constraining the potential of the Milky Way,
 \begin{equation}
-  f(\bs{\theta})=\det(\mathrm{Cov}(A_{ik}))
+  f(\bs{\theta})=\det(\mathrm{Cov}(A_{ik})).
 \end{equation}
 
 \subsection{Application to Simulated Data}
