@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\section*{to Adrian from Hogg}
+\section*{to APW and KVJ from Hogg}
 
 Right now, I believe that you do \emph{something} like:
 \begin{quote}
@@ -20,7 +20,7 @@ For example, in the code snippet you tweeted, you are subtracting a mean from th
 That implies that perhaps you don't know where the progenitor really is?
 But if so, then how do you find the time $t_0$ at which 6-displacement is minimized?
 
-Here's my proposal.
+\paragraph{Here's my proposal:}
 All I have to give you is a likelihood function%
 ---a probability for the data given parameters---%
 and you can take it from there.
@@ -57,6 +57,16 @@ $N(y\given m,V)$ is the 6-dimensional Gaussian in $y$ with mean $m$ and variance
 $d$ is the observed data point (a star's 6-vector position),
 $y$ is the 6-position of the star at past time $t_i$,
 and $m$ is the 6-position of the progenitor at that same time.
+
+In my way of thinking about it,
+the parameters $\omega$, $V$, and all of the $t_i$ are nuisance parameters.
+That hurts a bit.
+However, the model will work well even with no serious priors on any of these.
+The reason is that the Gaussian $N(y\given m,V)$ delivers very high likelihood values
+when the data are well explained by small $\det V$.
+That's what you want.
+
+~
 
 [drops the mic]
 
