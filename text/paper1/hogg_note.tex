@@ -1,0 +1,24 @@
+\documentclass[12pt,letterpaper]{article}
+
+\newcommand{\TT}{{\!\mathsf{T}}}
+
+\begin{document}
+
+\section*{to Adrian from Hogg}
+
+Right now, I believe that you do \emph{something} like:
+\begin{blockquote}
+For each star,
+evolve it's phase-space position $X$ (a 6-vector) backwards in time $t$.
+Find the time $t_0$ at which it's 6-space distance $\Delta_0$ from the progenitor is minimized.
+Compute the empirical variance tensor $V$ by taking the mean outer product $\Delta_0\cdot \Delta_0^\TT$.
+Use $\ln\det V$ as the scalar objective by which different potentials are compared.
+\end{blockquote}
+I am not sure if this summary is correct.
+For example, in the code snippet you tweeted, you are subtracting a mean from the 6-displacements.
+That implies that perhaps you don't know where the progenitor really is?
+But if so, then how do you find the time $t_0$ at which 6-displacement is minimized?
+
+Here's my proposal:
+
+\end{document}
