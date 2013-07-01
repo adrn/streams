@@ -97,6 +97,7 @@ def read_quest():
     return all_data
 
 if __name__ == "__main__":
+    # TODO: need sample for Allyson's observing run in 2 weeks!!
     quest_data = read_quest()
     quest_data = add_sgr_coordinates(quest_data)
     
