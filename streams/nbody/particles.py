@@ -69,6 +69,9 @@ class ParticleCollection(object):
         self._G = G.decompose(unit_system).value
         self.unit_system = unit_system
     
+    def __len__(self):
+        return self.nparticles
+    
     @property
     def r(self):
         return self._r * self.unit_system['length']
