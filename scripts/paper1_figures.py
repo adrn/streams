@@ -31,17 +31,17 @@ def gaia_spitzer_errors():
     D = np.logspace(0., 2., 50)*u.kpc
     
     # Compute the apparent magnitude as a function of distance
-    m_V = apparent_magnitude(rr_lyrae_M_V, D)
+    m_V = apparent_magnitude(rrl_M_V, D)
     
     fig,axes = plt.subplots(2, 1, figsize=(12, 12))
     
     # Plot Gaia distance errors
-    dp = parallax_error(m_V, rr_lyrae_V_minus_I).arcsecond
+    dp = parallax_error(m_V, rrl_V_minus_I).arcsecond
     dD = D.to(u.pc).value**2 * dp * u.pc
     axes[0].loglog(D, (dD/D).decompose(), color="k", linewidth=1, alpha=0.5)
         
     # Plot tangential velocity errors
-    dpm = proper_motion_error(m_V, rr_lyrae_V_minus_I)
+    dpm = proper_motion_error(m_V, rrl_V_minus_I)
     dVtan = (dpm*D).to(u.km*u.radian/u.s).value
     axes[1].loglog(D, dVtan, color="k", linewidth=1, alpha=0.5)
     
