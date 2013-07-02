@@ -14,9 +14,9 @@ import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
 
-from streams.observation.gaia import parallax_error, proper_motion_error, \
-                              rr_lyrae_V_minus_I, apparent_magnitude
-from streams.observation.rrlyrae import rrl_M_V
+from streams.observation import apparent_magnitude
+from streams.observation.gaia import parallax_error, proper_motion_error
+from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
 
 from streams.potential import LawMajewski2010
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
