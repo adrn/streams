@@ -21,6 +21,31 @@ from streams.potential import LawMajewski2010
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.data import lm10_particles, lm10_satellite, lm10_time
 
+def gaia_spitzer_errors():
+    """ Visualize the observational errors from Gaia and Spitzer, along with
+        dispersion and distance scale of Sgr and Orphan. 
+    """
+    
+    # Distance from 1kpc to ~100kpc
+    D = np.logspace(0., 2., 50)*u.kpc
+    
+    # Compute the apparent magnitude as a function of distance
+    m_V = apparent_magnitude(rr_lyrae_M_V, D)
+    
+    fig,axes = plt.subplots(2, 1, figsize=(12, 12))
+    
+    # Plot Gaia distance errors
+    dp = parallax_error(m_V, rr_lyrae_V_minus_I).arcsecond
+    dD = D.to(u.pc).value**2 * dp * u.pc
+    axes[0].loglog(D, (dD/D).decompose(), color="k", linewidth=1, alpha=0.5)
+        
+    # Plot tangential velocity errors
+    dpm = proper_motion_error(m_V, rr_lyrae_V_minus_I)
+    dVtan = (dpm*D).to(u.km*u.radian/u.s).value
+    axes[1].loglog(D, dVtan, color="k", linewidth=1, alpha=0.5)
+    
+    plt.show()
+
 def normed_objective_plot():
     """ Plot our objective function in each of the 4 parameters we vary """
     
@@ -53,3 +78,6 @@ def normed_objective_plot():
                                       resolution=resolution,
                                       t1=t1, t2=t2)
             variances[param].append(generalized_variance_prod(lm10, p_orbits, s_orbit))
+
+if __name__ == '__main__':
+    gaia_spitzer_errors()
