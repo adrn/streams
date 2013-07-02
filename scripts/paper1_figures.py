@@ -13,6 +13,7 @@ import os, sys
 import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import rc_context
 
 from streams.observation import apparent_magnitude
 from streams.observation.gaia import parallax_error, proper_motion_error
@@ -27,24 +28,44 @@ def gaia_spitzer_errors():
         dispersion and distance scale of Sgr and Orphan. 
     """
     
+    rcparams = {'lines.linestyle' : '-', 
+                'lines.linewidth' : 1.,
+                'lines.color' : 'k',
+                'lines.marker' : None,
+                'text.usetex' : True,
+                'axes.edgecolor' : '#444444'}
+    
+    # Sample metallicities from: http://arxiv.org/pdf/1211.7073v1.pdf
+    fe_h = np.random.normal(-1.67, 0.3, size=10000)
+    fe_h = np.append(fe_h, np.random.normal(-2.33, 0.3, size=2000))
+    
+    # 
+    
     # Distance from 1kpc to ~100kpc
     D = np.logspace(0., 2., 50)*u.kpc
     
     # Compute the apparent magnitude as a function of distance
-    m_V = apparent_magnitude(rrl_M_V, D)
+    M_V = rrl_M_V(fe_h=-1.5)[0]
+    m_V = apparent_magnitude(M_V, D)
     
-    fig,axes = plt.subplots(2, 1, figsize=(12, 12))
-    
-    # Plot Gaia distance errors
+    # Distance error
     dp = parallax_error(m_V, rrl_V_minus_I).arcsecond
     dD = D.to(u.pc).value**2 * dp * u.pc
-    axes[0].loglog(D, (dD/D).decompose(), color="k", linewidth=1, alpha=0.5)
-        
-    # Plot tangential velocity errors
+    
+    # Velocity error
     dpm = proper_motion_error(m_V, rrl_V_minus_I)
     dVtan = (dpm*D).to(u.km*u.radian/u.s).value
-    axes[1].loglog(D, dVtan, color="k", linewidth=1, alpha=0.5)
     
+    with rc_context(rc=rcparams):
+        fig,axes = plt.subplots(2, 1, figsize=(12, 12), sharex=True)
+        
+        # Plot Gaia distance errors
+        axes[0].loglog(D.kiloparsec, (dD/D).decompose())
+            
+        # Plot tangential velocity errors
+        axes[1].loglog(D.kiloparsec, dVtan)
+    
+    fig.subplots_adjust(hspace=0.1)
     plt.show()
 
 def normed_objective_plot():
