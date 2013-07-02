@@ -109,11 +109,11 @@ def timestep(r, v, potential, m_sat):
     else:
         return dt
 
-def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
+def ln_likelihood(halo_p, halo_p_names, particles, satellite, t1, t2, resolution):
     """ Evaluate the likelihood function for a given set of halo 
         parameters.
     """
-    halo_params = dict(zip(param_names, p))
+    halo_params = dict(zip(halo_p_names, halo_p))
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     lm10 = LawMajewski2010(**halo_params)
@@ -126,7 +126,27 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
                                       resolution=resolution,
                                       t1=t1, t2=t2)
     
-    return -generalized_variance(lm10, p_orbits, s_orbit)
+    r_tide = lm10._tidal_radius(m=s_orbit._m,
+                                r=s_orbit._r)[:,:,np.newaxis]
+    v_esc = lm10._escape_velocity(m=s_orbit._m,
+                                  r_tide=r_tide)
+    
+    ys = np.zeros((len(particles),len(r_tide)))
+    for jj in range(len(r_tide)):
+        ys[:,jj] = model(p_orbits, s_orbit, r_tide, v_esc, jj)
+        
+    ls = []
+    for ii in range(len(particles)):
+        ys = np.zeros((len(particles),len(r_tide)))
+        for jj in range(len(r_tide)):
+            ys[:,jj] = model(p_orbits, s_orbit, r_tide, v_esc, 0)
+        
+        integral = integrate.simps(ys, x=s_orbit._t)
+        print integral, ys.shape
+        return
+    
+    l = np.sum(ls)
+    return l
 
 def ln_posterior(p, *args):
     param_names, particles, satellite, t1, t2, resolution = args
