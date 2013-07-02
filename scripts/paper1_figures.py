@@ -173,6 +173,24 @@ def lm10_particles_selection():
     plt.tight_layout()
     plt.show()
     
+def phase_space_d_vs_time():
+    """ Plot the PSD for 10 stars vs. back-integration time. """
+    
+    wrong_params = true_params.copy()
+    for k,v in wrong_params:
+        wrong_params[k] = 0.95*v
+    
+    true_potential = LawMajewski2010(**true_params)
+    wrong_potential = LawMajewski2010(**wrong_params)
+    
+    for potential in [true_potential, wrong_potential]:
+        integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
+        s_orbit,p_orbits = integrator.run(timestep_func=timestep,
+                                      timestep_args=(lm10, satellite.m.value),
+                                      resolution=resolution,
+                                      t1=t1, t2=t2)
+    
+
 if __name__ == '__main__':
     #gaia_spitzer_errors()
-    lm10_particles_selection()
+    #lm10_particles_selection()
