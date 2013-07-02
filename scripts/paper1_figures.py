@@ -22,7 +22,10 @@ from streams.observation.gaia import parallax_error, proper_motion_error, \
                                      add_uncertainties_to_particles
 from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
 
+from streams.inference import relative_normalized_coordinates
+from streams.inference.lm10 import timestep
 from streams.potential import LawMajewski2010
+from streams.potential.lm10 import true_params
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.data import lm10_particles, lm10_satellite, lm10_time
 
@@ -172,7 +175,7 @@ def lm10_particles_selection():
     #ax.scatter()
     plt.tight_layout()
     plt.show()
-    
+
 def phase_space_d_vs_time():
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
@@ -180,8 +183,14 @@ def phase_space_d_vs_time():
     for k,v in wrong_params:
         wrong_params[k] = 0.95*v
     
+    # define correct potential, and 5% wrong potential
     true_potential = LawMajewski2010(**true_params)
     wrong_potential = LawMajewski2010(**wrong_params)
+    
+    particles = lm10_particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")    
+    satellite = lm10_satellite()
+    t1,t2 = lm10_time()
+    resolution = 3.
     
     for potential in [true_potential, wrong_potential]:
         integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
@@ -189,8 +198,11 @@ def phase_space_d_vs_time():
                                       timestep_args=(lm10, satellite.m.value),
                                       resolution=resolution,
                                       t1=t1, t2=t2)
-    
+        
+        R,V = relative_normalized_coordinates(potential, p_orbits, s_orbit) 
+        D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
 
 if __name__ == '__main__':
     #gaia_spitzer_errors()
     #lm10_particles_selection()
+    phase_space_d_vs_time()
