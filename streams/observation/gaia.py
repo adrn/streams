@@ -16,17 +16,12 @@ import astropy.units as u
 from astropy.utils.misc import isiterable
 
 from ..nbody import ParticleCollection
-from .rrlyrae import rrl_M_V
+from .rrlyrae import rrl_M_V, rrl_V_minus_I
 from .core import apparent_magnitude
 
 __all__ = ["parallax_error", "proper_motion_error",  \
            "apparent_magnitude", "rr_lyrae_add_observational_uncertainties", \
            "add_uncertainties_to_particles"]
-
-# Johnson/Cousins (V - I_C) color for RR Lyrae at *minimum*
-# Guldenschuh et al. (2005 PASP 117, 721), pg. 725
-# (V-I)_min = 0.579 +/- 0.006 mag
-rr_lyrae_V_minus_I = 0.579
     
 def parallax_error(V, V_minus_I):
     """ Compute the estimated GAIA parallax error as a function of apparent 
@@ -156,7 +151,7 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     rv_err = rv_err.to(u.km/u.s)
     vr += np.random.normal(0., rv_err.value)*rv_err.unit
 
-    dmu = proper_motion_error(V, rr_lyrae_V_minus_I)
+    dmu = proper_motion_error(V, rrl_V_minus_I)
         
     dmu = (dmu.to(u.rad/u.s).value / u.s).to(u.km / (u.kpc*u.s))
     mul += np.random.normal(0., dmu.value)*dmu.unit

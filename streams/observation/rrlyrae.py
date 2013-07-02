@@ -14,7 +14,12 @@ import numpy as np
 import astropy.units as u
 from astropy.utils.misc import isiterable
 
-__all__ = ["rrl_M_V", "rrl_photometric_distance"]
+__all__ = ["rrl_M_V", "rrl_photometric_distance", "rrl_V_minus_I"]
+
+# Johnson/Cousins (V - I_C) color for RR Lyrae at *minimum*
+# Guldenschuh et al. (2005 PASP 117, 721), pg. 725
+# (V-I)_min = 0.579 +/- 0.006 mag
+rrl_V_minus_I = 0.579
 
 def rrl_M_V(fe_h, dfe_h=0.):
     """ Given an RR Lyra metallicity, return the V-band absolute magnitude. 
