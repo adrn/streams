@@ -245,34 +245,51 @@ def phase_space_d_vs_time(N=10):
     rcparams = {'lines.linestyle' : '-', 
                 'lines.linewidth' : 1.,
                 'lines.color' : 'k',
-                'lines.marker' : None}
+                'lines.marker' : None,
+                'figure.facecolor' : '#ffffff',
+                'text.color' : '#000000'}
+    
+    dark_rcparams = {'lines.linestyle' : '-', 
+                'lines.linewidth' : 1.,
+                'lines.color' : '#92C5DE',
+                'lines.marker' : None,
+                'axes.facecolor' : '#777777',
+                'axes.edgecolor' : '#aaaaaa',
+                'figure.facecolor' : '#555555',
+                'text.color' : '#dddddd',
+                'xtick.color' : '#dddddd',
+                'ytick.color' : '#dddddd',
+                'axes.labelcolor' : '#dddddd',
+                'axes.labelweight' : 100}
     
     with rc_context(rc=rcparams):  
         fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(10,10))
-        axes[0].axhline(2, linestyle='--')
-        axes[1].axhline(2, linestyle='--')
+        axes[0].axhline(2, linestyle='--', color='#444444')
+        axes[1].axhline(2, linestyle='--', color='#444444')
         
         for ii in randidx:
             for jj in range(2):
                 d = D_pses[jj][:,ii]
                 sR = sat_R[jj]
-                axes[jj].semilogy(ts[jj], d, alpha=0.5, color='k')
-                axes[jj].semilogy(ts[jj], 1.+(sR-sR.min())/(sR.max()-sR.min()), alpha=0.5, color='r')
-                axes[jj].semilogy(ts[jj][np.argmin(d)], np.min(d), marker='o',
-                                  alpha=0.75, color='k')
+                axes[jj].semilogy(ts[jj]/1000, d, alpha=0.5, color=rcparams['lines.color'])
+                axes[jj].semilogy(ts[jj]/1000, 1.05+0.9*(sR-sR.min())/(sR.max()-sR.min()), 
+                                  alpha=0.75, color='#CA0020')
+                axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='o',
+                                  alpha=0.75, color=rcparams['lines.color'])
         
         axes[1].set_ylim(1,100)
-        axes[1].set_xlim(-6000, 0)
+        axes[1].set_xlim(-6, 0)
     
-    axes[1].set_xlabel("Backwards integration time [Myr]")
-    axes[0].set_ylabel(r"$D_{ps}$")
-    axes[1].set_ylabel(r"$D_{ps}$")
+    axes[1].set_xlabel("Backwards integration time [Gyr]")
+    axes[0].set_ylabel(r"$D_{ps}$", rotation='horizontal')
+    axes[1].set_ylabel(r"$D_{ps}$", rotation='horizontal')
     
     fig.subplots_adjust(hspace=0.1)
-    fig.savefig(os.path.join(plot_path, "ps_distance.pdf"))
+    fig.savefig(os.path.join(plot_path, "ps_distance.pdf"), 
+                facecolor=rcparams['figure.facecolor'])
     
     return selected_star_idx
 if __name__ == '__main__':
     #gaia_spitzer_errors()
     selected_star_idx = phase_space_d_vs_time()
-    lm10_particles_selection(selected_star_idx)
+    #lm10_particles_selection(selected_star_idx)
