@@ -14,7 +14,7 @@ import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-from matplotlib import rc_context
+from matplotlib import rc_context, rcParams
 from matplotlib.patches import Rectangle
 
 from streams.observation import apparent_magnitude
@@ -34,6 +34,8 @@ matplotlib.rc('ytick', labelsize=14)
 matplotlib.rc('text', usetex=True)
 matplotlib.rc('axes', edgecolor='#444444', labelsize=20)
 matplotlib.rc('lines', markeredgewidth=0)
+matplotlib.rc('font', family='sans-serif')
+rcParams['font.sans-serif'] = 'helvetica'
 
 def normed_objective_plot():
     """ Plot our objective function in each of the 4 parameters we vary """
@@ -82,7 +84,7 @@ def gaia_spitzer_errors():
                 'axes.edgecolor' : '#444444'}
     
     with rc_context(rc=rcparams):
-        fig,axes = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
+        fig,axes = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
         
         # Distance from 1kpc to ~100kpc
         D = np.logspace(0., 2., 50)*u.kpc
@@ -119,12 +121,12 @@ def gaia_spitzer_errors():
     
     # Now add rectangles for Sgr, Orphan
     sgr_d = Rectangle((10., 0.15), 60., 0.15, 
-                      color='#67A9CF', alpha=0.75, label='Sgr width')
+                      color='#67A9CF', alpha=0.75, label='Sgr thickness')
     axes[0].add_patch(sgr_d)
     
     # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.pdf+html
     orp_d = Rectangle((10., 0.03), 35., 0.03,
-                      color='#EF8A62', alpha=0.75, label='Orp width')
+                      color='#EF8A62', alpha=0.75, label='Orp thickness')
     axes[0].add_patch(orp_d)
     
     # ??
@@ -137,11 +139,15 @@ def gaia_spitzer_errors():
     axes[1].add_patch(orp_v)
     
     axes[0].set_ylim(top=10.)
+    axes[1].set_xlim(1, 100)
     
     axes[0].set_ylabel("Frac. distance error $\sigma_D/D$")
     axes[1].set_ylabel("$v_{tan}$ error [km/s]")
     axes[1].set_xlabel("Distance [kpc]")
     axes[1].set_xticklabels(["1", "10", "100"])
+    
+    axes[0].set_yticklabels(["{:g}".format(yt) for yt in axes[0].get_yticks()])
+    axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
     
     axes[0].legend(loc='upper left')
     axes[1].legend(loc='upper left')
