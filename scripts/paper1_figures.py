@@ -205,12 +205,11 @@ def lm10_particles_selection(selected_star_idx):
     plt.tight_layout()
     fig.savefig(os.path.join(plot_path, "lm10.pdf"))
 
-def phase_space_d_vs_time():
+def phase_space_d_vs_time(N=10):
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
     np.random.seed(142)
     selected_star_idx = np.random.randint(100, size=N)
-    N = 10
     
     wrong_params = true_params.copy()
     wrong_params['qz'] = 1.2*wrong_params['qz']
