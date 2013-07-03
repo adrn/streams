@@ -118,21 +118,25 @@ def gaia_spitzer_errors():
         axes[0].axhline(0.02, linestyle='--', linewidth=3, color='#998EC3')
     
     # Now add rectangles for Sgr, Orphan
-    sgr_d = Rectangle((10., 5./10.), 60., (15/60 - 5/10), 
-                      color='#67A9CF', alpha=0.75, label='Sgr')
+    sgr_d = Rectangle((10., 0.15), 60., 0.15, 
+                      color='#67A9CF', alpha=0.75, label='Sgr width')
     axes[0].add_patch(sgr_d)
     
     # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.pdf+html
-    orp_d = Rectangle((10., 2./10.), 35., (10/35. - 2./10),
-                      color='#EF8A62', alpha=0.75, label='Orp')
+    orp_d = Rectangle((10., 0.03), 35., 0.03,
+                      color='#EF8A62', alpha=0.75, label='Orp width')
     axes[0].add_patch(orp_d)
     
     # ??
-    sgr_v = Rectangle((10., 12), 60., 1., color='#67A9CF', alpha=0.75)
+    sgr_v = Rectangle((10., 12), 60., 1., color='#67A9CF', alpha=0.75,
+                      label='Sgr dispersion')
     axes[1].add_patch(sgr_v)
     
-    orp_v = Rectangle((10., 10.), 35., 1., color='#EF8A62', alpha=0.75)
+    orp_v = Rectangle((10., 10.), 35., 1., color='#EF8A62', alpha=0.75,
+                      label='Orp dispersion')
     axes[1].add_patch(orp_v)
+    
+    axes[0].set_ylim(top=10.)
     
     axes[0].set_ylabel("Frac. distance error $\sigma_D/D$")
     axes[1].set_ylabel("$v_{tan}$ error [km/s]")
@@ -140,6 +144,7 @@ def gaia_spitzer_errors():
     axes[1].set_xticklabels(["1", "10", "100"])
     
     axes[0].legend(loc='upper left')
+    axes[1].legend(loc='upper left')
     fig.subplots_adjust(hspace=0.1)
     plt.tight_layout()
     plt.show()
@@ -179,9 +184,14 @@ def lm10_particles_selection():
 def phase_space_d_vs_time():
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
+    np.random.seed(142)
+    
+    N = 10
+    
     wrong_params = true_params.copy()
-    for k,v in wrong_params:
-        wrong_params[k] = 0.95*v
+    wrong_params['qz'] = 1.2*wrong_params['qz']
+    #for k,v in wrong_params.items():
+    #    wrong_params[k] = 0.9*v
     
     # define correct potential, and 5% wrong potential
     true_potential = LawMajewski2010(**true_params)
@@ -192,17 +202,51 @@ def phase_space_d_vs_time():
     t1,t2 = lm10_time()
     resolution = 3.
     
+    sat_R = list()
+    D_pses = list()
+    ts = list()
     for potential in [true_potential, wrong_potential]:
-        integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
+        integrator = SatelliteParticleIntegrator(potential, satellite, particles)
         s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-                                      timestep_args=(lm10, satellite.m.value),
+                                      timestep_args=(potential, satellite.m.value),
                                       resolution=resolution,
                                       t1=t1, t2=t2)
         
         R,V = relative_normalized_coordinates(potential, p_orbits, s_orbit) 
         D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
-
+        D_pses.append(D_ps)
+        sat_R.append(np.sqrt(np.sum(s_orbit._r**2, axis=-1)))
+        ts.append(s_orbit._t)
+    
+    rcparams = {'lines.linestyle' : '-', 
+                'lines.linewidth' : 1.,
+                'lines.color' : 'k',
+                'lines.marker' : None}
+    
+    with rc_context(rc=rcparams):  
+        fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(10,10))
+        axes[0].axhline(2, linestyle='--')
+        axes[1].axhline(2, linestyle='--')
+        
+        for ii in np.random.randint(100, size=N):
+            for jj in range(2):
+                d = D_pses[jj][:,ii]
+                sR = sat_R[jj]
+                axes[jj].semilogy(ts[jj], d, alpha=0.5, color='k')
+                axes[jj].semilogy(ts[jj], 1.+(sR-sR.min())/(sR.max()-sR.min()), alpha=0.5, color='r')
+                axes[jj].semilogy(ts[jj][np.argmin(d)], np.min(d), marker='o',
+                                  alpha=0.75, color='k')
+        
+        axes[1].set_ylim(1,100)
+        axes[1].set_xlim(-4000, 0)
+    
+    axes[1].set_xlabel("Backwards integration time [Myr]")
+    axes[0].set_ylabel(r"$D_{ps}$")
+    axes[1].set_ylabel(r"$D_{ps}$")
+    
+    fig.subplots_adjust(hspace=0.1)
+    plt.show()
 if __name__ == '__main__':
-    #gaia_spitzer_errors()
+    gaia_spitzer_errors()
     #lm10_particles_selection()
-    phase_space_d_vs_time()
+    #phase_space_d_vs_time()
