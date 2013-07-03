@@ -117,7 +117,7 @@ def gaia_spitzer_errors():
             axes[1].loglog(D.kiloparsec, dVtan, color='k', alpha=0.1)
     
         # Add spitzer 2% line to distance plot
-        axes[0].axhline(0.02, linestyle='--', linewidth=3, color='#998EC3')
+        axes[0].axhline(0.02, linestyle='--', linewidth=3, color='#7B3294')
     
     # Now add rectangles for Sgr, Orphan
     sgr_d = Rectangle((10., 0.15), 60., 0.15, 
@@ -148,6 +148,10 @@ def gaia_spitzer_errors():
     
     axes[0].set_yticklabels(["{:g}".format(yt) for yt in axes[0].get_yticks()])
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
+    
+    # add Gaia and Spitzer to first plot
+    th1 = text(l1[0],l1[1],'text not rotated correctly',fontsize=16,
+           rotation=angle)
     
     axes[0].legend(loc='upper left')
     axes[1].legend(loc='upper left')
