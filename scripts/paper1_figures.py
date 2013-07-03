@@ -163,15 +163,21 @@ def gaia_spitzer_errors():
     plt.tight_layout()
     plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
-def lm10_particles_selection():
+def lm10_particles_selection(selected_star_idx):
     """ Top-down plot of Sgr particles, with selected stars and then 
         re-observed
     """
     
     np.random.seed(42)
-    all_particles = lm10_particles(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
     particles = lm10_particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")
+    psd_particles = particles[selected_star_idx]
+    particles = particles[np.logical_not(selected_star_idx)]
+    
+    all_particles = lm10_particles(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
     err_particles = add_uncertainties_to_particles(particles, 
+                                                   radial_velocity_error=15.*u.km/u.s,
+                                                   distance_error_percent=2.)
+    err_psd_particles = add_uncertainties_to_particles(psd_particles, 
                                                    radial_velocity_error=15.*u.km/u.s,
                                                    distance_error_percent=2.)
     
@@ -187,19 +193,23 @@ def lm10_particles_selection():
                 color='k', markersize=10, alpha=1., marker='.')
         ax.plot(err_particles._r[:,0], err_particles._r[:,2],
                 color='#CA0020', markersize=10, alpha=1., marker='.')
+                
+        ax.plot(psd_particles._r[:,0], psd_particles._r[:,2],
+                color='k', markersize=10, alpha=1., marker='+')
+        ax.plot(err_psd_particles._r[:,0], err_psd_particles._r[:,2],
+                color='#CA0020', markersize=10, alpha=1., marker='+')
 
         ax.set_xlabel("$X_{GC}$ [kpc]")
         ax.set_ylabel("$Z_{GC}$ [kpc]")
     
-    #ax.scatter()
     plt.tight_layout()
-    plt.show()
+    fig.savefig(os.path.join(plot_path, "lm10.pdf"))
 
 def phase_space_d_vs_time():
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
     np.random.seed(142)
-    
+    selected_star_idx = np.random.randint(100, size=N)
     N = 10
     
     wrong_params = true_params.copy()
@@ -242,7 +252,7 @@ def phase_space_d_vs_time():
         axes[0].axhline(2, linestyle='--')
         axes[1].axhline(2, linestyle='--')
         
-        for ii in np.random.randint(100, size=N):
+        for ii in selected_star_idx:
             for jj in range(2):
                 d = D_pses[jj][:,ii]
                 sR = sat_R[jj]
@@ -259,8 +269,10 @@ def phase_space_d_vs_time():
     axes[1].set_ylabel(r"$D_{ps}$")
     
     fig.subplots_adjust(hspace=0.1)
-    plt.show()
+    fig.savefig(os.path.join(plot_path, "ps_distance.pdf"))
+    
+    return selected_star_idx
 if __name__ == '__main__':
     gaia_spitzer_errors()
-    #lm10_particles_selection()
-    #phase_space_d_vs_time()
+    selected_star_idx = phase_space_d_vs_time()
+    lm10_particles_selection(selected_star_idx)
