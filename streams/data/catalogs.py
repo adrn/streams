@@ -77,6 +77,7 @@ def read_quest():
     new_columns['dec'] = []
     new_columns['V'] = []
     new_columns['dist'] = []
+    new_columns['Type'] = []
     for row in all_data:
         if not isinstance(row["_RAJ2000_1"], np.ma.core.MaskedConstant):
             icrs = coord.ICRSCoordinates(row["_RAJ2000_1"], 
@@ -88,9 +89,16 @@ def read_quest():
                                          unit=(u.degree,u.degree))
         else:
             raise TypeError()
-            
+        
         new_columns['ra'].append(icrs.ra.degrees)
         new_columns['dec'].append(icrs.dec.degrees)
+        
+        if not isinstance(row["Type_1"], np.ma.core.MaskedConstant):
+            new_columns['Type'].append(row['Type_1'])
+        elif not isinstance(row["Type_2"], np.ma.core.MaskedConstant):
+            new_columns['Type'].append(row['Type_2'])
+        else:
+            raise TypeError()
         
         v1 = row['Vmag_1']
         v2 = row['Vmag_2']
