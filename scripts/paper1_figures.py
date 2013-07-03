@@ -37,6 +37,10 @@ matplotlib.rc('lines', markeredgewidth=0)
 matplotlib.rc('font', family='sans-serif')
 rcParams['font.sans-serif'] = 'helvetica'
 
+plot_path = "plots/paper1/"
+if not os.path.exists(plot_path):
+    os.mkdir(plot_path)
+    
 def normed_objective_plot():
     """ Plot our objective function in each of the 4 parameters we vary """
     
@@ -117,7 +121,7 @@ def gaia_spitzer_errors():
             axes[1].loglog(D.kiloparsec, dVtan, color='k', alpha=0.1)
     
         # Add spitzer 2% line to distance plot
-        axes[0].axhline(0.02, linestyle='--', linewidth=3, color='#7B3294')
+        axes[0].axhline(0.02, linestyle='--', linewidth=4, color='#7B3294', alpha=0.8)
     
     # Now add rectangles for Sgr, Orphan
     sgr_d = Rectangle((10., 0.15), 60., 0.15, 
@@ -150,14 +154,14 @@ def gaia_spitzer_errors():
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
     
     # add Gaia and Spitzer to first plot
-    th1 = text(l1[0],l1[1],'text not rotated correctly',fontsize=16,
-           rotation=angle)
+    axes[0].text(4., 0.1, 'Gaia', fontsize=16, rotation=34)
+    axes[0].text(4., 0.011, 'Spitzer', fontsize=16, color="#7B3294", alpha=0.8)
     
     axes[0].legend(loc='upper left')
     axes[1].legend(loc='upper left')
     fig.subplots_adjust(hspace=0.1)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
 def lm10_particles_selection():
     """ Top-down plot of Sgr particles, with selected stars and then 
