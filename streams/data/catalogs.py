@@ -16,6 +16,7 @@ import astropy.io.fits as fits
 import astropy.io.ascii as ascii
 import astropy.coordinates as coord
 import astropy.units as u
+from astropy.table import Table, Column, vstack, join
 
 # Project
 from ..util import project_root
@@ -48,56 +49,77 @@ def read_quest():
     """ Read in the QUEST data -- RR Lyrae from the QUEST survey,
         Vivas et al. 2004. 
         
-        - Covers Stripe 82
+        - Photometry from:
+            http://vizier.cfa.harvard.edu/viz-bin/VizieR?-source=J/AJ/127/1158
         - Spectral data from:
-            + http://iopscience.iop.org/1538-3881/129/1/189/fulltext/204289.tables.html
-            + Spectroscopy of bright QUEST RR Lyrae stars (Vivas+, 2008)
+            http://iopscience.iop.org/1538-3881/129/1/189/fulltext/204289.tables.html
+            Spectroscopy of bright QUEST RR Lyrae stars (Vivas+, 2008)
             
     """
-    fits_filename = os.path.join(project_root, "data", "catalog", \
-                                "quest_vivas2004_RRL.fits")
-    spec_filename = os.path.join(project_root, "data", "catalog", \
-                                "quest_spectroscopy.txt")
+    phot_filename = os.path.join(project_root, "data", "catalog", \
+                                 "quest_vivas2004_phot.tsv")
+    phot_data = ascii.read(phot_filename, delimiter="\t", data_start=3)
+    
+    # With more spectral data, add here
+    vivas2004_spec = ascii.read(os.path.join(project_root, "data", 
+                                             "catalog", "quest_vivas2004_spec.tsv"),
+                                delimiter="\t")
                                 
-    hdulist = fits.open(fits_filename)
-    tb_data = np.array(hdulist[1].data)
-    data = Table(tb_data)
+    vivas2008_spec = ascii.read(os.path.join(project_root, "data", 
+                                             "catalog", "quest_vivas2008_spec.tsv"),
+                                delimiter="\t", data_start=3)
     
-    spec_data = ascii.read(spec_filename, data_start=1)
-    spec_data = spec_data[(spec_data["sigma_fit"] > 0) & (spec_data["sigma_gamma"] > 0)]
+    spec_data = vstack((vivas2004_spec, vivas2008_spec))
+    all_data = join(left=phot_data, right=spec_data, keys=['[VZA2004]'], join_type='outer')
     
-    # Map RA/Dec columns to easier names
-    data.add_column(Column(np.array(data["RAJ2000"]).astype(float), 
-                           name=str("ra")))
-    data.add_column(Column(np.array(data["DEJ2000"]).astype(float), 
-                           name=str("dec")))
-    data.add_column(Column(np.array(data["Vmag"]).astype(float), 
-                           name=str("V")))
-    data.add_column(Column(rrl_photometric_distance(data['V'], -1.5), 
-                           name="dist", units=u.kpc))
-    data.rename_column("__VZA2004_", "ID")
-    
-    vgsr = []
-    vgsr_err = []
-    for row in data:
-        if row["ID"] in spec_data["ID"]:
-            spec_row = spec_data[spec_data["ID"] == row["ID"]]
-            vgsr.append(spec_row["vgsr"])
-            vgsr_err.append(spec_row["sigma_fit"])
+    new_columns = dict()
+    new_columns['ra'] = []
+    new_columns['dec'] = []
+    new_columns['V'] = []
+    new_columns['dist'] = []
+    for row in all_data:
+        if not isinstance(row["_RAJ2000_1"], np.ma.core.MaskedConstant):
+            icrs = coord.ICRSCoordinates(row["_RAJ2000_1"], 
+                                         row["_DEJ2000_1"], 
+                                         unit=(u.degree,u.degree))
+        elif not isinstance(row["_RAJ2000_2"], np.ma.core.MaskedConstant):
+            icrs = coord.ICRSCoordinates(row["_RAJ2000_2"], 
+                                         row["_DEJ2000_2"], 
+                                         unit=(u.degree,u.degree))
         else:
-            vgsr.append(np.nan)
-            vgsr_err.append(np.nan)
+            raise TypeError()
             
-        row["dist"] = spec_data["dist"]
+        new_columns['ra'].append(icrs.ra.degrees)
+        new_columns['dec'].append(icrs.dec.degrees)
+        
+        v1 = row['Vmag_1']
+        v2 = row['Vmag_2']
+        if v1 != None:
+            new_columns['V'].append(v1)
+        else:
+            new_columns['V'].append(v2)
+        
+        if row['Dist'] != None:
+            d = row['Dist']
+        else:
+            d = rrl_photometric_distance(new_columns['V'][-1], -1.5)
+        new_columns['dist'].append(d)
     
-    data.add_column(Column(vgsr, name="vgsr", units=u.km/u.s))
-    data.add_column(Column(vgsr_err, name="vgsr_err", units=u.km/u.s))
+    for name,data in new_columns.items():
+        all_data.add_column(Column(data, name=name))
     
-    data["ra"].units = u.degree
-    data["dec"].units = u.degree
-    data["dist"].units = u.kpc
+    all_data["ra"].units = u.degree
+    all_data["dec"].units = u.degree
+    all_data["dist"].units = u.kpc
     
-    return data
+    all_data.remove_column('Lambda')
+    all_data.remove_column('Beta')
+    
+    has_spectrum = np.logical_not(np.array(all_data['Vgsr'].mask))
+    all_data.add_column(Column(has_spectrum, name='has_spectrum'))
+    
+    return all_data
+
 
 def read_catalina():
     """ Read in the Catalina data -- RR Lyrae from the Catalina All Sky Survey,
