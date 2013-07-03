@@ -169,15 +169,9 @@ def lm10_particles_selection(selected_star_idx):
     """
     
     np.random.seed(42)
-    particles = lm10_particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")
-    psd_particles = particles[selected_star_idx]
-    particles = particles[np.logical_not(selected_star_idx)]
-    
+    particles = lm10_particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")   
     all_particles = lm10_particles(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
     err_particles = add_uncertainties_to_particles(particles, 
-                                                   radial_velocity_error=15.*u.km/u.s,
-                                                   distance_error_percent=2.)
-    err_psd_particles = add_uncertainties_to_particles(psd_particles, 
                                                    radial_velocity_error=15.*u.km/u.s,
                                                    distance_error_percent=2.)
     
@@ -189,15 +183,20 @@ def lm10_particles_selection(selected_star_idx):
         fig,ax = plt.subplots(1, 1, figsize=(10,10))
         ax.plot(all_particles._r[:,0], all_particles._r[:,2],
                 color='#666666', markersize=3, alpha=0.15, marker='o')
-        ax.plot(particles._r[:,0], particles._r[:,2],
+        ax.plot(particles._r[np.logical_not(selected_star_idx),0], 
+                particles._r[np.logical_not(selected_star_idx),2],
                 color='k', markersize=10, alpha=1., marker='.')
-        ax.plot(err_particles._r[:,0], err_particles._r[:,2],
+        ax.plot(err_particles._r[np.logical_not(selected_star_idx),0], 
+                err_particles._r[np.logical_not(selected_star_idx),2],
                 color='#CA0020', markersize=10, alpha=1., marker='.')
+    
+        ax.plot(particles._r[selected_star_idx,0], 
+                particles._r[selected_star_idx,2],
+                color='k', alpha=1., marker='*', markersize=15)
+        ax.plot(err_particles._r[selected_star_idx,0], 
+                err_particles._r[selected_star_idx,2],
+                color='#CA0020', alpha=1., marker='*', markersize=15)
                 
-        ax.plot(psd_particles._r[:,0], psd_particles._r[:,2],
-                color='k', markersize=10, alpha=1., marker='+')
-        ax.plot(err_psd_particles._r[:,0], err_psd_particles._r[:,2],
-                color='#CA0020', markersize=10, alpha=1., marker='+')
 
         ax.set_xlabel("$X_{GC}$ [kpc]")
         ax.set_ylabel("$Z_{GC}$ [kpc]")
@@ -209,7 +208,9 @@ def phase_space_d_vs_time(N=10):
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
     np.random.seed(142)
-    selected_star_idx = np.random.randint(100, size=N)
+    randidx = np.random.randint(100, size=N)
+    selected_star_idx = np.zeros(100).astype(bool)
+    selected_star_idx[randidx] = True
     
     wrong_params = true_params.copy()
     wrong_params['qz'] = 1.2*wrong_params['qz']
@@ -251,7 +252,7 @@ def phase_space_d_vs_time(N=10):
         axes[0].axhline(2, linestyle='--')
         axes[1].axhline(2, linestyle='--')
         
-        for ii in selected_star_idx:
+        for ii in randidx:
             for jj in range(2):
                 d = D_pses[jj][:,ii]
                 sR = sat_R[jj]
@@ -261,7 +262,7 @@ def phase_space_d_vs_time(N=10):
                                   alpha=0.75, color='k')
         
         axes[1].set_ylim(1,100)
-        axes[1].set_xlim(-4000, 0)
+        axes[1].set_xlim(-6000, 0)
     
     axes[1].set_xlabel("Backwards integration time [Myr]")
     axes[0].set_ylabel(r"$D_{ps}$")
@@ -272,6 +273,6 @@ def phase_space_d_vs_time(N=10):
     
     return selected_star_idx
 if __name__ == '__main__':
-    gaia_spitzer_errors()
+    #gaia_spitzer_errors()
     selected_star_idx = phase_space_d_vs_time()
     lm10_particles_selection(selected_star_idx)
