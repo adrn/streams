@@ -69,6 +69,7 @@ def read_quest():
                                              "catalog", "quest_vivas2008_spec.tsv"),
                                 delimiter="\t", data_start=3)
     
+    vivas2008_spec.rename_column('HJD0', 'HJD')
     spec_data = vstack((vivas2004_spec, vivas2008_spec))
     all_data = join(left=phot_data, right=spec_data, keys=['[VZA2004]'], join_type='outer')
     
@@ -78,6 +79,8 @@ def read_quest():
     new_columns['V'] = []
     new_columns['dist'] = []
     new_columns['Type'] = []
+    new_columns['Per'] = []
+    new_columns['HJD'] = []
     for row in all_data:
         if not isinstance(row["_RAJ2000_1"], np.ma.core.MaskedConstant):
             icrs = coord.ICRSCoordinates(row["_RAJ2000_1"], 
@@ -97,6 +100,20 @@ def read_quest():
             new_columns['Type'].append(row['Type_1'])
         elif not isinstance(row["Type_2"], np.ma.core.MaskedConstant):
             new_columns['Type'].append(row['Type_2'])
+        else:
+            raise TypeError()
+        
+        if not isinstance(row["Per_1"], np.ma.core.MaskedConstant):
+            new_columns['Per'].append(row['Per_1'])
+        elif not isinstance(row["Per_2"], np.ma.core.MaskedConstant):
+            new_columns['Per'].append(row['Per_2'])
+        else:
+            raise TypeError()
+        
+        if not isinstance(row["HJD_1"], np.ma.core.MaskedConstant):
+            new_columns['HJD'].append(row['HJD_1'])
+        elif not isinstance(row["HJD_2"], np.ma.core.MaskedConstant):
+            new_columns['HJD'].append(row['HJD_2'])
         else:
             raise TypeError()
         
@@ -221,16 +238,16 @@ def read_stripe82():
         V = g - 0.59*(g-r) - 0.01
     """
     txt_filename = os.path.join(project_root, "data", "catalog", \
-                                "stripe82_rrlyr.txt")
-    data = ascii.read(txt_filename, header_start=31, data_start=32)
+                                "stripe82_rrlyr.tsv")
+    data = ascii.read(txt_filename, delimiter='\t')
     
-    data.add_column(Column(np.array(data["RAdeg"]).astype(float), 
+    data.add_column(Column(np.array(data["RAJ2000"]).astype(float), 
                            name=str("ra")))
-    data.add_column(Column(np.array(data["DEdeg"]).astype(float), 
+    data.add_column(Column(np.array(data["DEJ2000"]).astype(float), 
                            name=str("dec")))
     data.add_column(Column(np.array(data["Vmag"]).astype(float), 
                            name=str("V")))
-    data.add_column(Column(rrl_photometric_distance(data['V'], -1.5), 
+    data.add_column(Column(np.array(data["Dist"]).astype(float), 
                            name="dist", units=u.kpc))
     
     data["ra"].units = u.degree

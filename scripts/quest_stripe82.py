@@ -17,7 +17,6 @@ import os, sys
 
 # Third-party
 import numpy as np
-from astropy.table import Table, Column, vstack, join
 import astropy.io.fits as fits
 import astropy.io.ascii as ascii
 import astropy.coordinates as coord
@@ -27,74 +26,8 @@ import matplotlib.pyplot as plt
 # Project
 from streams.util import project_root
 from streams.observation.rrlyrae import *
-from streams.data import add_sgr_coordinates
+from streams.data import add_sgr_coordinates, read_quest
 from streams.data.simulation import lm10_particle_data
-
-def read_quest():
-    """ Read in the QUEST data -- RR Lyrae from the QUEST survey,
-        Vivas et al. 2004. 
-        
-        - Photometry from:
-            http://vizier.cfa.harvard.edu/viz-bin/VizieR?-source=J/AJ/127/1158
-        - Spectral data from:
-            http://iopscience.iop.org/1538-3881/129/1/189/fulltext/204289.tables.html
-            Spectroscopy of bright QUEST RR Lyrae stars (Vivas+, 2008)
-            
-    """
-    phot_filename = os.path.join(project_root, "data", "catalog", \
-                                 "quest_vivas2004_phot.tsv")
-    phot_data = ascii.read(phot_filename, delimiter="\t", data_start=3)
-    
-    # With more spectral data, add here
-    vivas2004_spec = ascii.read(os.path.join(project_root, "data", 
-                                             "catalog", "quest_vivas2004_spec.tsv"),
-                                delimiter="\t")
-                                
-    vivas2008_spec = ascii.read(os.path.join(project_root, "data", 
-                                             "catalog", "quest_vivas2008_spec.tsv"),
-                                delimiter="\t", data_start=3)
-    
-    spec_data = vstack((vivas2004_spec, vivas2008_spec))
-    all_data = join(left=phot_data, right=spec_data, keys=['[VZA2004]'], join_type='outer')
-    
-    new_columns = dict()
-    new_columns['ra'] = []
-    new_columns['dec'] = []
-    new_columns['V'] = []
-    new_columns['dist'] = []
-    for row in all_data:
-        icrs = coord.ICRSCoordinates(row["_RAJ2000_1"], 
-                                     row["_DEJ2000_1"], unit=(u.degree,u.degree))
-        new_columns['ra'].append(icrs.ra.degrees)
-        new_columns['dec'].append(icrs.dec.degrees)
-        
-        v1 = row['Vmag_1']
-        v2 = row['Vmag_2']
-        if v1 != None:
-            new_columns['V'].append(v1)
-        else:
-            new_columns['V'].append(v2)
-        
-        if row['Dist'] != None:
-            d = row['Dist']
-        else:
-            d = rrl_photometric_distance(new_columns['V'][-1], -1.5)
-        new_columns['dist'].append(d)
-    
-    for name,data in new_columns.items():
-        all_data.add_column(Column(data, name=name))
-    
-    all_data["ra"].units = u.degree
-    all_data["dec"].units = u.degree
-    all_data["dist"].units = u.kpc
-    
-    all_data.remove_column('Lambda')
-    all_data.remove_column('Beta')
-    
-    has_spectrum = np.logical_not(np.array(all_data['Vgsr'].mask))
-    all_data.add_column(Column(has_spectrum, name='has_spectrum'))
-    
-    return all_data
 
 if __name__ == "__main__":
     # TODO: need sample for Allyson's observing run in 2 weeks!!
