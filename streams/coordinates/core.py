@@ -16,15 +16,18 @@ from numpy import cos, sin
 import astropy.coordinates as coord
 import astropy.units as u
 
-__all__ = ["gsr_to_hel"]
+__all__ = ["vgsr_to_vhel", "vhel_to_vgsr"]
 
-def gsr_to_hel(l, b, v_gsr, v_sun_lsr=[10.,5.25,7.17]*u.km/u.s, v_circ=220*u.km/u.s):
+def vgsr_to_vhel(l, b, v_gsr, 
+                 v_sun_lsr=[10.,5.25,7.17]*u.km/u.s, 
+                 v_circ=220*u.km/u.s):
     """ Convert a velocity from the Galactic standard of rest (GSR) to 
         heliocentric radial velocity. 
+        
+        Parameters
+        ----------
+        
     """
-    assert hasattr(v_gsr, 'unit')
-    assert hasattr(l, 'radian')
-    assert hasattr(b, 'radian')
     
     v_lsr = v_gsr - v_circ * sin(l.radian) * cos(b.radian)
     
@@ -35,3 +38,27 @@ def gsr_to_hel(l, b, v_gsr, v_sun_lsr=[10.,5.25,7.17]*u.km/u.s, v_circ=220*u.km/
     v_hel = v_lsr - v_correct
     
     return v_hel
+
+def vhel_to_vgsr(l, b, v_hel, 
+                 v_sun_lsr=[10.,5.25,7.17]*u.km/u.s, 
+                 v_circ=220*u.km/u.s):
+    """ Convert a velocity from a heliocentric radial velocity to
+        the Galactic center of rest.
+        
+        Parameters
+        ----------
+        
+    """
+    assert hasattr(v_gsr, 'unit')
+    assert hasattr(l, 'radian')
+    assert hasattr(b, 'radian')
+    
+    v_lsr = v_gsr + v_circ * sin(l.radian) * cos(b.radian)
+    
+    # velocity correction for Sun relative to LSR
+    v_correct = v_sun_lsr[0]*cos(b.radian)*cos(l.radian) + \
+                v_sun_lsr[1]*cos(b.radian)*sin(l.radian) + \
+                v_sun_lsr[2]*sin(b.radian)
+    v_hel = v_lsr + v_correct
+    
+    return v_gsr
