@@ -7,10 +7,16 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 
+import astropy.units as u
+
 __all__ = ["UnitSystem"]
 
 required_units = ['length', 'mass', 'time']
 class UnitSystem(dict):
+    
+    @classmethod
+    def galactic(cls):
+        return cls(u.kpc, u.M_sun, u.Myr, u.radian)
     
     def __init__(self, *bases):
         """ Given Unit objects as positional arguments, defines a 
