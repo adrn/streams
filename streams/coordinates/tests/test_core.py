@@ -31,5 +31,18 @@ def test_gsr_to_hel():
                              v_sun_lsr=v_sun_lsr, 
                              v_circ=row["vcirc"]*u.km/u.s)
         
-        np.testing.assert_almost_equal(v_hel, row['vhelio'], decimal=2)
+        np.testing.assert_almost_equal(v_hel.value, row['vhelio'], decimal=4)
+
+def test_hel_to_gsr():
+    for row in data:
+        l = row["lon"] * u.degree
+        b = row["lat"] * u.degree
+        v_hel = row["vhelio"] * u.km/u.s
+        v_sun_lsr = [row["vx"],row["vy"],row["vz"]]*u.km/u.s
+        
+        v_gsr = vhel_to_vgsr(l, b, v_hel, 
+                             v_sun_lsr=v_sun_lsr, 
+                             v_circ=row["vcirc"]*u.km/u.s)
+        
+        np.testing.assert_almost_equal(v_gsr.value, row['vgsr'], decimal=4)
         
