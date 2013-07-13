@@ -29,7 +29,10 @@ def vgsr_to_vhel(l, b, v_gsr,
         
     """
     
-    v_lsr = v_gsr - v_circ * sin(l.radian) * cos(b.radian)
+    try:
+        v_lsr = v_gsr - v_circ * sin(l.radian) * cos(b.radian)
+    except AttributeError:
+        raise AttributeError("All inputs must be Quantity objects")
     
     # velocity correction for Sun relative to LSR
     v_correct = v_sun_lsr[0]*cos(b.radian)*cos(l.radian) + \
@@ -49,16 +52,15 @@ def vhel_to_vgsr(l, b, v_hel,
         ----------
         
     """
-    assert hasattr(v_gsr, 'unit')
-    assert hasattr(l, 'radian')
-    assert hasattr(b, 'radian')
-    
-    v_lsr = v_gsr + v_circ * sin(l.radian) * cos(b.radian)
+    try:
+        v_lsr = v_hel + v_circ * sin(l.radian) * cos(b.radian)
+    except AttributeError:
+        raise AttributeError("All inputs must be Quantity objects")
     
     # velocity correction for Sun relative to LSR
     v_correct = v_sun_lsr[0]*cos(b.radian)*cos(l.radian) + \
                 v_sun_lsr[1]*cos(b.radian)*sin(l.radian) + \
                 v_sun_lsr[2]*sin(b.radian)
-    v_hel = v_lsr + v_correct
+    v_gsr = v_lsr + v_correct
     
     return v_gsr
