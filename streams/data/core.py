@@ -21,8 +21,6 @@ from ..coordinates import SgrCoordinates, distance_to_sgr_plane
 
 __all__ = ["combine_catalogs", "add_sgr_coordinates", "radial_velocity"]
 
-#lm10 = lm10_particles(expr="(Pcol>-1) & (Pcol<6) & (abs(Lmflag)==1)")
-
 def combine_catalogs(**kwargs):
     """ Combine multiple catalogs of data into the same Table.
     
