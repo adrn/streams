@@ -21,7 +21,7 @@ from matplotlib import cm
 from streams.inference.lm10 import ln_likelihood, old_ln_likelihood
 from streams.nbody import ParticleCollection
 from streams.potential.lm10 import LawMajewski2010, true_params
-from streams.data import lm10_particles, lm10_satellite, lm10_time
+from streams.io.lm10 import particles, satellite, time
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
@@ -40,9 +40,9 @@ def time_likelihood_func():
     print((time.time()-a) / 10., "seconds per call")
 
 np.random.seed(42)
-t1,t2 = lm10_time()
-satellite = lm10_satellite()
-particles = lm10_particles(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
+t1,t2 = time()
+satellite = satellite()
+particles = particles(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
 
 def test_time_likelihood():
     
@@ -147,9 +147,9 @@ def test_energy_conserve():
                 facecolor="#444444")
 
 def test_compare_likelihood():
-    satellite = lm10_satellite()
-    particles = lm10_particles(N=100)
-    t1,t2 = lm10_time()
+    satellite = satellite()
+    particles = particles(N=100)
+    t1,t2 = time()
     
     p = [1.2, 1.2, 0.121, 1.6912]
     param_names = ["q1", "qz", "v_halo", "phi"]
@@ -166,9 +166,9 @@ def test_compare_likelihood():
     assert l2 > l1
 
 def test_timestep_energy():
-    satellite = lm10_satellite()
-    particles = lm10_particles(N=1000)
-    t1,t2 = lm10_time()
+    satellite = satellite()
+    particles = particles(N=1000)
+    t1,t2 = time()
     
     plt.figure(figsize=(12,12))
     c = 'krgb'

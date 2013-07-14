@@ -22,8 +22,7 @@ from ...nbody import ParticleCollection, OrbitCollection
 from ...integrate.leapfrog import LeapfrogIntegrator
 from ...potential.lm10 import LawMajewski2010
 
-__all__ = ["lm10_particles", "lm10_particle_data", \
-           "lm10_satellite", "lm10_satellite_orbit", "lm10_time"]    
+__all__ = ["particles", "satellite", "time"]    
 
 _lm10_path = os.path.join(project_root, "data", "simulation", "LM10")
 

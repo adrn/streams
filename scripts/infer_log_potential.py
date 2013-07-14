@@ -30,7 +30,7 @@ from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
 from streams.simulation.config import read
-from streams.data import lm10_particles, lm10_satellite, lm10_time
+from streams.io.lm10 import particles, satellite, time
 from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
@@ -73,8 +73,8 @@ def main(config_file):
     
     # Read in Sagittarius simulation data
     if config["particle_source"] == "lm10":
-        satellite = lm10_satellite()
-        t1,t2 = lm10_time()
+        satellite = satellite()
+        t1,t2 = time()
         if isinstance(expr, list):
             if not isinstance(config["particles"], list):
                 raise ValueError("If multiple expr's provided, multiple "
@@ -83,7 +83,7 @@ def main(config_file):
                 raise ValueError("Must supply a particle count for each expr")
             
             for N_i,expr_i in zip(config["particles"], expr):
-                these_p = lm10_particles(N=N_i, expr=expr_i)
+                these_p = particles(N=N_i, expr=expr_i)
                 
                 try:
                     particles = particles.merge(these_p)
@@ -92,7 +92,7 @@ def main(config_file):
             Nparticles = len(particles._r)
         else:
             Nparticles = config["particles"]
-            particles = lm10_particles(N=Nparticles, expr=expr)
+            particles = particles(N=Nparticles, expr=expr)
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))

@@ -41,7 +41,7 @@ def test_relative_normalized_coordinates():
                                           particle_orbits, 
                                           satellite_orbit)
     print("R,V: {0:.3f} ms".format(1000.*(time.time()-a)))
- 
+
 def test_minimum_distance_matrix():
     #a = time.time()
     minimum_distance_matrix(potential, particle_orbits, satellite_orbit)

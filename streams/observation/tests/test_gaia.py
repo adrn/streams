@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from ..gaia import *
-from ...data.sgr import lm10_particles
+from ...io.lm10 import particles
 
 plot_path = "plots/tests/observation"
 if not os.path.exists(plot_path):
@@ -50,7 +50,7 @@ def test_add_uncertainties():
 def test_particles_uncertainties():
     #particles = add_uncertainties_to_particles(particles, distance_error_percent, radial_velocity_error)
     
-    particles = lm10_particles(N=100)
+    particles = particles(N=100)
     
     fig,axes = particles.plot_r('xyz')
     particles_error = add_uncertainties_to_particles(particles, distance_error_percent=2)

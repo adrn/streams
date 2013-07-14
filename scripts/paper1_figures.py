@@ -27,7 +27,7 @@ from streams.inference.lm10 import timestep
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import true_params
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
-from streams.data import lm10_particles, lm10_satellite, lm10_time
+from streams.io.lm10 import particles, satellite, time
 
 matplotlib.rc('xtick', labelsize=14)
 matplotlib.rc('ytick', labelsize=14)
@@ -49,9 +49,9 @@ def normed_objective_plot():
     resolution = 1.
     
     # Read in the LM10 data
-    particles = lm10_particles(N=100, expr="(Pcol>0) & (abs(Lmflag)==1)")
-    satellite = lm10_satellite()
-    t1,t2 = lm10_time()
+    particles = particles(N=100, expr="(Pcol>0) & (abs(Lmflag)==1)")
+    satellite = satellite()
+    t1,t2 = time()
     resolution = 3.
     
     variances = dict()
@@ -175,8 +175,8 @@ def lm10_particles_selection(selected_star_idx):
     """
     
     np.random.seed(42)
-    particles = lm10_particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")   
-    all_particles = lm10_particles(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
+    particles = particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")   
+    all_particles = particles(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
     err_particles = add_uncertainties_to_particles(particles, 
                                                    radial_velocity_error=15.*u.km/u.s,
                                                    distance_error_percent=2.)
@@ -227,9 +227,9 @@ def phase_space_d_vs_time(N=10):
     true_potential = LawMajewski2010(**true_params)
     wrong_potential = LawMajewski2010(**wrong_params)
     
-    particles = lm10_particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")    
-    satellite = lm10_satellite()
-    t1,t2 = lm10_time()
+    particles = particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")    
+    satellite = satellite()
+    t1,t2 = time()
     resolution = 3.
     
     sat_R = list()
