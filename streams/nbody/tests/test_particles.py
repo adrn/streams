@@ -86,6 +86,6 @@ def test_to():
     usys2 = UnitSystem(u.km, u.s, u.kg)    
     pc2 = pc.to(usys2)
     
-    assert np.all(pc2._r == r.to(u.km).value)
-    assert np.all(pc2._v == v.to(u.km/u.s).value)
-    assert np.all(pc2._m == m.to(u.kg).value)
+    assert np.allclose(pc2._r, r.to(u.km).value)
+    assert np.allclose(pc2._v, v.to(u.km/u.s).value)
+    assert np.allclose(pc2._m, m.to(u.kg).value)

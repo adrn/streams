@@ -14,12 +14,12 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import G
 
-from .core import _validate_quantity
+from .core import _validate_quantity, DynamicalBase
 from ..misc.units import UnitSystem
 
 __all__ = ["ParticleCollection"]
     
-class ParticleCollection(object):
+class ParticleCollection(DynamicalBase):
     
     def __init__(self, r, v, m=None, unit_system=None):
         """ A collection of massive or test particles. 
@@ -62,7 +62,6 @@ class ParticleCollection(object):
             raise ValueError("Position and velocity must have same shape.")
         
         # decompose each input into the specified unit system
-        
         _r = r.decompose(unit_system).value
         _v = v.decompose(unit_system).value
         self._m = m.decompose(unit_system).value
@@ -76,26 +75,6 @@ class ParticleCollection(object):
         #   computation
         self._G = G.decompose(unit_system).value
         self.unit_system = unit_system
-    
-    @property
-    def _r(self):
-        return self._x[:,:self.ndim]
-    
-    @property
-    def _v(self):
-        return self._x[:,self.ndim:]
-    
-    @property
-    def r(self):
-        return self._r * self.unit_system['length']
-    
-    @property
-    def v(self):
-        return self._v * self.unit_system['length'] / self.unit_system['time']
-    
-    @property
-    def m(self):
-        return self._m * self.unit_system['mass']
     
     def to(self, unit_system):
         """ Return a new ParticleCollection in the specified unit system. """
@@ -147,9 +126,6 @@ class ParticleCollection(object):
             
         else:
             raise ValueError()
-    
-    def __repr__(self):
-        return "<ParticleCollection N={0}>".format(self.nparticles)
     
     def plot_r(self, coord_names=['x','y','z'], **kwargs):
         """ Make a scatter-plot of 3 projections of the positions of the 
