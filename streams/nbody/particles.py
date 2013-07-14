@@ -96,7 +96,16 @@ class ParticleCollection(object):
     @property
     def m(self):
         return self._m * self.unit_system['mass']
+    
+    def to(self, unit_system):
+        """ Return a new ParticleCollection in the specified unit system. """
+        new_r = self.r.decompose(unit_system)
+        new_v = self.v.decompose(unit_system)
+        new_m = self.m.decompose(unit_system)
         
+        return ParticleCollection(r=new_r, v=new_v, m=new_m, 
+                                  unit_system=unit_system)
+    
     def acceleration_at(self, r, m):
         """ Compute the acceleration at a given position due to the 
             collection of particles. Inputs must be Quantity objects.
