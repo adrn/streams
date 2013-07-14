@@ -64,3 +64,32 @@ def vhel_to_vgsr(l, b, v_hel,
     v_gsr = v_lsr + v_correct
     
     return v_gsr
+
+def __radial_velocity(r, v):
+    """ Compute the radial velocity in the heliocentric frame. 
+        
+        DON'T USE
+    
+    """
+    
+    if r.ndim < 2:
+        r = r[np.newaxis]
+    
+    if v.ndim < 2:
+        v = v[np.newaxis]
+    
+    # the sun's velocity and position
+    v_circ = 220.
+    v_sun = np.array([[0., v_circ, 0]]) # km/s
+    v_sun += np.array([[9, 11., 6.]]) # km/s
+    r_sun = np.array([[-8., 0, 0]])
+    
+    # object's distance in relation to the sun(observed radius)
+    r_rel = r - r_sun
+    R_obs = np.sqrt(np.sum(r_rel**2, axis=-1))[:,np.newaxis]
+    r_hat = r_rel / R_obs
+    
+    v_rel = v - v_sun
+    v_hel = np.sum((v_rel*r_hat), axis=-1)[:,np.newaxis]
+    
+    return np.squeeze(v_hel)
