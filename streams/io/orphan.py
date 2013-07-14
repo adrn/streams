@@ -18,15 +18,20 @@ import astropy.units as u
 from astropy.constants import G
 
 # Project
-from ...util import project_root
-from ...nbody import ParticleCollection, OrbitCollection
+from ..util import project_root
+from .core import read_table
+from ..nbody import ParticleCollection, OrbitCollection
+from ..misc import UnitSystem
 
 __all__ = ["orphan_particles", "orphan_satellite", "orphan_time"]
+
+_orphan_path = os.path.join(project_root, "data", "simulation", "Orphan")
 
 X = (G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value / 0.15**3 * 1E7)**-0.5
 length_unit = u.Unit("0.15 kpc")
 mass_unit = u.Unit("1E7 M_sun")
 time_unit = u.Unit("{:08f} Myr".format(X))
+orphan_usys = UnitSystem(length_unit, mass_unit, time_unit)
 
 def orphan_particles(N=None, expr=None):
     """ Read in particles from Kathryn's run of a satellite similar to 
@@ -44,41 +49,12 @@ def orphan_particles(N=None, expr=None):
     
     # Read in particle data -- a snapshot of particle positions, velocities at
     #   the end of the simulation
-    particle_filename = os.path.join(project_root, 
-                                     "data",
-                                     "simulation",
-                                     "Orphan",
-                                     "ORP_SNAP")
-    particle_colnames = ["m","x","y","z","vx","vy","vz","s1","s2","tub"]
+    data = read_table("ORP_SNAP", path=_orphan_path, N=N, expr=expr)
+    pc = table_to_particles(data, orphan_usys,
+                            position_columns=["x","y","z"],
+                            velocity_columns=["vx","vy","vz"])
     
-    particle_data = ascii.read(particle_filename, names=particle_colnames)
-    
-    if expr != None and len(expr.strip()) > 0:
-        idx = numexpr.evaluate(str(expr), particle_data)
-        particle_data = particle_data[idx]
-    
-    if N != None and N > 0:
-        idx = np.random.randint(0, len(particle_data), N)
-        particle_data = particle_data[idx]
-    
-    r = np.zeros((len(particle_data), 3))
-    r[:,0] = np.array(particle_data["x"])
-    r[:,1] = np.array(particle_data["y"])
-    r[:,2] = np.array(particle_data["z"])
-    r = r*length_unit
-    
-    v = np.zeros((len(particle_data), 3))
-    v[:,0] = np.array(particle_data["vx"])
-    v[:,1] = np.array(particle_data["vy"])
-    v[:,2] = np.array(particle_data["vz"])
-    v = v*length_unit/time_unit
-    
-    particles = ParticleCollection(r=r.to(u.kpc),
-                                   v=v.to(u.km/u.s),
-                                   m=np.zeros(len(r))*u.M_sun,
-                                   units=[u.kpc,u.Myr,u.M_sun])
-    
-    return particles
+    return pc.to(UnitSystem.galactic())
 
 def orphan_satellite():
     """ Read in the position and velocity of the Orphan satellite center 
