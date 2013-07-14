@@ -17,19 +17,6 @@ import pytest
 from ..catalogs import read_stripe82, read_quest
 from ..core import *
 
-def test_combine_catalogs():
-    stripe82 = read_stripe82()
-    quest = read_quest()
-    
-    catalog = combine_catalogs(Stripe82=stripe82, QUEST=quest)
-    assert "Stripe82" in catalog["survey"] and "QUEST" in catalog["survey"]
-    
-    # make sure there are no null values in ra, dec, dist, and survey
-    assert None not in catalog["survey"]
-    assert None not in catalog["ra"]
-    assert None not in catalog["dec"]
-    assert None not in catalog["dist"]
-
 def test_add_sgr_coordinates():
     stripe82 = read_stripe82()
     quest = read_quest()
