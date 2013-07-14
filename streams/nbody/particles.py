@@ -65,12 +65,12 @@ class ParticleCollection(object):
         
         _r = r.decompose(unit_system).value
         _v = v.decompose(unit_system).value
-        _m = m.decompose(unit_system).value
+        self._m = m.decompose(unit_system).value
         
         # create 
-        self._x = np.zeros((len(self._r), 6))
-        self._x[:,:3] = _r
-        self._x[:,3:] = _v
+        self._x = np.zeros((len(_r), self.ndim*2))
+        self._x[:,:self.ndim] = _r
+        self._x[:,self.ndim:] = _v
         
         # Create internal G in the correct unit system for speedy acceleration
         #   computation
@@ -79,11 +79,11 @@ class ParticleCollection(object):
     
     @property
     def _r(self):
-        return self._x[:,:3]
+        return self._x[:,:self.ndim]
     
     @property
     def _v(self):
-        return self._x[:,3:]
+        return self._x[:,self.ndim:]
     
     @property
     def r(self):

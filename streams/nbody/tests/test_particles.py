@@ -29,10 +29,11 @@ def test_particlecollection_init():
         pc = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
     
     r = np.random.random(size=(10,3))*u.kpc
-    v = np.random.random(size=(10,3))*u.km/u.s
+    v = np.random.random(size=(10,3))*u.kpc/u.Myr
     m = np.random.random(10)*u.M_sun
     
     pc = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+    
     assert np.all(pc.r.value == r.value)
     assert np.all(pc.v.value == v.value)
     assert np.all(pc.m.value == m.value)
