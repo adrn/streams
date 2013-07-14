@@ -103,10 +103,12 @@ class OrbitCollection(DynamicalBase):
         
         if isinstance(key, slice) :
             #Get the start, stop, and step from the slice
-            return OrbitCollection(t=t[key], r=r[key], v=v[key], m=m[key])
+            return OrbitCollection(t=self.t[key], r=self.r[key], 
+                                   v=self.v[key], m=self.m[key])
             
         elif isinstance(key, int) :
-            return ParticleCollection(r=r[key], v=v[key], m=m[key])
+            return ParticleCollection(r=self.r[key], v=self.v[key], 
+                                      m=self.m[key])
         
         else:
             raise TypeError, "Invalid argument type."
