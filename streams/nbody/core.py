@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+from abc import ABCMeta, abstractproperty, abstractmethod
 
 # Third-party
 import astropy.units as u
@@ -27,3 +28,34 @@ def _validate_quantity(q, unit_like=None):
         else:
             msg = "Quantity must be of type '{0}'".format(unit_like.physical_type)
         raise ValueError(msg)
+
+class DynamicalBase(object):
+    __metaclass__ = ABCMeta
+    
+    @property
+    def _r(self):
+        return self._x[...,:self.ndim]
+    
+    @property
+    def _v(self):
+        return self._x[...,self.ndim:]
+    
+    @property
+    def r(self):
+        return self._r * self.unit_system['length']
+    
+    @property
+    def v(self):
+        return self._v * self.unit_system['length'] / self.unit_system['time']
+    
+    @property
+    def m(self):
+        return self._m * self.unit_system['mass']
+    
+    @abstractmethod
+    def to(self, unit_system):
+        pass
+        
+    def __repr__(self):
+        return "<{0} N={1}>".format(self.__class__.__name__, 
+                                    self.nparticles)
