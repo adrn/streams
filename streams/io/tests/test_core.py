@@ -16,27 +16,29 @@ import pytest
 
 from ..catalogs import read_stripe82, read_quest
 from ..core import *
+from ..orphan import orphan_usys
+from ...util import project_root
 
 def test_add_sgr_coordinates():
-    stripe82 = read_stripe82()
-    quest = read_quest()
-    catalog = combine_catalogs(Stripe82=stripe82, QUEST=quest)
+    catalog = read_stripe82()
     
     catalog = add_sgr_coordinates(catalog)
     assert None not in catalog["Lambda"]
     assert None not in catalog["Beta"]
     assert None not in catalog["sgr_plane_dist"]
     
-def test_radial_velocity():
+def test_read_table():
+    data = read_table("ORP_SNAP", 
+                      path=os.path.join(project_root, 'data', 'simulation', 'orphan'))
+
+def test_table_to_particles():
+    data = read_table("ORP_SNAP", 
+                      path=os.path.join(project_root, 'data', 'simulation', 'orphan'))
     
-    r1 = np.array([-8., 1., 0.])
-    v1 = np.array([0., -220., 0.])
-    assert radial_velocity(r1, v1) == -451.
+    pc = table_to_particles(data, orphan_usys)
+
+def test_table_to_orbits():
+    data = read_table("ORP_CEN", 
+                      path=os.path.join(project_root, 'data', 'simulation', 'orphan'))
     
-    r2 = np.array([-8., -1., 0.])
-    v2 = np.array([0., 220., 0.])
-    assert radial_velocity(r2, v2) == 11.
-    
-    r = np.vstack((r1, r2))
-    v = np.vstack((v1, v2))
-    assert (radial_velocity(r, v) == np.array([-451, 11.])).all()
+    oc = table_to_orbits(data, orphan_usys)
