@@ -58,16 +58,32 @@ class ParticleCollection(object):
             _units = [r.unit, m.unit] + v.unit.bases
             unit_system = UnitSystem(*set(_units))
             
-        assert r.value.shape == v.value.shape
+        if r.value.shape != v.value.shape:
+            raise ValueError("Position and velocity must have same shape.")
         
-        for x in ['r', 'v', 'm']:
-            setattr(self, "_{0}".format(x), 
-                    eval(x).decompose(unit_system).value)
+        # decompose each input into the specified unit system
+        
+        _r = r.decompose(unit_system).value
+        _v = v.decompose(unit_system).value
+        _m = m.decompose(unit_system).value
+        
+        # create 
+        self._x = np.zeros((len(self._r), 6))
+        self._x[:,:3] = _r
+        self._x[:,3:] = _v
         
         # Create internal G in the correct unit system for speedy acceleration
         #   computation
         self._G = G.decompose(unit_system).value
         self.unit_system = unit_system
+    
+    @property
+    def _r(self):
+        return self._x[:,:3]
+    
+    @property
+    def _v(self):
+        return self._x[:,3:]
     
     @property
     def r(self):
