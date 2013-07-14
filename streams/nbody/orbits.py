@@ -15,6 +15,7 @@ import astropy.units as u
 from astropy.constants import G
 
 from .core import _validate_quantity, DynamicalBase
+from .particles import ParticleCollection
 from ..misc.units import UnitSystem
 
 __all__ = ["OrbitCollection"]
@@ -97,4 +98,16 @@ class OrbitCollection(DynamicalBase):
         return OrbitCollection(t=new_t, r=new_r, v=new_v, m=new_m, 
                                unit_system=unit_system)
     
+    def __getitem__(self, key):
+        """ Slice on time """
+        
+        if isinstance(key, slice) :
+            #Get the start, stop, and step from the slice
+            return OrbitCollection(t=t[key], r=r[key], v=v[key], m=m[key])
+            
+        elif isinstance(key, int) :
+            return ParticleCollection(r=r[key], v=v[key], m=m[key])
+        
+        else:
+            raise TypeError, "Invalid argument type."
     
