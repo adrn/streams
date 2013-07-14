@@ -85,6 +85,40 @@ def table_to_particles(table, unit_system,
         velocity_columns_columns : list
     """
     
+    nparticles = len(table)
+    ndim = len(position_columns)
+    
+    r = np.zeros((nparticles, ndim))
+    v = np.zeros((nparticles, ndim))
+    
+    for ii in range(ndim):
+        r[:,ii] = np.array(table[position_columns[ii]])
+        v[:,ii] = np.array(table[velocity_columns[ii]])
+
+    r = r*unit_system['length']
+    v = v*unit_system['length'] / unit_system['time']
+    
+    particles = ParticleCollection(r=r.to(u.kpc),
+                                   v=v.to(u.km/u.s),
+                                   m=np.zeros(len(r))*u.M_sun,
+                                   units=unit_system)
+    
+    return particles
+
+def table_to_orbit(table, unit_system, 
+                   position_columns=None,
+                   velocity_columns=None):
+    """ Convert a astropy.table.Table-like object into an 
+        OrbitCollection.
+        
+        Parameters
+        ----------
+        table : astropy.table.Table-like
+        unit_system : streams.misc.UnitSystem
+        position_columns : list
+        velocity_columns_columns : list
+    """
+    
     r = np.zeros((len(data), 3))
     r[:,0] = np.array(data["x"])
     r[:,1] = np.array(data["y"])
