@@ -66,8 +66,8 @@ class ParticleCollection(DynamicalBase):
         _v = v.decompose(unit_system).value
         self._m = m.decompose(unit_system).value
         
-        # create 
-        self._x = np.zeros((len(_r), self.ndim*2))
+        # create container for all 6 phasespace 
+        self._x = np.zeros((self.nparticles, self.ndim*2))
         self._x[:,:self.ndim] = _r
         self._x[:,self.ndim:] = _v
         
