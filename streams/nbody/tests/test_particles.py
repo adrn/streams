@@ -75,3 +75,17 @@ def test_merge():
     pc_merged = pc1.merge(pc2)
     
     assert pc_merged._r.shape == (20,3)
+
+def test_to():
+    r = np.random.random(size=(10,3))*u.kpc
+    v = np.random.random(size=(10,3))*u.kpc/u.Myr
+    m = np.random.random(10)*u.M_sun
+    
+    pc = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+    
+    usys2 = UnitSystem(u.km, u.s, u.kg)    
+    pc2 = pc.to(usys2)
+    
+    assert np.all(pc2._r == r.to(u.km).value)
+    assert np.all(pc2._v == v.to(u.km/u.s).value)
+    assert np.all(pc2._m == m.to(u.kg).value)
