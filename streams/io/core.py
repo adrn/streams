@@ -19,26 +19,53 @@ import astropy.coordinates as coord
 # Project
 from ..coordinates import SgrCoordinates, distance_to_sgr_plane
 
-__all__ = ["combine_catalogs", "add_sgr_coordinates", "radial_velocity"]
+__all__ = ["read_table", "add_sgr_coordinates"]
 
-def combine_catalogs(**kwargs):
-    """ Combine multiple catalogs of data into the same Table.
+def read_table(filename, column_names=None, column_map=dict(), 
+               column_scales=dict(), path=None):
+    """ Read in data from an ASCII file. 
     
         Parameters
         ----------
-        kwargs
-            Key's should be the names of the catalogs, values should be
-            the data itself in the form of astropy.table.Table objects.
-            They should all have ra, dec, and dist columns.
+        filename : str
+        column_names : list (optional)
+            If not specified, will try reading column_names from the data file.
+        column_map : dict (optional)
+        path : str (optional)
     """
     
-    for name,data in kwargs.items():
-        c = Column([name]*len(data), name='survey')
-        data.add_column(c)
+    if path is None:
+        path = os.path.join(project_root, "data")
     
-    data = vstack(kwargs.values())
+    full_path = os.path.join(path, filename)
+    
+    # use astropy.io.ascii to read the ascii data
+    data = ascii.read(full_path, names=column_names)
+    
+    if column_names is None and data.colnames[0].contains('col'):
+        raise IOError("Failed to read column names from file.")
+    
+    # use the column map to rename columns
+    for old_name,new_name in column_map.items():
+        data.rename_column(old_name, new_name)
+    
+    # rescale columns using specified dict
+    for name, scale in column_scales.items():
+        data[name] = scale*data[name]
     
     return data
+
+def table_to_particles(table, column_map=None):
+    """ Convert a astropy.table.Table-like object into a 
+        ParticleCollection.
+        
+        Parameters
+        ----------
+        table : astropy.table.Table-like
+        column_map : dict (optional)
+    """
+    # TODO
+    pass
 
 def add_sgr_coordinates(data):
     """ Given a table of catalog data, add columns with Sagittarius 
@@ -69,28 +96,3 @@ def add_sgr_coordinates(data):
     data.add_column(sgr_plane_D)
     
     return data
-
-def radial_velocity(r, v):
-    """ Compute the radial velocity in the heliocentric frame. """
-    
-    if r.ndim < 2:
-        r = r[np.newaxis]
-    
-    if v.ndim < 2:
-        v = v[np.newaxis]
-    
-    # the sun's velocity and position
-    v_circ = 220.
-    v_sun = np.array([[0., v_circ, 0]]) # km/s
-    v_sun += np.array([[9, 11., 6.]]) # km/s
-    r_sun = np.array([[-8., 0, 0]])
-    
-    # object's distance in relation to the sun(observed radius)
-    r_rel = r - r_sun
-    R_obs = np.sqrt(np.sum(r_rel**2, axis=-1))[:,np.newaxis]
-    r_hat = r_rel / R_obs
-    
-    v_rel = v - v_sun
-    v_hel = np.sum((v_rel*r_hat), axis=-1)[:,np.newaxis]
-    
-    return np.squeeze(v_hel)
