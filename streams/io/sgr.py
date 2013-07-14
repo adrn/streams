@@ -25,39 +25,19 @@ from ...potential.lm10 import LawMajewski2010
 __all__ = ["lm10_particles", "lm10_particle_data", \
            "lm10_satellite", "lm10_satellite_orbit", "lm10_time"]    
 
+_lm10_path = os.path.join(project_root, "data", "simulation", "LM10")
+
+# These are used for the orbit file David Law sent me
 X = (G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value / 0.85**3 * 6.4E8)**-0.5
 length_unit = u.Unit("0.85 kpc")
 mass_unit = u.Unit("6.4E8 M_sun")
 time_unit = u.Unit("{:08f} Myr".format(X))
 
-def lm10_particle_data(N=None, expr=None):
-    """ """
-    
-    particle_colnames = ["Lambda", "Beta", "ra", "dec", "l", "b", \
-                         "xgc", "ygc", "zgc", "xsun", "ysun", "zsun", \
-                         "x4", "y4", "z4", "u", "v", "w", "dist", "vgsr", \
-                         "mul", "mub", "mua", "mud", "Pcol", "Lmflag"]
-    
-    col_map = dict(xgc="x", ygc="y", zgc="z", u="vx", v="vy", w="vz")
-    col_scales = dict(x=-1., vx=-1.)
-    
-    particle_data = read_simulation(filename="LM10/SgrTriax_DYN.dat",
-                                    column_names=particle_colnames,
-                                    column_map=col_map,
-                                    column_scales=col_scales)
-    
-    if expr != None and len(expr.strip()) > 0:
-        idx = numexpr.evaluate(str(expr), particle_data)
-        particle_data = particle_data[idx]
-    
-    if N != None and N > 0 and N < len(particle_data):
-        idx = np.random.randint(0, len(particle_data), N)
-        particle_data = particle_data[idx]
-    
-    return particle_data
+# This is used for the SgrTriax*.dat files
+lm10_usys = UnitSystem(u.kpc, u.M_sun, u.Gyr)
 
-def lm10_particles(N=None, expr=None):
-    """ Read in particles from the Law & Majewski 2010 simulation of Sgr. 
+def particles(N=None, expr=None):
+    """ Read in particles from Law & Majewski 2010.
     
         Parameters
         ----------
@@ -68,29 +48,22 @@ def lm10_particles(N=None, expr=None):
             particles.
         
     """
-    particle_data = lm10_particle_data(N=N, expr=expr)
     
-    nparticles = len(particle_data)
+    # Read in particle data -- a snapshot of particle positions, velocities at
+    #   the end of the simulation
+    col_map = dict(xgc="x", ygc="y", zgc="z", u="vx", v="vy", w="vz")
+    col_scales = dict(x=-1., vx=-1.)
+    data = read_table("SgrTriax_DYN.dat", path=_lm10_path, 
+                      column_map=col_map, column_scales=col_scales,
+                      N=N, expr=expr)
     
-    r = np.zeros((nparticles, 3))
-    r[:,0] = np.array(particle_data["x"])
-    r[:,1] = np.array(particle_data["y"])
-    r[:,2] = np.array(particle_data["z"])
+    pc = table_to_particles(data, lm10_usys,
+                            position_columns=["x","y","z"],
+                            velocity_columns=["vx","vy","vz"])
     
-    v = np.zeros((nparticles, 3))
-    v[:,0] = np.array(particle_data["vx"])
-    v[:,1] = np.array(particle_data["vy"])
-    v[:,2] = np.array(particle_data["vz"])
-    
-    usys = UnitSystem(u.kpc,u.Myr,u.M_sun)
-    particles = ParticleCollection(r=r*u.kpc,
-                                   v=v*u.km/u.s,
-                                   m=np.zeros(len(r))*u.M_sun,
-                                   unit_system=usys)
-    
-    return particles
+    return pc.to(UnitSystem.galactic())
 
-def lm10_satellite():
+def satellite():
     """ Read in the position and velocity of the Sgr satellite at the end of
         the Law & Majewski 2010 simulation (e.g., present day position to be
         back-integrated).
@@ -107,43 +80,9 @@ def lm10_satellite():
     
     return satellite
     
-def lm10_time():
-    """ Read in the time information for the Law & Majewski 2010 simulation 
-        (e.g., present day isn't exactly t=0)
-        
-    """
-    sat_colnames = ["t","x","y","z","vx","vy","vz","col8","col9","col10"]
-    satellite_data = read_simulation(filename="LM10/orb780.dat",
-                                     column_names=sat_colnames)
-    
-    # they integrate past present day, so only select the prior history
-    satellite_data = satellite_data[satellite_data["t"] <= 0.]
-    
+def time():
+    """ Time information for the Law & Majewski 2010 simulation """    
     t1 = 0.
     t2 = -8000.
     
     return t1, t2
-
-def lm10_satellite_orbit():
-    """ Read in the full orbit of the satellite.
-        
-    """
-    sat_colnames = ["t","x","y","z","vx","vy","vz","col8","col9","col10"]
-    satellite_data = read_simulation(filename="LM10/orb780.dat",
-                                     column_names=sat_colnames)
-    
-    # they integrate past present day, so only select the prior history
-    satellite_data = satellite_data[satellite_data["t"] <= 0.]
-    
-    r = np.zeros((len(satellite_data), 1, 3))
-    r[:,0,0] = np.array(satellite_data["x"])
-    r[:,0,1] = np.array(satellite_data["y"])
-    r[:,0,2] = np.array(satellite_data["z"])
-    
-    v = np.zeros_like(r)
-    
-    usys = UnitSystem(u.kpc,u.Myr,u.M_sun)    
-    return OrbitCollection(t=(satellite_data['t']*u.Gyr).to(u.Myr),
-                           r=r*u.kpc, v=v*u.km/u.s, 
-                           unit_system=usys)
-                           

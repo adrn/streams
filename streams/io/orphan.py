@@ -23,7 +23,7 @@ from .core import read_table
 from ..nbody import ParticleCollection, OrbitCollection
 from ..misc import UnitSystem
 
-__all__ = ["particles", "satellite", "time"]
+__all__ = ["particles", "satellite", "time", "orphan_usys"]
 
 _orphan_path = os.path.join(project_root, "data", "simulation", "Orphan")
 
@@ -56,18 +56,24 @@ def particles(N=None, expr=None):
     
     return pc.to(UnitSystem.galactic())
 
-def satellite():
+def satellite_orbit():
     """ Read in the position and velocity of the Orphan satellite center 
-        at the end of the simulation (e.g., present day position to be
-        back-integrated).
-    
+        over the whole simulation.
     """
     data = read_table("ORP_CEN", path=_orphan_path)
     orbit = table_to_orbits(data, orphan_usys,
                             position_columns=["x","y","z"],
                             velocity_columns=["vx","vy","vz"])
     
-    return orbit[-1]
+    return orbit
+
+def satellite():
+    """ Read in the position and velocity of the Orphan satellite center 
+        at the end of the simulation (e.g., present day position to be
+        back-integrated).
+    
+    """
+    return satellite_orbit()[-1]
     
 def time():
     """ Read in the time information for Orphan stream simulation 
