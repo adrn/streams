@@ -13,13 +13,16 @@ import os, sys
 import numpy as np
 import numexpr
 import astropy.units as u
+from astropy.io import ascii
 from astropy.table import vstack, Table, Column
 import astropy.coordinates as coord
 
 # Project
 from ..coordinates import SgrCoordinates, distance_to_sgr_plane
+from ..nbody import ParticleCollection, OrbitCollection
 
-__all__ = ["read_table", "add_sgr_coordinates"]
+__all__ = ["read_table", "add_sgr_coordinates", "table_to_particles", \
+           "table_to_orbits"]
 
 def read_table(filename, column_names=None, column_map=dict(), 
                column_scales=dict(), path=None, N=None, expr=None):
@@ -50,7 +53,7 @@ def read_table(filename, column_names=None, column_map=dict(),
     # use astropy.io.ascii to read the ascii data
     data = ascii.read(full_path, names=column_names)
     
-    if column_names is None and data.colnames[0].contains('col'):
+    if column_names is None and 'col' in data.colnames[0]:
         raise IOError("Failed to read column names from file.")
     
     # use the column map to rename columns
@@ -72,8 +75,8 @@ def read_table(filename, column_names=None, column_map=dict(),
     return data
 
 def table_to_particles(table, unit_system, 
-                       position_columns=None,
-                       velocity_columns=None):
+                       position_columns=["x","y","z"],
+                       velocity_columns=["vx","vy","vz"]):
     """ Convert a astropy.table.Table-like object into a 
         ParticleCollection.
         
@@ -99,13 +102,13 @@ def table_to_particles(table, unit_system,
     v = v*unit_system['length'] / unit_system['time']
     
     particles = ParticleCollection(r=r, v=v, m=np.zeros(len(r))*u.M_sun,
-                                   units=unit_system)
+                                   unit_system=unit_system)
     
     return particles
 
 def table_to_orbits(table, unit_system, 
-                    position_columns=None,
-                    velocity_columns=None):
+                    position_columns=["x","y","z"],
+                    velocity_columns=["vx","vy","vz"]):
     """ Convert a astropy.table.Table-like object into an 
         OrbitCollection. Assumes one particle.
         
@@ -133,7 +136,7 @@ def table_to_orbits(table, unit_system,
     t = np.array(table['t']) * unit_system['time']
     
     particles = OrbitCollection(t=t, r=r, v=v, m=np.zeros(len(r))*u.M_sun,
-                                units=unit_system)
+                                unit_system=unit_system)
     
     return particles
 
