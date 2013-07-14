@@ -23,7 +23,7 @@ from .core import read_table
 from ..nbody import ParticleCollection, OrbitCollection
 from ..misc import UnitSystem
 
-__all__ = ["particles", "orphan_satellite", "orphan_time"]
+__all__ = ["particles", "satellite", "time"]
 
 _orphan_path = os.path.join(project_root, "data", "simulation", "Orphan")
 
