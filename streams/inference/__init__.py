@@ -1,2 +1,2 @@
-from .backintegrate import *
+from .core import *
 from .inferpotential import *
