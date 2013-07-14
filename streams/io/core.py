@@ -22,7 +22,7 @@ from ..coordinates import SgrCoordinates, distance_to_sgr_plane
 __all__ = ["read_table", "add_sgr_coordinates"]
 
 def read_table(filename, column_names=None, column_map=dict(), 
-               column_scales=dict(), path=None):
+               column_scales=dict(), path=None, N=None, expr=None):
     """ Read in data from an ASCII file. 
     
         Parameters
@@ -31,7 +31,15 @@ def read_table(filename, column_names=None, column_map=dict(),
         column_names : list (optional)
             If not specified, will try reading column_names from the data file.
         column_map : dict (optional)
+            Rename column names from key -> value.
+        column_scales : dict (optional)
+            Multiply column name (key) by value.
         path : str (optional)
+            Path to data file. If not specified, assumes <project_root>/data
+        N : int (optional)
+            Number of rows to return.
+        expr : str (optional)
+            Use numexpr to select out only rows that match criteria.
     """
     
     if path is None:
@@ -53,19 +61,48 @@ def read_table(filename, column_names=None, column_map=dict(),
     for name, scale in column_scales.items():
         data[name] = scale*data[name]
     
+    if expr != None and len(expr.strip()) > 0:
+        idx = numexpr.evaluate(str(expr), data)
+        data = data[idx]
+    
+    if N != None and N > 0:
+        idx = np.random.randint(0, len(data), N)
+        data = data[idx]
+    
     return data
 
-def table_to_particles(table, column_map=None):
+def table_to_particles(table, unit_system, 
+                       position_columns=None,
+                       velocity_columns=None):
     """ Convert a astropy.table.Table-like object into a 
         ParticleCollection.
         
         Parameters
         ----------
         table : astropy.table.Table-like
-        column_map : dict (optional)
+        unit_system : streams.misc.UnitSystem
+        position_columns : list
+        velocity_columns_columns : list
     """
-    # TODO
-    pass
+    
+    r = np.zeros((len(data), 3))
+    r[:,0] = np.array(data["x"])
+    r[:,1] = np.array(data["y"])
+    r[:,2] = np.array(data["z"])
+    r = r*unit_system['length']
+    
+    v = np.zeros((len(data), 3))
+    v[:,0] = np.array(data["vx"])
+    v[:,1] = np.array(data["vy"])
+    v[:,2] = np.array(data["vz"])
+    v = v*unit_system['length']/unit_system['time']
+    
+    particles = ParticleCollection(r=r.to(u.kpc),
+                                   v=v.to(u.km/u.s),
+                                   m=np.zeros(len(r))*u.M_sun,
+                                   units=unit_system)
+    
+    return particles
 
 def add_sgr_coordinates(data):
     """ Given a table of catalog data, add columns with Sagittarius 
