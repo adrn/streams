@@ -16,8 +16,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from streams.potential.lm10 import LawMajewski2010
-from streams.data import lm10_particles, lm10_satellite, lm10_time, \
-                         lm10_satellite_orbit, read_simulation
+from streams.io.lm10 import particles_today, satellite_today, time, satellite_orbit
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.integrate.leapfrog import LeapfrogIntegrator
 
@@ -27,9 +26,9 @@ if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
 potential = LawMajewski2010()
-satellite = lm10_satellite()
-particles = lm10_particles(N=100, expr="(Pcol>-1) & (abs(Lmflag)==1) & (dist < 80)")
-t1,t2 = lm10_time()
+satellite = satellite_today()
+particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag)==1) & (dist < 80)")
+t1,t2 = time()
 
 class TestLM10(object):
     
@@ -38,33 +37,32 @@ class TestLM10(object):
                                                  satellite, 
                                                  particles)
         
-        #s, p = integrator.run(t1=t1, t2=t2, dt=-1.)
-        s, p = integrator.run(t1=t1, t2=t2, dt=-0.2)
+        s, p = integrator.run(t1=t1, t2=t2, dt=-1.)
         
-        satellite_orbit = lm10_satellite_orbit()
-        R_lm10 = np.sqrt(np.sum(satellite_orbit._r**2, axis=-1))
-        V_lm10 = np.sqrt(np.sum(satellite_orbit._v**2, axis=-1))
+        orbit = satellite_orbit()
+        R_lm10 = np.sqrt(np.sum(orbit._r**2, axis=-1))
+        V_lm10 = np.sqrt(np.sum(orbit._v**2, axis=-1))
         R_apw = np.sqrt(np.sum(s._r**2, axis=-1))
         V_apw = np.sqrt(np.sum(s._v**2, axis=-1))
         
-        plt.plot(satellite_orbit.t, R_lm10, color='b', alpha=0.5, marker=None)
+        plt.plot(orbit.t, R_lm10, color='b', alpha=0.5, marker=None)
         plt.plot(s.t, R_apw, color='r', alpha=0.5, marker=None)
         plt.savefig(os.path.join(plot_path,"lm10_vs_apw_pos.png"))
         
         plt.clf()
-        plt.plot(satellite_orbit.t, R_lm10, color='b', alpha=0.5, marker=None)
+        plt.plot(orbit.t, R_lm10, color='b', alpha=0.5, marker=None)
         plt.plot(s.t, R_apw, color='r', alpha=0.5, marker=None)
         plt.xlim(-2., 0.)
         plt.ylim(20., 20.5)
         plt.savefig(os.path.join(plot_path,"lm10_vs_apw_zoom_pos.png"))
         
         plt.clf()
-        plt.plot(satellite_orbit.t, V_lm10, color='b', alpha=0.5, marker=None)
+        plt.plot(orbit.t, V_lm10, color='b', alpha=0.5, marker=None)
         plt.plot(s.t, V_apw, color='r', alpha=0.5, marker=None)
         plt.savefig(os.path.join(plot_path,"lm10_vs_apw_vel.png"))
         
         plt.clf()
-        plt.plot(satellite_orbit.t, V_lm10, color='b', alpha=0.5, marker=None)
+        plt.plot(orbit.t, V_lm10, color='b', alpha=0.5, marker=None)
         plt.plot(s.t, V_apw, color='r', alpha=0.5, marker=None)
         plt.xlim(-2., 0.)
         plt.ylim(0.3, 0.35)

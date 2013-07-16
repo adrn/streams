@@ -18,10 +18,10 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-from streams.inference.lm10 import ln_likelihood, old_ln_likelihood
-from streams.nbody import ParticleCollection
+from streams.inference.lm10 import ln_likelihood
+from streams.dynamics import ParticleCollection
 from streams.potential.lm10 import LawMajewski2010, true_params
-from streams.data import lm10_particles, lm10_satellite, lm10_time
+from streams.io.lm10 import particles_today, satellite_today, time
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
@@ -40,9 +40,9 @@ def time_likelihood_func():
     print((time.time()-a) / 10., "seconds per call")
 
 np.random.seed(42)
-t1,t2 = lm10_time()
-satellite = lm10_satellite()
-particles = lm10_particles(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
+t1,t2 = time()
+satellite = satellite_today()
+particles = particles_today(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
 
 def test_time_likelihood():
     
@@ -53,35 +53,6 @@ def test_time_likelihood():
     p = [1.2, 1.2, 0.121, 1.6912]
     ln_likelihood(p, param_names, particles, satellite, 2.5E8, 
                   t1, t2, resolution)
-    
-    #p = [1.2, 1.2, 0.125, 1.6912]
-    #print(ln_likelihood(p, param_names, particles, satellite, 2.5E8, 
-    #                    t1, t2, resolution))
-
-def test_likelihood_max():
-    
-    v_halos = np.linspace(0.124, 0.126, 10)
-    
-    old_ln_likelihood
-    old_likelihoods = []
-    for v_halo in v_halos:
-        L = old_ln_likelihood([v_halo], ['v_halo'], particles, satellite, 2.5E8, 
-                              t1, t2)
-        old_likelihoods.append(L)
-    
-    for res in np.linspace(2., 4., 10):
-        likelihoods = []
-        for v_halo in v_halos:
-            L = ln_likelihood([v_halo], ['v_halo'], particles, satellite, 2.5E8, 
-                              t1, t2, res)
-            print(res, v_halo, L)
-            likelihoods.append(L)
-        
-        plt.clf()
-        plt.plot((v_halos*u.kpc/u.Myr).to(u.km/u.s).value, likelihoods)
-        plt.plot((v_halos*u.kpc/u.Myr).to(u.km/u.s).value, old_likelihoods, color='b')
-        plt.axvline(true_params['v_halo'].to(u.km/u.s).value, color='r')
-        plt.savefig(os.path.join(plot_path, "res{0}.png".format(res)))
 
 def test_optimize():
     from scipy.optimize import fmin_bfgs
@@ -147,9 +118,9 @@ def test_energy_conserve():
                 facecolor="#444444")
 
 def test_compare_likelihood():
-    satellite = lm10_satellite()
-    particles = lm10_particles(N=100)
-    t1,t2 = lm10_time()
+    satellite = satellite()
+    particles = particles(N=100)
+    t1,t2 = time()
     
     p = [1.2, 1.2, 0.121, 1.6912]
     param_names = ["q1", "qz", "v_halo", "phi"]
@@ -166,9 +137,9 @@ def test_compare_likelihood():
     assert l2 > l1
 
 def test_timestep_energy():
-    satellite = lm10_satellite()
-    particles = lm10_particles(N=1000)
-    t1,t2 = lm10_time()
+    satellite = satellite()
+    particles = particles(N=1000)
+    t1,t2 = time()
     
     plt.figure(figsize=(12,12))
     c = 'krgb'

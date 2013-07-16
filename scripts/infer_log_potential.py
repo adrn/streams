@@ -25,15 +25,21 @@ np.seterr(all="ignore")
 import scipy
 scipy.seterr(all="ignore")
 import astropy.units as u
-from emcee.utils import MPIPool
 from astropy.io.misc import fnpickle, fnunpickle
+from astropy.utils.console import color_print
+
+try:
+    from emcee.utils import MPIPool
+except ImportError:
+    color_print("Failed to import MPIPool from emcee! MPI functionality "
+                "won't work.", "yellow")
 
 # Project
 from streams.simulation.config import read
-from streams.data import lm10_particles, lm10_satellite, lm10_time
 from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
+from streams.io.lm10 import particles_today, satellite_today, time
 from streams.inference.lm10 import ln_posterior, param_ranges
 from streams.potential.lm10 import true_params
 
@@ -73,8 +79,8 @@ def main(config_file):
     
     # Read in Sagittarius simulation data
     if config["particle_source"] == "lm10":
-        satellite = lm10_satellite()
-        t1,t2 = lm10_time()
+        satellite = satellite_today()
+        t1,t2 = time()
         if isinstance(expr, list):
             if not isinstance(config["particles"], list):
                 raise ValueError("If multiple expr's provided, multiple "
@@ -83,7 +89,7 @@ def main(config_file):
                 raise ValueError("Must supply a particle count for each expr")
             
             for N_i,expr_i in zip(config["particles"], expr):
-                these_p = lm10_particles(N=N_i, expr=expr_i)
+                these_p = particles_today(N=N_i, expr=expr_i)
                 
                 try:
                     particles = particles.merge(these_p)
@@ -92,7 +98,7 @@ def main(config_file):
             Nparticles = len(particles._r)
         else:
             Nparticles = config["particles"]
-            particles = lm10_particles(N=Nparticles, expr=expr)
+            particles = particles_today(N=Nparticles, expr=expr)
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
@@ -117,8 +123,8 @@ def main(config_file):
         #                           size=config["walkers"])
         
         # Dan F-M says emcee is better at expanding than contracting...
-        this_p = np.random.uniform(true_params[p_name]*0.95, 
-                                   true_params[p_name]*1.05,
+        this_p = np.random.uniform(true_params[p_name]*0.9, 
+                                   true_params[p_name]*1.1,
                                    size=config["walkers"])
         
         try:

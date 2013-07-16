@@ -14,7 +14,6 @@ import astropy.units as u
 from astropy.constants import G
 import matplotlib.pyplot as plt
 
-from ..core import *
 from ..integrate import *
 from ...potential.lm10 import LawMajewski2010, true_params
 from ...potential import *

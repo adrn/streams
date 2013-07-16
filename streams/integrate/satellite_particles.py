@@ -16,7 +16,7 @@ import numpy as np
 import astropy.units as u
 
 from ..misc.units import UnitSystem
-from ..nbody import ParticleCollection, OrbitCollection
+from ..dynamics import ParticleCollection, OrbitCollection
 from .leapfrog import LeapfrogIntegrator
 
 __all__ = ["SatelliteParticleIntegrator"]

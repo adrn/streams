@@ -14,12 +14,12 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import G
 
-from .core import _validate_quantity
+from .core import _validate_quantity, DynamicalBase
 from ..misc.units import UnitSystem
 
 __all__ = ["ParticleCollection"]
     
-class ParticleCollection(object):
+class ParticleCollection(DynamicalBase):
     
     def __init__(self, r, v, m=None, unit_system=None):
         """ A collection of massive or test particles. 
@@ -58,29 +58,33 @@ class ParticleCollection(object):
             _units = [r.unit, m.unit] + v.unit.bases
             unit_system = UnitSystem(*set(_units))
             
-        assert r.value.shape == v.value.shape
+        if r.value.shape != v.value.shape:
+            raise ValueError("Position and velocity must have same shape.")
         
-        for x in ['r', 'v', 'm']:
-            setattr(self, "_{0}".format(x), 
-                    eval(x).decompose(unit_system).value)
+        # decompose each input into the specified unit system
+        _r = r.decompose(unit_system).value
+        _v = v.decompose(unit_system).value
+        self._m = m.decompose(unit_system).value
+        
+        # create container for all 6 phasespace 
+        self._x = np.zeros((self.nparticles, self.ndim*2))
+        self._x[:,:self.ndim] = _r
+        self._x[:,self.ndim:] = _v
         
         # Create internal G in the correct unit system for speedy acceleration
         #   computation
         self._G = G.decompose(unit_system).value
         self.unit_system = unit_system
     
-    @property
-    def r(self):
-        return self._r * self.unit_system['length']
-    
-    @property
-    def v(self):
-        return self._v * self.unit_system['length'] / self.unit_system['time']
-    
-    @property
-    def m(self):
-        return self._m * self.unit_system['mass']
+    def to(self, unit_system):
+        """ Return a new ParticleCollection in the specified unit system. """
+        new_r = self.r.decompose(unit_system)
+        new_v = self.v.decompose(unit_system)
+        new_m = self.m.decompose(unit_system)
         
+        return ParticleCollection(r=new_r, v=new_v, m=new_m, 
+                                  unit_system=unit_system)
+    
     def acceleration_at(self, r, m):
         """ Compute the acceleration at a given position due to the 
             collection of particles. Inputs must be Quantity objects.
@@ -122,9 +126,6 @@ class ParticleCollection(object):
             
         else:
             raise ValueError()
-    
-    def __repr__(self):
-        return "<ParticleCollection N={0}>".format(self.nparticles)
     
     def plot_r(self, coord_names=['x','y','z'], **kwargs):
         """ Make a scatter-plot of 3 projections of the positions of the 

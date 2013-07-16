@@ -14,12 +14,13 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import G
 
-from .core import _validate_quantity
+from .core import _validate_quantity, DynamicalBase
+from .particles import ParticleCollection
 from ..misc.units import UnitSystem
 
 __all__ = ["OrbitCollection"]
 
-class OrbitCollection(object):
+class OrbitCollection(DynamicalBase):
         
     def __init__(self, t, r, v, m=None, unit_system=None):
         """ Represents a collection of orbits, e.g. positions and velocities 
@@ -64,32 +65,51 @@ class OrbitCollection(object):
             _units = [r.unit, m.unit, t.unit] + v.unit.bases
             unit_system = UnitSystem(*set(_units))
 
-        if not r.value.shape == v.value.shape:
-            raise ValueError("Shape of position should match shape of velocity")
+        if r.value.shape != v.value.shape:
+            raise ValueError("Position and velocity must have same shape.")
         
-        if not len(t.value) == self.ntimesteps:
+        if len(t.value) != self.ntimesteps:
             raise ValueError("Length of time array must match number of "
                              "timesteps in position and velocity.")
         
-        for x in ['r', 'v', 'm', 't']:
-            setattr(self, "_{0}".format(x), 
-                    eval(x).decompose(bases=unit_system).value)
+        _r = r.decompose(unit_system).value
+        _v = v.decompose(unit_system).value
+        self._m = m.decompose(unit_system).value
+        self._t = t.decompose(unit_system).value
+        
+        # create container for all 6 phasespace 
+        self._x = np.zeros((self.ntimesteps, self.nparticles, self.ndim*2))
+        self._x[..., :self.ndim] = _r
+        self._x[..., self.ndim:] = _v
         
         self.unit_system = unit_system
     
     @property
-    def r(self):
-        return self._r * self.unit_system['length']
-    
-    @property
-    def v(self):
-        return self._v * self.unit_system['length'] / self.unit_system['time']
-    
-    @property
-    def m(self):
-        return self._m * self.unit_system['mass']
-    
-    @property
     def t(self):
         return self._t * self.unit_system['time']
+    
+    def to(self, unit_system):
+        """ Return a new ParticleCollection in the specified unit system. """
+        new_r = self.r.decompose(unit_system)
+        new_v = self.v.decompose(unit_system)
+        new_m = self.m.decompose(unit_system)
+        new_t = self.t.decompose(unit_system)
+        
+        return OrbitCollection(t=new_t, r=new_r, v=new_v, m=new_m, 
+                               unit_system=unit_system)
+    
+    def __getitem__(self, key):
+        """ Slice on time """
+        
+        if isinstance(key, slice) :
+            #Get the start, stop, and step from the slice
+            return OrbitCollection(t=self.t[key], r=self.r[key], 
+                                   v=self.v[key], m=self.m[key])
+            
+        elif isinstance(key, int) :
+            return ParticleCollection(r=self.r[key], v=self.v[key], 
+                                      m=self.m[key])
+        
+        else:
+            raise TypeError, "Invalid argument type."
     

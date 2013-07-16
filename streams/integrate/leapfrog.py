@@ -19,8 +19,7 @@ __all__ = ["LeapfrogIntegrator"]
 
 class LeapfrogIntegrator(object):
     
-    def __init__(self, acceleration_func, r_initial, v_initial, 
-                 acceleration_args=()):
+    def __init__(self, acceleration_func, r_initial, v_initial, args=()):
         """ Initialize a leapfrog integrator given a function to compute
             the accelerations and initial conditions. 
         
@@ -45,7 +44,7 @@ class LeapfrogIntegrator(object):
             acceleration_func : func
             r_initial : array_like
             v_initial : array_like
-            acceleration_args : tuple (optional)
+            args : tuple (optional)
                 Any extra arguments for the acceleration function.
             
         """
@@ -56,7 +55,7 @@ class LeapfrogIntegrator(object):
                              "at a given position")
         
         self.acc = acceleration_func
-        self._acc_args = acceleration_args
+        self._acc_args = args
         
         # Validate initial conditions
         if not isinstance(r_initial, np.ndarray):

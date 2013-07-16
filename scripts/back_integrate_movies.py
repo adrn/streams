@@ -19,7 +19,7 @@ import numpy as np
 from streams.data import read_lm10
 from streams.potential.lm10 import LawMajewski2010, true_params
 from streams.integrate import leapfrog
-from streams.nbody import OrbitCollection
+from streams.dynamics import OrbitCollection
 from streams.inference.backintegrate import relative_normalized_coordinates, \
                                             tidal_radius, \
                                             escape_velocity
