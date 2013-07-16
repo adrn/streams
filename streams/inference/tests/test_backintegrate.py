@@ -16,39 +16,24 @@ import astropy.units as u
 
 from ...misc.units import UnitSystem
 from ...potential.lm10 import LawMajewski2010
-from ...nbody import OrbitCollection
+from ...integrate import SatelliteParticleIntegrator
 from ..backintegrate import *
+from ...data.simulation import lm10_time, lm10_particles, lm10_satellite
+
+t1,t2 = lm10_time()
+particles = lm10_particles(N=100, expr="Pcol > 0")
+satellite = lm10_satellite()
 
 potential = LawMajewski2010()
 
 usys = UnitSystem(u.kpc, u.Myr, u.M_sun, u.radian)
+integrator = SatelliteParticleIntegrator(potential, satellite, particles)
+timestep = lambda *args, **kwargs: -1
 
-t = np.arange(0., 1000., 1.)*u.Myr
-r = np.zeros((len(t),1,3))
-r[:,0,0] = np.linspace(1., 50., len(t))
-r = r*u.kpc
-
-v = np.zeros((len(t),1,3))
-v[:,0,0] = np.linspace(200., 0., len(t))
-v = v*u.km/u.s
-
-m = [2.5E8] * u.M_sun
-
-satellite_orbit = OrbitCollection(t=t, r=r, v=v, m=m, 
-                                  unit_system=usys)
-
-Nparticles = 1000
-t = np.arange(0., 1000., 1.)*u.Myr
-r = np.zeros((len(t),Nparticles,3))
-r[:,:,0] = np.random.uniform(size=(len(t),Nparticles)) * np.linspace(1., 50., len(t)).reshape((len(t),1))
-r = r*u.kpc
-
-v = np.zeros((len(t),Nparticles,3))
-v[:,:,0] = np.random.uniform(size=(len(t),Nparticles)) * np.linspace(200., 0., len(t)).reshape((len(t),1))
-v = v*u.km/u.s
-                                  
-particle_orbits = OrbitCollection(t=t, r=r, v=v, m=m, 
-                                  unit_system=usys)
+satellite_orbit,particle_orbits = integrator.run(timestep_func=timestep,
+                                                 timestep_args=(potential, satellite.m.value),
+                                                 resolution=3.,
+                                                 t1=t1, t2=t2)
 
 def test_relative_normalized_coordinates():
     a = time.time()
@@ -56,21 +41,6 @@ def test_relative_normalized_coordinates():
                                           particle_orbits, 
                                           satellite_orbit)
     print("R,V: {0:.3f} ms".format(1000.*(time.time()-a)))
-
-'''
-def test_relative_normalized_coordinates_sgr():
-    from ...data.sgr import lm10_satellite, lm10_particles
-    
-    # TODO: Need to integrate both, get orbits
-    particles = lm10_particles(N=1000)
-    satellite = lm10_satellite()
-    
-    R,V = relative_normalized_coordinates(potential, 
-                                          particles, 
-                                          satellite)
-    
-    print(R.shape, V.shape)
-'''
  
 def test_minimum_distance_matrix():
     #a = time.time()
@@ -79,5 +49,23 @@ def test_minimum_distance_matrix():
 
 def test_generalized_variance():
     a = time.time()
-    generalized_variance(potential, particle_orbits, satellite_orbit)
+    v = generalized_variance(potential, particle_orbits, satellite_orbit)
+    print(v)
     print("gen. variance: {0:.3f} ms".format(1000.*(time.time()-a)))
+
+def test_vary_potential():
+    
+    for q1 in np.linspace(1.,2.,10):
+        potential = LawMajewski2010(q1=q1)
+    
+        usys = UnitSystem(u.kpc, u.Myr, u.M_sun, u.radian)
+        integrator = SatelliteParticleIntegrator(potential, satellite, particles)
+        timestep = lambda *args, **kwargs: -1
+        
+        satellite_orbit,particle_orbits = integrator.run(timestep_func=timestep,
+                                                         timestep_args=(potential, satellite.m.value),
+                                                         resolution=3.,
+                                                         t1=t1, t2=t2)
+        
+        v = generalized_variance(potential, particle_orbits, satellite_orbit)
+        print (q1, v)
