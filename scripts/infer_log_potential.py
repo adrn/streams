@@ -79,7 +79,7 @@ def main(config_file):
     
     # Read in Sagittarius simulation data
     if config["particle_source"] == "lm10":
-        satellite = satellite()
+        satellite = satellite_today()
         t1,t2 = time()
         if isinstance(expr, list):
             if not isinstance(config["particles"], list):
@@ -89,7 +89,7 @@ def main(config_file):
                 raise ValueError("Must supply a particle count for each expr")
             
             for N_i,expr_i in zip(config["particles"], expr):
-                these_p = particles(N=N_i, expr=expr_i)
+                these_p = particles_today(N=N_i, expr=expr_i)
                 
                 try:
                     particles = particles.merge(these_p)
@@ -98,7 +98,7 @@ def main(config_file):
             Nparticles = len(particles._r)
         else:
             Nparticles = config["particles"]
-            particles = particles(N=Nparticles, expr=expr)
+            particles = particles_today(N=Nparticles, expr=expr)
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
