@@ -7,7 +7,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import time
+import time as pytime
 
 # Third-party
 import numpy as np
@@ -18,11 +18,11 @@ from ...misc.units import UnitSystem
 from ...potential.lm10 import LawMajewski2010
 from ...integrate import SatelliteParticleIntegrator
 from ..backintegrate import *
-from ...data.simulation import lm10_time, lm10_particles, lm10_satellite
+from ...io.lm10 import time, particles, satellite
 
-t1,t2 = lm10_time()
-particles = lm10_particles(N=100, expr="Pcol > 0")
-satellite = lm10_satellite()
+t1,t2 = time()
+particles = particles(N=100, expr="Pcol > 0")
+satellite = satellite()
 
 potential = LawMajewski2010()
 
@@ -36,23 +36,24 @@ satellite_orbit,particle_orbits = integrator.run(timestep_func=timestep,
                                                  t1=t1, t2=t2)
 
 def test_relative_normalized_coordinates():
-    a = time.time()
+    a = pytime.time()
     R,V = relative_normalized_coordinates(potential, 
                                           particle_orbits, 
                                           satellite_orbit)
-    print("R,V: {0:.3f} ms".format(1000.*(time.time()-a)))
+    print("R,V: {0:.3f} ms".format(1000.*(pytime.time()-a)))
 
 def test_minimum_distance_matrix():
-    #a = time.time()
+    #a = pytime.time()
     minimum_distance_matrix(potential, particle_orbits, satellite_orbit)
-    #print("min. dist. matrix: {0:.3f} ms".format(1000.*(time.time()-a)))
+    #print("min. dist. matrix: {0:.3f} ms".format(1000.*(pytime.time()-a)))
 
 def test_generalized_variance():
-    a = time.time()
+    a = pytime.time()
     v = generalized_variance(potential, particle_orbits, satellite_orbit)
     print(v)
-    print("gen. variance: {0:.3f} ms".format(1000.*(time.time()-a)))
+    print("gen. variance: {0:.3f} ms".format(1000.*(pytime.time()-a)))
 
+"""
 def test_vary_potential():
     
     for q1 in np.linspace(1.,2.,10):
@@ -69,3 +70,4 @@ def test_vary_potential():
         
         v = generalized_variance(potential, particle_orbits, satellite_orbit)
         print (q1, v)
+"""
