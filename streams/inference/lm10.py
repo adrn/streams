@@ -17,7 +17,7 @@ import astropy.units as u
 
 from ..inference import generalized_variance
 from ..potential.lm10 import LawMajewski2010, true_params, param_units
-from ..nbody import OrbitCollection
+from ..dynamics import OrbitCollection
 from ..integrate.satellite_particles import SatelliteParticleIntegrator
 
 __all__ = ["ln_posterior", "ln_likelihood"]

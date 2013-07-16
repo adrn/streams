@@ -19,7 +19,7 @@ import astropy.coordinates as coord
 
 # Project
 from ..coordinates import SgrCoordinates, distance_to_sgr_plane
-from ..nbody import ParticleCollection, OrbitCollection
+from ..dynamics import ParticleCollection, OrbitCollection
 
 __all__ = ["read_table", "add_sgr_coordinates", "table_to_particles", \
            "table_to_orbits"]

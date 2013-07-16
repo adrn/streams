@@ -19,7 +19,7 @@ from astropy.constants import G
 from .core import read_table, table_to_particles, table_to_orbits
 from ..util import project_root
 from ..misc import UnitSystem
-from ..nbody import ParticleCollection, OrbitCollection
+from ..dynamics import ParticleCollection, OrbitCollection
 from ..integrate.leapfrog import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
 

@@ -15,7 +15,7 @@ import numpy as np
 import astropy.units as u
 from astropy.utils.misc import isiterable
 
-from ..nbody import ParticleCollection
+from ..dynamics import ParticleCollection
 from .rrlyrae import rrl_M_V, rrl_V_minus_I
 from .core import apparent_magnitude
 

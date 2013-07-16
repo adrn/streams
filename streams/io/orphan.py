@@ -20,7 +20,7 @@ from astropy.constants import G
 # Project
 from .core import read_table, table_to_particles
 from ..util import project_root
-from ..nbody import ParticleCollection, OrbitCollection
+from ..dynamics import ParticleCollection, OrbitCollection
 from ..misc import UnitSystem
 
 __all__ = ["particles", "satellite", "time", "orphan_usys"]
