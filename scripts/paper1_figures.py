@@ -85,7 +85,11 @@ def gaia_spitzer_errors():
                 'lines.color' : 'k',
                 'lines.marker' : None,
                 'text.usetex' : True,
-                'axes.edgecolor' : '#444444'}
+                'axes.edgecolor' : '#444444',
+                'axes.facecolor' : '#ffffff'}
+    
+    sgr_color = '#67A9CF'
+    orp_color = '#EF8A62'
     
     with rc_context(rc=rcparams):
         fig,axes = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
@@ -125,20 +129,20 @@ def gaia_spitzer_errors():
     
     # Now add rectangles for Sgr, Orphan
     sgr_d = Rectangle((10., 0.15), 60., 0.15, 
-                      color='#67A9CF', alpha=0.75, label='Sgr thickness')
+                      color=sgr_color, alpha=1., label='Sgr thickness')
     axes[0].add_patch(sgr_d)
     
     # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.pdf+html
     orp_d = Rectangle((10., 0.03), 35., 0.03,
-                      color='#EF8A62', alpha=0.75, label='Orp thickness')
+                      color=orp_color, alpha=1., label='Orp thickness')
     axes[0].add_patch(orp_d)
     
-    # ??
-    sgr_v = Rectangle((10., 12), 60., 1., color='#67A9CF', alpha=0.75,
+    # Dispersion from Majewski 2004: 10 km/s
+    sgr_v = Rectangle((10., 10), 60., 1., color=sgr_color, alpha=0.75,
                       label='Sgr dispersion')
     axes[1].add_patch(sgr_v)
     
-    orp_v = Rectangle((10., 10.), 35., 1., color='#EF8A62', alpha=0.75,
+    orp_v = Rectangle((10., 10.), 35., 1., color=orp_color, alpha=0.75,
                       label='Orp dispersion')
     axes[1].add_patch(orp_v)
     
@@ -153,12 +157,14 @@ def gaia_spitzer_errors():
     axes[0].set_yticklabels(["{:g}".format(yt) for yt in axes[0].get_yticks()])
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
     
-    # add Gaia and Spitzer to first plot
+    # add Gaia and Spitzer text to first plot
     axes[0].text(4., 0.1, 'Gaia', fontsize=16, rotation=34)
     axes[0].text(4., 0.011, 'Spitzer', fontsize=16, color="#7B3294", alpha=0.8)
     
-    axes[0].legend(loc='upper left')
-    axes[1].legend(loc='upper left')
+    # add legends
+    axes[0].legend(loc='upper left', fancybox=True)
+    axes[1].legend(loc='upper left', fancybox=True)
+    
     fig.subplots_adjust(hspace=0.1)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_path, "gaia.pdf"))
@@ -290,6 +296,6 @@ def phase_space_d_vs_time(N=10):
     
     return selected_star_idx
 if __name__ == '__main__':
-    #gaia_spitzer_errors()
-    selected_star_idx = phase_space_d_vs_time()
+    gaia_spitzer_errors()
+    #selected_star_idx = phase_space_d_vs_time()
     #lm10_particles_selection(selected_star_idx)
