@@ -123,8 +123,8 @@ def main(config_file):
         #                           size=config["walkers"])
         
         # Dan F-M says emcee is better at expanding than contracting...
-        this_p = np.random.uniform(true_params[p_name]*0.95, 
-                                   true_params[p_name]*1.05,
+        this_p = np.random.uniform(true_params[p_name]*0.9, 
+                                   true_params[p_name]*1.1,
                                    size=config["walkers"])
         
         try:
