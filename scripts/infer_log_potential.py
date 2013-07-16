@@ -25,8 +25,13 @@ np.seterr(all="ignore")
 import scipy
 scipy.seterr(all="ignore")
 import astropy.units as u
-from emcee.utils import MPIPool
 from astropy.io.misc import fnpickle, fnunpickle
+
+try:
+    from emcee.utils import MPIPool
+except ImportError:
+    print("Failed to import MPIPool from emcee! MPI functionality won't work.")
+    raise
 
 # Project
 from streams.simulation.config import read
