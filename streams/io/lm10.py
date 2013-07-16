@@ -16,13 +16,14 @@ import astropy.units as u
 from astropy.constants import G
 
 # Project
-from .core import read_simulation
-from ...misc.units import UnitSystem
-from ...nbody import ParticleCollection, OrbitCollection
-from ...integrate.leapfrog import LeapfrogIntegrator
-from ...potential.lm10 import LawMajewski2010
+from .core import read_table, table_to_particles, table_to_orbits
+from ..util import project_root
+from ..misc import UnitSystem
+from ..nbody import ParticleCollection, OrbitCollection
+from ..integrate.leapfrog import LeapfrogIntegrator
+from ..potential.lm10 import LawMajewski2010
 
-__all__ = ["particles", "satellite", "time"]    
+__all__ = ["particles", "satellite", "time", "satellite_orbit"]
 
 _lm10_path = os.path.join(project_root, "data", "simulation", "LM10")
 
@@ -78,6 +79,17 @@ def satellite():
                                    m=[2.5E8]*u.M_sun)
     
     return satellite
+
+def satellite_orbit():
+    """ Read in the full orbit of the satellite. """
+    sat_colnames = ["t","x","y","z","vx","vy","vz","col8","col9","col10"]
+    data = read_table(filename="orb780.dat", expr="t<0", path=_lm10_path)
+    
+    oc = table_to_orbits(data, lm10_usys,
+                         position_columns=["x","y","z"],
+                         velocity_columns=["vx","vy","vz"])
+    
+    return oc.to(UnitSystem.galactic())
     
 def time():
     """ Time information for the Law & Majewski 2010 simulation """    

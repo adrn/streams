@@ -128,8 +128,8 @@ def table_to_orbits(table, unit_system,
     v = np.zeros((ntimesteps, nparticles, ndim))
     
     for ii in range(ndim):
-        r[...,ii] = np.array(table[position_columns[ii]])
-        v[...,ii] = np.array(table[velocity_columns[ii]])
+        r[...,ii] = np.array(table[position_columns[ii]])[...,np.newaxis]
+        v[...,ii] = np.array(table[velocity_columns[ii]])[...,np.newaxis]
 
     r = r*unit_system['length']
     v = v*unit_system['length'] / unit_system['time']

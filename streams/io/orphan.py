@@ -18,8 +18,8 @@ import astropy.units as u
 from astropy.constants import G
 
 # Project
+from .core import read_table, table_to_particles
 from ..util import project_root
-from .core import read_table
 from ..nbody import ParticleCollection, OrbitCollection
 from ..misc import UnitSystem
 
