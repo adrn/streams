@@ -30,10 +30,10 @@ from astropy.io.misc import fnpickle, fnunpickle
 
 # Project
 from streams.simulation.config import read
-from streams.io.lm10 import particles, satellite, time
 from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
+from streams.io.lm10 import particles, satellite, time
 from streams.inference.lm10 import ln_posterior, param_ranges
 from streams.potential.lm10 import true_params
 
