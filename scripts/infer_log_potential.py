@@ -26,12 +26,13 @@ import scipy
 scipy.seterr(all="ignore")
 import astropy.units as u
 from astropy.io.misc import fnpickle, fnunpickle
+from astropy.utils.console import color_print
 
 try:
     from emcee.utils import MPIPool
 except ImportError:
-    print("Failed to import MPIPool from emcee! MPI functionality won't work.")
-    raise
+    color_print("Failed to import MPIPool from emcee! MPI functionality "
+                "won't work.", "yellow")
 
 # Project
 from streams.simulation.config import read
