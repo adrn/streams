@@ -21,7 +21,7 @@ from matplotlib import cm
 from streams.inference.lm10 import ln_likelihood
 from streams.dynamics import ParticleCollection
 from streams.potential.lm10 import LawMajewski2010, true_params
-from streams.io.lm10 import particles, satellite, time
+from streams.io.lm10 import particles_today, satellite_today, time
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
@@ -41,8 +41,8 @@ def time_likelihood_func():
 
 np.random.seed(42)
 t1,t2 = time()
-satellite = satellite()
-particles = particles(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
+satellite = satellite_today()
+particles = particles_today(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
 
 def test_time_likelihood():
     

@@ -23,7 +23,7 @@ from ..dynamics import ParticleCollection, OrbitCollection
 from ..integrate.leapfrog import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
 
-__all__ = ["particles", "satellite", "time", "satellite_orbit"]
+__all__ = ["particles_today", "satellite_today", "time", "satellite_orbit"]
 
 _lm10_path = os.path.join(project_root, "data", "simulation", "LM10")
 
@@ -36,7 +36,7 @@ time_unit = u.Unit("{:08f} Myr".format(X))
 # This is used for the SgrTriax*.dat files
 lm10_usys = UnitSystem(u.kpc, u.M_sun, u.Gyr)
 
-def particles(N=None, expr=None):
+def particles_today(N=None, expr=None):
     """ Read in particles from Law & Majewski 2010.
     
         Parameters
@@ -63,7 +63,7 @@ def particles(N=None, expr=None):
     
     return pc.to(UnitSystem.galactic())
 
-def satellite():
+def satellite_today():
     """ Read in the position and velocity of the Sgr satellite at the end of
         the Law & Majewski 2010 simulation (e.g., present day position to be
         back-integrated).

@@ -16,7 +16,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from streams.potential.lm10 import LawMajewski2010
-from streams.io.lm10 import particles, satellite, time, satellite_orbit
+from streams.io.lm10 import particles_today, satellite_today, time, satellite_orbit
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.integrate.leapfrog import LeapfrogIntegrator
 
@@ -26,8 +26,8 @@ if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
 potential = LawMajewski2010()
-satellite = satellite()
-particles = particles(N=100, expr="(Pcol>-1) & (abs(Lmflag)==1) & (dist < 80)")
+satellite = satellite_today()
+particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag)==1) & (dist < 80)")
 t1,t2 = time()
 
 class TestLM10(object):

@@ -27,7 +27,7 @@ from streams.inference.lm10 import timestep
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import true_params
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
-from streams.io.lm10 import particles, satellite, time
+from streams.io.lm10 import particles_today, satellite_today, time
 
 matplotlib.rc('xtick', labelsize=14)
 matplotlib.rc('ytick', labelsize=14)
@@ -49,8 +49,8 @@ def normed_objective_plot():
     resolution = 1.
     
     # Read in the LM10 data
-    particles = particles(N=100, expr="(Pcol>0) & (abs(Lmflag)==1)")
-    satellite = satellite()
+    particles = particles_today(N=100, expr="(Pcol>0) & (abs(Lmflag)==1)")
+    satellite = satellite_today()
     t1,t2 = time()
     resolution = 3.
     
@@ -227,8 +227,8 @@ def phase_space_d_vs_time(N=10):
     true_potential = LawMajewski2010(**true_params)
     wrong_potential = LawMajewski2010(**wrong_params)
     
-    particles = particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")    
-    satellite = satellite()
+    particles = particles_today(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")    
+    satellite = satellite_today()
     t1,t2 = time()
     resolution = 3.
     
