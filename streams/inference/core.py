@@ -96,4 +96,4 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
     #return np.prod(w)
     
     sign,logdet = np.linalg.slogdet(cov_matrix)
-    return -logdet
+    return logdet
