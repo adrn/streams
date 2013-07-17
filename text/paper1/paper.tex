@@ -330,11 +330,11 @@ each star over each individual, integrated orbit. For each star, $i$,
 the phase-space distance, $D_{\rm ps}$, is computed at each timestep
 $t_{j}$, and the vector with the minimum phase-space distance is stored
 \begin{align}
-  t^*_{i} &= \argmin_{t} D_{\rm ps,i}\\
+  t^*_{i} &= \argmin_{t} D_{{\rm ps},i}\\
   \bs{A}_{i} &= (\bs{q}_{i}(t^*_{i}),\bs{p}_{i}(t^*_{i})).
 \end{align}
 Thus, the matrix $\bs{A}_{ik}$ contains these minimum phase-space distance vectors for each star,
-where $k\in\{1,6\}$. Intuitively, the variance of this distribution
+where $k\in\{1,6\}$. Intuitively, the variance of this distribution of minimum distance vectors
 will be larger for orbits integrated in an incorrect potential
 relative to the distribution computed from the `true' orbital history
 of the stars; in an incorrect potential, small differences in the
