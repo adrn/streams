@@ -17,7 +17,11 @@
 
 \title{Spitzer, Gaia and the Potential of the Milky Way}
 
-\author{Johnston, Price-Whelan, Madore, Majewski}
+\author{Adrian~M.~Price-Whelan\altaffilmark{1,2} Kathryn V. Johnston\altaffilmark{1}}
+
+% affiliations
+\altaffiltext{1}{Department of Astronomy, Columbia University, 550 W 120th St., New York, NY 10027, USA}
+\altaffiltext{2}{NSF Graduate Fellow}
 
 \begin{abstract}
 .
@@ -171,19 +175,17 @@ $\pm$0.03~mag. This implies that it is possible to determine
 individual distances that are good to better than $\pm 2\%$ for RR
 Lyrae stars out to $\sim$80~kpc (the limit of Spitzer's ability to
 detect and measure RR Lyrae variables, for modest integration
-times). [Distance measurements of Blue Horizontal Branch and Blue Straggler stars in the halo typically achieve 15-25\% uncertainties.]
+times). Distance measurements of Blue Horizontal Branch and Blue Straggler stars at these distances in the halo typically achieve 15-25\% uncertainties. [can cite Alis Deason if necessary].
 
 \subsection{Gaia and the age of astrometry}
 \label{sec:gaia}
 The Gaia satellite \citep{gaia2001}, planned for launch in October
-2013, is an astrometric mission which, amongst a myriad other
-science goals, aims to measure the positions of billions of stars with
+2013, is an astrometric mission which aims to measure the positions of billions of stars with
 10-100~$\mu$as accuracies. With over 50 observations of the entire sky
-over the 5-year lifetime of the mission (cite?), Gaia will
+over the 5-year lifetime of the mission, Gaia will
 revolutionize the field of Galactic Astronomy by providing sufficient
 proper motion accuracy to create full six-dimensional phase-space
-maps of the Galaxy for heliocentric distances of up to $\sim$ 10~kpc (xx kpc)
-for $V\sim xxx$ ($V\sim yyy$) stars.
+maps of the Galaxy with $<$10\% distance errors for heliocentric distances of up to $\sim$10~kpc for ...
 
 Figure~\ref{fig:gaia_errors} show the Gaia end-of-mission distance and
 tangential velocity error estimates for a typical halo RR Lyrae star
@@ -200,9 +202,7 @@ order $\sim$10~km/s out to several tens of kiloparsecs. The
 combination of Spitzer and Gaia data will extend the `horizon' of
 where full six-dimensional phase-space maps of the Galaxy are possible
 from $<10$~kpc to 80~kpc. This enormous increase in volume will refine
-data on existing debris systems such as Sagittarius, the Orphan
-stream, and [...], and enable discovery of new substructure within the
-Galactic halo.
+data on existing debris systems such as the Sagittarius stream.
 
 \subsection{The Sagittarius debris system}
 \label{sec:sgr}
@@ -249,7 +249,7 @@ logarithmic halo model of the form
 \begin{equation}
   \Phi_{halo} = v_{halo}^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + R_c^2).
 \end{equation}
-where $C_1$, $C_2$, and $C_3$ are combinations of the $x$ and $y$ flattening ($q_1$, $q_2$) and orientation of the halo with respect to the baryonic disk:
+where $C_1$, $C_2$, and $C_3$ are combinations of the $x$ and $y$ flattening ($q_1$, $q_2$) and orientation of the halo with respect to the baryonic disk ($\phi$):
 \begin{align}
   C_1 &= \frac{\cos^2\phi}{q_1^2} + \frac{\sin^2\phi}{q_2^2}\\
   C_2 &= \frac{\sin^2\phi}{q_1^2} + \frac{\cos^2\phi}{q_2^2}\\
@@ -277,10 +277,10 @@ accuracies ($\sim$2~km/s at 30~kpc) less than the intrinsic dispersion
 for much of the stream \citep[$\sigma_v\sim$10~km/s;][]{majewski2004}, and ground-based radial
 velocities with $\sim$10~km/s accuracy, the measured phase-space
 position of each individual RR Lyrae relative to the stream becomes a
-powerful probe of the potential: the next section outlines a new
+powerful probe of the potential (see \ref{fig:}): the next section outlines a new
 method to take advantage of this information.
 
-\section{Method}
+\section{Description and test of our algorithm}
 \label{sec:method}
 With access to full phase-space information for stars in a tidal
 stream, it is no longer necessary to model the orbit of the stream
@@ -294,49 +294,46 @@ stars should `recombine' with the progenitor. If the potential is
 incorrect, the orbits of the stars will diverge from that of the
 progenitor and thus will not be recaptured by the satellite system.
 
+\subsection{The algorithm: Rewinder}
 Quantifying this method requires a sample of stars with known full
-space kinematics $(\bs{x}_i, \bs{v}_i)|_{t=0}$ (e.g., measurements of all position and velocity components for these stars \emph{today} at $t=0$), the orbital parameters
+space kinematics $(\bs{x}_{i}, \bs{v}_{i})|_{t=0}$ (e.g., measurements of all position and velocity components for these stars \emph{today} at $t=0$), the orbital parameters
 for the progenitor system $(\bs{x}_p, \bs{v}_p)|_{t=0}$, and a
-functional form for the potential, $\Phi$.\footnote{Future work will
-  investigate a more general ... basis function blah blah.} For a
+functional form for the potential, $\Phi$. For a
 given set of potential parameters, the orbits of the stars and
 progenitor are integrated backwards for several Gigayears (determined from an
 estimate of the interaction time of the system). The stars and
 progenitor system are treated as test particles, so that the debris
 stars do not become re-bound to the satellite. Instead, at each
 timestep $t_j$, for each particle $i$, a set of normalized, relative
-phase-space coordinates, $(\bs{q}_i(t_j), \bs{p}_i(t_j))$, are
-computed using the instantaneous tidal radius, escape velocity, and
-phase-space position of the progenitor. At a particular timestep,
-these coordinates are defined as
+phase-space coordinates are
+computed 
 \begin{equation}
-  \bs{q}_i = \frac{\bs{x}_i -
-    \bs{x}_p}{R_{tide}}\,\,\,\,\,\,\,\,\bs{p}_i = \frac{\bs{v}_i -
-    \bs{v}_p}{v_{esc}}
+  \bs{q}_{i} = \frac{\bs{x}_{i} -
+    \bs{x}_{p}}{R_{\rm tide}}\,\,\,\,\,\,\,\,\bs{p}_{i} = \frac{\bs{v}_{i} -
+    \bs{v}_{p}}{v_{\rm esc}}
 \end{equation}
-where $\bs{x}_i$ and $\bs{v}_i$ are the 3D position and velocity of
-the $i$th particle, and $\bs{x}_p$ and $\bs{v}_p$ are the same for the
-progenitor.  These definitions require an estimate of the mass of the
+where $(\bs{x},\bs{v})_{i}$ and $(\bs{x},\bs{v})_{p}$ are the phase-space coordinates for the particles and progenitor, respectively. These definitions require an estimate of the mass of the
 satellite, $m_{sat}$, which, combined with the computed enclosed mass
 of the potential, $m_{enc}$, sets the instantaneous tidal radius and
 escape velocity,
 \begin{equation}
-  R_{tide}=\Big(\frac{m_{sat}}{3m_{enc}}\Big)^{1/3}\,\,\,\,\,\,\,\,
-  v_{esc}=\sqrt{\frac{2Gm_{sat}}{R_{tide}}}.
+  R_{\rm tide}=\Big(\frac{m_{\rm sat}}{3m_{\rm enc}}\Big)^{1/3}\,\,\,\,\,\,\,\,
+  v_{\rm esc}=\sqrt{\frac{2Gm_{\rm sat}}{R_{\rm tide}}}.
 \end{equation}
 
 Qualitatively, when the distance in this normalized 6D space,
-$D_{ps}=\sqrt{|\bs{q}_i|^2+|\bs{p}_i|^2} < \sqrt{2}$, the star is
+$D_{\rm ps}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} < \sqrt{2}$, the star is
 probably recaptured by the satellite, but this is not imposed as a
-hard constraint.  As a statistical measure of how many stars have recombined, we
+hard constraint. [JZSH ...] As a statistical measure of how many stars have recombined, we
 construct the 6D distribution of the minimum phase-space vectors for
 each star over each individual, integrated orbit. For each star, $i$,
-the phase-space distance, $D_{ps}$, is computed at each timestep
-$t_j$, and the vector with the minimum phase-space distance is stored
+the phase-space distance, $D_{\rm ps}$, is computed at each timestep
+$t_{j}$, and the vector with the minimum phase-space distance is stored
 \begin{align}
-  t^*_i &= \argmin_{t} D_{ps,i}\\
-  A_{ik} &= (\bs{q}_i(t^*_i),\bs{p}_i(t^*_i)) % A_ik are really samples from a distribution, or we treat them as such
+  t^*_{i} &= \argmin_{t} D_{\rm ps,i}\\
+  \bs{A}_{i} &= (\bs{q}_{i}(t^*_{i}),\bs{p}_{i}(t^*_{i})).
 \end{align}
+Thus, the matrix $\bs{A}_{ik}$ contains these minimum phase-space distance vectors for each star,
 where $k\in\{1,6\}$. Intuitively, the variance of this distribution
 will be larger for orbits integrated in an incorrect potential
 relative to the distribution computed from the `true' orbital history
@@ -353,7 +350,7 @@ the Milky Way,
 [This objective function is an approximation to a more general likelihood function, described in detail in forthcoming work (Price-Whelan \& Johnston in prep.). The results shown in sections xx and yy are meant to illustrate the strength and concept of the method..]
 
 \subsection{Application to Simulated Data}
-The LM10 (see Section \ref{sec:sgr}) simulation data is a perfect
+The LM10 simulation data (see Section \ref{sec:sgr}) is a perfect
 test-bed for evaluating the effectiveness of this method. We start by
 extracting both particle data and the satellite orbital parameters
 from the present-day snapshot of the simulation
@@ -375,7 +372,10 @@ $v_{circ}$, $\phi$, $q_1$, and $q_z$. Figure~\ref{fig:} shows [...]
 curves produced by varying the true parameters of the potential by
 10\% around the true value.
 
-% Discussion?
+% APW Note: The optimization, in a way, is getting a bunch of orbits (curves) to intersect another curve (the progenitor orbit) at some points (over time).
+
+\section{Discussion and future prospects}
+
 Many orbit fitting methods for measuring the Galactic potential assume that the stars in a given stream are on the same
 orbit. \cite{binney??} show that this assumption leads to biased
 potential parameters, even without realistic observational errors on
@@ -386,9 +386,7 @@ the joint constraint that the best potential is the one that gets the
 most of these individual orbits to intersect the progenitor
 over the history of interaction with the system.
 
-% APW Note: The optimization, in a way, is getting a bunch of orbits (curves) to intersect another curve (the progenitor orbit) at some points (over time).
-
-\subsection{Future prospects}
+[merge these paragraphs (above, below)]
 
 The great strength of the  JZSH ({\it can we come up with a catchy name?}) method is its simplicity:
 it requires only the assumption a satellite mass $m_{\rm sat}$ and  backwards integration of orbits.
@@ -424,6 +422,10 @@ This success provides strong motivation for: (i) further theoretical work to inv
 building a comprehensive picture of the Galactic mass distribution; and (ii) a  Spitzer survey of RR Lyrae stars in debris structures around the Milky Way as a ``legacy''
 sample to combine with near-future Gaia data.
 
+\acknowledgments
+We thank ...
+
+APW is supported by a National Science Foundation Graduate Research Fellowship under Grant No.\ 11-44155.
 
 \bibliography{refs}
 \bibliographystyle{apj}
