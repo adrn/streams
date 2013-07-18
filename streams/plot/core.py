@@ -18,13 +18,15 @@ import matplotlib.colors as col
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 import astropy.units as u
+from scipy.stats import gaussian_kde
 
 from ..potential.lm10 import param_to_latex
 from ..potential.lm10 import true_params
 from ..inference.lm10 import param_ranges
+from ..io.lm10 import particles
 
 __all__ = ["discrete_cmap", "emcee_plot", "plot_sampler_pickle", \
-           "bootstrap_scatter_plot"]
+           "bootstrap_scatter_plot", "sgr_kde"]
 
 def discrete_cmap(N=8):
     """create a colormap with N (N<15) discrete colors and register it"""
@@ -286,3 +288,37 @@ def bootstrap_scatter_plot(d, subtitle="", axis_lims=None):
     fig.subplots_adjust(hspace=0.04, wspace=0.04)
     
     return fig
+
+def sgr_kde(particle_collection, ax=None)
+    """ TODO """
+    pc = particle_collection
+    
+    if ax is None:
+        fig,ax = plt.subplots(1,1)
+    
+    # hack to get every 25th particle still bound to Sgr, otherwise this peak
+    #   dominates the whole density field
+    still_bound = np.zeros_like(idx)
+    w, = np.where(pc['Pcol']==-1)
+    still_bound[w[::25]] = 1.
+    
+    idx = (np.fabs(pc['Lmflag']) == 1) & (pc['dist'] < 70) & (pc['Pcol'] > -1)
+    idx = idx | still_bound.astype(bool)
+    
+    extent = dict(x=(-75,75), y=(-75,75))
+    X,Y = np.mgrid[extent['x'][0]:extent['x'][1]:400j, 
+                   extent['y'][0]:extent['y'][1]:400j]
+    positions = np.vstack([X.ravel(),Y.ravel()])
+    
+    Xsun = 8. # kpc
+    m1,m2 = -pc[idx]['xgc']+Xsun, pc[idx]['zgc']
+    values = np.vstack([m1, m2])
+    
+    kernel = gaussian_kde(values)
+    Z = np.reshape(kernel(positions).T, X.shape).T
+    
+    ax.imshow(Z, interpolation="nearest", 
+              extent=extent['x']+extent['y'],
+              cmap=cm.bone, aspect='auto')
+    
+    return fig, ax
