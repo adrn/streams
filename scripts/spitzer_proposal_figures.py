@@ -10,13 +10,17 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 
 # Third-party
+from astropy.io import ascii
 import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import rc_context, rcParams
 from matplotlib.patches import Rectangle
+from matplotlib import cm
 
+from streams.util import project_root
+from streams.coordinates import ra_dec_dist_to_xyz
 from streams.observation import apparent_magnitude
 from streams.observation.gaia import parallax_error, proper_motion_error, \
                                      add_uncertainties_to_particles
@@ -27,7 +31,9 @@ from streams.inference.lm10 import timestep
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import true_params
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
-from streams.io.lm10 import particles_today, satellite_today, time
+from streams.io.lm10 import particle_table, particles_today, satellite_today, time
+from streams.io.catalogs import read_stripe82
+from streams.plot import sgr_kde
 
 matplotlib.rc('xtick', labelsize=14)
 matplotlib.rc('ytick', labelsize=14)
@@ -40,6 +46,36 @@ rcParams['font.sans-serif'] = 'helvetica'
 plot_path = "plots/spitzer_proposal/"
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
+
+stripe82_catalog = """ra dec dist
+14.616653 -0.75063 21.78
+23.470286 -0.75074 20.02
+25.920219 0.507809 18.37
+28.105067 -0.28684 10.56
+27.339723 -0.222394 19.37
+28.709058 0.250204 7.59
+29.908223 1.222851 18.35
+27.37402 0.155047 19.87
+25.46789 -0.89094 8.5
+33.55261 0.660465 12.87
+30.691522 -0.000466 20.11
+30.13114 0.994329 20.66
+32.419304 -0.036812 18.26
+32.717291 0.631938 16.35
+37.29115 1.07193 17.18
+35.274198 -0.647943 12.27
+40.612944 1.225526 7.29
+40.508969 0.665032 20.11
+44.338191 -0.220803 17.3
+46.057459 -1.220635 18.74
+47.609341 0.461527 9.4
+52.601027 1.209482 9.24
+51.883696 0.064283 17.62
+53.635031 0.026812 7.44
+53.80621 1.068064 10.51
+56.963075 -0.291889 11.96
+59.037319 -0.08628 7.19
+58.036886 0.999678 8.18"""
     
 def gaia_spitzer_errors():
     """ Visualize the observational errors from Gaia and Spitzer, along with
@@ -141,133 +177,64 @@ def gaia_spitzer_errors():
     plt.tight_layout()
     plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
-def lm10_particles_selection(selected_star_idx):
+def top_down_sgr():
     """ Top-down plot of Sgr particles, with selected stars and then 
         re-observed
     """
     
+    fig,ax = plt.subplots(1, 1)
+    
+    # read in all particles as a table
+    pdata = particle_table(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
+    
+    extent = {'x':(-90,55), 
+              'y':(-50,60)}
+    Z = sgr_kde(pdata, extent=extent)
+    ax.imshow(Z**0.5, interpolation="nearest", 
+              extent=extent['x']+extent['y'],
+              cmap=cm.Blues, aspect=1)
+    
     np.random.seed(42)
-    particles = particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")   
-    all_particles = particles(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
-    err_particles = add_uncertainties_to_particles(particles, 
-                                                   radial_velocity_error=15.*u.km/u.s,
-                                                   distance_error_percent=2.)
+    particles = particles_today(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")   
+    
+    # read in Stripe 82 RR Lyrae
+    s82 = ascii.read(stripe82_catalog)
+    stripe82_xyz = ra_dec_dist_to_xyz(s82['ra']*u.deg, s82['dec']*u.deg, 
+                                      s82['dist']*u.kpc)
+    
+    catalina = ascii.read(os.path.join(project_root, "data/spitzer_sgr_sample.txt"))
+    catalina_xyz = ra_dec_dist_to_xyz(catalina['ra']*u.deg, 
+                                      catalina['dec']*u.deg, 
+                                      catalina['dist']*u.kpc)
     
     rcparams = {'lines.linestyle' : 'none', 
                 'lines.color' : 'k',
-                'lines.marker' : '.'}
+                'lines.marker' : 'o'}
     
     with rc_context(rc=rcparams): 
-        fig,ax = plt.subplots(1, 1, figsize=(10,10))
-        ax.plot(all_particles._r[:,0], all_particles._r[:,2],
-                color='#666666', markersize=3, alpha=0.15, marker='o')
-        ax.plot(particles._r[np.logical_not(selected_star_idx),0], 
-                particles._r[np.logical_not(selected_star_idx),2],
-                color='k', markersize=10, alpha=1., marker='.')
-        ax.plot(err_particles._r[np.logical_not(selected_star_idx),0], 
-                err_particles._r[np.logical_not(selected_star_idx),2],
-                color='#CA0020', markersize=10, alpha=1., marker='.')
-    
-        ax.plot(particles._r[selected_star_idx,0], 
-                particles._r[selected_star_idx,2],
-                color='k', alpha=1., marker='*', markersize=15)
-        ax.plot(err_particles._r[selected_star_idx,0], 
-                err_particles._r[selected_star_idx,2],
-                color='#CA0020', alpha=1., marker='*', markersize=15)
-                
+        ax.plot(particles._r[:,0], particles._r[:,2],
+                marker='.', color='k', alpha=0.85, ms=12)
+        
+        ax.plot(stripe82_xyz[:,0], stripe82_xyz[:,2], marker='+', 
+                color='#333333', alpha=0.85, markersize=8, label="Stripe 82",
+                markeredgewidth=1)
+        
+        ax.plot(catalina_xyz[:,0], catalina_xyz[:,2], marker='x', 
+                color='#333333', alpha=0.85, markersize=8, label="Catalina",
+                markeredgewidth=1)
+        
+        ax.plot(-8., 0., marker='.', color='y', alpha=1., 
+                markersize=12)
 
         ax.set_xlabel("$X_{GC}$ [kpc]")
         ax.set_ylabel("$Z_{GC}$ [kpc]")
+        ax.set_xlim(extent['x'])
+        ax.set_ylim(extent['y'])
     
+    ax.legend(loc='upper left')
     plt.tight_layout()
     fig.savefig(os.path.join(plot_path, "lm10.pdf"))
 
-def phase_space_d_vs_time(N=10):
-    """ Plot the PSD for 10 stars vs. back-integration time. """
-    
-    np.random.seed(142)
-    randidx = np.random.randint(100, size=N)
-    selected_star_idx = np.zeros(100).astype(bool)
-    selected_star_idx[randidx] = True
-    
-    wrong_params = true_params.copy()
-    wrong_params['qz'] = 1.2*wrong_params['qz']
-    #for k,v in wrong_params.items():
-    #    wrong_params[k] = 0.9*v
-    
-    # define correct potential, and 5% wrong potential
-    true_potential = LawMajewski2010(**true_params)
-    wrong_potential = LawMajewski2010(**wrong_params)
-    
-    particles = particles_today(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")    
-    satellite = satellite_today()
-    t1,t2 = time()
-    resolution = 3.
-    
-    sat_R = list()
-    D_pses = list()
-    ts = list()
-    for potential in [true_potential, wrong_potential]:
-        integrator = SatelliteParticleIntegrator(potential, satellite, particles)
-        s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-                                      timestep_args=(potential, satellite.m.value),
-                                      resolution=resolution,
-                                      t1=t1, t2=t2)
-        
-        R,V = relative_normalized_coordinates(potential, p_orbits, s_orbit) 
-        D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
-        D_pses.append(D_ps)
-        sat_R.append(np.sqrt(np.sum(s_orbit._r**2, axis=-1)))
-        ts.append(s_orbit._t)
-    
-    rcparams = {'lines.linestyle' : '-', 
-                'lines.linewidth' : 1.,
-                'lines.color' : 'k',
-                'lines.marker' : None,
-                'figure.facecolor' : '#ffffff',
-                'text.color' : '#000000'}
-    
-    dark_rcparams = {'lines.linestyle' : '-', 
-                'lines.linewidth' : 1.,
-                'lines.color' : '#92C5DE',
-                'lines.marker' : None,
-                'axes.facecolor' : '#777777',
-                'axes.edgecolor' : '#aaaaaa',
-                'figure.facecolor' : '#555555',
-                'text.color' : '#dddddd',
-                'xtick.color' : '#dddddd',
-                'ytick.color' : '#dddddd',
-                'axes.labelcolor' : '#dddddd',
-                'axes.labelweight' : 100}
-    
-    with rc_context(rc=rcparams):  
-        fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(10,10))
-        axes[0].axhline(2, linestyle='--', color='#444444')
-        axes[1].axhline(2, linestyle='--', color='#444444')
-        
-        for ii in randidx:
-            for jj in range(2):
-                d = D_pses[jj][:,ii]
-                sR = sat_R[jj]
-                axes[jj].semilogy(ts[jj]/1000, d, alpha=0.5, color=rcparams['lines.color'])
-                axes[jj].semilogy(ts[jj]/1000, 1.05+0.9*(sR-sR.min())/(sR.max()-sR.min()), 
-                                  alpha=0.75, color='#CA0020')
-                axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='o',
-                                  alpha=0.75, color=rcparams['lines.color'])
-        
-        axes[1].set_ylim(1,100)
-        axes[1].set_xlim(-6, 0)
-    
-    axes[1].set_xlabel("Backwards integration time [Gyr]")
-    axes[0].set_ylabel(r"$D_{ps}$", rotation='horizontal')
-    axes[1].set_ylabel(r"$D_{ps}$", rotation='horizontal')
-    
-    fig.subplots_adjust(hspace=0.1)
-    fig.savefig(os.path.join(plot_path, "ps_distance.pdf"), 
-                facecolor=rcparams['figure.facecolor'])
-    
-    return selected_star_idx
 if __name__ == '__main__':
-    gaia_spitzer_errors()
-    #selected_star_idx = phase_space_d_vs_time()
-    #lm10_particles_selection(selected_star_idx)
+    #gaia_spitzer_errors()
+    top_down_sgr()
