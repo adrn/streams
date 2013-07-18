@@ -288,20 +288,19 @@ def bootstrap_scatter_plot(d, subtitle="", axis_lims=None):
     
     return fig
 
-def sgr_kde(particle_collection, ax=None):
+def sgr_kde(particle_data, ax=None):
     """ TODO """
-    pc = particle_collection
     
     if ax is None:
         fig,ax = plt.subplots(1,1)
     
     # hack to get every 25th particle still bound to Sgr, otherwise this peak
     #   dominates the whole density field
+    idx = (np.fabs(particle_data['Lmflag']) == 1) & (particle_data['dist'] < 70) \
+            & (particle_data['Pcol'] > -1)
     still_bound = np.zeros_like(idx)
-    w, = np.where(pc['Pcol']==-1)
+    w, = np.where(particle_data['Pcol']==-1)
     still_bound[w[::25]] = 1.
-    
-    idx = (np.fabs(pc['Lmflag']) == 1) & (pc['dist'] < 70) & (pc['Pcol'] > -1)
     idx = idx | still_bound.astype(bool)
     
     extent = dict(x=(-75,75), y=(-75,75))
@@ -310,7 +309,7 @@ def sgr_kde(particle_collection, ax=None):
     positions = np.vstack([X.ravel(),Y.ravel()])
     
     Xsun = 8. # kpc
-    m1,m2 = -pc[idx]['xgc']+Xsun, pc[idx]['zgc']
+    m1,m2 = -particle_data[idx]['xgc']+Xsun, particle_data[idx]['zgc']
     values = np.vstack([m1, m2])
     
     kernel = gaussian_kde(values)
