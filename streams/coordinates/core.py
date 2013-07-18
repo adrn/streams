@@ -16,7 +16,7 @@ from numpy import cos, sin
 import astropy.coordinates as coord
 import astropy.units as u
 
-__all__ = ["vgsr_to_vhel", "vhel_to_vgsr"]
+__all__ = ["vgsr_to_vhel", "vhel_to_vgsr", "ra_dec_dist_to_xyz"]
 
 def vgsr_to_vhel(l, b, v_gsr, 
                  v_sun_lsr=[10.,5.25,7.17]*u.km/u.s, 
@@ -64,6 +64,21 @@ def vhel_to_vgsr(l, b, v_hel,
     v_gsr = v_lsr + v_correct
     
     return v_gsr
+
+def ra_dec_dist_to_xyz(ra, dec, dist):
+    """ Convert an ra, dec, and distance to a Galactocentric X,Y,Z """
+    
+    XYZ = np.zeros((len(ra), 3))
+    for ii,(r,d,D) in enumerate(zip(ra, dec, dist)):
+        icrs = coord.ICRSCoordinates(r.value, d.value, 
+                                     unit=(r.unit, d.unit),
+                                     distance=coord.Distance(D))
+        gal = icrs.galactic
+        XYZ[ii,0] = gal.x - 8.
+        XYZ[ii,1] = gal.y
+        XYZ[ii,2] = gal.z
+    
+    return XYZ
 
 def __radial_velocity(r, v):
     """ Compute the radial velocity in the heliocentric frame. 
