@@ -23,7 +23,6 @@ from scipy.stats import gaussian_kde
 from ..potential.lm10 import param_to_latex
 from ..potential.lm10 import true_params
 from ..inference.lm10 import param_ranges
-from ..io.lm10 import particles
 
 __all__ = ["discrete_cmap", "emcee_plot", "plot_sampler_pickle", \
            "bootstrap_scatter_plot", "sgr_kde"]
@@ -289,7 +288,7 @@ def bootstrap_scatter_plot(d, subtitle="", axis_lims=None):
     
     return fig
 
-def sgr_kde(particle_collection, ax=None)
+def sgr_kde(particle_collection, ax=None):
     """ TODO """
     pc = particle_collection
     
