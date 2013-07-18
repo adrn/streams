@@ -23,7 +23,7 @@ from ..dynamics import ParticleCollection, OrbitCollection
 from ..integrate.leapfrog import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
 
-__all__ = ["particles_today", "satellite_today", "time", "satellite_orbit"]
+__all__ = ["particle_table", "particles_today", "satellite_today", "time", "satellite_orbit"]
 
 _lm10_path = os.path.join(project_root, "data", "simulation", "LM10")
 
@@ -36,7 +36,7 @@ time_unit = u.Unit("{:08f} Myr".format(X))
 # This is used for the SgrTriax*.dat files
 lm10_usys = UnitSystem(u.kpc, u.M_sun, u.Gyr)
 
-def particles_today(N=None, expr=None):
+def particle_table(N=None, expr=None):
     """ Read in particles from Law & Majewski 2010.
     
         Parameters
@@ -57,6 +57,21 @@ def particles_today(N=None, expr=None):
                       column_map=col_map, column_scales=col_scales,
                       N=N, expr=expr)
     
+    return data
+
+def particles_today(N=None, expr=None):
+    """ Read in particles from Law & Majewski 2010.
+    
+        Parameters
+        ----------
+        N : int
+            Number of particles to read. None means 'all'.
+        expr : str
+            String selection condition to be fed to numexpr for selecting 
+            particles.
+        
+    """
+    data = particle_table(N=N, expr=expr)
     pc = table_to_particles(data, lm10_usys,
                             position_columns=["x","y","z"],
                             velocity_columns=["vx","vy","vz"])
