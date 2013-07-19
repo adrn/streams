@@ -1,5 +1,4 @@
 # encoding: utf-8
-# cython: profile=True
 # filename: _lm10_acceleration.pyx
 """
 Deimos:
@@ -36,21 +35,17 @@ cdef extern from "math.h":
 DTYPE = np.double
 ctypedef np.double_t DTYPE_t
 
+#@cython.profile(True)
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True) 
 @cython.wraparound(False)
 @cython.nonecheck(False)
-@cython.profile(True)
 def lm10_acceleration(double[:, ::1] r not None, 
                       double q1, double qz, double phi, double v_halo, 
                       double q2, double r_halo, np.ndarray[double, ndim=1] r_0):
     
     n_particles = r.shape[0]
     cdef double[:, ::1] data = np.empty((n_particles, 3))
-    #cdef double[:] fac1 = np.empty((n_particles,))
-    #cdef double[:] fac2 = np.empty((n_particles,))
-    #cdef double[:] fac3 = np.empty((n_particles,))
-    #cdef double[:] _tmp = np.empty((n_particles,))
     
     cdef double fac1, fac2, fac3, _tmp
     cdef double G, a, b, c, m_disk, m_bulge
