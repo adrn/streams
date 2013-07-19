@@ -190,14 +190,14 @@ maps of the Galaxy with $<$10\% distance errors for heliocentric distances up to
 Figure~\ref{fig:gaia_errors} show the Gaia end-of-mission distance and
 tangential velocity error estimates for RR Lyrae. The velocity uncertainty depends on the magnitude of the source, which depends on the metallicity: each line in Figure~\ref{fig:gaia_errors} is computed by Monte Carlo sampling from the empirical metallicity distribution of the Galactic halo from \cite{ivezic2008} (centered around [Fe/H] $\sim$ -1.5). Within 2~kpc, Gaia
 will be able to measure distances to these stars with better than 2\%
-accuracy: RR Lyraes in this volume will be used to test and calibrate
+accuracy---RR Lyraes in this volume will be used to test and calibrate
 the Spitzer PL relation described above. Beyond the 2~kpc threshold,
 the mid-IR PL relation for RR Lyraes will provide more accurate
 distance measurements.
 
 \begin{figure}[h]
 \begin{center}
-\includegraphics[width=1.\textwidth, trim=2 2 5 5, clip]{/Users/adrian/projects/streams/plots/paper1/gaia.pdf}
+\includegraphics[width=1.\textwidth]{/Users/adrian/projects/streams/plots/paper1/gaia.pdf}
 \caption{ todo }\label{fig:gaia_errors}
 \end{center}
 \end{figure}
@@ -207,7 +207,7 @@ tangential velocity errors of order $\sim$1~km/s at 30~kpc, and of
 order $\sim$10~km/s out to several tens of kiloparsecs. The
 combination of Spitzer and Gaia data will extend the `horizon' of
 where full six-dimensional phase-space maps of the Galaxy are possible
-from $<10$~kpc to 80~kpc. This enormous increase in volume will greatly refine
+from $<$10~kpc to 80~kpc. This enormous increase in volume will greatly refine
 data on existing debris systems such as the Sagittarius stream.
 
 \subsection{The Sagittarius debris system}
@@ -253,19 +253,19 @@ by the orbit of the satellite orbit \citep{majewski2004}. The
 simulation was run in a three-component potential, with a triaxial,
 logarithmic halo model of the form
 \begin{equation}
-  \Phi_{halo} = v_{halo}^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + R_c^2).
+  \Phi_{halo} = v_{halo}^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + R_c^2)
 \end{equation}
-where $C_1$, $C_2$, and $C_3$ are combinations of the $x$ and $y$ flattening ($q_1$, $q_2$) and orientation of the halo with respect to the baryonic disk ($\phi$):
+where $C_1$, $C_2$, and $C_3$ are combinations of the $x$ and $y$ axis ratios ($q_1$, $q_2$) and orientation of the halo with respect to the baryonic disk ($\phi$):
 \begin{align}
   C_1 &= \frac{\cos^2\phi}{q_1^2} + \frac{\sin^2\phi}{q_2^2}\\
   C_2 &= \frac{\sin^2\phi}{q_1^2} + \frac{\cos^2\phi}{q_2^2}\\
-  C_3 &= 2\sin\phi\cos\phi \left(q_1^{-2} - q_2^{-2}\right)
+  C_3 &= 2\sin\phi\cos\phi \left(q_1^{-2} - q_2^{-2}\right).
 \end{align}
 
 LM10 demonstrate how a comparison of such simulations with the
-observed debris enables a detailed reconstruction of Sgr's history 
-(its mass and stellar populations, orbit, rate of destruction, and
-even original distribution in populations [other refs??]). The phase-space distribution of the debris offers a unique probe of
+observed debris enables a detailed reconstruction of Sgr's history:  
+its mass and stellar populations, orbit, rate of destruction, and
+even original distribution in populations [other refs??]. The phase-space distribution of the debris offers a unique probe of
 the depth, shape, extent, and orientation of the Milky Way's dark
 matter halo that cannot be matched using other techniques on our own
 or other galaxies \citep[e.g.,][]{ibata2001}. The LM10 constraints on
@@ -274,7 +274,7 @@ cosmological context, the mass and extent of the original dark matter
 halo that hosted it, as well as its effect on the Milky Way itself
 \citep{bailin2003,purcell2011,micheldansac2011,gomez2012}.
 
-The combined Spitzer and Gaia measurements of distances and proper
+The prospect of combined Spitzer and Gaia measurements of distances and proper
 motions of RR Lyraes in the Sgr debris opens up new avenues of
 interpretation. A 2\% distance error at $\sim$30~kpc is smaller than
 the predicted thickness of the stream, ranging from
@@ -282,7 +282,7 @@ $\sim$2-$10$~kpc. Combined with Gaia tangential velocity measurement
 accuracies ($\sim$2~km/s at 30~kpc) less than the intrinsic dispersion
 for much of the stream \citep[$\sigma_v\sim$10~km/s;][]{majewski2004}, and ground-based radial
 velocities with $\sim$10~km/s accuracy, the measured phase-space
-position of each individual RR Lyrae relative to the stream becomes a
+position of each individual RR Lyrae becomes a
 powerful probe of the potential (see \ref{fig:}): the next section outlines a new
 method to take advantage of this information.
 
@@ -298,7 +298,14 @@ the potential of the Milky Way: if the orbits of the stars and the
 orbit of the progenitor are integrated \emph{backwards} in time, the
 stars should `recombine' with the progenitor. If the potential is
 incorrect, the orbits of the stars will diverge from that of the
-progenitor and thus will not be recaptured by the satellite system.
+progenitor and thus will not be recaptured by the satellite system (Figure~\ref{fig:ps_distance}).
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=1.\textwidth]{/Users/adrian/projects/streams/plots/paper1/ps_distance.pdf}
+\caption{ todo }\label{fig:ps_distance}
+\end{center}
+\end{figure}
 
 \subsection{The algorithm: Rewinder}
 Quantifying this method requires a sample of stars with known full
