@@ -107,15 +107,4 @@ def max_likelihood_parameters(sampler):
         xsorted = sorted(flatchain[:,ii])
         best_params.append(xsorted[int(0.5 * len(xsorted))])
     
-    """
-    best_step_idx = np.argmax(np.ravel(good_probs))
-    
-    flatchain = []
-    for walker_i in range(len(good_chain)):
-        flatchain += list(good_chain[walker_i])
-    flatchain = np.array(flatchain)
-
-    best_params = flatchain[best_step_idx]
-    """
-    
     return np.array(best_params)

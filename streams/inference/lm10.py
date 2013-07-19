@@ -99,9 +99,11 @@ def ln_prior(p, param_names):
     return sum
 
 def timestep(r, v, potential, m_sat):
+    """ Used for an adaptive timestep: r[0] and v[0] are the position
+        and velocity of the satellite at the given timestep.
+    """
     R_tide = potential._tidal_radius(r=r[0], m=m_sat)
-    #v_max = np.max(np.sqrt(np.sum((v[1:]-v[0])**2,axis=-1)))
-    v_max = np.max(np.sqrt(np.sum(v**2,axis=-1)))
+    v_max = np.max(np.sqrt(np.sum(v[1:]**2,axis=-1)))
     dt = -(R_tide / v_max)
     
     if dt > -0.5:
