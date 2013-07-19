@@ -92,7 +92,7 @@ def gaia_spitzer_errors():
     orp_color = '#EF8A62'
     
     with rc_context(rc=rcparams):
-        fig,axes = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
+        fig,axes = plt.subplots(1, 2, figsize=(12, 6))
         
         # Distance from 1kpc to ~100kpc
         D = np.logspace(0., 2., 50)*u.kpc
@@ -142,23 +142,29 @@ def gaia_spitzer_errors():
                       label='Sgr dispersion')
     axes[1].add_patch(sgr_v)
     
-    orp_v = Rectangle((10., 10.), 35., 1., color=orp_color, alpha=0.75,
+    orp_v = Rectangle((10., 8.), 35., 1., color=orp_color, alpha=0.75,
                       label='Orp dispersion')
     axes[1].add_patch(orp_v)
     
     axes[0].set_ylim(top=10.)
-    axes[1].set_xlim(1, 100)
+    axes[0].set_xlim(1, 100)
     
+    axes[1].set_ylim(0.1, 100)
+    axes[1].set_xlim(10, 100)
+    
+    axes[0].set_xlabel("Distance [kpc]")
     axes[0].set_ylabel("Frac. distance error $\sigma_D/D$")
     axes[1].set_ylabel("$v_{tan}$ error [km/s]")
     axes[1].set_xlabel("Distance [kpc]")
-    axes[1].set_xticklabels(["1", "10", "100"])
+    
+    axes[0].set_xticklabels(["1", "10", "100"])
+    axes[1].set_xticklabels(["10", "100"])
     
     axes[0].set_yticklabels(["{:g}".format(yt) for yt in axes[0].get_yticks()])
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
     
     # add Gaia and Spitzer text to first plot
-    axes[0].text(4., 0.1, 'Gaia', fontsize=16, rotation=34)
+    axes[0].text(4., 0.12, 'Gaia', fontsize=16, rotation=45)
     axes[0].text(4., 0.011, 'Spitzer', fontsize=16, color="#7B3294", alpha=0.8)
     
     # add legends
@@ -169,61 +175,19 @@ def gaia_spitzer_errors():
     plt.tight_layout()
     plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
-def lm10_particles_selection(selected_star_idx):
-    """ Top-down plot of Sgr particles, with selected stars and then 
-        re-observed
-    """
-    
-    np.random.seed(42)
-    particles = particles(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")   
-    all_particles = particles(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
-    err_particles = add_uncertainties_to_particles(particles, 
-                                                   radial_velocity_error=15.*u.km/u.s,
-                                                   distance_error_percent=2.)
-    
-    rcparams = {'lines.linestyle' : 'none', 
-                'lines.color' : 'k',
-                'lines.marker' : '.'}
-    
-    with rc_context(rc=rcparams): 
-        fig,ax = plt.subplots(1, 1, figsize=(10,10))
-        ax.plot(all_particles._r[:,0], all_particles._r[:,2],
-                color='#666666', markersize=3, alpha=0.15, marker='o')
-        ax.plot(particles._r[np.logical_not(selected_star_idx),0], 
-                particles._r[np.logical_not(selected_star_idx),2],
-                color='k', markersize=10, alpha=1., marker='.')
-        ax.plot(err_particles._r[np.logical_not(selected_star_idx),0], 
-                err_particles._r[np.logical_not(selected_star_idx),2],
-                color='#CA0020', markersize=10, alpha=1., marker='.')
-    
-        ax.plot(particles._r[selected_star_idx,0], 
-                particles._r[selected_star_idx,2],
-                color='k', alpha=1., marker='*', markersize=15)
-        ax.plot(err_particles._r[selected_star_idx,0], 
-                err_particles._r[selected_star_idx,2],
-                color='#CA0020', alpha=1., marker='*', markersize=15)
-                
-
-        ax.set_xlabel("$X_{GC}$ [kpc]")
-        ax.set_ylabel("$Z_{GC}$ [kpc]")
-    
-    plt.tight_layout()
-    fig.savefig(os.path.join(plot_path, "lm10.pdf"))
-
 def phase_space_d_vs_time(N=10):
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
-    np.random.seed(142)
+    np.random.seed(112)
     randidx = np.random.randint(100, size=N)
     selected_star_idx = np.zeros(100).astype(bool)
     selected_star_idx[randidx] = True
     
     wrong_params = true_params.copy()
-    wrong_params['qz'] = 1.2*wrong_params['qz']
-    #for k,v in wrong_params.items():
-    #    wrong_params[k] = 0.9*v
+    wrong_params['qz'] = 1.1*wrong_params['qz']
+    wrong_params['v_halo'] = 1.1*wrong_params['v_halo']
     
-    # define correct potential, and 5% wrong potential
+    # define correct potential, and wrong potential
     true_potential = LawMajewski2010(**true_params)
     wrong_potential = LawMajewski2010(**wrong_params)
     
@@ -297,5 +261,4 @@ def phase_space_d_vs_time(N=10):
     return selected_star_idx
 if __name__ == '__main__':
     gaia_spitzer_errors()
-    #selected_star_idx = phase_space_d_vs_time()
-    #lm10_particles_selection(selected_star_idx)
+    phase_space_d_vs_time()
