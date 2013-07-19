@@ -94,4 +94,4 @@ def lm10_acceleration(double[:, ::1] r not None,
         data[ii,1] = fac1*r[ii,1] + fac2*r[ii,1] + fac3*(2.*C2*r[ii,1] + C3*r[ii,0])
         data[ii,2] = fac1*r[ii,2]*(1.+_tmp) + fac2*r[ii,2] + 2.*fac3*r[ii,2]/qz_sq
             
-    return data
+    return np.array(data)
