@@ -212,16 +212,16 @@ def top_down_sgr():
                 'lines.marker' : 'o'}
     
     with rc_context(rc=rcparams): 
-        ax.plot(particles._r[:,0], particles._r[:,2],
-                marker='.', color='k', alpha=0.85, ms=12)
+        #ax.plot(particles._r[:,0], particles._r[:,2],
+        #        marker='.', color='k', alpha=0.85, ms=12)
         
-        ax.plot(stripe82_xyz[:,0], stripe82_xyz[:,2], marker='+', 
-                color='#333333', alpha=0.85, markersize=8, label="Stripe 82",
-                markeredgewidth=1)
+        ax.plot(stripe82_xyz[:,0], stripe82_xyz[:,2], marker='.', 
+                color='#111111', alpha=0.85, markersize=10, label="Stripe 82",
+                markeredgewidth=0)
         
-        ax.plot(catalina_xyz[:,0], catalina_xyz[:,2], marker='x', 
-                color='#333333', alpha=0.85, markersize=8, label="Catalina",
-                markeredgewidth=1)
+        ax.plot(catalina_xyz[:,0], catalina_xyz[:,2], marker='^', 
+                color='#111111', alpha=0.85, markersize=10, label="Catalina",
+                markeredgewidth=0)
         
         ax.plot(-8., 0., marker='.', color='y', alpha=1., 
                 markersize=12)
