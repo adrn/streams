@@ -48,7 +48,7 @@ def parallax_error(V, V_minus_I):
             z[p] = 10**(0.4*(12. - 15.))
     else:
         if p:
-            z[p] = 10**(0.4*(12. - 15.))
+            z = 10**(0.4*(12. - 15.))
     
     # "end of mission parallax standard"
     # σπ [μas] = (9.3 + 658.1·z + 4.568·z^2)^(1/2) · [0.986 + (1 - 0.986) · (V-IC)]
