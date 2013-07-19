@@ -1,3 +1,6 @@
+# encoding: utf-8
+# cython: profile=True
+# filename: _lm10_acceleration.pyx
 """
 Deimos:
 cython -a _integrate_lm10.pyx
@@ -30,19 +33,26 @@ cdef extern from "math.h":
     int isnan(double)
     double fabs(double)
 
-DTYPE = float
+DTYPE = np.double
 ctypedef np.double_t DTYPE_t
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True) 
-def lm10_acceleration(np.ndarray[double, ndim=2] r, 
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.profile(True)
+def lm10_acceleration(double[:, ::1] r not None, 
                       double q1, double qz, double phi, double v_halo, 
                       double q2, double r_halo, np.ndarray[double, ndim=1] r_0):
     
-    cdef np.ndarray[double, ndim=2] data
+    n_particles = r.shape[0]
+    cdef double[:, ::1] data = np.empty((n_particles, 3))
+    #cdef double[:] fac1 = np.empty((n_particles,))
+    #cdef double[:] fac2 = np.empty((n_particles,))
+    #cdef double[:] fac3 = np.empty((n_particles,))
+    #cdef double[:] _tmp = np.empty((n_particles,))
     
-    data = np.zeros((len(r),3), dtype=np.float64)
-    
+    cdef double fac1, fac2, fac3, _tmp
     cdef double G, a, b, c, m_disk, m_bulge
     G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
     
@@ -63,29 +73,30 @@ def lm10_acceleration(np.ndarray[double, ndim=2] r,
     r_halo_sq = r_halo*r_halo # kpc
     v_halo_sq = v_halo*v_halo
     
-    x,y,z = r[:,0],r[:,1],r[:,2]
+    cdef double xx, yy, zz
     
-    xx = x*x
-    yy = y*y
-    zz = z*z
+    for ii in xrange(n_particles):    
+        xx = r[ii,0]*r[ii,0]
+        yy = r[ii,1]*r[ii,1]
+        zz = r[ii,2]*r[ii,2]
     
-    # Disk
-    fac1 = -G*m_disk*((xx + yy) + (a + np.sqrt(zz + b**2))**2)**-1.5
-    _tmp = a/(np.sqrt(zz + b**2))
+        # Disk
+        fac1 = -G*m_disk*((xx + yy) + (a + sqrt(zz + b**2))**2)**-1.5
+        _tmp = a/(sqrt(zz + b**2))
+        
+        # Bulge
+        R = sqrt(xx + yy + zz)
+        fac2 = -G*m_bulge / ((R + c)**2 * R)
+        
+        # Halo
+        C1 = cos(phi)**2/q1_sq + sin(phi)**2/q2_sq
+        C2 = cos(phi)**2/q2_sq + sin(phi)**2/q1_sq
+        C3 = 2.*sin(phi)*cos(phi)*(1./q1_sq - 1./q2_sq)
     
-    # Bulge
-    R = np.sqrt(xx + yy + zz)
-    fac2 = -G*m_bulge / ((R + c)**2 * R)
-    
-    # Halo
-    C1 = cos(phi)**2/q1_sq + sin(phi)**2/q2_sq
-    C2 = cos(phi)**2/q2_sq + sin(phi)**2/q1_sq
-    C3 = 2.*sin(phi)*cos(phi)*(1./q1_sq - 1./q2_sq)
-
-    fac3 = -v_halo_sq / (C1*xx + C2*yy + C3*x*y + zz/qz_sq + r_halo_sq)
-    
-    data[:,0] = fac1*x + fac2*x + fac3*(2.*C1*x + C3*y)
-    data[:,1] = fac1*y + fac2*y + fac3*(2.*C2*y + C3*x)
-    data[:,2] = fac1*z * (1.+_tmp) + fac2*z + 2.*fac3*z/qz_sq
+        fac3 = -v_halo_sq / (C1*xx + C2*yy + C3*r[ii,0]*r[ii,1] + zz/qz_sq + r_halo_sq)
+        
+        data[ii,0] = fac1*r[ii,0] + fac2*r[ii,0] + fac3*(2.*C1*r[ii,0] + C3*r[ii,1])
+        data[ii,1] = fac1*r[ii,1] + fac2*r[ii,1] + fac3*(2.*C2*r[ii,1] + C3*r[ii,0])
+        data[ii,2] = fac1*r[ii,2]*(1.+_tmp) + fac2*r[ii,2] + 2.*fac3*r[ii,2]/qz_sq
             
     return data
