@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import cPickle as pickle
 
 # Third-party
 from astropy.io import ascii
@@ -177,20 +178,20 @@ def gaia_spitzer_errors():
     plt.tight_layout()
     plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
-def top_down_sgr():
+def sgr():
     """ Top-down plot of Sgr particles, with selected stars and then 
         re-observed
     """
     
-    fig,ax = plt.subplots(1, 1)
+    fig,axes = plt.subplots(1, 2, figsize=(14,6), sharex=True, sharey=True)
     
     # read in all particles as a table
-    pdata = particle_table(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
+    pdata = particle_table(N=1000, expr="(Pcol<7) & (abs(Lmflag)==1)")
     
     extent = {'x':(-90,55), 
               'y':(-50,60)}
     Z = sgr_kde(pdata, extent=extent)
-    ax.imshow(Z**0.5, interpolation="nearest", 
+    axes[1].imshow(Z**0.5, interpolation="nearest", 
               extent=extent['x']+extent['y'],
               cmap=cm.Blues, aspect=1)
     
@@ -212,29 +213,76 @@ def top_down_sgr():
                 'lines.marker' : 'o'}
     
     with rc_context(rc=rcparams): 
-        #ax.plot(particles._r[:,0], particles._r[:,2],
-        #        marker='.', color='k', alpha=0.85, ms=12)
+        axes[0].plot(particles._r[:,0], particles._r[:,2],
+                     marker='.', alpha=0.85, ms=12)
         
-        ax.plot(stripe82_xyz[:,0], stripe82_xyz[:,2], marker='.', 
-                color='#111111', alpha=0.85, markersize=10, label="Stripe 82",
-                markeredgewidth=0)
+        axes[1].plot(stripe82_xyz[:,0], stripe82_xyz[:,2], marker='.', 
+                     color='#111111', alpha=0.85, markersize=12, 
+                     label="Stripe 82", markeredgewidth=0)
         
-        ax.plot(catalina_xyz[:,0], catalina_xyz[:,2], marker='^', 
-                color='#111111', alpha=0.85, markersize=10, label="Catalina",
-                markeredgewidth=0)
+        axes[1].plot(catalina_xyz[:,0], catalina_xyz[:,2], marker='^', 
+                     color='#111111', alpha=0.85, markersize=8, 
+                     label="Catalina", markeredgewidth=0)
         
-        ax.plot(-8., 0., marker='.', color='y', alpha=1., 
-                markersize=12)
+        # add solar symbol
+        axes[0].plot(-8., 0., marker='.', color='#FFFFB2', alpha=1., 
+                     markersize=11)
+        axes[0].scatter(-8., 0., marker='o', facecolor='none', edgecolor='#FFFFB2', 
+                        alpha=1., s=200, linewidth=2)
+        axes[1].plot(-8., 0., marker='.', color='#FFFFB2', alpha=1., 
+                     markersize=11)
+        axes[1].scatter(-8., 0., marker='o', facecolor='none', edgecolor='#FFFFB2', 
+                        alpha=1., s=200, linewidth=2)
 
-        ax.set_xlabel("$X_{GC}$ [kpc]")
-        ax.set_ylabel("$Z_{GC}$ [kpc]")
-        ax.set_xlim(extent['x'])
-        ax.set_ylim(extent['y'])
+        axes[0].set_xlabel("$X_{GC}$ [kpc]")
+        axes[1].set_xlabel("$X_{GC}$ [kpc]")
+        axes[0].set_ylabel("$Z_{GC}$ [kpc]")
+        axes[1].set_xlim(extent['x'])
+        axes[1].set_ylim(extent['y'])
     
     ax.legend(loc='upper left')
     plt.tight_layout()
     fig.savefig(os.path.join(plot_path, "lm10.pdf"))
 
+def bootstrapped_parameters_v1():
+    
+    data_file = os.path.join(project_root, "plots", "hotfoot", 
+                             "uniform_sample", "all_best_parameters.pickle")
+    
+    with open(data_file) as f:
+        data = pickle.load(f)
+    
+    fig,axes = plt.subplots(1,3,figsize=(16,6), sharey=True)
+    
+    y_param = 'v_halo'
+    x_params = ['q1', 'qz', 'phi']
+    
+    lims = dict(q1=(1.2,1.6), qz=(1.2,1.6), v_halo=(100,150), phi=(60,120))
+    
+    for ii,x_param in enumerate(x_params):
+        ydata = data[y_param]
+        xdata = data[x_param]
+        
+        y_true = true_params[y_param]
+        x_true = true_params[x_param]
+        
+        if y_param == 'v_halo':
+            ydata = (ydata*u.kpc/u.Myr).to(u.km/u.s).value
+            y_true = y_true.to(u.km/u.s).value
+            
+        if x_param == 'phi':
+            xdata = (xdata*u.radian).to(u.degree).value
+            x_true = x_true.to(u.degree).value
+            
+        axes[ii].plot(xdata, ydata, marker='o', alpha=0.75, linestyle='none')
+        axes[ii].axhline(y_true)
+        axes[ii].axvline(x_true)
+        axes[ii].set_xlim(lims[x_param])
+        axes[ii].set_ylim(lims[y_param])
+    
+    plt.show()
+
 if __name__ == '__main__':
     #gaia_spitzer_errors()
-    top_down_sgr()
+    sgr()
+    #bootstrapped_parameters_v1()
