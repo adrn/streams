@@ -91,7 +91,7 @@ def satellite_today():
     
     satellite = ParticleCollection(r=r0.to(u.kpc), 
                                    v=v0.to(u.kpc/u.Myr), 
-                                   m=[2.5E8]*u.M_sun)
+                                   m=[6E8]*u.M_sun)
     
     return satellite
 
