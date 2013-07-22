@@ -68,12 +68,17 @@ def lm10_acceleration(double[:, ::1] r not None,
     r_halo_sq = r_halo*r_halo # kpc
     v_halo_sq = v_halo*v_halo
     
+    cdef double x, y, z
     cdef double xx, yy, zz
     
-    for ii in xrange(n_particles):    
-        xx = r[ii,0]*r[ii,0]
-        yy = r[ii,1]*r[ii,1]
-        zz = r[ii,2]*r[ii,2]
+    for ii in xrange(n_particles):
+        x = r[ii,0]
+        y = r[ii,1]
+        z = r[ii,2]
+        
+        xx = x*x
+        yy = y*y
+        zz = z*z
     
         # Disk
         fac1 = -G*m_disk*((xx + yy) + (a + sqrt(zz + b**2))**2)**-1.5
@@ -88,10 +93,10 @@ def lm10_acceleration(double[:, ::1] r not None,
         C2 = cos(phi)**2/q2_sq + sin(phi)**2/q1_sq
         C3 = 2.*sin(phi)*cos(phi)*(1./q1_sq - 1./q2_sq)
     
-        fac3 = -v_halo_sq / (C1*xx + C2*yy + C3*r[ii,0]*r[ii,1] + zz/qz_sq + r_halo_sq)
+        fac3 = -v_halo_sq / (C1*xx + C2*yy + C3*x*y + zz/qz_sq + r_halo_sq)
         
-        data[ii,0] = fac1*r[ii,0] + fac2*r[ii,0] + fac3*(2.*C1*r[ii,0] + C3*r[ii,1])
-        data[ii,1] = fac1*r[ii,1] + fac2*r[ii,1] + fac3*(2.*C2*r[ii,1] + C3*r[ii,0])
-        data[ii,2] = fac1*r[ii,2]*(1.+_tmp) + fac2*r[ii,2] + 2.*fac3*r[ii,2]/qz_sq
+        data[ii,0] = fac1*x + fac2*x + fac3*(2.*C1*x + C3*y)
+        data[ii,1] = fac1*y + fac2*y + fac3*(2.*C2*y + C3*x)
+        data[ii,2] = fac1*z*(1.+_tmp) + fac2*z + 2.*fac3*z/qz_sq
             
     return np.array(data)

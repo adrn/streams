@@ -185,6 +185,6 @@ class LawMajewski2010(CompositePotential):
             raise ValueError("Must specify just r or r_tide.")
         
         v_esc = self._escape_velocity(m=m.decompose(self.unit_system).value,
-                                r_tide=r_tide.decompose(self.unit_system).value)
+                                      r_tide=r_tide.decompose(self.unit_system).value)
         
         return v_esc * self.unit_system['length'] / self.unit_system['time']
