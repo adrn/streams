@@ -107,7 +107,7 @@ class LawMajewski2010(CompositePotential):
                 self["bulge"]._parameters["m"] + \
                 m_halo_enc
         
-        return R_orbit * (m / (3.*m_enc))**(0.33333)
+        return R_orbit * (m / m_enc)**(0.33333)
     
     def tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified 
