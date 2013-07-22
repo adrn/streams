@@ -34,7 +34,7 @@ job_sh = """#!/bin/sh
 #PBS -e localhost:/hpc/astro/users/amp2217/jobs/output
 
 #Command to execute Python program
-mpirun -n {walkers:d} /hpc/astro/users/amp2217/projects/streams/scripts/{script} -f /hpc/astro/users/amp2217/projects/streams/config/{config_file}
+mpirun -n {walkers:d} /hpc/astro/users/amp2217/projects/streams/scripts/{script} -f /hpc/astro/users/amp2217/projects/streams/config/{config_file} -n {name}
 
 #End of script
 """

@@ -49,7 +49,7 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def main(config_file):
+def main(config_file, job_name=None):
     
     # Read in simulation parameters from config file
     config = read(config_file)
@@ -140,11 +140,14 @@ def main(config_file):
     
     # Create a new path for the output
     if config["make_plots"]:
-        if config.has_key("name"):
-            path = os.path.join(config["output_path"], config["name"])
-        else:    
-            iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            path = os.path.join(config["output_path"], iso_now)
+        if job_name is not None:
+            path = os.path.join(config["output_path"], job_name)
+        else:
+            if config.has_key("name"):
+                path = os.path.join(config["output_path"], config["name"])
+            else:    
+                iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                path = os.path.join(config["output_path"], iso_now)
         
         if os.path.exists(path):
             if config.get("overwrite", False):
@@ -278,6 +281,8 @@ if __name__ == "__main__":
                     default=False, help="Be quiet! (default = False)")
     parser.add_argument("-f", "--file", dest="file", default="streams.cfg", 
                     help="Path to the configuration file to run with.")
+    parser.add_argument("-n", "--name", dest="job_name", default=None, 
+                    help="Name of the output.")
     
     args = parser.parse_args()
     
@@ -289,7 +294,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
     
     try:
-        main(args.file)
+        main(args.file, args.job_name)
         
     except:
         raise
