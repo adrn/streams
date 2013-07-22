@@ -39,15 +39,18 @@ mpirun -n {walkers:d} /hpc/astro/users/amp2217/projects/streams/scripts/{script}
 #End of script
 """
 
-def main(config_file, walltime, memory):
+def main(config_file, walltime, memory, job_name):
     
     # Read in simulation parameters from config file
     config = read(config_file)
     
-    if config.has_key("name"):
-        name = config["name"]
+    if job_name is None:
+        if config.has_key("name"):
+            name = config["name"]
+        else:
+            name = "adrn"
     else:
-        name = "adrn"
+        name = job_name
     
     d = config["walkers"] / 4
     if int(d) != d:
@@ -82,12 +85,14 @@ if __name__ == "__main__":
                     help="Amount of time to request.")
     parser.add_argument("-m", "--memory", dest="memory", default="16gb", 
                     help="Amount of memory to request.")
+    parser.add_argument("-n", "--name", dest="job_name", default=None, 
+                    help="The name of the job.")
     
     args = parser.parse_args()
     
     logging.basicConfig(level=logging.DEBUG)
     
     filename = os.path.join("/hpc/astro/users/amp2217/projects/streams/config", args.file)
-    main(filename, walltime=args.time, memory=args.memory)
+    main(filename, walltime=args.time, memory=args.memory, job_name=args.job_name)
     sys.exit(0)
  
