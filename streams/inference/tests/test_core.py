@@ -56,7 +56,7 @@ def test_generalized_variance():
     print("gen. variance: {0:.3f} ms".format(1000.*(pytime.time()-a)))
 
 @pytest.mark.parametrize(("param", ), [('q1',),('qz',),('v_halo',),('phi',)])
-def test_vary_potential(param):
+def test_vary_potential(param, frac_range=(0.9,1.1)):
     """ Vary each LM10 potential parameter, plot the generalized variance 
         vs. the parameter values.
     """
@@ -65,8 +65,8 @@ def test_vary_potential(param):
     
     variances = []
     params = true_params.copy()
-    for val in np.linspace(true_params[param]*0.75, 
-                           true_params[param]*1.25, Nbins):
+    for val in np.linspace(true_params[param]*frac_range[0], 
+                           true_params[param]*frac_range[1], Nbins):
         params[param] = val
         
         # create potential with all 'true' params, except the one we're varying
@@ -78,6 +78,6 @@ def test_vary_potential(param):
         variances.append(v)
     
     plt.clf()
-    plt.plot(np.linspace(0.75, 1.25, Nbins), variances)
+    plt.plot(np.linspace(frac_range[0], frac_range[1], Nbins), variances)
     plt.title(param)
     plt.savefig(os.path.join(plot_path, "vary_{0}.png".format(param)))
