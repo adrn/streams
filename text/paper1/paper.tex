@@ -168,21 +168,21 @@ decrease significantly for observations further into the IR.
 These studies suggest that observations of RR Lyrae variables by
 NASA's Spitzer mission could provide us with a stellar distance
 indicator of unprecedented accuracy and precision. \citet{madore2012}
-have demonstrated \citep[using 5 stars with trigonometric parallaxes
+have demonstrated \citep[using five stars with trigonometric parallaxes
   measured by Hubble;][]{benedict2011} that the dispersion in the
 mid-IR PL relation -- at Spitzer wavelengths -- is of order
-$\pm$0.03~mag. This implies that it is possible to determine
-individual distances that are good to better than $\pm 2\%$ for RR
+$\sim$0.03~mag. This implies that it is possible to determine
+individual distances that are good to better than $2\%$ for RR
 Lyrae stars out to $\sim$80~kpc (the limit of Spitzer's ability to
 detect and measure RR Lyrae variables, for modest integration
-times). Distance measurements of Blue Horizontal Branch and Blue Straggler stars at these distances in the halo typically achieve 15-25\% uncertainties. [can cite Alis Deason if necessary].
+times). Distance measurements of Blue Horizontal Branch and Blue Straggler stars at these distances in the halo typically achieve $\sim$25\% uncertainties \citep[e.g.,][]{deason2012}. 
 
 \subsection{Gaia and the age of astrometry}
 \label{sec:gaia}
-The Gaia satellite \citep{gaia2001}, planned for launch in October
+The Gaia satellite \citep{gaia2001}, planned for launch in late
 2013, is an astrometric mission which aims to measure the positions of billions of stars with
 10-100~$\mu$as accuracies. With over 50 observations of the entire sky
-over the 5-year lifetime of the mission, Gaia will
+during the 5-year lifetime of the mission, Gaia will
 revolutionize the field of Galactic Astronomy by providing sufficient
 proper motion accuracy to create full six-dimensional phase-space
 maps of the Galaxy with $<$10\% distance errors for heliocentric distances up to $\sim$6~kpc for RR Lyrae stars.
@@ -246,10 +246,9 @@ Most recently, \citet[][hereafter LM10]{law2010} have combined all
 current data on the Sgr debris to assess the triaxiality and orientation
 of the outer Galaxy, the first time that such a reconstruction of
 the 3-dimensional mass distribution of a dark matter halo has been
-feasible. Figure \ref{fig:lm10} illustrates results from the LM10
-N-body simulation of dwarf satellite disruption along the expected Sgr
-orbit. The particle positions are shown in a coordinate system defined
-by the orbit of the satellite orbit \citep{majewski2004}. The
+feasible. Figure \ref{fig:lm10} shows particle positions from the final time-step of an N-body simulation of dwarf satellite disruption along the expected Sgr
+orbit in the best-fitting Milky Way halo model from LM10. [TODO: Maybe not true...] The positions are shown in a coordinate system defined
+by the orbit of the satellite \citep{majewski2004}. The
 simulation was run in a three-component potential, with a triaxial,
 logarithmic halo model of the form
 \begin{equation}
@@ -274,16 +273,16 @@ cosmological context, the mass and extent of the original dark matter
 halo that hosted it, as well as its effect on the Milky Way itself
 \citep{bailin2003,purcell2011,micheldansac2011,gomez2012}.
 
-The prospect of combined Spitzer and Gaia measurements of distances and proper
-motions of RR Lyraes in the Sgr debris opens up new avenues of
-interpretation. A 2\% distance error at $\sim$30~kpc is smaller than
+Combined Spitzer and Gaia measurements of distances and proper
+motions of RR Lyraes in the Sgr debris will open up new avenues of
+interpretation. A 2\% distance error at $\sim$30~kpc ($\epsilon_{d}=0.6~{\rm kpc}$) is smaller than
 the predicted thickness of the stream, ranging from
 $\sim$2-$10$~kpc. Combined with Gaia tangential velocity measurement
-accuracies ($\sim$2~km/s at 30~kpc) less than the intrinsic dispersion
-for much of the stream \citep[$\sigma_v\sim$10~km/s;][]{majewski2004}, and ground-based radial
-velocities with $\sim$10~km/s accuracy, the measured phase-space
+accuracies ($\epsilon_{v}\sim2$~km/s at 30~kpc) less than the intrinsic dispersion
+for much of the stream \citep[$\sigma_v\sim10$~km/s;][]{majewski2004}, and ground-based radial
+velocities, the measured phase-space
 position of each individual RR Lyrae becomes a
-powerful probe of the potential (see \ref{fig:}): the next section outlines a new
+powerful probe of the potential (see \ref{fig:}). The next section outlines a new
 method to take advantage of this information.
 
 \section{Description and test of our algorithm}
@@ -311,18 +310,18 @@ progenitor and thus will not be recaptured by the satellite system (Figure~\ref{
 Quantifying this method requires a sample of stars with known full
 space kinematics $(\bs{x}_{i}, \bs{v}_{i})|_{t=0}$ (e.g., measurements of all position and velocity components for these stars \emph{today} at $t=0$), the orbital parameters
 for the progenitor system $(\bs{x}_p, \bs{v}_p)|_{t=0}$, and a
-functional form for the potential, $\Phi$. For a
-given set of potential parameters, the orbits of the stars and
+functional form for the potential, $\Phi({\boldsymbol\theta})$. For a
+given set of potential parameters, $\boldsymbol\theta$, the orbits of the stars and
 progenitor are integrated backwards for several Gigayears (determined from an
 estimate of the interaction time of the system). The stars and
 progenitor system are treated as test particles, so that the debris
-stars do not become re-bound to the satellite. Instead, at each
+stars do not become physically re-bound to the satellite. Instead, at each
 timestep $t_j$, for each particle $i$, a set of normalized, relative
 phase-space coordinates are
 computed 
 \begin{equation}
   \bs{q}_{i} = \frac{\bs{x}_{i} -
-    \bs{x}_{p}}{R_{\rm tide}}\,\,\,\,\,\,\,\,\bs{p}_{i} = \frac{\bs{v}_{i} -
+    \bs{x}_{p}}{R_{\rm tide}}\,\,\,\,;\,\,\,\,\bs{p}_{i} = \frac{\bs{v}_{i} -
     \bs{v}_{p}}{v_{\rm esc}}
 \end{equation}
 where $(\bs{x},\bs{v})_{i}$ and $(\bs{x},\bs{v})_{p}$ are the phase-space coordinates for the particles and progenitor, respectively. These definitions require an estimate of the mass of the
