@@ -38,7 +38,7 @@ def relative_normalized_coordinates(potential, particle_orbits, satellite_orbit)
     
     # need to add a new axis to normalize each coordinate component
     r_tide = potential._tidal_radius(m=satellite_orbit._m,
-                                     r=satellite_orbit._r)[:,np.newaxis,:]
+                                     r=satellite_orbit._r)[:,:,np.newaxis]
     v_esc = potential._escape_velocity(m=satellite_orbit._m,
                                        r_tide=r_tide)
     
@@ -93,7 +93,7 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
     # cov_matrix -> (6 x 6) covariance matrix for particles
     w,v = np.linalg.eig(cov_matrix)
     #return np.sum(w)
-    return np.prod(w)
+    return np.log(np.prod(w))
     
     sign,logdet = np.linalg.slogdet(cov_matrix)
     return logdet
