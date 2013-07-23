@@ -57,8 +57,11 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     
     Nparticles = particle_orbits._r.shape[1]
     
-    R,V = relative_normalized_coordinates(potential, particle_orbits, satellite_orbit) 
-    D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
+    #R,V = relative_normalized_coordinates(potential, particle_orbits, satellite_orbit) 
+    R = (particle_orbits._r - satellite_orbit._r) 
+    V = (particle_orbits._v - satellite_orbit._v)
+    D_ps = np.sqrt(np.sum((R/satellite_orbit._r)**2, axis=-1) + 
+                   np.sum((V/satellite_orbit._v)**2, axis=-1))
     
     # Find the index of the time of the minimum D_ps for each particle
     min_time_idx = D_ps.argmin(axis=0)
@@ -70,6 +73,17 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
         min_ps[ii] = np.append(R[jj,ii], V[jj,ii])
     
     return min_ps
+
+def apw_cov(d):
+    nsamples,ndim = d.shape
+    if nsamples < ndim:
+        raise ValueError("Transpose.")
+    
+    cov = np.zeros((ndim,ndim)) + 1E-8
+    for x in d:
+        cov += np.outer(x,x)
+    
+    return cov    
 
 def generalized_variance(potential, particle_orbits, satellite_orbit):
     """ Compute the variance scalar that we will minimize.
@@ -88,12 +102,13 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
     
     min_ps = minimum_distance_matrix(potential, particle_orbits, satellite_orbit)
     
-    cov_matrix = np.cov(min_ps.T)
-    
+    #cov_matrix = np.cov(min_ps.T)
+    cov_matrix = apw_cov(min_ps)
+        
     # cov_matrix -> (6 x 6) covariance matrix for particles
-    w,v = np.linalg.eig(cov_matrix)
+    #w,v = np.linalg.eig(cov_matrix)
     #return np.sum(w)
-    return np.log(np.prod(w))
+    #return np.log(np.prod(w))
     
     sign,logdet = np.linalg.slogdet(cov_matrix)
     return logdet
