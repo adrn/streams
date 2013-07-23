@@ -91,7 +91,7 @@ def max_likelihood_parameters(sampler):
     nwalkers, nsteps, nparams = sampler.chain.shape
     
     # only use samplers that have reasonable acceptance fractions
-    good_walkers = (sampler.acceptance_fraction > 0.05) & \
+    good_walkers = (sampler.acceptance_fraction > 0.1) & \
                    (sampler.acceptance_fraction < 0.8)
     
     logger.info("{0} walkers ({1:.1f}%) converged"
@@ -104,8 +104,9 @@ def max_likelihood_parameters(sampler):
     # Find median values in each parameter
     best_params = []
     for ii in range(nparams):
-        xsorted = sorted(flatchain[:,ii])
-        best_params.append(xsorted[int(0.5 * len(xsorted))])
+        #xsorted = sorted(flatchain[:,ii])
+        #best_params.append(xsorted[int(0.5 * len(xsorted))])
+        best_params.append(np.median(flatchain[:,ii]))
     
     """
     best_step_idx = np.argmax(np.ravel(good_probs))
