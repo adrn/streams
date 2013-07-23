@@ -33,7 +33,7 @@ from streams.potential import LawMajewski2010
 from streams.potential.lm10 import true_params
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.io.lm10 import particle_table, particles_today, satellite_today, time
-from streams.io.catalogs import read_stripe82
+from streams.io.catalogs import read_quest
 from streams.plot import sgr_kde
 
 matplotlib.rc('xtick', labelsize=14)
@@ -77,7 +77,54 @@ stripe82_catalog = """ra dec dist
 56.963075 -0.291889 11.96
 59.037319 -0.08628 7.19
 58.036886 0.999678 8.18"""
-    
+
+quest_catalog = """ra dec dist
+61.68371 -0.37483 6.91830970919
+193.0365 -0.49203 9.6
+193.18596 -0.42011 9.4
+212.62708 -0.84478 20.3235701094
+213.93104 -0.10356 19.3196831702
+217.03742 -0.19667 15.7036280433
+221.83508 -0.01711 28.0543363795
+222.41508 -0.49544 23.0144181741
+224.36254 -1.97 29.7851642943
+226.42392 -1.65917 23.9883291902
+227.47962 -1.54928 19.7696964011
+227.75479 -1.63183 25.1188643151
+227.86504 -1.98328 24.3220400907
+228.98854 -0.11467 25.003453617
+228.99154 -0.18975 23.7684028662
+228.99296 -0.09647 26.6685866452
+229.02412 -0.18675 25.2348077248
+229.03967 -0.27306 25.2348077248
+229.05329 -0.16742 24.3220400907
+229.2045 -0.12967 26.0615355
+229.43821 -0.64547 20.8929613085
+229.86596 -0.64133 24.7742205763
+230.34567 -0.09186 25.8226019063
+230.82762 -0.92239 16.9824365246
+231.78846 -0.34567 27.6694164541
+231.98 -2.13494 25.7039578277
+232.16571 -1.32111 26.0615355
+232.91196 -0.21981 29.9226463661
+233.04121 -1.3425 28.7078058202
+234.94462 -0.62931 22.5943577022
+235.344 -0.49136 21.2813904598
+235.46812 -1.24069 22.3872113857
+235.47917 -0.76497 24.3220400907
+235.97929 -1.481 28.8403150313
+236.5215 -0.4465 20.9893988362
+237.11308 -1.31583 28.4446110745
+237.80871 -0.97414 23.2273679636
+239.08779 -0.10567 19.5884467351
+239.15138 -2.19614 29.5120922667
+240.39804 -1.23289 25.7039578277
+240.74442 -0.23414 26.6685866452
+242.22921 -0.26269 24.4343055269
+242.31571 -2.01094 29.9226463661
+242.33487 -1.00428 24.4343055269
+245.36733 -1.01153 25.7039578277"""
+
 def gaia_spitzer_errors():
     """ Visualize the observational errors from Gaia and Spitzer, along with
         dispersion and distance scale of Sgr and Orphan. 
@@ -141,11 +188,11 @@ def gaia_spitzer_errors():
     axes[0].add_patch(orp_d)
     
     # Dispersion from Majewski 2004: 10 km/s
-    sgr_v = Rectangle((10., 10), 60., 1., color=sgr_color, alpha=0.75,
+    sgr_v = Rectangle((10., 10), 60., 1., color=sgr_color, alpha=1.,
                       label='Sgr dispersion')
     axes[1].add_patch(sgr_v)
     
-    orp_v = Rectangle((10., 8.), 35., 1., color=orp_color, alpha=0.75,
+    orp_v = Rectangle((10., 8.), 35., 1., color=orp_color, alpha=1.,
                       label='Orp dispersion')
     axes[1].add_patch(orp_v)
     
@@ -183,13 +230,13 @@ def sgr():
         re-observed
     """
     
-    fig,axes = plt.subplots(1, 2, figsize=(14,6), sharex=True, sharey=True)
+    fig,axes = plt.subplots(1, 2, figsize=(14,6.5), sharex=True, sharey=True)
     
     # read in all particles as a table
-    pdata = particle_table(N=1000, expr="(Pcol<7) & (abs(Lmflag)==1)")
+    pdata = particle_table(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
     
     extent = {'x':(-90,55), 
-              'y':(-50,60)}
+              'y':(-58,68)}
     Z = sgr_kde(pdata, extent=extent)
     axes[1].imshow(Z**0.5, interpolation="nearest", 
               extent=extent['x']+extent['y'],
@@ -204,60 +251,76 @@ def sgr():
                                       s82['dist']*u.kpc)
     
     catalina = ascii.read(os.path.join(project_root, "data/spitzer_sgr_sample.txt"))
+    catalina = catalina[catalina['dist'] < 35.]
     catalina_xyz = ra_dec_dist_to_xyz(catalina['ra']*u.deg, 
                                       catalina['dec']*u.deg, 
                                       catalina['dist']*u.kpc)
+    
+    quest = ascii.read(quest_catalog)
+    quest = quest[quest['dist'] < 35]
+    quest = quest[quest['dist'] > 10]
+    quest_xyz = ra_dec_dist_to_xyz(quest['ra']*u.deg, 
+                                   quest['dec']*u.deg, 
+                                   quest['dist']*u.kpc)
     
     rcparams = {'lines.linestyle' : 'none', 
                 'lines.color' : 'k',
                 'lines.marker' : 'o'}
     
     with rc_context(rc=rcparams): 
-        axes[0].plot(particles._r[:,0], particles._r[:,2],
-                     marker='.', alpha=0.85, ms=12)
+        axes[0].plot(pdata['x'], pdata['z'],
+                     marker='.', alpha=0.1, ms=5)
         
         axes[1].plot(stripe82_xyz[:,0], stripe82_xyz[:,2], marker='.', 
                      color='#111111', alpha=0.85, markersize=12, 
                      label="Stripe 82", markeredgewidth=0)
         
         axes[1].plot(catalina_xyz[:,0], catalina_xyz[:,2], marker='^', 
-                     color='#111111', alpha=0.85, markersize=8, 
+                     color='#111111', alpha=0.85, markersize=7, 
                      label="Catalina", markeredgewidth=0)
         
+        axes[1].plot(quest_xyz[:,0], quest_xyz[:,2], marker='s', 
+                     color='#111111', alpha=0.85, markersize=6, 
+                     label="QUEST", markeredgewidth=0)
+        
         # add solar symbol
-        axes[0].plot(-8., 0., marker='.', color='#FFFFB2', alpha=1., 
-                     markersize=11)
-        axes[0].scatter(-8., 0., marker='o', facecolor='none', edgecolor='#FFFFB2', 
-                        alpha=1., s=200, linewidth=2)
-        axes[1].plot(-8., 0., marker='.', color='#FFFFB2', alpha=1., 
-                     markersize=11)
-        axes[1].scatter(-8., 0., marker='o', facecolor='none', edgecolor='#FFFFB2', 
-                        alpha=1., s=200, linewidth=2)
+        axes[0].text(-8., 0., s=r"$\odot$")
+        axes[1].text(-8., 0., s=r"$\odot$")
 
         axes[0].set_xlabel("$X_{GC}$ [kpc]")
         axes[1].set_xlabel("$X_{GC}$ [kpc]")
         axes[0].set_ylabel("$Z_{GC}$ [kpc]")
-        axes[1].set_xlim(extent['x'])
-        axes[1].set_ylim(extent['y'])
     
-    ax.legend(loc='upper left')
+    axes[1].legend(loc='upper left')
     plt.tight_layout()
+    
+    axes[0].set_xlim(extent['x'])
+    axes[0].set_ylim(extent['y'])
+    
+    # turn off right, left ticks respectively
+    axes[0].yaxis.tick_left()
+    axes[1].yaxis.tick_right()
+    
+    # turn off top ticks
+    axes[0].xaxis.tick_bottom()
+    axes[1].xaxis.tick_bottom()
+    
+    fig.subplots_adjust(wspace=0.)
     fig.savefig(os.path.join(plot_path, "lm10.pdf"))
 
 def bootstrapped_parameters_v1():
-    
     data_file = os.path.join(project_root, "plots", "hotfoot", 
-                             "uniform_sample", "all_best_parameters.pickle")
+                             "SMASH", "all_best_parameters.pickle")
     
     with open(data_file) as f:
         data = pickle.load(f)
     
-    fig,axes = plt.subplots(1,3,figsize=(16,6), sharey=True)
-    
+    fig,axes = plt.subplots(1,3,figsize=(16,6))
+
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
     
-    lims = dict(q1=(1.2,1.6), qz=(1.2,1.6), v_halo=(100,150), phi=(60,120))
+    lims = dict(q1=(1.2,1.5), qz=(1.2,1.5), v_halo=(100,150), phi=(85,110))
     
     for ii,x_param in enumerate(x_params):
         ydata = data[y_param]
@@ -274,15 +337,32 @@ def bootstrapped_parameters_v1():
             xdata = (xdata*u.radian).to(u.degree).value
             x_true = x_true.to(u.degree).value
             
+        axes[ii].axhline(y_true, linewidth=2, color='#2B8CBE', alpha=0.6)
+        axes[ii].axvline(x_true, linewidth=2, color='#2B8CBE', alpha=0.6)
         axes[ii].plot(xdata, ydata, marker='o', alpha=0.75, linestyle='none')
-        axes[ii].axhline(y_true)
-        axes[ii].axvline(x_true)
         axes[ii].set_xlim(lims[x_param])
         axes[ii].set_ylim(lims[y_param])
+        
+        # turn off top ticks
+        axes[ii].xaxis.tick_bottom()
     
-    plt.show()
+    axes[0].set_ylabel(r"$v_{\rm halo}$", 
+                       fontsize=26, rotation='horizontal')
+    fig.text(0.015, 0.48, "[km/s]", fontsize=16)
+    axes[1].set_yticklabels([])
+    axes[2].set_yticklabels([])
+    
+    axes[0].set_xlabel(r"$q_1$", fontsize=26)
+    axes[1].set_xlabel(r"$q_z$", fontsize=26)
+    axes[2].set_xlabel(r"$\phi$", fontsize=26)
+    fig.text(0.85, 0.05, "[deg]", fontsize=16)
+    
+    plt.tight_layout()
+    fig.subplots_adjust(wspace=0.04)
+    #plt.show()
+    fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
 if __name__ == '__main__':
     #gaia_spitzer_errors()
-    sgr()
-    #bootstrapped_parameters_v1()
+    #sgr()
+    bootstrapped_parameters_v1()

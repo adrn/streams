@@ -22,7 +22,7 @@ from streams.observation.gaia import parallax_error, proper_motion_error, \
                                      add_uncertainties_to_particles
 from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
 
-from streams.inference import relative_normalized_coordinates
+from streams.inference import relative_normalized_coordinates, generalized_variance
 from streams.inference.lm10 import timestep
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import true_params
@@ -44,12 +44,13 @@ if not os.path.exists(plot_path):
 def normed_objective_plot():
     """ Plot our objective function in each of the 4 parameters we vary """
     
+    Nbins = 25
+    
     # Can change this to the true adaptive functions so I can compare
     timestep2 = lambda *args,**kwargs: -1.
-    resolution = 1.
     
     # Read in the LM10 data
-    particles = particles_today(N=100, expr="(Pcol>0) & (abs(Lmflag)==1)")
+    particles = particles_today(N=100, expr="(Pcol>0) & (abs(Lmflag) == 1)")
     satellite = satellite_today()
     t1,t2 = time()
     resolution = 3.
@@ -61,7 +62,7 @@ def normed_objective_plot():
             
         stats = np.linspace(true_params[param]*0.9,
                             true_params[param]*1.1, 
-                            10)
+                            Nbins)
     
         for stat in stats:
             params = true_params.copy()
@@ -72,8 +73,15 @@ def normed_objective_plot():
                                       timestep_args=(lm10, satellite.m.value),
                                       resolution=resolution,
                                       t1=t1, t2=t2)
-            variances[param].append(generalized_variance_prod(lm10, p_orbits, s_orbit))
-
+            variances[param].append(generalized_variance(lm10, p_orbits, s_orbit))
+    
+    nstats = np.linspace(0.9, 1.1, Nbins)
+    for name,vals in variances.items():
+        plt.plot(nstats, vals, label=name)
+    
+    plt.show()
+    
+    return variances
 
 def gaia_spitzer_errors():
     """ Visualize the observational errors from Gaia and Spitzer, along with
@@ -258,7 +266,9 @@ def phase_space_d_vs_time(N=10):
     fig.savefig(os.path.join(plot_path, "ps_distance.pdf"), 
                 facecolor=rcparams['figure.facecolor'])
     
-    return selected_star_idx
+    return 
+
 if __name__ == '__main__':
-    gaia_spitzer_errors()
-    phase_space_d_vs_time()
+    #gaia_spitzer_errors()
+    #phase_space_d_vs_time()
+    normed_objective_plot()
