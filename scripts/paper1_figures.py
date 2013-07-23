@@ -192,8 +192,8 @@ def phase_space_d_vs_time(N=10):
     selected_star_idx[randidx] = True
     
     wrong_params = true_params.copy()
-    wrong_params['qz'] = 1.1*wrong_params['qz']
-    wrong_params['v_halo'] = 1.1*wrong_params['v_halo']
+    wrong_params['qz'] = 1.25*wrong_params['qz']
+    #wrong_params['v_halo'] = wrong_params['v_halo']
     
     # define correct potential, and wrong potential
     true_potential = LawMajewski2010(**true_params)
@@ -242,21 +242,24 @@ def phase_space_d_vs_time(N=10):
     
     with rc_context(rc=rcparams):  
         fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(10,10))
-        axes[0].axhline(2, linestyle='--', color='#444444')
-        axes[1].axhline(2, linestyle='--', color='#444444')
+        axes[0].axhline(1, linestyle='--', color='#444444')
+        axes[1].axhline(1, linestyle='--', color='#444444')
         
         for ii in randidx:
             for jj in range(2):
                 d = D_pses[jj][:,ii]
                 sR = sat_R[jj]
                 axes[jj].semilogy(ts[jj]/1000, d, alpha=0.5, color=rcparams['lines.color'])
-                axes[jj].semilogy(ts[jj]/1000, 1.05+0.9*(sR-sR.min())/(sR.max()-sR.min()), 
+                axes[jj].semilogy(ts[jj]/1000, 0.3*0.9*(sR-sR.min())/(sR.max()-sR.min()) + 0.45, 
                                   alpha=0.75, color='#CA0020')
                 axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='o',
                                   alpha=0.75, color=rcparams['lines.color'])
         
-        axes[1].set_ylim(1,100)
+        axes[1].set_ylim(0.4,20)
         axes[1].set_xlim(-6, 0)
+        
+        axes[0].xaxis.tick_bottom()
+        axes[1].xaxis.tick_bottom()
     
     axes[1].set_xlabel("Backwards integration time [Gyr]")
     axes[0].set_ylabel(r"$D_{ps}$", rotation='horizontal')
@@ -270,5 +273,5 @@ def phase_space_d_vs_time(N=10):
 
 if __name__ == '__main__':
     #gaia_spitzer_errors()
-    #phase_space_d_vs_time()
-    normed_objective_plot()
+    phase_space_d_vs_time()
+    #normed_objective_plot()
