@@ -203,8 +203,8 @@ current data on the Sgr debris to assess the triaxiality and orientation
 of the outer Galaxy, the first time that such a reconstruction of
 the 3-dimensional mass distribution of a dark matter halo has been
 feasible. Figure \ref{fig:lm10} shows particle positions from the final time-step of an N-body simulation of dwarf satellite disruption along the expected Sgr
-orbit in the best-fitting Milky Way halo model from LM10. [TODO: Maybe not true...] The positions are shown in a coordinate system defined
-by the orbit of the satellite \citep{majewski2004}. The
+orbit in the best-fitting Milky Way halo model from LM10. [TODO: Maybe not true...: The positions are shown in a coordinate system defined
+by the orbit of the satellite \citep{majewski2004}]. The
 simulation was run in a three-component potential, with a triaxial,
 logarithmic halo model of the form
 \begin{equation}
@@ -284,16 +284,16 @@ computed
 \end{equation}
 where $(\bs{x},\bs{v})_{i}$ and $(\bs{x},\bs{v})_{p}$ are the phase-space coordinates for the particles and progenitor, respectively. These definitions require an estimate of the mass of the
 satellite, $m_{sat}$, which, combined with the computed enclosed mass
-of the potential, $m_{enc}$, sets the instantaneous tidal radius and
+of the potential, $m_{enc}$, and the orbital radius of the satellite, $R$, sets the instantaneous tidal radius and
 escape velocity,
 \begin{equation}
-  R_{\rm tide}=R_{{\rm orbit}}\Big(\frac{m_{\rm sat}}{3m_{\rm enc}}\Big)^{1/3}\,\,\,\,;\,\,\,\,
+  R_{\rm tide}=R\Big(\frac{m_{\rm sat}}{3m_{\rm enc}}\Big)^{1/3}\,\,\,\,;\,\,\,\,
   v_{\rm esc}=\sqrt{\frac{2Gm_{\rm sat}}{R_{\rm tide}}}.
 \end{equation}
 
 Qualitatively, when the distance in this normalized 6D space,
-$D_{\rm ps}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} < \sqrt{2}$, the star is
-probably recaptured by the satellite, but this is not imposed as a
+$D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} < \sqrt{2}$, the star is
+likely recaptured by the satellite, but this is not imposed as a
 hard constraint. [JZSH ...] As a statistical measure of how many stars have recombined, we
 construct the 6D distribution of the minimum phase-space vectors for
 each star over each individual, integrated orbit. For each star, $i$,
@@ -304,7 +304,7 @@ $t_{j}$, and the vector with the minimum phase-space distance is stored
   \bs{A}_{i} &= (\bs{q}_{i}(t^*_{i}),\bs{p}_{i}(t^*_{i})).
 \end{align}
 Thus, the matrix $\bs{A}_{ik}$ contains these minimum phase-space distance vectors for each star,
-where $k\in\{1,6\}$. Intuitively, the variance of this distribution of minimum distance vectors
+where $k\in[1,6]$. Intuitively, the variance of this distribution of minimum distance vectors
 will be larger for orbits integrated in an incorrect potential
 relative to the distribution computed from the `true' orbital history
 of the stars; in an incorrect potential, small differences in the
