@@ -39,35 +39,6 @@ can potentially alter the radial profile through a combination of adiabatic cont
 Hence, measurements of the shape, orientation, radial profile and extent of dark matter halos can shed light both on the formation of these vast structures and the role that
 the messy baryonic processes of gas inflow, star formation and feedback  have played in shaping them.
 
-The  extent of the bulk of the visible matter in galaxies is roughly 10\% of that of the host dark matter halo. Hence the major components of a galaxy can be used to  trace
-the inner portion of its host halo's mass distribution.
-The rotation curves of disk galaxies are particularly sensitive probes since matter in disks can be assumed to move on near circular orbits.
-This knowledge gives us extra information about the orbital distribution of the visible matter within the dark matter halo, which allows a more precise tracing of the
-potential than is feasible for objects such as elliptical galaxies where orbits are assumed to be random.
-For example, rotation curves of low-surface-brightness galaxies can be used to examine whether dark matter halos have a cusped, power-law density profile in their
-centers as predicted by purely dark matter simulations of structure formation, or a constant density core perhaps induced by the influence of baryonic processes \citep[e.g.]
-[]{kuzio09}.
-
-
-% Quote recent Binney/McMillan and Bovy/Rix work here? In longer paper…. Really about large disk samples and disk df's?
-% McMillan & Binney Tori work - but again assume fully populated DF
-
-Around external galaxies, the  dark matter distribution  at larger radii has been explored using a variety of approaches \citep[see][for a a complete and detailed review]
-{courteau12}.
-For example, the kinematics of tracers populations such as globular clusters or planetary nebulae  can be used to derive mass estimates under the assumptions that
-these satellite systems are relaxed and well-mixed \citep[early investigations include][]{cote03,mendez01}.
-The level of detail in these estimates is necessarily limited by the number of objects bright enough for spectroscopic measurements. The largest samples to date have of
-order several hundred members probing out to several 10's of kpc,  and allowing simple, parameterized models of the mass and orbit distribution to be simultaneously
-constrained \citep[e.g.][]{napolitano11,deason12a}.
-%\citep{romanowsky03,douglas07,romanowsky09,napolitano11,lee11}
-Alternatively, the properties of gravitationally lensed background sources around a galaxy can be used to map the shape, orientation and radial profile of the projected
-mass distribution \citep[as done by the Lens Structure and Dynamics Survey described in][]{koopmans02}.
-The level of detail in these two-dimensional reconstructions is impressive:
-recent work has even found some systems sensitive to the position and mass of a major subhalo orbiting with the main halo \citep[e.g.][]{vegetti10}.
-Of course, lensing reconstructions can only be performed for galaxies which closely intersect our line of sight to background sources, but the advent of large photometric
-catalogues has allowed automatic searches for such chance alignments and significant increases in the number of objects studied \citep[e.g. the Sloan Lens ACS Survey,
-see][]{bolton06}.
-
 The one place in the Universe where we might hope to dissect a dark matter halo in even more detail is locally for our own Milky Way Galaxy.
 Our proximity means that we can use individual stars as tracer populations and hence build much larger samples that probe deeper into the halo than the globular cluster
 and planetary nebula studies of external galaxies.
@@ -84,14 +55,6 @@ smooth distribution function and are well-mixed in orbital phase.
 However, the same surveys that provide large samples of tracers have also revealed the existence of large-scale spatial inhomogeneities in the form of giant stellar
 streams and clouds\citep{newberg01,majewski03,belokurov05}, clearly demonstrating that  a significant fraction of the stellar halo is neither randomly sampling a smooth
 orbit distribution nor is fully phase-mixed.
-The degree of substructure increases with Galactocentric radius \citep{bell08} in agreement with models where the stellar halo is formed purely from accretion events
-\citep{bullock05,cooper10,rashkov12}.
-Moreover, even in the smoother, inner halo which is likely to be phase-mixed, significant clumpings in velocity \citep{schlauffman10} and orbital properties \citep{helmi99}
-have been observed, which indicate a non-smooth component to the orbit distribution.
-By ``observing'' particles in a sample of simulated stellar halos, \citet{yencho06} showed that, if stellar halos are indeed entirely formed via accretion events, then the
-expected degree of non-randomness  could lead to systematic biases in mass estimates of order several tens of percent.
-This encouraging result suggests that, if our expectations for the typical number and size of accretion events contributing to the stellar halo are correct, then the number of
-orbits effectively explored is sufficiently large that the assumption of random, fully phase-mixed orbits is reasonable for the current samples.
 
 A complimentary method to measure the mass distribution is to instead take full advantage of the {\it non}-random nature of the stellar distribution in our stellar halo ---
 analogous to our exploitation of matter in disks moving on near-circular orbits.
@@ -113,8 +76,6 @@ distribution of orbital properties in the debris and along tidal streams) with t
 Many studies of the Sagittarius debris system (hereafter Sgr)  --- whose tidal streams entirely encircle the Milky Way --- have adopted this approach \citep[e.g.][]
 {law05,fellhauer06} with the most recent work for the first time attempting to place constraints on the triaxiality and orientation of the Milky Way's matter distribution
 \citep{law11}.
-Studies which first fit the Sgr stream to a single orbit \citep{johnston05,law09} and were subsequently followed up with full N-body simulations \citep{law05,law12} offer
-another demonstration of the limitation of the former approach as potential parameters are revised when moving to the N-body approach.
 
 Other approaches have been proposed that avoid the cost of full N-body simulations yet recognize the limitations of single orbit integration.
 For example, using the results of N-body simulations as a guide, simple corrections around a single orbit can be adopted to make model predictions that more closely
@@ -124,11 +85,6 @@ The promise of near-future data sets including full (or nearly full) phase-space
 stream.
 \citet{binney08} and \citet{penarrubia12} demonstrate conceptually that the distribution of energy and entropy (respectively) in debris will be minimized only for a correct
 assumption of the form of the Galactic potential (although neither tests their method with realistic observational errors???).
-\citet{johnston99} (hereafter JZSH) showed that backwards integration of the positions of stars and their parent satellite could be used to distinguish Milky Way mass
-models: only in the correct potential would the stars' and satellite's  path coincide within a Hubble time.
-The JZSH method was designed and tested for the proposed characteristics of the Space Interferometry Mission \citep{}, which was expected to be able to measure
-proper motions with $\mu$as/year accuracy for stars as faint as $V=20$.
-Distances to stream members would only be poorly known and were estimated using anticipated properties of tidal debris.
 
 In this paper we re-examine and update  the JZSH  in the context of current and near-future observational capabilities, and illustrates its power with the example of Sgr.
 In Section \ref{context.sec} we outline the observational prospects and Sgr properties that motivated this re-examination.
@@ -288,16 +244,18 @@ method to take advantage of this information.
 \section{Description and test of our algorithm}
 \label{sec:method}
 With access to full phase-space information for stars in a tidal
-stream, it is no longer necessary to model the orbit of the stream
-itself. Instead, it is possible to use the individual stars as
+stream, it is possible to use the individual stars as
 potential measures by exploting the fact that the stars must have come
-from the same progenitor. If the present-day orbital parameters of the
-progenitor system are known, this places an intuitive constraint on
+from the same progenitor. If the present-day phase-space position of the
+progenitor system is also known, this places an intuitive constraint on
 the potential of the Milky Way: if the orbits of the stars and the
-orbit of the progenitor are integrated \emph{backwards} in time, the
+orbit of the progenitor are integrated \emph{backwards} in time
+(imagine watching a visualization of a simulation of satellite destruction "rewind"), the
 stars should `recombine' with the progenitor. If the potential is
 incorrect, the orbits of the stars will diverge from that of the
 progenitor and thus will not be recaptured by the satellite system (Figure~\ref{fig:ps_distance}).
+
+This approach was originally propose by \citep{jzsh1999} and designed and tested for the proposed characteristics of the Space Interferometry Mission \citep{unwin??}, which was expected to be able to measure proper motions with $\mu$as/year accuracy for stars as faint as $V=20$. Distances to stream members would only be poorly known and were estimated in the method by using anticipated properties of tidal debris. Below we present an updated version of the algorithm: the promise of 2\% distances to RR Lyrae stars (see Section \ref{sec:spitzer}) enables a direct measurement (rather than approximate estimate) of the position of a star within its debris structure; and the test statistic that quantifies how well stars recombine with the satellite has been rigorously redefined.
 
 \begin{figure}[h]
 \begin{center}
