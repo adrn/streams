@@ -42,7 +42,7 @@ def relative_normalized_coordinates(potential, particle_orbits, satellite_orbit)
     v_esc = potential._escape_velocity(m=satellite_orbit._m,
                                        r_tide=r_tide)
     
-    return (particle_orbits._r - satellite_orbit._r) / (5.*r_tide), \
+    return (particle_orbits._r - satellite_orbit._r) / (3.5*r_tide), \
            (particle_orbits._v - satellite_orbit._v) / v_esc
 
 def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
@@ -88,7 +88,7 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
     
     min_ps = minimum_distance_matrix(potential, particle_orbits, satellite_orbit)
     
-    cov_matrix = np.cov(min_ps.T)
+    cov_matrix = np.cov(np.fabs(min_ps.T))
     
     # cov_matrix -> (6 x 6) covariance matrix for particles
     w,v = np.linalg.eig(cov_matrix)
