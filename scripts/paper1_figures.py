@@ -16,13 +16,14 @@ import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import rc_context, rcParams
 from matplotlib.patches import Rectangle
+import triangle
 
 from streams.observation import apparent_magnitude
 from streams.observation.gaia import parallax_error, proper_motion_error, \
                                      add_uncertainties_to_particles
 from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
 
-from streams.inference import relative_normalized_coordinates, generalized_variance
+from streams.inference import relative_normalized_coordinates, generalized_variance, minimum_distance_matrix
 from streams.inference.lm10 import timestep
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import true_params
@@ -41,27 +42,26 @@ plot_path = "plots/paper1/"
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
     
+# Read in the LM10 data
+np.random.seed(142)
+particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+satellite = satellite_today()
+t1,t2 = time()    
+
 def normed_objective_plot():
     """ Plot our objective function in each of the 4 parameters we vary """
     
-    Nbins = 25
+    Nbins = 21
     
-    # Can change this to the true adaptive functions so I can compare
-    timestep2 = lambda *args,**kwargs: -1.
-    
-    # Read in the LM10 data
-    particles = particles_today(N=100, expr="(Pcol>0) & (abs(Lmflag) == 1)")
-    satellite = satellite_today()
-    t1,t2 = time()
-    resolution = 3.
+    p_range = (0.8, 1.2)
     
     variances = dict()
     for param in ['q1','qz','v_halo','phi']:
         if not variances.has_key(param):
             variances[param] = []
             
-        stats = np.linspace(true_params[param]*0.9,
-                            true_params[param]*1.1, 
+        stats = np.linspace(true_params[param]*p_range[0],
+                            true_params[param]*p_range[1], 
                             Nbins)
     
         for stat in stats:
@@ -69,19 +69,42 @@ def normed_objective_plot():
             params[param] = stat
             lm10 = LawMajewski2010(**params)
             integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
-            s_orbit,p_orbits = integrator.run(timestep_func=timestep2,
-                                      timestep_args=(lm10, satellite.m.value),
-                                      resolution=resolution,
-                                      t1=t1, t2=t2)
+            s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
             variances[param].append(generalized_variance(lm10, p_orbits, s_orbit))
     
-    nstats = np.linspace(0.9, 1.1, Nbins)
-    for name,vals in variances.items():
-        plt.plot(nstats, vals, label=name)
+    nstats = np.linspace(p_range[0], p_range[1], Nbins)
+    linestyles = [(1,'-'), (2,'-.'), (2,'--'), (2,':')]
+    for ii, (name,vals) in enumerate(variances.items()):
+        ls = linestyles[ii] 
+        plt.plot(nstats, vals, label=name, linewidth=ls[0], linestyle=ls[1])
     
     plt.show()
     
     return variances
+
+def variance_projections():
+    """ Figure showing 2D projections of the 6D variance """
+    
+    params = true_params.copy()
+    params['qz'] = true_params['qz']*1.2
+    params['v_halo'] = true_params['v_halo']*1.2
+    
+    # define both potentials
+    correct_lm10 = LawMajewski2010(**true_params)
+    wrong_lm10 = LawMajewski2010(**true_params)
+    
+    fig = None
+    for potential in [correct_lm10, wrong_lm10]:
+        integrator = SatelliteParticleIntegrator(potential, satellite, particles)
+        s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+        min_ps = minimum_distance_matrix(potential, p_orbits, s_orbit)
+        
+        if not fig:
+            fig = triangle.corner(min_ps, plot_contours=False, plot_datapoints=True)
+        else:
+            triangle.corner(min_ps, plot_contours=False, plot_datapoints=True, fig=fig)
+    
+    plt.show()
 
 def gaia_spitzer_errors():
     """ Visualize the observational errors from Gaia and Spitzer, along with
@@ -199,9 +222,6 @@ def phase_space_d_vs_time(N=10):
     true_potential = LawMajewski2010(**true_params)
     wrong_potential = LawMajewski2010(**wrong_params)
     
-    particles = particles_today(N=100, expr="(Pcol<7) & (Pcol>0) & (abs(Lmflag)==1)")    
-    satellite = satellite_today()
-    t1,t2 = time()
     resolution = 3.
     
     sat_R = list()
@@ -273,5 +293,6 @@ def phase_space_d_vs_time(N=10):
 
 if __name__ == '__main__':
     #gaia_spitzer_errors()
-    phase_space_d_vs_time()
+    #phase_space_d_vs_time()
     #normed_objective_plot()
+    variance_projections()
