@@ -35,9 +35,9 @@ param_units = dict(v_halo=u.kpc/u.Myr,
 param_to_latex = dict(q1=r"$q_1$",
                       q2=r"$q_2$",
                       qz=r"$q_z$",
-                      v_halo=r"$v_{halo}$",
+                      v_halo=r"$v_{\rm halo}$",
                       phi=r"$\phi$",
-                      r_halo=r"$r_{halo}$"
+                      r_halo=r"$r_{\rm halo}$"
                       )
 
 class LawMajewski2010(CompositePotential):
