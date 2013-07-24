@@ -134,7 +134,6 @@ def gaia_spitzer_errors():
                 'lines.linewidth' : 1.,
                 'lines.color' : 'k',
                 'lines.marker' : None,
-                'text.usetex' : True,
                 'axes.edgecolor' : '#444444',
                 'axes.facecolor' : '#ffffff'}
     
@@ -142,7 +141,19 @@ def gaia_spitzer_errors():
     orp_color = '#EF8A62'
     
     with rc_context(rc=rcparams):
-        fig,axes = plt.subplots(1, 2, figsize=(12, 6))
+        fig,axes = plt.subplots(1, 2, figsize=(12, 6), sharex=True)
+        
+        # vertical lines for dwarf satellites
+        for name,dist in [('Sagittarius', 24), ('Ursa Minor, Bootes', 65), 
+                          ('Sculptor', 80), ('Carina', 100)]:
+            axes[0].axvline(dist, zorder=-1, alpha=0.4, linestyle='--')
+            axes[1].axvline(dist, zorder=-1, alpha=0.4, linestyle='--')
+        
+        # label the vertical lines
+        axes[1].text(16., 0.1, 'Sgr-', alpha=0.6)
+        axes[1].text(27., 0.06, 'UMi, Boo-', alpha=0.6)
+        axes[1].text(57., 0.03, 'Scl-', alpha=0.6)
+        axes[1].text(68.5, 0.015, 'Car-', alpha=0.6)
         
         # Distance from 1kpc to ~100kpc
         D = np.logspace(0., 2., 50)*u.kpc
@@ -175,32 +186,32 @@ def gaia_spitzer_errors():
             axes[1].loglog(D.kiloparsec, dVtan, color='k', alpha=0.1)
     
         # Add spitzer 2% line to distance plot
-        axes[0].axhline(0.02, linestyle='--', linewidth=4, color='#7B3294', alpha=0.8)
+        axes[0].axhline(0.02, linestyle='-', linewidth=3, color='k', alpha=0.75)
     
     # Now add rectangles for Sgr, Orphan
     sgr_d = Rectangle((10., 0.15), 60., 0.15, 
-                      color=sgr_color, alpha=1., label='Sgr thickness')
+                      color=sgr_color, alpha=1., label='Sgr stream width')
     axes[0].add_patch(sgr_d)
     
     # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.pdf+html
     orp_d = Rectangle((10., 0.03), 35., 0.03,
-                      color=orp_color, alpha=1., label='Orp thickness')
+                      color=orp_color, alpha=1., label='Orp stream width')
     axes[0].add_patch(orp_d)
     
     # Dispersion from Majewski 2004: 10 km/s
     sgr_v = Rectangle((10., 10), 60., 1., color=sgr_color, alpha=1.,
-                      label='Sgr dispersion')
+                      label='Sgr stream dispersion')
     axes[1].add_patch(sgr_v)
     
     orp_v = Rectangle((10., 8.), 35., 1., color=orp_color, alpha=1.,
-                      label='Orp dispersion')
+                      label='Orp stream dispersion')
     axes[1].add_patch(orp_v)
     
-    axes[0].set_ylim(top=10.)
-    axes[0].set_xlim(1, 100)
+    axes[0].set_ylim(0.003, 10)
+    axes[0].set_xlim(1, 105)
     
-    axes[1].set_ylim(0.1, 100)
-    axes[1].set_xlim(10, 100)
+    axes[1].set_ylim(0.01, 100)
+    #axes[1].set_xlim(10, 100)
     
     axes[0].set_xlabel("Distance [kpc]")
     axes[0].set_ylabel("Frac. distance error $\sigma_D/D$")
@@ -208,20 +219,23 @@ def gaia_spitzer_errors():
     axes[1].set_xlabel("Distance [kpc]")
     
     axes[0].set_xticklabels(["1", "10", "100"])
-    axes[1].set_xticklabels(["10", "100"])
     
     axes[0].set_yticklabels(["{:g}".format(yt) for yt in axes[0].get_yticks()])
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
     
-    # add Gaia and Spitzer text to first plot
+    # add Gaia and Spitzer text to plots
     axes[0].text(4., 0.12, 'Gaia', fontsize=16, rotation=45)
-    axes[0].text(4., 0.011, 'Spitzer', fontsize=16, color="#7B3294", alpha=0.8)
+    axes[0].text(4., 0.013, 'Spitzer', fontsize=16, color="k", alpha=0.75)
+    axes[1].text(4., 0.23, 'Gaia + Spitzer', fontsize=16, rotation=45)
     
     # add legends
     axes[0].legend(loc='upper left', fancybox=True)
     axes[1].legend(loc='upper left', fancybox=True)
     
-    fig.subplots_adjust(hspace=0.1)
+    axes[0].yaxis.tick_left()
+    axes[1].yaxis.tick_left()
+    
+    fig.subplots_adjust(hspace=0.1, wspace=0.1)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
@@ -320,7 +334,7 @@ def bootstrapped_parameters_v1():
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
     
-    lims = dict(q1=(1.2,1.5), qz=(1.2,1.5), v_halo=(100,150), phi=(85,110))
+    lims = dict(q1=(1.3,1.45), qz=(1.3,1.45), v_halo=(115,130), phi=(90,105))
     
     for ii,x_param in enumerate(x_params):
         ydata = data[y_param]
