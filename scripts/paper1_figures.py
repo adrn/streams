@@ -30,10 +30,10 @@ from streams.potential.lm10 import true_params
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.io.lm10 import particles_today, satellite_today, time
 
-matplotlib.rc('xtick', labelsize=14)
-matplotlib.rc('ytick', labelsize=14)
+matplotlib.rc('xtick', labelsize=18)
+matplotlib.rc('ytick', labelsize=18)
 matplotlib.rc('text', usetex=True)
-matplotlib.rc('axes', edgecolor='#444444', labelsize=20)
+matplotlib.rc('axes', edgecolor='#444444', labelsize=24)
 matplotlib.rc('lines', markeredgewidth=0)
 matplotlib.rc('font', family='sans-serif')
 rcParams['font.sans-serif'] = 'helvetica'
@@ -85,26 +85,64 @@ def normed_objective_plot():
 def variance_projections():
     """ Figure showing 2D projections of the 6D variance """
     
+    #particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+    
     params = true_params.copy()
     params['qz'] = true_params['qz']*1.2
     params['v_halo'] = true_params['v_halo']*1.2
     
     # define both potentials
     correct_lm10 = LawMajewski2010(**true_params)
-    wrong_lm10 = LawMajewski2010(**true_params)
+    wrong_lm10 = LawMajewski2010(**params)
     
-    fig = None
-    for potential in [correct_lm10, wrong_lm10]:
-        integrator = SatelliteParticleIntegrator(potential, satellite, particles)
-        s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
-        min_ps = minimum_distance_matrix(potential, p_orbits, s_orbit)
+    rcparams = {'lines.linestyle' : '-', 
+                'lines.linewidth' : 1.,
+                'lines.color' : 'k',
+                'lines.marker' : None,
+                'axes.facecolor' : '#ffffff'}
+    
+    with rc_context(rc=rcparams):
+        fig,axes = plt.subplots(2, 2, figsize=(10,10))
+        colors = ['#0571B0', '#D7191C']
+        for ii,potential in enumerate([correct_lm10, wrong_lm10]):
+            integrator = SatelliteParticleIntegrator(potential, satellite, particles)
+            s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+            min_ps = minimum_distance_matrix(potential, p_orbits, s_orbit)
+            
+            axes[0,0].plot(min_ps[:,0], min_ps[:,3], marker='o', alpha=0.75, 
+                           linestyle='none', color=colors[ii])
+            axes[1,0].plot(min_ps[:,0], min_ps[:,4], marker='o', alpha=0.75, 
+                           linestyle='none', color=colors[ii])
+            axes[0,1].plot(min_ps[:,1], min_ps[:,3], marker='o', alpha=0.75, 
+                           linestyle='none', color=colors[ii])
+            axes[1,1].plot(min_ps[:,1], min_ps[:,4], marker='o', alpha=0.75, 
+                           linestyle='none', color=colors[ii])
         
-        if not fig:
-            fig = triangle.corner(min_ps, plot_contours=False, plot_datapoints=True)
-        else:
-            triangle.corner(min_ps, plot_contours=False, plot_datapoints=True, fig=fig)
+        # limits
+        for ax in np.ravel(axes):
+            ax.set_xlim(-4,4)
+            ax.set_ylim(-4,4)
+            ax.xaxis.tick_bottom()
+            ax.yaxis.tick_left()
+            ax.xaxis.set_ticks([-2,0,2])
+            ax.yaxis.set_ticks([-2,0,2])
+        
+        # tick hacking
+        axes[0,0].set_xticks([])
+        axes[0,1].set_xticks([])
+        axes[0,1].set_yticks([])
+        axes[1,1].set_yticks([])
+        
+        # labels
+        axes[0,0].set_ylabel(r'$p_x$')
+        axes[1,0].set_xlabel(r'$q_x$')
+        axes[1,0].set_ylabel(r'$p_y$')
+        axes[1,1].set_xlabel(r'$q_y$')
     
-    plt.show()
+    fig.subplots_adjust(wspace=0., hspace=0.)
+    plt.tight_layout()
+    #plt.show()
+    fig.savefig(os.path.join(plot_path, "variance_projections.pdf"))
 
 def gaia_spitzer_errors():
     """ Visualize the observational errors from Gaia and Spitzer, along with
@@ -115,8 +153,6 @@ def gaia_spitzer_errors():
                 'lines.linewidth' : 1.,
                 'lines.color' : 'k',
                 'lines.marker' : None,
-                'text.usetex' : True,
-                'axes.edgecolor' : '#444444',
                 'axes.facecolor' : '#ffffff'}
     
     sgr_color = '#67A9CF'
@@ -294,5 +330,5 @@ def phase_space_d_vs_time(N=10):
 if __name__ == '__main__':
     #gaia_spitzer_errors()
     #phase_space_d_vs_time()
-    #normed_objective_plot()
-    variance_projections()
+    normed_objective_plot()
+    #variance_projections()
