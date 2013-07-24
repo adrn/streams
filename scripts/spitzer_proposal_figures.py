@@ -144,16 +144,14 @@ def gaia_spitzer_errors():
         fig,axes = plt.subplots(1, 2, figsize=(12, 6), sharex=True)
         
         # vertical lines for dwarf satellites
-        for name,dist in [('Sagittarius', 24), ('Ursa Minor, Bootes', 65), 
-                          ('Sculptor', 80), ('Carina', 100)]:
-            axes[0].axvline(dist, zorder=-1, alpha=0.4, linestyle='--')
-            axes[1].axvline(dist, zorder=-1, alpha=0.4, linestyle='--')
+        axes[0].vlines([24,65,80,100], 0.001, 100, color='k', alpha=0.4, linestyles='--', zorder=-1)
+        axes[1].vlines([24,65,80,100], 0.1, 100, color='k', alpha=0.4, linestyles='--', zorder=-1)
         
         # label the vertical lines
-        axes[1].text(16., 0.1, 'Sgr-', alpha=0.6)
-        axes[1].text(27., 0.06, 'UMi, Boo-', alpha=0.6)
-        axes[1].text(57., 0.03, 'Scl-', alpha=0.6)
-        axes[1].text(68.5, 0.015, 'Car-', alpha=0.6)
+        axes[1].text(16.5, 0.07, 'Sgr -', alpha=0.6, rotation=45)
+        axes[1].text(32., 0.075, 'UMi, Boo -', alpha=0.6, rotation=45)
+        axes[1].text(57., 0.07, 'Scl -', alpha=0.6, rotation=45)
+        axes[1].text(71, 0.07, 'Car -', alpha=0.6, rotation=45)
         
         # Distance from 1kpc to ~100kpc
         D = np.logspace(0., 2., 50)*u.kpc
@@ -377,6 +375,6 @@ def bootstrapped_parameters_v1():
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
 if __name__ == '__main__':
-    #gaia_spitzer_errors()
+    gaia_spitzer_errors()
     #sgr()
-    bootstrapped_parameters_v1()
+    #bootstrapped_parameters_v1()
