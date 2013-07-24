@@ -283,20 +283,20 @@ computed
     \bs{v}_{p}}{v_{\rm esc}}
 \end{equation}
 where $(\bs{x},\bs{v})_{i}$ and $(\bs{x},\bs{v})_{p}$ are the phase-space coordinates for the particles and progenitor, respectively. These definitions require an estimate of the mass of the
-satellite, $m_{sat}$, which, combined with the computed enclosed mass
-of the potential, $m_{enc}$, and the orbital radius of the satellite, $R$, sets the instantaneous tidal radius and
+satellite, $m_{sat}$, which, combined with the orbital radius of the satellite, $R$, and the computed enclosed mass
+of the potential within $R$, $m_{enc}$, sets the instantaneous tidal radius and
 escape velocity,
 \begin{equation}
   R_{\rm tide}=R\Big(\frac{m_{\rm sat}}{3m_{\rm enc}}\Big)^{1/3}\,\,\,\,;\,\,\,\,
   v_{\rm esc}=\sqrt{\frac{2Gm_{\rm sat}}{R_{\rm tide}}}.
 \end{equation}
-
-Qualitatively, when the distance in this normalized 6D space,
+Qualitatively, when the distance in this normalized six-dimensional space,
 $D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} < \sqrt{2}$, the star is
-likely recaptured by the satellite, but this is not imposed as a
-hard constraint. [JZSH ...] As a statistical measure of how many stars have recombined, we
-construct the 6D distribution of the minimum phase-space vectors for
-each star over each individual, integrated orbit. For each star, $i$,
+likely recaptured by the satellite. JZSH imposed a similar condition as a hard boundary and used the number of recaptured particles in a given backwards-integration as a cost function for optimization. What follows is a description of an updated procedure with a more natural choice for an objective function [TODO...].
+
+As a statistical measure of how many stars have recombined, we
+use the minimum phase-space vectors --- for
+each star over the individual, integrated orbits --- as samples from an underlying six-dimensional distribution. For each star, $i$,
 the phase-space distance, $D_{\rm ps}$, is computed at each timestep
 $t_{j}$, and the vector with the minimum phase-space distance is stored
 \begin{align}
@@ -315,9 +315,8 @@ set of potential parameters, $\bs{\theta}$, is a natural choice for
 the scalar objective function used in constraining the potential of
 the Milky Way,
 \begin{equation}
-  f(\bs{\theta})=\det(\mathrm{Cov}(A_{ik})).
+  f(\bs{\theta})=\det(\mathrm{Cov}( \bs{A}_{ik})).
 \end{equation}
-[This objective function is an approximation to a more general likelihood function, described in detail in forthcoming work (Price-Whelan \& Johnston in prep.). The results shown in sections xx and yy are meant to illustrate the strength and concept of the method..]
 
 \subsection{Application to Simulated Data}
 The LM10 simulation data (see Section \ref{sec:sgr}) is a perfect
@@ -330,21 +329,24 @@ wraps of the stream: the radial velocity errors are drawn from a
 Gaussian $\epsilon_{rv} \sim \mathcal{N}(\mu=0,\sigma=10~{\rm km/s})$,
 the tangential velocity errors depend on the distance to the star and
 are computed from the expected Gaia error curve (shown in
-Figure~\ref{fig:gaia}), and the distance errors on a star of distance
+Figure~\ref{fig:gaia_errors}), and the distance errors on a star of distance
 $D$ are $\epsilon_{dist} \sim \mathcal{N}(0,0.02\times
-D)$. Figure~\ref{fig:} shows all 2D projections of the 6D minimum
+D)$. Figure~\ref{fig:variance6d} shows all two-dimensional projections of the six-dimensional minimum
 phase-space distance distribution for the observed particles in the
-correct and an incorrect potential. Qualitatively, it is clear that the
-variance of the distribution increases in the wrong potential. The objective function
-(generalized variance) defines a convex hypersurface over which we
+correct and an incorrect potential: it is clear that the
+variance of the distribution increases in the wrong potential. The 
+generalized variance defines a convex hypersurface over which we
 optimize four of the six logarithmic potential parameters:
-$v_{circ}$, $\phi$, $q_1$, and $q_z$. Figure~\ref{fig:} shows [...]
-curves produced by varying the true parameters of the potential by
-10\% around the true value.
+$v_{circ}$, $\phi$, $q_1$, and $q_z$. We fix $q_2$ and $R_c$, which are degenerate with combinations of the other parameters. Figure~\ref{fig:} shows one-dimensional slices of the objective function
+produced by varying each of the potential parameters by
+$\pm20\%$ around the true values and holding all others fixed.
 
 % APW Note: The optimization, in a way, is getting a bunch of orbits (curves) to intersect another curve (the progenitor orbit) at some points (over time).
 
 \section{Discussion and future prospects}
+
+% this needs to go somewhere down here...
+[This objective function is an approximation to a more general likelihood function, described in detail in forthcoming work (Price-Whelan \& Johnston in prep.). The results shown in sections xx and yy are meant to illustrate the strength and concept of the method..]
 
 Many orbit fitting methods for measuring the Galactic potential assume that the stars in a given stream are on the same
 orbit. \cite{binney??} show that this assumption leads to biased
