@@ -144,19 +144,19 @@ def gaia_spitzer_errors():
         fig,axes = plt.subplots(1, 2, figsize=(12, 6), sharex=True)
         
         # vertical lines for dwarf satellites
-        axes[0].vlines([24,65,80,100], 0.001, 100, color='k', alpha=0.4, linestyles='--', zorder=-1)
-        axes[1].vlines([24,65,80,100], 0.1, 100, color='k', alpha=0.4, linestyles='--', zorder=-1)
+        axes[0].vlines([24,65,80,100], 0.001, 100, color='#888888', linestyles='--', zorder=-1)
+        axes[1].vlines([24,65,80,100], [0.081,0.0465,0.025,0.014], 100, color='#888888', linestyles='--', zorder=-1)
         
         # label the vertical lines
-        axes[1].text(16.5, 0.07, 'Sgr -', alpha=0.6, rotation=45)
-        axes[1].text(32., 0.075, 'UMi, Boo -', alpha=0.6, rotation=45)
-        axes[1].text(57., 0.07, 'Scl -', alpha=0.6, rotation=45)
-        axes[1].text(71, 0.07, 'Car -', alpha=0.6, rotation=45)
+        axes[1].text(16., 0.075, 'Sgr -', color='#888888', rotation=0)
+        axes[1].text(26.5, 0.043, 'UMi, Boo -', color='#888888', rotation=0)
+        axes[1].text(54.8, 0.023, 'Scl -', color='#888888', rotation=0)
+        axes[1].text(66, 0.013, 'Car -', color='#888888', rotation=0)
         
         # Distance from 1kpc to ~100kpc
         D = np.logspace(0., 2., 50)*u.kpc
         
-        # Sample metallicities from: http://arxiv.org/pdf/1211.7073v1.pdf
+        # Sample metallicities from: http://arxiv.org/eps/1211.7073v1.eps
         fe_hs = np.random.normal(-1.67, 0.3, size=50)
         fe_hs = np.append(fe_hs, np.random.normal(-2.33, 0.3, size=len(fe_hs)//5))
         
@@ -191,7 +191,7 @@ def gaia_spitzer_errors():
                       color=sgr_color, alpha=1., label='Sgr stream width')
     axes[0].add_patch(sgr_d)
     
-    # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.pdf+html
+    # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.eps+html
     orp_d = Rectangle((10., 0.03), 35., 0.03,
                       color=orp_color, alpha=1., label='Orp stream width')
     axes[0].add_patch(orp_d)
@@ -222,9 +222,9 @@ def gaia_spitzer_errors():
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
     
     # add Gaia and Spitzer text to plots
-    axes[0].text(4., 0.12, 'Gaia', fontsize=16, rotation=45)
+    axes[0].text(4., 0.15, 'Gaia', fontsize=16, rotation=45)
     axes[0].text(4., 0.013, 'Spitzer', fontsize=16, color="k", alpha=0.75)
-    axes[1].text(4., 0.23, 'Gaia + Spitzer', fontsize=16, rotation=45)
+    axes[1].text(4., 0.07, 'Gaia', fontsize=16, rotation=45)
     
     # add legends
     axes[0].legend(loc='upper left', fancybox=True)
@@ -235,7 +235,7 @@ def gaia_spitzer_errors():
     
     fig.subplots_adjust(hspace=0.1, wspace=0.1)
     plt.tight_layout()
-    plt.savefig(os.path.join(plot_path, "gaia.pdf"))
+    plt.savefig(os.path.join(plot_path, "gaia.eps"))
 
 def sgr():
     """ Top-down plot of Sgr particles, with selected stars and then 
@@ -268,12 +268,14 @@ def sgr():
                                       catalina['dec']*u.deg, 
                                       catalina['dist']*u.kpc)
     
+    '''
     quest = ascii.read(quest_catalog)
     quest = quest[quest['dist'] < 35]
     quest = quest[quest['dist'] > 10]
     quest_xyz = ra_dec_dist_to_xyz(quest['ra']*u.deg, 
                                    quest['dec']*u.deg, 
                                    quest['dist']*u.kpc)
+    '''
     
     rcparams = {'lines.linestyle' : 'none', 
                 'lines.color' : 'k',
@@ -291,9 +293,9 @@ def sgr():
                      color='#111111', alpha=0.85, markersize=7, 
                      label="Catalina", markeredgewidth=0)
         
-        axes[1].plot(quest_xyz[:,0], quest_xyz[:,2], marker='s', 
-                     color='#111111', alpha=0.85, markersize=6, 
-                     label="QUEST", markeredgewidth=0)
+        #axes[1].plot(quest_xyz[:,0], quest_xyz[:,2], marker='s', 
+        #             color='#111111', alpha=0.85, markersize=6, 
+        #             label="QUEST", markeredgewidth=0)
         
         # add solar symbol
         axes[0].text(-8., 0., s=r"$\odot$")
@@ -318,7 +320,7 @@ def sgr():
     axes[1].xaxis.tick_bottom()
     
     fig.subplots_adjust(wspace=0.)
-    fig.savefig(os.path.join(plot_path, "lm10.pdf"))
+    fig.savefig(os.path.join(plot_path, "lm10.eps"))
 
 def bootstrapped_parameters_v1():
     data_file = os.path.join(project_root, "plots", "hotfoot", 
@@ -372,7 +374,7 @@ def bootstrapped_parameters_v1():
     plt.tight_layout()
     fig.subplots_adjust(wspace=0.04)
     #plt.show()
-    fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
+    fig.savefig(os.path.join(plot_path, "bootstrap.eps"))
 
 if __name__ == '__main__':
     gaia_spitzer_errors()
