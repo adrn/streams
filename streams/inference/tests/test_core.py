@@ -61,7 +61,7 @@ def test_vary_potential(param, frac_range=(0.9,1.1)):
         vs. the parameter values.
     """
     usys = UnitSystem(u.kpc, u.Myr, u.M_sun, u.radian)
-    Nbins = 21
+    Nbins = 25
     
     variances = []
     params = true_params.copy()
