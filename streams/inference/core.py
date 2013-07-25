@@ -42,7 +42,7 @@ def relative_normalized_coordinates(potential, particle_orbits, satellite_orbit)
     v_esc = potential._escape_velocity(m=satellite_orbit._m,
                                        r_tide=r_tide)
     
-    return (particle_orbits._r - satellite_orbit._r) / (3.5*r_tide), \
+    return (particle_orbits._r - satellite_orbit._r) / (r_tide), \
            (particle_orbits._v - satellite_orbit._v) / v_esc
 
 def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
