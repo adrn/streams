@@ -31,11 +31,11 @@ for val in np.linspace(1.2,1.5,10):
 
 print("attempting minimization")
 x0 = fmin_l_bfgs_b(lambda *args,**kwargs: -ln_posterior(*args,**kwargs),
-                  x0=[1.21, 1.21],
-                  args=(['q1', 'qz'], particles, satellite, t1, t2, 3.),
-                  bounds=[(1.2,1.4),(1.2,1.4)],
+                  x0=[1.21, 1.21, 1.6],
+                  args=(['q1', 'qz', 'phi'], particles, satellite, t1, t2, 3.),
+                  bounds=[(1.2,1.4),(1.2,1.4),(1.6,1.8)],
                   approx_grad=True,
-                  epsilon=1E-2,
+                  epsilon=1E-3,
                   factr=1E8)
 
 print(x0)
