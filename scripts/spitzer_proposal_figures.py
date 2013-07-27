@@ -36,9 +36,9 @@ from streams.io.lm10 import particle_table, particles_today, satellite_today, ti
 from streams.io.catalogs import read_quest
 from streams.plot import sgr_kde
 
-matplotlib.rc('xtick', labelsize=14)
-matplotlib.rc('ytick', labelsize=14)
-matplotlib.rc('text', usetex=True)
+matplotlib.rc('xtick', labelsize=16)
+matplotlib.rc('ytick', labelsize=16)
+#matplotlib.rc('text', usetex=True)
 matplotlib.rc('axes', edgecolor='#444444', labelsize=20)
 matplotlib.rc('lines', markeredgewidth=0)
 matplotlib.rc('font', family='Source Sans Pro')
@@ -147,10 +147,10 @@ def gaia_spitzer_errors():
         axes[1].vlines([24,65,80,100], [0.081,0.0465,0.025,0.014], 100, color='#888888', linestyles='--', zorder=-1)
         
         # label the vertical lines
-        axes[1].text(16., 0.075, 'Sgr -', color='#888888', rotation=0)
-        axes[1].text(26.5, 0.043, 'UMi, Boo -', color='#888888', rotation=0)
-        axes[1].text(54.8, 0.023, 'Scl -', color='#888888', rotation=0)
-        axes[1].text(66, 0.013, 'Car -', color='#888888', rotation=0)
+        axes[1].text(17.1, 0.075, 'Sgr -', color='#888888', rotation=0)
+        axes[1].text(29.5, 0.043, 'UMi, Boo -', color='#888888', rotation=0)
+        axes[1].text(58., 0.023, 'Scl -', color='#888888', rotation=0)
+        axes[1].text(69.75, 0.013, 'Car -', color='#888888', rotation=0)
         
         # Distance from 1kpc to ~100kpc
         D = np.logspace(0., 2., 50)*u.kpc
@@ -211,8 +211,8 @@ def gaia_spitzer_errors():
     #axes[1].set_xlim(10, 100)
     
     axes[0].set_xlabel("Distance [kpc]")
-    axes[0].set_ylabel("Frac. distance error $\sigma_D/D$")
-    axes[1].set_ylabel("$v_{tan}$ error [km/s]")
+    axes[0].set_ylabel("Frac. distance error: $\epsilon_D/D$")
+    axes[1].set_ylabel("$v_{tan}$ error: $\epsilon_v$ [km/s]")
     axes[1].set_xlabel("Distance [kpc]")
     
     axes[0].set_xticklabels(["1", "10", "100"])
@@ -221,9 +221,9 @@ def gaia_spitzer_errors():
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
     
     # add Gaia and Spitzer text to plots
-    axes[0].text(4., 0.15, 'Gaia', fontsize=16, rotation=45)
-    axes[0].text(4., 0.013, 'Spitzer', fontsize=16, color="k", alpha=0.75)
-    axes[1].text(4., 0.07, 'Gaia', fontsize=16, rotation=45)
+    axes[0].text(4., 0.125, 'Gaia', fontsize=16, rotation=45, fontweight='normal')
+    axes[0].text(4., 0.013, 'Spitzer', fontsize=16, color="k", alpha=0.75, fontweight='normal')
+    axes[1].text(4., 0.06, 'Gaia', fontsize=16, rotation=45, fontweight='normal')
     
     # add legends
     axes[0].legend(loc='upper left', fancybox=True)
@@ -234,21 +234,31 @@ def gaia_spitzer_errors():
     
     fig.subplots_adjust(hspace=0.1, wspace=0.1)
     plt.tight_layout()
-    plt.savefig(os.path.join(plot_path, "gaia.pdf"))
+    plt.savefig(os.path.join(plot_path, "gaia.eps"))
 
 def sgr():
     """ Top-down plot of Sgr particles, with selected stars and then 
         re-observed
     """
     
+    cached_data_file = os.path.join(plot_path, 'sgr_kde.pickle')
+    
     fig,axes = plt.subplots(1, 2, figsize=(14,6.5), sharex=True, sharey=True)
     
     # read in all particles as a table
     pdata = particle_table(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
-    
     extent = {'x':(-90,55), 
               'y':(-58,68)}
-    Z = sgr_kde(pdata, extent=extent)
+    
+    if not os.path.exists(cached_data_file):    
+        Z = sgr_kde(pdata, extent=extent)
+        
+        with open(cached_data_file, 'w') as f:
+            pickle.dump(Z, f)
+    
+    with open(cached_data_file, 'r') as f:
+        Z = pickle.load(f)
+    
     axes[1].imshow(Z**0.5, interpolation="nearest", 
               extent=extent['x']+extent['y'],
               cmap=cm.Blues, aspect=1)
@@ -319,7 +329,7 @@ def sgr():
     axes[1].xaxis.tick_bottom()
     
     fig.subplots_adjust(wspace=0.)
-    fig.savefig(os.path.join(plot_path, "lm10.pdf"))
+    fig.savefig(os.path.join(plot_path, "lm10.eps"))
 
 def bootstrapped_parameters_v1():
     data_file = os.path.join(project_root, "plots", "hotfoot", 
@@ -328,12 +338,12 @@ def bootstrapped_parameters_v1():
     with open(data_file) as f:
         data = pickle.load(f)
     
-    fig,axes = plt.subplots(1,3,figsize=(16,6))
+    fig,axes = plt.subplots(1,3,figsize=(12,5))
 
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
     
-    lims = dict(q1=(1.3,1.45), qz=(1.3,1.45), v_halo=(115,130), phi=(90,105))
+    lims = dict(q1=(1.3,1.44), qz=(1.3,1.44), v_halo=(116,130), phi=(90,104))
     
     for ii,x_param in enumerate(x_params):
         ydata = data[y_param]
@@ -356,26 +366,34 @@ def bootstrapped_parameters_v1():
         axes[ii].set_xlim(lims[x_param])
         axes[ii].set_ylim(lims[y_param])
         
+        # hack to set tick marks
+        if 'q' in x_param:
+            axes[ii].set_xticks([1.32, 1.34, 1.36, 1.38, 1.4, 1.42])
+        elif x_param == 'phi':
+            axes[ii].set_xticks(range(92,102+2,2))
+        
+        if ii == 0:
+            axes[ii].set_yticks(range(118,128+2,2))
+        
         # turn off top ticks
         axes[ii].xaxis.tick_bottom()
     
     axes[0].set_ylabel(r"$v_{\rm halo}$", 
                        fontsize=26, rotation='horizontal')
-    fig.text(0.015, 0.48, "[km/s]", fontsize=16)
+    fig.text(0.025, 0.49, "[km/s]", fontsize=16)
     axes[1].set_yticklabels([])
     axes[2].set_yticklabels([])
     
     axes[0].set_xlabel(r"$q_1$", fontsize=26)
     axes[1].set_xlabel(r"$q_z$", fontsize=26)
     axes[2].set_xlabel(r"$\phi$", fontsize=26)
-    fig.text(0.85, 0.05, "[deg]", fontsize=16)
+    fig.text(0.855, 0.07, "[deg]", fontsize=16)
     
     plt.tight_layout()
     fig.subplots_adjust(wspace=0.04)
-    #plt.show()
-    fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
+    fig.savefig(os.path.join(plot_path, "bootstrap.eps"))
 
 if __name__ == '__main__':
-    #gaia_spitzer_errors()
-    #sgr()
+    gaia_spitzer_errors()
+    sgr()
     bootstrapped_parameters_v1()
