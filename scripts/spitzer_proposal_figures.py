@@ -41,8 +41,7 @@ matplotlib.rc('ytick', labelsize=14)
 matplotlib.rc('text', usetex=True)
 matplotlib.rc('axes', edgecolor='#444444', labelsize=20)
 matplotlib.rc('lines', markeredgewidth=0)
-matplotlib.rc('font', family='sans-serif')
-rcParams['font.sans-serif'] = 'helvetica'
+matplotlib.rc('font', family='Source Sans Pro')
 
 plot_path = "plots/spitzer_proposal/"
 if not os.path.exists(plot_path):
@@ -156,7 +155,7 @@ def gaia_spitzer_errors():
         # Distance from 1kpc to ~100kpc
         D = np.logspace(0., 2., 50)*u.kpc
         
-        # Sample metallicities from: http://arxiv.org/eps/1211.7073v1.eps
+        # Sample metallicities from: http://arxiv.org/pdf/1211.7073v1.pdf
         fe_hs = np.random.normal(-1.67, 0.3, size=50)
         fe_hs = np.append(fe_hs, np.random.normal(-2.33, 0.3, size=len(fe_hs)//5))
         
@@ -191,7 +190,7 @@ def gaia_spitzer_errors():
                       color=sgr_color, alpha=1., label='Sgr stream width')
     axes[0].add_patch(sgr_d)
     
-    # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.eps+html
+    # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.pdf+html
     orp_d = Rectangle((10., 0.03), 35., 0.03,
                       color=orp_color, alpha=1., label='Orp stream width')
     axes[0].add_patch(orp_d)
@@ -235,7 +234,7 @@ def gaia_spitzer_errors():
     
     fig.subplots_adjust(hspace=0.1, wspace=0.1)
     plt.tight_layout()
-    plt.savefig(os.path.join(plot_path, "gaia.eps"))
+    plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
 def sgr():
     """ Top-down plot of Sgr particles, with selected stars and then 
@@ -320,7 +319,7 @@ def sgr():
     axes[1].xaxis.tick_bottom()
     
     fig.subplots_adjust(wspace=0.)
-    fig.savefig(os.path.join(plot_path, "lm10.eps"))
+    fig.savefig(os.path.join(plot_path, "lm10.pdf"))
 
 def bootstrapped_parameters_v1():
     data_file = os.path.join(project_root, "plots", "hotfoot", 
@@ -374,9 +373,9 @@ def bootstrapped_parameters_v1():
     plt.tight_layout()
     fig.subplots_adjust(wspace=0.04)
     #plt.show()
-    fig.savefig(os.path.join(plot_path, "bootstrap.eps"))
+    fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
 if __name__ == '__main__':
-    gaia_spitzer_errors()
+    #gaia_spitzer_errors()
     #sgr()
-    #bootstrapped_parameters_v1()
+    bootstrapped_parameters_v1()
