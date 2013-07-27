@@ -358,25 +358,21 @@ over the history of interaction with the system. The strength of this method is 
 
 [TODO: this paragraph needs work]
 There are two other apparent strengths of the method which require further investigation.
-First it appears applicable to any debris that is known to come from a single object, and not restricted only to the very coldest tidal streams. For example, in principle the
-method could  applied to the vast debris {\it clouds} that have been discovered subtending hundreds-thousands square degrees \citep[e.g. the Triangulum Andromeda
+\emph{The Rewinder} is applicable to any debris that is known to come from a single object, and not restricted only to the very coldest tidal streams. For example, in principle the
+method could applied to the vast debris {\it clouds} that have been discovered subtending large solid angles \citep[e.g. the Triangulum Andromeda
 and Hercules-Aquila clouds]{rochapinto04,belokurov06}, or even stars that have only associations in orbital properties and do not form a coherent spatial structure
-\citep[such as the angular momentum groupings in local giants found by][]{helmi99}.
-Second, it appears trivial to combine constraints from multiple debris systems at once by simply integrating all debris from several satellites simultaneously with $D_{\rm
-ps}$ defined appropriately for each star separately.
+\citep[such as the angular momentum groupings in local giants found by][]{helmi99}. Second, it appears trivial to combine constraints from multiple debris systems at once by simply integrating all debris from several satellites simultaneously with $D_{\rm ps}$ defined appropriately for each star separately.
 
-% this needs to go somewhere down here...
-[This objective function is an approximation to a more general likelihood function, described in detail in forthcoming work (Price-Whelan \& Johnston in prep.). The results shown in sections xx and yy are meant to illustrate the strength and concept of the method..]
-
-
-The limitations of the method also need to be understood. In particular, for the RR Lyraes associated with  the very coldest streams \citep[e.g. the globular clusters Pal5
+[present the limitations]
+The limitations of the method also need to be understood. Firstly, for the RR Lyraes associated with the very coldest streams \citep[e.g. the globular clusters Pal5
 and GD1][]{odenkirchen02,koposov10} the measurement errors are unlikely to be small enough for the
-the differences in orbital properties to between debris and satellite to be detected, and the method should fail.
+the differences in orbital properties to between debris and satellite to be detected. [What will this cause? Maybe biases? One more sentence here]. Second, the method requires specifying a functional form for the potential. [...]. Lastly, the current version of the algorithm relies on accurate knowledge of the phase-space position of the parent satellite, which may not be available in some cases \citep[for example, for the Orphan Stream][]{belokurov07}. 
 
-Lastly, the current version of the algorithm relies on accurate knowledge of the phase-space position of the parent satellite, which may not be available in some cases
-\citep[for example, for the Orphan Stream][]{belokurov07}. Given sufficient data, position and motion of the original host could be solved for as additional free parameters,
+[explain how some of them are handled automatically by the forthcoming machinery]
+The objective function presented above is an approximation to a more general likelihood function, described in detail in forthcoming work (Price-Whelan \& Johnston in prep.). The results shown in sections xx and yy are meant to illustrate the strength and concept of the method.
+
+Given sufficient data, position and motion of the original host could be solved for as additional free parameters,
 but the effectiveness of this approach has yet to be investigated.
-
 
 \section{Summary}
 
