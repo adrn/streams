@@ -35,7 +35,7 @@ x0 = fmin_l_bfgs_b(lambda *args,**kwargs: -ln_posterior(*args,**kwargs),
                   args=(['q1', 'qz'], particles, satellite, t1, t2, 3.),
                   bounds=[(1.2,1.4),(1.2,1.4)],
                   approx_grad=True,
-                  epsilon=1E-2,
-                  factr=1E8)
+                  epsilon=1E-3,
+                  factr=1E9)
 
 print(x0)
