@@ -292,11 +292,11 @@ escape velocity,
 \end{equation}
 Qualitatively, when the distance in this normalized six-dimensional space,
 $D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} < \sqrt{2}$, the star is
-likely recaptured by the satellite. JZSH imposed a similar condition as a hard boundary and used the number of recaptured particles in a given backwards-integration as a cost function for optimization. What follows is a description of an updated procedure with a more natural choice for an objective function [TODO...].
+likely recaptured by the satellite. JZSH imposed a similar condition as a hard boundary and used the number of recaptured particles in a given backwards-integration as a cost function for optimization. What follows is a description of an updated procedure with a more natural, statistically-motivated choice for an objective function. 
 
-As a statistical measure of how many stars have recombined, we
-treat the minimum phase-space vectors (for
-each star over the individual, integrated orbits) as samples from an underlying six-dimensional distribution. For each star, $i$,
+%As a measure of how many stars have recombined, we treat the minimum phase-space vectors (for each star over the individual, integrated orbits) as samples from an underlying six-dimensional distribution. 
+
+For each star, $i$,
 the phase-space distance, $D_{\rm ps}$, is computed at each timestep
 $t_{j}$, and the vector with the minimum phase-space distance is stored
 \begin{align}
@@ -340,6 +340,8 @@ optimize four of the six logarithmic potential parameters:
 $v_{circ}$, $\phi$, $q_1$, and $q_z$. We fix $q_2$ and $R_c$, which are degenerate with combinations of the other parameters. Figure~\ref{fig:} shows one-dimensional slices of the objective function
 produced by varying each of the potential parameters by
 $\pm20\%$ around the true values and holding all others fixed.
+
+[Bootstrap]
 
 % APW Note: The optimization, in a way, is getting a bunch of orbits (curves) to intersect another curve (the progenitor orbit) at some points (over time).
 
