@@ -10,6 +10,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 
 # Third-party
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 
@@ -18,24 +19,53 @@ from streams.io.lm10 import particles_today, satellite_today, time
 from streams.inference import generalized_variance
 from streams.inference.lm10 import ln_likelihood, ln_posterior
 
+posterior = lambda *args,**kwargs: -np.exp(ln_posterior(*args,**kwargs))
+
+np.random.seed(42)
 t1,t2 = time()
 particles = particles_today(N=100, expr="(Pcol>0) & (Pcol<7) & (abs(Lmflag)==1)")
 satellite = satellite_today()
 
-'''
-print("read in particles, starting posterior calculation")
+params = ['qz']
+param_initial = dict(q1=1.4,
+                     qz=1.4,
+                     phi=1.3)
+param_ranges = dict(q1=(1.25,1.45),
+                    qz=(1.25,1.45),
+                    phi=(1.6,1.8))
 
-for val in np.linspace(1.2,1.5,10):
-    print(val, ln_posterior([val], ['qz'], particles, satellite, t1, t2, 3.))
-'''
+Nbins = 25
 
 print("attempting minimization")
-x0 = fmin_l_bfgs_b(lambda *args,**kwargs: -ln_posterior(*args,**kwargs),
-                  x0=[1.21, 1.21, 1.6],
-                  args=(['q1', 'qz', 'phi'], particles, satellite, t1, t2, 3.),
-                  bounds=[(1.2,1.4),(1.2,1.4),(1.6,1.8)],
-                  approx_grad=True,
-                  epsilon=1E-3,
-                  factr=1E8)
+ret = fmin_l_bfgs_b(posterior,
+                    x0=[param_initial[p] for p in params],
+                    args=(params, particles, satellite, t1, t2, 3.),
+                    bounds=[param_ranges[p] for p in params],
+                    approx_grad=True,
+                    epsilon=1E-4,
+                    factr=1E8)
 
-print(x0)
+x0 = ret[0]
+print("minimized params: {0}".format(x0))
+print(ret)
+
+#sys.exit(0)
+
+fig,axes = plt.subplots(len(params),1,figsize=(8,5*len(params)))
+if len(params) == 1:
+    axes = [axes]
+    x0 = [x0]
+
+for ii,p in enumerate(params):
+    p_vals = np.linspace(param_ranges[p][0],
+                         param_ranges[p][1],
+                         Nbins)
+    
+    post_vals = []
+    for val in p_vals:
+        post_vals.append(posterior([val], [p], particles, satellite, t1, t2, 3.))
+    
+    axes[ii].plot(p_vals, post_vals)
+    axes[ii].axvline(x0[ii], color='r')
+
+plt.savefig("plots/optimize.png")
