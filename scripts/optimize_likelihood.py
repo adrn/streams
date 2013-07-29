@@ -57,6 +57,8 @@ def anneal_lm10(params):
     ret = anneal(posterior,
                  x0=[param_initial[p] for p in params],
                  args=(params, particles, satellite, t1, t2, 3.),
+                 T0=1E4,
+                 Tf=1.,
                  maxiter=100,
                  full_output=True,
                  lower=[param_ranges[p][0] for p in params],
@@ -64,6 +66,7 @@ def anneal_lm10(params):
     
     xmin = ret[0]
     retval = ret[-1]
+    print(ret)
     return xmin, retval == 0
 
 def minimize_lm10(params):
@@ -93,7 +96,11 @@ def plot_objective(params, xmin, Nbins=25, fname="objective"):
     
         axes[ii].plot(p_vals, post_vals)
         axes[ii].axvline(xmin[ii], color='r')
-        axes[ii].axvline(true_params[p], color='g', linestyle='--')
+        
+        if hasattr(true_params[p], 'unit'):
+            axes[ii].axvline(true_params[p].value, color='g', linestyle='--')
+        else:
+            axes[ii].axvline(true_params[p], color='g', linestyle='--')
 
     plt.savefig("plots/{0}.png".format(fname))
 
@@ -116,8 +123,8 @@ def vary_q1qz():
 
 if __name__ == '__main__':
     
-    vary_q1qz()
-    sys.exit(0)
+    #vary_q1qz()
+    #sys.exit(0)
 
     params = ['q1', 'phi']
     
