@@ -11,6 +11,7 @@ import os, sys
 
 # Third-party
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import numpy as np
 from scipy.optimize import anneal
 
@@ -35,10 +36,35 @@ param_ranges = dict(q1=(1.25,1.45),
 posterior = lambda *args,**kwargs: -np.exp(ln_posterior(*args,**kwargs))
 
 def anneal_lm10(params):
+    """ anneal() returns:
+        
+        xmin : ndarray
+            Point giving smallest value found.
+        Jmin : float
+            Minimum value of function found.
+        T : float
+            Final temperature.
+        feval : int
+            Number of function evaluations.
+        iters : int
+            Number of cooling iterations.
+        accept : int
+            Number of tests accepted.
+        retval : int
+            Flag indicating stopping condition:
+            Want 0, I think?
+    """
     ret = anneal(posterior,
                  x0=[param_initial[p] for p in params],
-                 args=(params, particles, satellite, t1, t2, 3.))
-    return ret
+                 args=(params, particles, satellite, t1, t2, 3.),
+                 maxiter=100,
+                 full_output=True,
+                 lower=[param_ranges[p][0] for p in params],
+                 upper=[param_ranges[p][1] for p in params])
+    
+    xmin = ret[0]
+    retval = ret[-1]
+    return xmin, retval == 0
 
 def minimize_lm10(params):
     ret = fmin_l_bfgs_b(posterior,
@@ -50,11 +76,11 @@ def minimize_lm10(params):
                         factr=1E8)
     return ret
 
-def plot_objective(params, x_min, Nbins=25, fname="objective"):
+def plot_objective(params, xmin, Nbins=25, fname="objective"):
     fig,axes = plt.subplots(len(params),1,figsize=(8,5*len(params)))
     if len(params) == 1:
         axes = [axes]
-        x0 = [x0]
+        xmin = [xmin]
 
     for ii,p in enumerate(params):
         p_vals = np.linspace(param_ranges[p][0],
@@ -66,12 +92,39 @@ def plot_objective(params, x_min, Nbins=25, fname="objective"):
             post_vals.append(posterior([val], [p], particles, satellite, t1, t2, 3.))
     
         axes[ii].plot(p_vals, post_vals)
-        axes[ii].axvline(x0[ii], color='r')
+        axes[ii].axvline(xmin[ii], color='r')
         axes[ii].axvline(true_params[p], color='g', linestyle='--')
 
     plt.savefig("plots/{0}.png".format(fname))
 
-if __name__ == '__main__':
-    params = ['qz']
+def vary_q1qz():
     
-    anneal_lm10(params)
+    Nbins = 25
+    post_vals = []
+    for q1 in np.linspace(1.3,1.5,Nbins):
+        for qz in np.linspace(1.3,1.5,Nbins):
+            post_vals.append(posterior([q1, qz], ['q1', 'qz'], particles, satellite, t1, t2, 3.))
+    
+    post_vals = np.array(post_vals)
+    post_vals = post_vals.reshape(Nbins,Nbins)
+    
+    plt.clf()
+    plt.imshow(post_vals, extent=[1.3,1.5,1.3,1.5], interpolation='nearest', cmap=cm.Greys)
+    plt.axvline(true_params['qz'])
+    plt.axhline(true_params['q1'])
+    plt.savefig("plots/vary_q1qz.png")
+
+if __name__ == '__main__':
+    
+    vary_q1qz()
+    sys.exit(0)
+
+    params = ['q1', 'phi']
+    
+    print("starting annealing")
+    xmin, converged = anneal_lm10(params)
+    
+    print("Found minimum at: {0}".format(xmin))
+    print("Converged: {0}".format(converged))
+
+    plot_objective(params, xmin, fname="anneal")
