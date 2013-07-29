@@ -1,3 +1,4 @@
+# encoding: utf-8
 # filename: _lm10_acceleration.pyx
 """
 Deimos:
@@ -20,10 +21,16 @@ cimport numpy as np
 cimport cython
 
 cdef extern from "math.h":
-    double sqrt(double x)
-    double sin(double x)
-    double cos(double x)
-    double pow(double x, double x)
+    double fmod(double, double)
+    double floor(double)
+    double fmax(double, double)
+    double fmin(double, double)
+    double sqrt(double)
+    double log(double)
+    double sin(double)
+    double cos(double)
+    int isnan(double)
+    double fabs(double)
 
 DTYPE = np.double
 ctypedef np.double_t DTYPE_t
@@ -33,23 +40,25 @@ ctypedef np.double_t DTYPE_t
 @cython.cdivision(True) 
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def lm10_acceleration(double[:, ::1] r not None, int n_particles, double[:, ::1] data not None,
+def lm10_acceleration(double[:, ::1] r not None, 
                       double q1, double qz, double phi, double v_halo, 
                       double q2, double r_halo, np.ndarray[double, ndim=1] r_0):
     
-    cdef double fac1, fac2, fac3, _tmp, _tmp_1, _tmp_2, R_pl_c
-    cdef double G, a, b_sq, c, Gm_disk, Gm_bulge
+    n_particles = r.shape[0]
+    cdef double[:, ::1] data = np.empty((n_particles, 3))
     
+    cdef double fac1, fac2, fac3, _tmp
+    cdef double G, a, b, c, m_disk, m_bulge
     G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
     
     # Miyamoto-Nagai
     a = 6.5 # kpc
-    b_sq = 0.26**2 # kpc^2
-    Gm_disk = G*1.E11 # M_sun
+    b = 0.26 # kpc
+    m_disk = 1.E11 # M_sun
     
     # Hernquist
     c = 0.7 # kpc
-    Gm_bulge = G*3.4E10 # M_sun
+    m_bulge = 3.4E10 # M_sun
     
     # Halo
     cdef double q1_sq, q2_sq, qz_sq, r_halo_sq, v_halo_sq
@@ -62,34 +71,32 @@ def lm10_acceleration(double[:, ::1] r not None, int n_particles, double[:, ::1]
     cdef double x, y, z
     cdef double xx, yy, zz
     
-    for ii in range(n_particles):
+    for ii in xrange(n_particles):
         x = r[ii,0]
         y = r[ii,1]
         z = r[ii,2]
-
+        
         xx = x*x
         yy = y*y
         zz = z*z
     
         # Disk
-        _tmp_1 = (a + sqrt(zz + b_sq))
-        _tmp_2 = xx + yy + _tmp_1*_tmp_1
-        fac1 = -Gm_disk / (_tmp_2 * sqrt(_tmp_2))
-        _tmp = a/(sqrt(zz + b_sq))
-                
+        fac1 = -G*m_disk*((xx + yy) + (a + sqrt(zz + b**2))**2)**-1.5
+        _tmp = a/(sqrt(zz + b**2))
+        
         # Bulge
         R = sqrt(xx + yy + zz)
-        R_pl_c = R + c
-        fac2 = -Gm_bulge / (R_pl_c*R_pl_c * R)
+        fac2 = -G*m_bulge / ((R + c)**2 * R)
         
         # Halo
         C1 = cos(phi)**2/q1_sq + sin(phi)**2/q2_sq
         C2 = cos(phi)**2/q2_sq + sin(phi)**2/q1_sq
         C3 = 2.*sin(phi)*cos(phi)*(1./q1_sq - 1./q2_sq)
+    
         fac3 = -v_halo_sq / (C1*xx + C2*yy + C3*x*y + zz/qz_sq + r_halo_sq)
         
         data[ii,0] = fac1*x + fac2*x + fac3*(2.*C1*x + C3*y)
         data[ii,1] = fac1*y + fac2*y + fac3*(2.*C2*y + C3*x)
         data[ii,2] = fac1*z*(1.+_tmp) + fac2*z + 2.*fac3*z/qz_sq
-    
-    return data
+            
+    return np.array(data)

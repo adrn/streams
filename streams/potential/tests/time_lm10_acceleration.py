@@ -1,41 +1,31 @@
-# coding: utf-8
-from __future__ import print_function
-
 import os
 import pstats, cProfile
 import numpy as np
 import time as pytime
 
-from astropy.io import ascii
-from streams.potential.lm10 import lm10_acceleration
+import pyximport
+pyximport.install()
+
+from streams.potential._lm10_acceleration import lm10_acceleration
 
 plot_path = "plots/tests/potential"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-base,xx = os.path.split(__file__)
-r_tbl = ascii.read(os.path.join(base, 'particle_data.txt'))
-n_particles = len(r_tbl)
+prof_filename = os.path.join(plot_path, "lm10_acceleration.prof")
 
-r = np.zeros((n_particles, 3))
-r[:,0] = r_tbl['x']
-r[:,1] = r_tbl['y']
-r[:,2] = r_tbl['z']
+r = np.random.random(size=(100, 3))
+r_0 = np.array([10.,0.,0.])
 
-r_0 = np.array([0.,0.,0.])
-data = np.zeros((n_particles,3))
+def time_function():
+    for ii in range(10000):
+        lm10_acceleration(r, 1.3, 1.3, 1.69, 0.125, 1., 12., r_0)
 
-def time_function(Niter=1000):
-    for ii in range(Niter):
-        lm10_acceleration(r, n_particles, data, 1.3, 1.3, 1.69, 0.125, 1., 12., r_0)
-
-Niter = 100000
 a = pytime.time()
-time_function(Niter=Niter)
-print((pytime.time() - a)/float(Niter) * 1E6, "µs per call")
+time_function()
+print(pytime.time() - a, "(sec) total time")
 
 '''
-prof_filename = os.path.join(plot_path, "lm10_acceleration.prof")
 cmd = "time_function()"
 
 cProfile.runctx(cmd, globals(), locals(), prof_filename)

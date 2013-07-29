@@ -42,7 +42,7 @@ param_to_latex = dict(q1=r"$q_1$",
 
 class LawMajewski2010(CompositePotential):
     
-    def __init__(self, n_particles=100, _data_container=None, **parameters):
+    def __init__(self, **parameters):
         """ Represents the functional form of the Galaxy potential used by 
             Law and Majewski 2010.
             
@@ -83,12 +83,7 @@ class LawMajewski2010(CompositePotential):
                                               disk=disk,
                                               halo=halo)
         
-        if _data_container is None:
-            _data_container = np.zeros((n_particles, 3))
-            
-        self._acceleration_at = lambda r: lm10_acceleration(r, n_particles, 
-                                                            _data_container, 
-                                                            **halo._parameters)
+        self._acceleration_at = lambda r: lm10_acceleration(r, **halo._parameters)
         self._G = G.decompose(bases=unit_system).value
         
     def _tidal_radius(self, m, r):

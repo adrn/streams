@@ -29,7 +29,7 @@ t1,t2 = time()
 particles = particles_today(N=100, expr="Pcol > 0")
 satellite = satellite_today()
 
-potential = LawMajewski2010(n_particles=particles.nparticles)
+potential = LawMajewski2010()
 
 usys = UnitSystem(u.kpc, u.Myr, u.M_sun, u.radian)
 integrator = SatelliteParticleIntegrator(potential, satellite, particles)
@@ -70,7 +70,7 @@ def test_vary_potential(param, frac_range=(0.9,1.1)):
         params[param] = val
         
         # create potential with all 'true' params, except the one we're varying
-        potential = LawMajewski2010(n_particles=particles.nparticles, **params)
+        potential = LawMajewski2010(**params)
 
         integrator = SatelliteParticleIntegrator(potential, satellite, particles)        
         satellite_orbit,particle_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
