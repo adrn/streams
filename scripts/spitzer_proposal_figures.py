@@ -234,7 +234,7 @@ def gaia_spitzer_errors():
     
     fig.subplots_adjust(hspace=0.1, wspace=0.1)
     plt.tight_layout()
-    plt.savefig(os.path.join(plot_path, "gaia.eps"))
+    plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
 def sgr():
     """ Top-down plot of Sgr particles, with selected stars and then 
@@ -329,7 +329,7 @@ def sgr():
     axes[1].xaxis.tick_bottom()
     
     fig.subplots_adjust(wspace=0.)
-    fig.savefig(os.path.join(plot_path, "lm10.eps"))
+    fig.savefig(os.path.join(plot_path, "lm10.png"))
 
 def bootstrapped_parameters_v1():
     data_file = os.path.join(project_root, "plots", "hotfoot", 
@@ -391,7 +391,7 @@ def bootstrapped_parameters_v1():
     
     plt.tight_layout()
     fig.subplots_adjust(wspace=0.04)
-    fig.savefig(os.path.join(plot_path, "bootstrap.eps"))
+    fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
 if __name__ == '__main__':
     gaia_spitzer_errors()
