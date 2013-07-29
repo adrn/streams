@@ -98,7 +98,7 @@ class LeapfrogIntegrator(object):
             self._dt = dt
         
         r_i = self._position_step(self.r_im1, self.v_im1_2, self._dt)
-        a_i = self.acc(r, *self._acc_args)
+        a_i = self.acc(r_i, *self._acc_args)
         v_i = self._velocity_halfstep(a_i, self.v_im1_2, self._dt)
         
         self._dt = dt
