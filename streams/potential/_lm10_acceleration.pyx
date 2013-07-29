@@ -40,11 +40,10 @@ ctypedef np.double_t DTYPE_t
 @cython.cdivision(True) 
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def lm10_acceleration(double[:, ::1] r not None, 
+def lm10_acceleration(double[:, ::1] r not None, int n_particles,
                       double q1, double qz, double phi, double v_halo, 
                       double q2, double r_halo, np.ndarray[double, ndim=1] r_0):
     
-    n_particles = r.shape[0]
     cdef double[:, ::1] data = np.empty((n_particles, 3))
     
     cdef double fac1, fac2, fac3, _tmp
