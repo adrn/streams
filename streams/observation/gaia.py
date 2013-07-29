@@ -149,7 +149,7 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
         rv_err = 5.*u.km/u.s
     
     rv_err = rv_err.to(u.km/u.s)
-    vr += np.random.normal(0., rv_err.value)*rv_err.unit
+    vr += np.random.normal(0., rv_err.value, size=len(vr))*rv_err.unit
 
     dmu = proper_motion_error(V, rrl_V_minus_I)
         
