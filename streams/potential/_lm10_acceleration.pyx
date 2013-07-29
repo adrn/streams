@@ -21,19 +21,12 @@ cimport numpy as np
 cimport cython
 
 cdef extern from "math.h":
-    double fmod(double, double)
-    double floor(double)
-    double fmax(double, double)
-    double fmin(double, double)
-    double sqrt(double)
-    double log(double)
-    double sin(double)
-    double cos(double)
-    int isnan(double)
-    double fabs(double)
+    double sqrt(double x)
+    double sin(double x)
+    double cos(double x)
 
-DTYPE = np.double
-ctypedef np.double_t DTYPE_t
+#DTYPE = np.double
+#ctypedef np.double_t DTYPE_t
 
 #@cython.profile(True)
 @cython.boundscheck(False) # turn of bounds-checking for entire function
