@@ -33,7 +33,7 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         self.satellite_mass = satellite.m.value
         
         super(SatelliteParticleIntegrator, self).__init__(potential._acceleration_at,
-                                                          r_0, v_0)
+                                                          r_0, v_0, args=(len(r_0),))
     
     def _adaptive_run(self, timestep_func, timestep_args=(), resolution=1., **time_spec):
         """ """

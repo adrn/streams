@@ -18,7 +18,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-from streams.inference.lm10 import ln_likelihood
+from streams.inference.lm10 import ln_likelihood, ln_posterior
 from streams.dynamics import ParticleCollection
 from streams.potential.lm10 import LawMajewski2010, true_params
 from streams.io.lm10 import particles_today, satellite_today, time
@@ -31,12 +31,12 @@ potential = LawMajewski2010()
 
 def test_cprofile_time():
     for ii in range(10):
-        test_time_likelihood()
+        time_posterior_func()
 
-def time_likelihood_func():
+def time_posterior_func():
     a = pytime.time()
     for ii in range(10):
-        test_time_likelihood()
+        test_time_posterior()
     print((pytime.time()-a) / 10., "seconds per call")
 
 np.random.seed(42)
@@ -44,14 +44,11 @@ t1,t2 = time()
 satellite = satellite_today()
 particles = particles_today(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
 
-def test_time_likelihood():
-    
-    param_names = ["q1", "qz", "v_halo", "phi"]  
-    
-    resolution = 2.
-    
+def test_time_posterior():
+    resolution = 3.
     p = [1.2, 1.2, 0.121, 1.6912]
-    ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution)
+    param_names = ["q1", "qz", "v_halo", "phi"]
+    ln_posterior(p, param_names, particles, satellite, t1, t2, resolution)
 
 if __name__ == "__main__":
     cProfile.run("test_cprofile_time()", os.path.join(plot_path, "cprofiled"))
@@ -59,4 +56,4 @@ if __name__ == "__main__":
     p = pstats.Stats(os.path.join(plot_path, "cprofiled"))
     p.sort_stats('cumulative').print_stats(50)
     
-    time_likelihood_func()
+    test_time_posterior()

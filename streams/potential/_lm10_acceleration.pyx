@@ -21,44 +21,36 @@ cimport numpy as np
 cimport cython
 
 cdef extern from "math.h":
-    double fmod(double, double)
-    double floor(double)
-    double fmax(double, double)
-    double fmin(double, double)
-    double sqrt(double)
-    double log(double)
-    double sin(double)
-    double cos(double)
-    int isnan(double)
-    double fabs(double)
+    double sqrt(double x)
+    double sin(double x)
+    double cos(double x)
 
-DTYPE = np.double
-ctypedef np.double_t DTYPE_t
+#DTYPE = np.double
+#ctypedef np.double_t DTYPE_t
 
 #@cython.profile(True)
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True) 
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def lm10_acceleration(double[:, ::1] r not None, 
+def lm10_acceleration(double[:, ::1] r not None, int n_particles,
                       double q1, double qz, double phi, double v_halo, 
                       double q2, double r_halo, np.ndarray[double, ndim=1] r_0):
     
-    n_particles = r.shape[0]
     cdef double[:, ::1] data = np.empty((n_particles, 3))
     
-    cdef double fac1, fac2, fac3, _tmp
-    cdef double G, a, b, c, m_disk, m_bulge
+    cdef double fac1, fac2, fac3, _tmp, _tmp_1, _tmp_2, R_pl_c
+    cdef double G, a, b_sq, c, m_disk, m_bulge
     G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
     
     # Miyamoto-Nagai
     a = 6.5 # kpc
-    b = 0.26 # kpc
-    m_disk = 1.E11 # M_sun
+    b_sq = 0.26*0.26 # kpc^2
+    Gm_disk = G*1.E11 # M_sun
     
     # Hernquist
     c = 0.7 # kpc
-    m_bulge = 3.4E10 # M_sun
+    Gm_bulge = G*3.4E10 # M_sun
     
     # Halo
     cdef double q1_sq, q2_sq, qz_sq, r_halo_sq, v_halo_sq
@@ -81,12 +73,15 @@ def lm10_acceleration(double[:, ::1] r not None,
         zz = z*z
     
         # Disk
-        fac1 = -G*m_disk*((xx + yy) + (a + sqrt(zz + b**2))**2)**-1.5
-        _tmp = a/(sqrt(zz + b**2))
+        _tmp_1 = (a + sqrt(zz + b_sq))
+        _tmp_2 = xx + yy + _tmp_1*_tmp_1
+        fac1 = -Gm_disk / (_tmp_2 * sqrt(_tmp_2))
+        _tmp = a/(sqrt(zz + b_sq))
         
         # Bulge
         R = sqrt(xx + yy + zz)
-        fac2 = -G*m_bulge / ((R + c)**2 * R)
+        R_pl_c = R + c
+        fac2 = -Gm_bulge / (R_pl_c*R_pl_c * R)
         
         # Halo
         C1 = cos(phi)**2/q1_sq + sin(phi)**2/q2_sq
