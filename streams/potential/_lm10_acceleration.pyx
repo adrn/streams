@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding: utf-8
 # filename: _lm10_acceleration.pyx
 """
 Deimos:
@@ -40,15 +40,16 @@ ctypedef np.double_t DTYPE_t
 @cython.cdivision(True) 
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def lm10_acceleration(double[:, ::1] r not None, 
+def lm10_acceleration(double[:, ::1] r not None, int n_particles,
                       double q1, double qz, double phi, double v_halo, 
                       double q2, double r_halo, np.ndarray[double, ndim=1] r_0):
     
-    n_particles = r.shape[0]
-    cdef double[:, ::1] data = np.empty((n_particles, 3))
+    #cdef double[:, ::1] data = np.empty((n_particles, 3))
     
+    cdef int idx
     cdef double fac1, fac2, fac3, _tmp
     cdef double G, a, b, c, m_disk, m_bulge
+    
     G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
     
     # Miyamoto-Nagai
@@ -71,7 +72,8 @@ def lm10_acceleration(double[:, ::1] r not None,
     cdef double x, y, z
     cdef double xx, yy, zz
     
-    for ii in xrange(n_particles):
+    for ii in range(n_particles):
+        continue
         x = r[ii,0]
         y = r[ii,1]
         z = r[ii,2]
@@ -81,8 +83,8 @@ def lm10_acceleration(double[:, ::1] r not None,
         zz = z*z
     
         # Disk
-        fac1 = -G*m_disk*((xx + yy) + (a + sqrt(zz + b**2))**2)**-1.5
-        _tmp = a/(sqrt(zz + b**2))
+        fac1 = -G*m_disk*((xx + yy) + (a + sqrt(zz + b*b))**2)**-1.5
+        _tmp = a/(sqrt(zz + b*b))
         
         # Bulge
         R = sqrt(xx + yy + zz)
@@ -99,4 +101,4 @@ def lm10_acceleration(double[:, ::1] r not None,
         data[ii,1] = fac1*y + fac2*y + fac3*(2.*C2*y + C3*x)
         data[ii,2] = fac1*z*(1.+_tmp) + fac2*z + 2.*fac3*z/qz_sq
             
-    return np.array(data)
+    #return np.array(data)

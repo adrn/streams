@@ -99,6 +99,6 @@ def test_time_composite():
 
 def test_compare_cython():
     print("cython LM10")
-    py = LawMajewski2010(v_halo=121*u.km/u.s)
+    py = LawMajewski2010(n_particles=Nparticles, v_halo=121*u.km/u.s)
     time_potential(py)
 

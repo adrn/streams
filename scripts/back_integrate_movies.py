@@ -224,8 +224,9 @@ if __name__ == "__main__":
                                       dt=dt)
     
     # Define correct potential, and 10% wrong potential
-    correct = LawMajewski2010()
-    wrong = LawMajewski2010(q1=true_params["q1"]*1.05,
+    correct = LawMajewski2010(n_particles=N)
+    wrong = LawMajewski2010(n_particles=N,
+                            q1=true_params["q1"]*1.05,
                             qz=true_params["qz"]*1.05,
                             phi=true_params["phi"]*1.05,
                             v_halo=true_params["v_halo"]*1.05)

@@ -71,7 +71,7 @@ def normed_objective_plot():
             for stat in stats:
                 params = true_params.copy()
                 params[param] = stat
-                lm10 = LawMajewski2010(**params)
+                lm10 = LawMajewski2010(n_particles=len(particles), **params)
                 integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
                 s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
                 variances[param].append(generalized_variance(lm10, p_orbits, s_orbit))
@@ -111,8 +111,8 @@ def variance_projections():
     #params['v_halo'] = true_params['v_halo']*1.2
     
     # define both potentials
-    correct_lm10 = LawMajewski2010(**true_params)
-    wrong_lm10 = LawMajewski2010(**params)
+    correct_lm10 = LawMajewski2010(n_particles=len(particles), **true_params)
+    wrong_lm10 = LawMajewski2010(n_particles=len(particles), **params)
     
     rcparams = {'lines.linestyle' : '-', 
                 'lines.linewidth' : 1.,
@@ -274,8 +274,8 @@ def phase_space_d_vs_time(N=10):
     #wrong_params['v_halo'] = wrong_params['v_halo']
     
     # define correct potential, and wrong potential
-    true_potential = LawMajewski2010(**true_params)
-    wrong_potential = LawMajewski2010(**wrong_params)
+    true_potential = LawMajewski2010(n_particles=len(particles), **true_params)
+    wrong_potential = LawMajewski2010(n_particles=len(particles), **wrong_params)
     
     resolution = 3.
     

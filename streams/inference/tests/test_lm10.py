@@ -27,7 +27,12 @@ plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-potential = LawMajewski2010()
+np.random.seed(42)
+t1,t2 = time()
+satellite = satellite_today()
+particles = particles_today(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
+
+potential = LawMajewski2010(n_particles=len(particles))
 
 def test_cprofile_time():
     for ii in range(10):
@@ -38,11 +43,6 @@ def time_posterior_func():
     for ii in range(10):
         test_time_posterior()
     print((pytime.time()-a) / 10., "seconds per call")
-
-np.random.seed(42)
-t1,t2 = time()
-satellite = satellite_today()
-particles = particles_today(N=100, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
 
 def test_time_posterior():
     resolution = 3.
