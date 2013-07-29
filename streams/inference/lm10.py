@@ -116,17 +116,17 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     halo_params = dict(zip(param_names, p))
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
-    lm10 = LawMajewski2010(n_particles=particles.nparticles, **halo_params)
+    lm10 = LawMajewski2010(n_particles=particles.nparticles+1, **halo_params)
     
     integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
     
     # not adaptive: s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
-    #s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+    s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     
-    s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-                                      timestep_args=(lm10, satellite.m.value),
-                                      resolution=resolution,
-                                      t1=t1, t2=t2)
+    #s_orbit,p_orbits = integrator.run(timestep_func=timestep,
+    #                                  timestep_args=(lm10, satellite.m.value),
+    #                                  resolution=resolution,
+    #                                  t1=t1, t2=t2)
     
     return -generalized_variance(lm10, p_orbits, s_orbit)
 

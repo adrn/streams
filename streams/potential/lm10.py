@@ -83,7 +83,10 @@ class LawMajewski2010(CompositePotential):
                                               disk=disk,
                                               halo=halo)
         
-        self._acceleration_at = lambda r: lm10_acceleration(r, n_particles, **halo._parameters)
+        self._data_container = np.zeros((n_particles, 3))
+        self._acceleration_at = lambda r: lm10_acceleration(r, n_particles, 
+                                                            self._data_container, 
+                                                            **halo._parameters)
         self._G = G.decompose(bases=unit_system).value
         
     def _tidal_radius(self, m, r):

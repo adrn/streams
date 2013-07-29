@@ -27,7 +27,7 @@ data = np.zeros((n_particles,3))
 
 def time_function(Niter=1000):
     for ii in range(Niter):
-        lm10_acceleration(r, n_particles, 1.3, 1.3, 1.69, 0.125, 1., 12., r_0, data)
+        lm10_acceleration(r, n_particles, data, 1.3, 1.3, 1.69, 0.125, 1., 12., r_0)
 
 Niter = 100000
 a = pytime.time()

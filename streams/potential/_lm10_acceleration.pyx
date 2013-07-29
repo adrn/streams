@@ -33,10 +33,9 @@ ctypedef np.double_t DTYPE_t
 @cython.cdivision(True) 
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def lm10_acceleration(double[:, ::1] r not None, int n_particles,
+def lm10_acceleration(double[:, ::1] r not None, int n_particles, double[:, ::1] data not None,
                       double q1, double qz, double phi, double v_halo, 
-                      double q2, double r_halo, np.ndarray[double, ndim=1] r_0,
-                      double[:, ::1] data not None):
+                      double q2, double r_halo, np.ndarray[double, ndim=1] r_0):
     
     cdef double fac1, fac2, fac3, _tmp, _tmp_1, _tmp_2, R_pl_c
     cdef double G, a, b_sq, c, Gm_disk, Gm_bulge
@@ -93,3 +92,4 @@ def lm10_acceleration(double[:, ::1] r not None, int n_particles,
         data[ii,1] = fac1*y + fac2*y + fac3*(2.*C2*y + C3*x)
         data[ii,2] = fac1*z*(1.+_tmp) + fac2*z + 2.*fac3*z/qz_sq
     
+    return data
