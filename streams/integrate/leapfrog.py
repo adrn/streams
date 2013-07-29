@@ -84,13 +84,12 @@ class LeapfrogIntegrator(object):
         """
         return r + v*dt
         
-    def _velocity_halfstep(self, r, v, dt):
+    def _velocity_halfstep(self, a, v, dt):
         """ The 'kick' part of the leapfrog integration. Update the velocities
             given a velocity.
         """
         half_dt = 0.5*dt
-        a_i = self.acc(r, *self._acc_args)
-        return v + a_i*half_dt
+        return v + a*half_dt
         
     def step(self, dt):
         """ Step forward the positions and velocities by the given timestep """
@@ -99,10 +98,11 @@ class LeapfrogIntegrator(object):
             self._dt = dt
         
         r_i = self._position_step(self.r_im1, self.v_im1_2, self._dt)
-        v_i = self._velocity_halfstep(r_i, self.v_im1_2, self._dt)
+        a_i = self.acc(r, *self._acc_args)
+        v_i = self._velocity_halfstep(a_i, self.v_im1_2, self._dt)
         
         self._dt = dt
-        v_ip1_2 = self._velocity_halfstep(r_i, v_i, self._dt)
+        v_ip1_2 = self._velocity_halfstep(a_i, v_i, self._dt)
         
         self.r_im1 = r_i
         self.v_im1 = v_i
@@ -123,7 +123,8 @@ class LeapfrogIntegrator(object):
         # If the integrator has not been manually primed or run previously,
         #   here is where we scoot the velocity at time=0 to v(t+1/2)
         if self.v_im1_2 is None:
-            self.v_im1_2 = self._velocity_halfstep(self.r_im1, 
+            a_im1 = self.acc(self.r_im1, *self._acc_args)
+            self.v_im1_2 = self._velocity_halfstep(a_im1, 
                                                    self.v_im1,
                                                    dt)
     
