@@ -116,7 +116,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     halo_params = dict(zip(param_names, p))
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
-    lm10 = LawMajewski2010(n_particles=len(particles), **halo_params)
+    lm10 = LawMajewski2010(n_particles=particles.nparticles, **halo_params)
     
     integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
     

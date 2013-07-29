@@ -28,7 +28,7 @@ if not os.path.exists(plot_path):
 satellite = satellite_today()
 particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag)==1) & (dist < 80)")
 t1,t2 = time()
-potential = LawMajewski2010(n_particles=len(particles))
+potential = LawMajewski2010(n_particles=particles.nparticles)
 
 class TestLM10(object):
     

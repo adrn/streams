@@ -68,8 +68,8 @@ def test_setup_particles():
 def test_basic_nbody():
     
     def acceleration(positions, potential=None):
-        for particle_idx in np.arange(len(particles)):
-            idx = np.delete(np.arange(len(particles)), particle_idx)
+        for particle_idx in np.arange(particles.nparticles):
+            idx = np.delete(np.arange(particles.nparticles), particle_idx)
             acc = particles[idx].acceleration_at(particles[particle_idx].r)
             
             #if potential != None:
