@@ -99,20 +99,14 @@ def ln_prior(p, param_names):
     
     return sum
 
-def timestep(r, v, potential, m_sat):
+def timestep(r, v):
     R_orbit = math.sqrt(r[0,0]*r[0,0] + r[0,1]*r[0,1] + r[0,2]*r[0,2])
-    m_halo_enc = potential["halo"]._parameters["v_halo"]**2 * R_orbit/potential._G
-    m_enc = 1.34E11 + m_halo_enc
+    dt = -0.18*R_orbit + 0.8
     
-    R_tide = R_orbit * (m_sat / (3.*m_enc))**(0.3333333)
-    v_max = math.sqrt(np.max(np.sum(v**2, axis=-1)))
+    if abs(dt) < 1:
+        return -1
     
-    dt = -(R_tide / v_max)
-    
-    if dt > -1.:
-        return -1.
-    else:
-        return dt
+    return dt
 
 def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     """ Evaluate the likelihood function for a given set of halo 
@@ -122,6 +116,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     lm10 = LawMajewski2010(**halo_params)
+    v_halo = lm10["halo"]._parameters["v_halo"]
     
     integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
     
@@ -129,7 +124,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     #s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     
     s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-                                      timestep_args=(lm10, satellite.m.value),
+                                      timestep_args=(),
                                       resolution=resolution,
                                       t1=t1, t2=t2)
     
