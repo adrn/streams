@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import math
 
 # Third-party
 import numpy as np
@@ -100,7 +101,7 @@ class LawMajewski2010(CompositePotential):
         """
         
         # Radius of Sgr center relative to galactic center
-        R_orbit = np.sqrt(np.sum(r**2., axis=-1)) 
+        R_orbit = math.sqrt(r[0]*r[0] + r[1]*r[1] + r[2]*r[2])
         
         m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R_orbit/self._G
         m_enc = self["disk"]._parameters["m"] + \
