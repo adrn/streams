@@ -77,6 +77,9 @@ def main(config_file, job_name=None):
         else:
             pool = None
     
+    # Get the number of bootstrap reamples. if not specified, it's just 1
+    B = config.get("bootstrap_resamples", 1)
+    
     # Read in Sagittarius simulation data
     if config["particle_source"] == "lm10":
         satellite = satellite_today()
@@ -89,7 +92,7 @@ def main(config_file, job_name=None):
                 raise ValueError("Must supply a particle count for each expr")
             
             for N_i,expr_i in zip(config["particles"], expr):
-                these_p = particles_today(N=N_i, expr=expr_i)
+                these_p = particles_today(N=N_i*B, expr=expr_i)
                 
                 try:
                     particles = particles.merge(these_p)
@@ -98,13 +101,10 @@ def main(config_file, job_name=None):
             Nparticles = len(particles._r)
         else:
             Nparticles = config["particles"]
-            particles = particles_today(N=Nparticles, expr=expr)
+            particles = particles_today(N=Nparticles*B, expr=expr)
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
-    
-    # Get the number of bootstrap reamples. if not specified, it's just 1
-    B = config.get("bootstrap_resamples", 1)
     
     if config["observational_errors"]:
         rv_error = config.get("radial_velocity_error", None)
@@ -116,12 +116,6 @@ def main(config_file, job_name=None):
     
     # Create initial position array for walkers
     for p_name in config["model_parameters"]:
-        # sample initial parameter values from uniform distributions over 
-        #   the ranges specified in lm10.py
-        #this_p = np.random.uniform(param_ranges[p_name][0], 
-        #                           param_ranges[p_name][1],
-        #                           size=config["walkers"])
-        
         # Dan F-M says emcee is better at expanding than contracting...
         this_p = np.random.uniform(true_params[p_name]*0.9, 
                                    true_params[p_name]*1.1,
@@ -159,12 +153,16 @@ def main(config_file, job_name=None):
     
     try:
         all_best_parameters = []
-        for bb in range(B):        
+        for bb in range(B):
+            # bootstrap resample particles
+            p_idx = np.random.randint(Nparticles*B, size=Nparticles)
+            b_particles = particles[p_idx]
+            
             try:
                 sampler = infer_potential(ln_posterior, p0, steps=config["steps"],
                                           burn_in=config["burn_in"], pool=pool,
                                           args=(config["model_parameters"], 
-                                                particles, 
+                                                b_particles, 
                                                 satellite, 
                                                 t1, t2, resolution))
             except:
@@ -185,11 +183,11 @@ def main(config_file, job_name=None):
                     fig,axes = pre_error_particles.plot_r("xyz",
                                             subplots_kwargs=dict(figsize=(12,12)),
                                             scatter_kwargs={"alpha":0.75,"c":"k"})
-                    particles.plot_r("xyz", axes=axes, scatter_kwargs={"alpha":0.75,
-                                                                       "c":"#CA0020"})
+                    b_particles.plot_r("xyz", axes=axes, scatter_kwargs={"alpha":0.75,
+                                                                         "c":"#CA0020"})
                 else:
-                    fig,axes = particles.plot_r("xyz", scatter_kwargs={"alpha":0.75,
-                                                                       "c":"k"})
+                    fig,axes = b_particles.plot_r("xyz", scatter_kwargs={"alpha":0.75,
+                                                                         "c":"k"})
     
                 fig.savefig(os.path.join(path, "positions.png"))
                 
@@ -197,10 +195,10 @@ def main(config_file, job_name=None):
                     fig,axes = pre_error_particles.plot_v(['vx','vy','vz'],
                                             subplots_kwargs=dict(figsize=(12,12)),
                                             scatter_kwargs={"alpha":0.75,"c":"k"})
-                    particles.plot_v(['vx','vy','vz'], axes=axes, 
+                    b_particles.plot_v(['vx','vy','vz'], axes=axes, 
                                      scatter_kwargs={"alpha":0.75, "c":"#CA0020"})
                 else:
-                    fig,axes = particles.plot_v(['vx','vy','vz'], 
+                    fig,axes = b_particles.plot_v(['vx','vy','vz'], 
                                                 scatter_kwargs={"alpha":0.75, "c":"k"})
     
                 fig.savefig(os.path.join(path, "velocities.png"))
