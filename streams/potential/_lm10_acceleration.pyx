@@ -35,7 +35,7 @@ cdef extern from "math.h":
 @cython.nonecheck(False)
 def lm10_acceleration(double[:, ::1] r not None, int n_particles,
                       double q1, double qz, double phi, double v_halo, 
-                      double q2, double r_halo, np.ndarray[double, ndim=1] r_0):
+                      double q2, double r_halo):
     
     cdef double[:, ::1] data = np.empty((n_particles, 3))
     
@@ -63,7 +63,7 @@ def lm10_acceleration(double[:, ::1] r not None, int n_particles,
     cdef double x, y, z
     cdef double xx, yy, zz
     
-    for ii in xrange(n_particles):
+    for ii in range(n_particles):
         x = r[ii,0]
         y = r[ii,1]
         z = r[ii,2]
