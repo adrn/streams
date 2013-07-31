@@ -116,13 +116,13 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     
     x = x + rsun
     
-    d = np.sqrt(x**2 + y**2 + z**2)*x.unit
+    d = np.sqrt(x.value**2 + y.value**2 + z.value**2)*x.unit
     V = apparent_magnitude(M_V, d)
     
     vr = (x*vx + y*vy + z*vz) / d 
     
     # proper motions in km/s/kpc
-    rad = np.sqrt(x**2 + y**2)*x.unit
+    rad = np.sqrt(x.value**2 + y.value**2)*x.unit
     vrad = (x*vx + y*vy) / rad
     mul = (x*vy - y*vx) / rad / d
     mub = (-z*vrad + rad*vz) / d**2
