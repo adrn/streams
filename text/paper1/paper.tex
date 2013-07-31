@@ -55,36 +55,35 @@ The caveat to working with tracer populations is the assumption that the tracer 
 
 % --- analogous to our exploitation of matter in disks moving on near-circular orbits.
 A complimentary method to measure the mass distribution is to instead take full advantage of the {\it non}-random nature of the stellar distribution in the Galactic halo.
-While we do not know the exact orbits of  stellar debris from satellite destruction -- though \citet{eyre09b} propose a method of full orbit reconstruction from incomplete kinematic data -- we do know something more about stars in a debris structure: the stars were once all part of the same object.
+While we do not know the exact orbits of  stellar debris from satellite destruction --- though \citet{eyre09b} propose a method of full orbit reconstruction from incomplete kinematic data --- we do know something more about stars in a debris structure: the stars were once all part of the same object.
 Methods that utilize this knowledge on dynamically cold systems (e.g, tidal streams) require orders of magnitude fewer tracers than a randomly sampled population, but achieve comparable accuracy on derived constraints.
-In the simplest case, we might {\it assume} that debris stars are actually still on the same orbit as their progenitor system.
+[KVJ: can we cut some of this? Anything from here to end of the paragraph?] In the simplest case, we might {\it assume} that debris stars are actually still on the same orbit as their progenitor system.
 Then we can imagine that measuring the full-space velocities ${\bf v}$ at different points ${\bf x}$ in the structure (e.g. along a stream) would actually give us a direct
 measure of differences in potential $\Phi$ (i.e. $\Phi({\bf x}_1)-\Phi({\bf x}_2)=(v_2^2-v_1^2)/2$).
-In reality, we usually know at most four of the six phase-space co-ordinates for debris stars, often with significant error bars and potential measurements have been made by
-fitting orbits to streams \citep[e.g.,][]{helmi04,johnston05,koposov10,law10}.
+[KVJ: incomplete sentence? Not sure what the point you were making is?] In reality, we usually know at most four of the six phase-space co-ordinates for debris stars, often with significant error bars and potential measurements have been made by fitting orbits to streams \citep[e.g.,][]{helmi04,johnston05,koposov10,law10}.
 Moreover, our assumption of debris tracing a single orbit is actually incorrect \citep[see][for discussions of the orbit distribution in tidal debris]{johnston98,helmi99}, with
 systematic changes in orbital energy along debris streams that can lead to systematic biases in our measurements of the Galactic potential \citep{eyre09a,varghese11}.
 In particular, \citet{sanders13a} recently demonstrated that this bias is equally problematic for the very thinnest, coldest streams, whose observed properties may be indistinguishable from those of the parent orbit \citep[e.g. such as the globular cluster, GD1 --- see][]{koposov10}, as for the much more extended and hotter streams \citep[e.g. such as debris from the Sagittarius dwarf galaxy --- see][]{majewski03} where offsets from a single orbit are clearly apparent.
 
 One way to address these systematic biases is to run fully self-consistent N-body simulations of satellite destruction in a variety of potentials (which naturally generate a
 distribution of orbital properties in the debris and along tidal streams) with the aim of simultaneously constraining both the properties of the satellite and the Milky Way.
-Many studies of the Sagittarius debris system (hereafter Sgr)  --- whose tidal streams entirely encircle the Milky Way --- have adopted this approach \citep[e.g.][]
+Many studies of the Sagittarius debris system (hereafter Sgr) --- whose tidal streams entirely encircle the Milky Way --- have adopted this approach \citep[e.g.][]
 {law05,fellhauer06} with the most recent work for the first time attempting to place constraints on the triaxiality and orientation of the Milky Way's matter distribution
 \citep{law10}.
 %Studies which first fit the Sgr stream to a single orbit \citep{johnston05,law09} and were subsequently followed up with full N-body simulations \citep{law05,law12} offer another demonstration of the limitation of the former approach as potential parameters are revised when moving to the N-body approach.
 
 Other approaches have been proposed that avoid the cost of full N-body simulations yet recognize the limitations of single orbit integration.
-For example, using the results of N-body simulations as a guide, simple corrections around a single orbit can be adopted to make model predictions that more closely
+For example, using the results of N-body simulations as a guide, simple corrections around a single orbit can be adopted to make model predictions that closely
 mimic expected debris behavior \citep[e.g.][]{johnston99b,varghese11}.
 
 The promise of near-future data sets including full (or nearly full) phase-space information has also inspired discussions that move beyond fitting observables along a
 stream.
 \citet{binney08} and \citet{penarrubia12} demonstrate conceptually that the distribution of energy and entropy (respectively) in debris will be minimized only for a correct
 assumption of the form of the Galactic potential.
-\citet{sanders13b} examine the distribution of debris in action-angle co-ordinates, show stars that were once all members of the same object must lie along a single line in angle-frequency space and demonstrate how this constraint can be used as a potential measure.
+\citet{sanders13b} examine the distribution of debris in action-angle co-ordinates and show that stars stripped from the same disrupted object must lie along a single line in angle-frequency space, providing a constraint that can be used as a potential measure.
 %\citet{johnston99a} (hereafter JZSH) showed that backwards integration of the positions of stars and their parent satellite could be used to distinguish Milky Way mass models: only in the correct potential would the stars' and satellite's  path coincide within a Hubble time.The JZSH method was designed and tested for the proposed characteristics of the Space Interferometry Mission \citep{}, which was expected to be able to measure proper motions with $\mu$as/year accuracy for stars as faint as $V=20$. Distances to stream members would only be poorly known and were estimated using anticipated properties of tidal debris.
 
-In this paper we re-examine and update  another approach to using tidal debris as a potential measure \citep[originially proposed by][]{johnston99a}  in the context of current and near-future observational capabilities, and illustrates its power with the example of Sgr.
+In this paper we re-examine and update a complimentary approach to using tidal debris as a potential measure \citep[originially proposed by][]{johnston99a}  in the context of current and near-future observational capabilities. We illustrate the power of this method by applying it to a simulation of the Sgr debris system.
 In Section \ref{sec:context} we outline the observational prospects and Sgr properties that motivated this re-examination.
 In Section \ref{sec:method} we present the updated potential measure and test it with synthetic observations of simulated Sgr debris.
 In Section \ref{sec:discussion} we highlight the advantages and shortcomings of this method.
@@ -163,7 +162,7 @@ the metallicity: each line in Figure~\ref{fig:gaia_errors} is computed
 by Monte Carlo sampling from the empirical metallicity distribution of
 the Galactic halo from \cite{ivezic08} (centered around [Fe/H] $\sim$
 -1.5). Within 2~kpc, Gaia will measure distances to these stars with
-better than 2\% accuracy -- RR Lyrae in this volume will be used to
+better than 2\% accuracy --- RR Lyrae in this volume will be used to
 test and calibrate the Spitzer PL relation described above. Beyond the
 2~kpc threshold, the mid-IR PL relation for RR Lyrae will provide more
 accurate distance measurements.
@@ -359,8 +358,8 @@ distribution computed from the `true' orbital history of the stars: in
 an incorrect potential, small differences in the orbits of the stars
 relative to the orbit of the progenitor cause them to spread out in
 this relative, normalized phase space. Thus, the \emph{generalized
-  variance} of the distribution -- computed for a given set of
-potential parameters, $\bs{\theta}$ -- is a natural choice for the
+  variance} of the distribution --- computed for a given set of
+potential parameters, $\bs{\theta}$ --- is a natural choice for the
 scalar objective function used in constraining the potential of the
 Milky Way
 \begin{align}
