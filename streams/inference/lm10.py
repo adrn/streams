@@ -10,6 +10,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import math
 
 # Third-party
 import numpy as np
@@ -99,9 +100,13 @@ def ln_prior(p, param_names):
     return sum
 
 def timestep(r, v, potential, m_sat):
-    R_tide = potential._tidal_radius(r=r[0], m=m_sat)
-    #v_max = np.max(np.sqrt(np.sum((v[1:]-v[0])**2,axis=-1)))
-    v_max = np.max(np.sqrt(np.sum(v**2,axis=-1)))
+    R_orbit = math.sqrt(r[0,0]*r[0,0] + r[0,1]*r[0,1] + r[0,2]*r[0,2])
+    m_halo_enc = potential["halo"]._parameters["v_halo"]**2 * R_orbit/potential._G
+    m_enc = 1.34E11 + m_halo_enc
+    
+    R_tide = R_orbit * (m_sat / (3.*m_enc))**(0.3333333)
+    v_max = math.sqrt(np.max(np.sum(v**2, axis=-1)))
+    
     dt = -(R_tide / v_max)
     
     if dt > -1.:
