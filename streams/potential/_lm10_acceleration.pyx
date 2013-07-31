@@ -33,11 +33,12 @@ cdef extern from "math.h":
 @cython.cdivision(True) 
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def lm10_acceleration(double[:, ::1] r not None, int n_particles,
+def lm10_acceleration(double[:, ::1] r not None, int n_particles, 
+                      np.ndarray[double, ndim=2] data,
                       double q1, double qz, double phi, double v_halo, 
                       double q2, double r_halo):
     
-    cdef double[:, ::1] data = np.empty((n_particles, 3))
+    #cdef double[:, ::1] data = np.empty((n_particles, 3))
     
     cdef double fac1, fac2, fac3, _tmp, _tmp_1, _tmp_2, R_pl_c
     cdef double G, a, b_sq, c, m_disk, m_bulge
