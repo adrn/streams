@@ -182,26 +182,26 @@ def main(config_file, job_name=None):
                 if config["observational_errors"]:
                     fig,axes = pre_error_particles.plot_r("xyz",
                                             subplots_kwargs=dict(figsize=(12,12)),
-                                            scatter_kwargs={"alpha":0.75,"c":"k"})
-                    b_particles.plot_r("xyz", axes=axes, scatter_kwargs={"alpha":0.75,
+                                            scatter_kwargs={"alpha":0.5,"c":"k"})
+                    b_particles.plot_r("xyz", axes=axes, scatter_kwargs={"alpha":1.,
                                                                          "c":"#CA0020"})
                 else:
                     fig,axes = b_particles.plot_r("xyz", scatter_kwargs={"alpha":0.75,
                                                                          "c":"k"})
     
-                fig.savefig(os.path.join(path, "positions.png"))
+                fig.savefig(os.path.join(path, "positions_{0}.png".format(bb)))
                 
                 if config["observational_errors"]:
                     fig,axes = pre_error_particles.plot_v(['vx','vy','vz'],
                                             subplots_kwargs=dict(figsize=(12,12)),
-                                            scatter_kwargs={"alpha":0.75,"c":"k"})
+                                            scatter_kwargs={"alpha":0.5,"c":"k"})
                     b_particles.plot_v(['vx','vy','vz'], axes=axes, 
-                                     scatter_kwargs={"alpha":0.75, "c":"#CA0020"})
+                                     scatter_kwargs={"alpha":1., "c":"#CA0020"})
                 else:
                     fig,axes = b_particles.plot_v(['vx','vy','vz'], 
                                                 scatter_kwargs={"alpha":0.75, "c":"k"})
     
-                fig.savefig(os.path.join(path, "velocities.png"))
+                fig.savefig(os.path.join(path, "velocities_{0}.png".format(bb)))
                 
                 # write the sampler to a pickle file
                 data_file = os.path.join(path, "sampler_data.pickle")
