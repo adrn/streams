@@ -189,3 +189,11 @@ class ParticleCollection(DynamicalBase):
         m = np.append(self._m,other_m) * self.unit_system['mass']
         
         return ParticleCollection(r=r, v=v, m=m, unit_system=self.unit_system)
+    
+    def __getitem__(self, key):
+    
+        r = self._r[key] * self.unit_system['length']
+        v = self._v[key] * self.unit_system['length']/self.unit_system['time']
+        m = self._m[key] * self.unit_system['mass']
+        
+        return ParticleCollection(r=r, v=v, m=m, unit_system=self.unit_system)

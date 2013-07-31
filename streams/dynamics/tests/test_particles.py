@@ -89,3 +89,14 @@ def test_to():
     assert np.allclose(pc2._r, r.to(u.km).value)
     assert np.allclose(pc2._v, v.to(u.km/u.s).value)
     assert np.allclose(pc2._m, m.to(u.kg).value)
+
+def test_getitem():
+    r = np.random.random(size=(100,3))*u.kpc
+    v = np.random.random(size=(100,3))*u.kpc/u.Myr
+    m = np.random.random(100)*u.M_sun
+    
+    pc = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+    pc2 = pc[15:30]
+    
+    assert pc2.nparticles == 15
+    assert (pc2._r[0] == pc._r[15]).all()
