@@ -44,7 +44,7 @@ Our proximity means that we can use individual stars as tracer populations and h
 and planetary nebula studies of external galaxies \citep[e.g.][]{mendez01,cote03}.
 Moreover, our internal perspective allows us to build a three-dimensional picture of the mass distribution rather than measuring its two-dimensional projection.
 %Hence we can hope to reconstruct not only the density, but also the shape and orientation of the dark matter halo as function of radius well beyond the disk.
-For example, to date thousands of blue-horizontal-branch stars selected from the Sloan Digital Sky Survey  have been used to probe mass out to tens of
+For example, to date thousands of blue-horizontal-branch stars selected from the Sloan Digital Sky Survey (SDSS) have been used to probe mass out to tens of
 kpc \citep[SDSS, see][]{deason12a,kafle12}, and estimates with combined tracers extend to 150kpc \citep{deason12b}.
 \citet{loebman12} demonstrates how even larger stellar samples from current (i.e. SDSS) and future  (Gaia and LSST) stellar surveys will also be sensitive to any
 asphericity of the halo.
@@ -94,15 +94,16 @@ assumption of the form of the Galactic potential.
 %\citet{johnston99a} (hereafter JZSH) showed that backwards integration of the positions of stars and their parent satellite could be used to distinguish Milky Way mass models: only in the correct potential would the stars' and satellite's  path coincide within a Hubble time.The JZSH method was designed and tested for the proposed characteristics of the Space Interferometry Mission \citep{}, which was expected to be able to measure proper motions with $\mu$as/year accuracy for stars as faint as $V=20$. Distances to stream members would only be poorly known and were estimated using anticipated properties of tidal debris.
 
 In this paper we re-examine and update  another approach to using tidal debris as a potential measure \citep[originially proposed by][]{johnston99a}  in the context of current and near-future observational capabilities, and illustrates its power with the example of Sgr.
-In Section \ref{context.sec} we outline the observational prospects and Sgr properties that motivated this re-examination.
-In Section \ref{measure.sec} we present the updated potential measure and test it with synthetic observations of simulated Sgr debris.
-In Section \ref{summary.sec} we summarize our results and outline prospects for combining constraints from Sgr with those from other debris systems.
+In Section \ref{sec:context} we outline the observational prospects and Sgr properties that motivated this re-examination.
+In Section \ref{sec:method} we present the updated potential measure and test it with synthetic observations of simulated Sgr debris.
+In Section \ref{sec:discussion} we highlight the advantages and shortcomings of this method.
+We conclude in Section \ref{sec:conclusion}.
 
 % --------------------------------------------------------------------
 % Above here is from KVJ. Below is APW.
 %
 
-\section{Context and motivation}
+\section{Context and motivation} \label{sec:context}
 The method presented in Section \ref{sec:method} takes advantage of
 three distinct developments in the observations of tidal streams: (i)
 the demonstration of a technique for deriving distances to individual
@@ -146,8 +147,8 @@ For example, using 5 stars with trigonometric parallaxes
   measured by Hubble \citep{benedict11}, \citet{madore12} measured  
   the dispersion in the
 mid-IR PL relation -- at Spitzer wavelengths --  to be of order
-$\pm$0.03~mag. This implies that it is possible to determine
-individual distances that are good to better than $\pm 2\%$ for RR
+$\sim$0.03~mag. This implies that it is possible to determine
+individual distances that are good to better than $2\%$ for RR
 Lyrae stars out to $\sim$60~kpc (the limit of Spitzer's ability to
 detect and measure RR Lyrae variables, for modest integration
 times). Distance measurements of Blue Horizontal Branch and Blue Straggler stars at these distances in the halo typically achieve $\sim$25\% uncertainties \citep[e.g.,][]{deason12b}.
@@ -207,7 +208,7 @@ mapped across the sky in carbon stars \citep{totten98}, M giants
 selected from the Two Micron All Sky Survey \citep{majewski03}, main
 sequence turnoff stars from the Sloan Digital Sky Survey
 \citep{belokurov06}, and RR Lyrae in the Catalina Sky Survey
-\citep{drake13}.
+\citep{drake13}. More recently, apogalactic debris has been traced to large distances using a combination of blue horizontal branch, main-sequence turn-off, and red giant stars from the SDSS \citep{belokurov13}.
 
 The distance to the stream has been estimated from photometric surveys
 \citep[e.g.,][]{martinezdelgado04} and gradients in radial
@@ -333,12 +334,18 @@ to spread out in this relative, normalized phase space. Thus, the
 \emph{generalized variance} of the distribution, computed for a given
 set of potential parameters, $\bs{\theta}$, is a natural choice for
 the scalar objective function used in constraining the potential of
-the Milky Way,
+the Milky Way. If
 \begin{equation}
-  f(\bs{\theta})=\det(\mathrm{Cov}( \bs{A}_{ik})).
+  f(\bs{\theta})=\log \det(\mathrm{Cov}( \bs{A}_{ik})).
 \end{equation}
 
-\subsection{Application to Simulated Data}
+[Still working on this section...need to figure out best way to express what I'm trying to say.] Though this is not explicitly a \emph{likelihood}, optimizing over this statistic is a very simple approximation to performing a maximum-likelihood optimization. Assuming the samples in $\bs{A}_{ik}$ are approximately normal-distributed, the variance is closely related to the Shannon entropy \citep{shannon1948}, $H$,  
+\begin{equation}
+  H \propto \log \sigma .
+\end{equation}
+Minimizing the entropy is then equivalent to minimizing the loss of \emph{information} for a given choice of parameters, $\bs{\theta}$, given the ``data,'' $\bs{A}_{ik}$, and is thus related to maximum-likelihood estimation \citep[see][for more detail]{mackay2002}.
+
+\subsection{Application to Simulated Data} \label{sec:results}
 The LM10 simulation data (see Section \ref{sec:sgr}) is a perfect
 test-bed for evaluating the effectiveness of this method. We start by
 extracting both particle data and the satellite orbital parameters
@@ -359,50 +366,39 @@ generalized variance defines a convex hypersurface over which we
 optimize four of the six logarithmic potential parameters:
 $v_{circ}$, $\phi$, $q_1$, and $q_z$. We fix $q_2$ and $R_c$, which are degenerate with combinations of the other parameters. Figure~\ref{fig:} shows one-dimensional slices of the objective function
 produced by varying each of the potential parameters by
-$\pm20\%$ around the true values and holding all others fixed.
+$\pm10\%$ around the true values and holding all others fixed.
 
-[Bootstrap]
+In anticipation of extending the above method to include a true likelihood function, we use a parallelized Markov Chain Monte Carlo (MCMC) algorithm \citep{foremanmackey2013} to sample from our objective function.\footnote{Though MCMC is typically not an efficient optimization tool, the stochasticity and easy parallelization of the algorithm mean it easily outperforms other optimizers on this problem, where the objective function is noisy and expensive to compute.} We use the median value of the samples as a point estimate for the potential parameters. To assess the uncertainty in the derived halo parameters, we bootstrap resample our 100 stars 100 times and estimate the potential parameters with each sample. Figure~\ref{fig:bootstrap} shows the recovered parameters for each bootstrapped sample and demonstrates the power of the combined Spitzer and Gaia data: a moderately sized sample of RR Lyrae alone places strong constraints on the shape and mass of the Milky Way potential.
 
 % APW Note: The optimization, in a way, is getting a bunch of orbits (curves) to intersect another curve (the progenitor orbit) at some points (over time).
 
-\section{Discussion and future prospects}
+\section{Discussion and future prospects} 
+\label{sec:discussion}
 
 Many orbit fitting methods for measuring the Galactic potential assume that the stars in a given stream are on the same
-orbit. \cite{binney08} show that this assumption leads to XXX\% biases in the 
-potential parameters, even without realistic observational errors on
+orbit. \cite{sanders13a} show that this assumption can lead to nearly 100\% errors in the 
+estimated potential parameters, even without realistic observational errors on
 the kinematic data. The \emph{Rewinder} is
 free of this assumption and instead \emph{relies} on the fact that
-each star is on a different orbit, and is thus an independent potentiometer: the best potential is the one that gets the
+each star is on a different orbit, and is thus an independent potentiometer; the best potential is the one that gets the
 most of these orbits to intersect the progenitor
-over the history of interaction with the system. The strength of this method is in the simplicity: it requires only a rough estimate of the satellite mass $m_{\rm sat}$ combined with backwards integration of orbits. There are no assumptions made about, or N-body modeling of, the internal distribution of satellite stars.
+over the history of interaction with the system. 
 
-[TODO: this paragraph needs work]
-There are two other apparent strengths of the method which require further investigation.
-\emph{The Rewinder} is applicable to any debris that is known to come from a single object, and not restricted only to the very coldest tidal streams. For example, in principle the
-method could applied to the vast debris {\it clouds} that have been discovered subtending large solid angles \citep[e.g. the Triangulum Andromeda
+The strengths of this method stem from the simplicity: it requires only a rough estimate of the satellite mass $m_{\rm sat}$ combined with backwards integration of orbits. There are no assumptions made about, or N-body modeling of, the internal distribution of satellite stars. Thus, \emph{The Rewinder} is applicable to any debris that is known to come from a single object, and not restricted only to the very coldest tidal streams. In principle, the
+method could applied to the vast debris {\it clouds} that have been discovered over large areas of the sky \citep[e.g. the Triangulum Andromeda
 and Hercules-Aquila clouds]{rochapinto04,belokurov06}, or even stars that have only associations in orbital properties and do not form a coherent spatial structure
-\citep[such as the angular momentum groupings in local giants found by][]{helmi99}. Second, it appears trivial to combine constraints from multiple debris systems at once by simply integrating all debris from several satellites simultaneously with $D_{\rm ps}$ defined appropriately for each star separately.
+\citep[such as the angular momentum groupings in local giants found by][]{helmi99}. The method trivially extends to combining constraints from multiple debris systems at once by simply integrating all debris from several satellites simultaneously, with $D_{\rm ps}$ defined appropriately for each star.
 
-[present the limitations]
-The limitations of the method also need to be understood. Firstly, for the RR Lyraes associated with the very coldest streams \citep[e.g. the globular clusters Pal5
-and GD1][]{odenkirchen02,koposov10} the measurement errors are unlikely to be small enough for the
-the differences in orbital properties to between debris and satellite to be detected. [What will this cause? Maybe biases? One more sentence here]. Second, the method requires specifying a functional form for the potential. [...]. Lastly, the current version of the algorithm relies on accurate knowledge of the phase-space position of the parent satellite, which may not be available in some cases \citep[for example, for the Orphan Stream][]{belokurov07}. 
+It is also important to characterize the the limitations of this method. Firstly, the measurement errors for RR Lyraes associated with the very coldest streams \citep[e.g. the globular clusters Pal5 and GD1][]{odenkirchen02,koposov10} will likely be too large to resolve the minute differences in orbital properties between the debris and satellite to be detected. Second, the current version of the algorithm relies on accurate knowledge of the current position and velocity of the parent satellite, which may not be available in some cases \citep[for example, the Orphan Stream;][]{belokurov07}. Lastly, the present prescription treats the progenitor as a point-mass during orbit integration. Second-order effects in orbit evolution (e.g., dynamical friction) are currently ignored, leading to minor biases in the estimated potential parameters (for example, XXX in Figure~\ref{fig:bootstrap}). 
 
-[explain how some of them are handled automatically by the forthcoming machinery]
-The objective function presented above is an approximation to a more general likelihood function, described in detail in forthcoming work (Price-Whelan \& Johnston in prep.). The results shown in sections xx and yy are meant to illustrate the strength and concept of the method.
+The objective function presented above is an approximation to a more general likelihood function, described in depth in forthcoming work (Price-Whelan \& Johnston in prep.). The results shown in section \ref{sec:results} are meant to illustrate the strength and concept behind the method, but [...] [I want to say one more sentence about the upcoming work, and possibly how it will solve some of the limitations presented above.] 
 
-Given sufficient data, position and motion of the original host could be solved for as additional free parameters,
-but the effectiveness of this approach has yet to be investigated.
+%With a justified probabilistic framework, we will also be able to provide iven sufficient data, position and motion of the original host could be solved for as additional free parameters, but the effectiveness of this approach has yet to be investigated.
 
-\section{Summary}
+\section{Conclusions}
+\label{sec:conclusion}
 
-This paper outlines an algorithm to measure the Galactic potential that takes maximal advantage of a combination of possible data from the Spitzer and Gaia satellite
-missions that, when combined,  promise full phase-space measurements of RR Lyrae stars around our Galaxy.
-When applied to a synthetic data set generated from debris in an N-body simulation of the destruction of Sgr the method recovers the shape and orientation of the dark
-matter halo component of the potential with ??? accuracy using a sample of ??? stars.
-This success provides strong motivation for: (i) further theoretical work to investigate the power of multiple debris structures with different morphologies and orientations in
-building a comprehensive picture of the Galactic mass distribution; and (ii) a  Spitzer survey of RR Lyrae stars in debris structures around the Milky Way as a ``legacy''
-sample to combine with near-future Gaia data.
+This paper presents an algorithm for measuring the Galactic potential that anticipates combined data from the Spitzer and Gaia satellite missions that promise precise, full phase-space measurements of RR Lyrae stars in the halo of our Galaxy. When applied to a sample of 100 stars -- with realistic observational errors -- sampled from the \cite{law10} N-body simulation of the destruction of the Sgr dwarf satellite, the method recovers the shape and orientation of the dark matter potential XXX. This success provides strong motivation for 1) further theoretical work to [...], 2) an investigation of the power of using multiple, complimentary debris structures (e.g., with different morphologies and orientations) in building a comprehensive picture of the Galactic mass distribution, and 3) a Spitzer survey of RR Lyrae stars in debris structures around the Milky Way to get precise distances to combine with near-future Gaia velocity data.
 
 \acknowledgments
 We thank ...
