@@ -155,7 +155,7 @@ class LawMajewski2010(CompositePotential):
         else:
             raise ValueError("Must specify just r or r_tide.")
         
-        return np.sqrt(2. * self._G * m / r_tide)
+        return math.sqrt(2. * self._G * m / r_tide)
     
     def escape_velocity(self, m, r=None, r_tide=None):
         """ Compute the escape velocity of a satellite in a potential given
