@@ -152,12 +152,12 @@ of stars with 10-100~$\mu$as accuracies. With over 50 observations of
 the entire sky during the five-year lifetime of the mission, Gaia will
 revolutionize the field of Galactic Astronomy by providing sufficient
 proper motion accuracy to create full six-dimensional phase-space maps
-of the Galaxy with $<$10\% distance errors for heliocentric distances
+of the Galaxy with $<$10\% distance errors for heliocentric distances of
 up to $\sim$6~kpc for RR Lyrae stars.
 
 Figure~\ref{fig:gaia_errors} shows the Gaia end-of-mission distance
 and tangential velocity error estimates for RR Lyrae. The velocity
-uncertainty depends on the magnitude of the source, which depends on
+uncertainty depends on the magnitude (and color) of the source, which depends on
 the metallicity: each line in Figure~\ref{fig:gaia_errors} is computed
 by Monte Carlo sampling from the empirical metallicity distribution of
 the Galactic halo from \cite{ivezic08} (centered around [Fe/H] $\sim$
@@ -265,11 +265,10 @@ Combined Spitzer and Gaia measurements of distances and proper motions
 of RR Lyraes in the Sgr debris will open up new avenues of
 interpretation. A 2\% distance error at $\sim$30~kpc
 ($\epsilon_{d}=0.6~{\rm kpc}$) is smaller than the predicted thickness
-of the stream, ranging from $\sim$2-$10$~kpc. Combined with Gaia
+of the stream, ranging from $\sim$2-$10$~kpc. When combined with Gaia proper motion errors,
 tangential velocity measurement accuracies ($\epsilon_{v}\sim2$~km/s
-at 30~kpc) less than the intrinsic dispersion for much of the stream
-\citep[$\sigma_v\sim10$~km/s;][]{majewski04}, and ground-based radial
-velocities, the measured phase-space position of each individual RR
+at 30~kpc; see Figure~\ref{fig:gaia_errors}) are less than the intrinsic dispersion for much of the stream
+\citep[$\sigma_v\sim10$~km/s;][]{majewski04} and the measured phase-space position of each individual RR
 Lyrae becomes a powerful probe of the potential. The next section
 outlines a new method to take advantage of this information.
 
@@ -281,14 +280,14 @@ measures by exploting the fact that the stars must have come from the
 same progenitor. If the present-day phase-space position of the
 progenitor system is also known, this places an intuitive constraint
 on the potential of the Milky Way: if the orbits of the stars and the
-orbit of the progenitor are integrated \emph{backwards} in time
+orbit of the progenitor are integrated \emph{backwards} in a a potential that accurately models the Milky Way
 (imagine watching satellite destruction in ``rewind"), the stars
 should recombine with the progenitor. If the potential is incorrect,
 the orbits of the stars will diverge from that of the progenitor and
 thus will not be recaptured by the satellite system
 (Figure~\ref{fig:ps_distance}).
 
-This approach was originally proposed by \citep{johnston99a} and was
+This approach was originally proposed by \citet{johnston99a} and was
 designed and tested for the proposed characteristics of the Space
 Interferometry Mission \citep{unwin08}, which was expected to be able
 to measure proper motions with $\mu$as/year accuracy for stars as
@@ -298,7 +297,7 @@ of tidal debris. Below we present an updated version of the algorithm:
 the promise of 2\% distances to RR Lyrae stars (see Section
 \ref{sec:spitzer}) enables a direct measurement (rather than
 approximate estimate) of the position of a star within its debris
-structure. The test statistic that quantifies how well stars recombine
+structure; the test statistic that quantifies how well stars recombine
 with the satellite has been rigorously redefined.
 
 \begin{figure}[h]
@@ -341,7 +340,7 @@ velocity,
 Qualitatively, when the distance in this normalized six-dimensional
 space, $D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} <
 \sqrt{2}$, the star is likely recaptured by the
-satellite. \citet{johnston99a} (hereafter JZSH) imposed a similar
+satellite. \citet{johnston99a} imposed a similar
 condition as a hard boundary and used the number of recaptured
 particles in a given backwards-integration as a cost function for
 optimization. What follows is a description of an updated procedure
@@ -367,28 +366,28 @@ relative to the orbit of the progenitor cause them to spread out in
 this relative, normalized phase space. Thus, the \emph{generalized
   variance} of the distribution --- computed for a given set of
 potential parameters, $\bs{\theta}$ --- is a natural choice for the
-scalar objective function used in constraining the potential of the
+scalar objective function, $f(\bs{\theta})$, used in constraining the potential of the
 Milky Way
 \begin{align}
   \Sigma_n &= \mathrm{Cov}( \bs{A}_{ik}) \\
   f(\bs{\theta}) &= \ln \det \Sigma.
 \end{align}
 
-[Still working on this bit...need to figure out best way to express
-  what I'm trying to say.] Though this is not explicitly a
-\emph{likelihood}, optimizing over this statistic is a very simple
-approximation to performing a maximum-likelihood
-optimization. Assuming the samples in $\bs{A}_{ik}$ are approximately
-normal-distributed, the variance is closely related to the Shannon
-entropy \citep{shannon1948}, $H$,
-\begin{equation}
-  H \propto \log \sigma .
-\end{equation}
-Minimizing the entropy is then equivalent to minimizing the loss of
-\emph{information} for a given choice of parameters, $\bs{\theta}$,
-given the ``data,'' $\bs{A}_{ik}$, and is thus related to
-maximum-likelihood estimation \citep[see][for more
-  detail]{mackay2002}.
+%[Still working on this bit...need to figure out best way to express
+%  what I'm trying to say.] Though this is not explicitly a
+%\emph{likelihood}, optimizing over this statistic is a very simple
+%approximation to performing a maximum-likelihood
+%optimization. Assuming the samples in $\bs{A}_{ik}$ are approximately
+%normal-distributed, the variance is closely related to the Shannon
+%entropy \citep{shannon1948}, $H$,
+%\begin{equation}
+%  H \propto \log \sigma .
+%\end{equation}
+%Minimizing the entropy is then equivalent to minimizing the loss of
+%\emph{information} for a given choice of parameters, $\bs{\theta}$,
+%given the ``data,'' $\bs{A}_{ik}$, and is thus related to
+%maximum-likelihood estimation \citep[see][for more
+%  detail]{mackay2002}.
 
 \subsection{Application to Simulated Data} \label{sec:results}
 The LM10 simulation data (see Section \ref{sec:sgr}) is a perfect
@@ -397,13 +396,10 @@ extracting both particle data and the satellite orbital parameters
 from the present-day snapshot of the simulation
 data.\footnote{\url{www.astro.virginia.edu/~srm4n/Sgr/data.html}} We
 then `observe' a sample of 100 stars from the first leading and
-trailing wraps of the stream: the radial velocity errors are drawn
-from a Gaussian $\epsilon_{rv} \sim \mathcal{N}(\mu=0,\sigma=10~{\rm
-  km/s})$, the tangential velocity errors depend on the distance to
-the star and are computed from the expected Gaia error curve (shown in
-Figure~\ref{fig:gaia_errors}), and the distance errors on a star of
-distance $D$ are $\epsilon_{dist} \sim \mathcal{N}(0,0.02\times
-D)$. Figure~\ref{fig:variance_proj} shows two-dimensional projections
+trailing wraps of the stream; the radial velocity and distance errors are drawn % APW HERE
+from Gaussians ($\varepsilon_{\rm RV} \sim \mathcal{N}(\mu=0,\sigma=10~{\rm
+  km/s})$ and $\varepsilon_{\rm D} \sim \mathcal{N}(0,0.02\times
+D)$) and the proper motion errors are computed from the expected Gaia error curve. Figure~\ref{fig:variance_proj} shows two-dimensional projections
 of the six-dimensional minimum phase-space distance distribution for
 the observed particles in the correct and an incorrect potential: it
 is clear that the variance of the distribution increases in the wrong
@@ -445,7 +441,7 @@ resampling. Figure~\ref{fig:bootstrap} shows the recovered parameters
 for each bootstrapped sample and demonstrates the power of the
 combined Spitzer and Gaia data: a moderately sized sample of RR Lyrae
 alone places quite strong constraints on the shape and mass of the
-Galaxy's dark matter halo.
+Galaxy's dark matter halo. [APW: explicitly state limits here, 1-sigma bounds]
 
 \begin{figure}[h]
 \begin{center}
@@ -456,23 +452,19 @@ Galaxy's dark matter halo.
 
 % APW Note: The optimization, in a way, is getting a bunch of orbits (curves) to intersect another curve (the progenitor orbit) at some points (over time).
 
-\section{Discussion and future prospects}
+\section{Discussion, strengths, and limitations}
 \label{sec:discussion}
 
-Many orbit fitting methods for measuring the Galactic potential assume
+The strengths of this method stem from its simplicity: it requires
+only a rough estimate of the satellite mass $m_{\rm sat}$ combined
+with backwards integration of orbits. Many orbit fitting methods for measuring the Galactic potential assume
 that the stars in a given stream are on the same
 orbit. \cite{sanders13a} show that this assumption can lead to nearly
 100\% errors in the estimated potential parameters, even without
 realistic observational errors on the kinematic data. The
 \emph{Rewinder} is free of this assumption and instead \emph{relies}
 on the fact that each star is on a different orbit, and is thus an
-independent potentiometer. Qualitatively, the best potential is the
-one that gets the most of these orbits to intersect the progenitor
-over the history of interaction with the system.
-
-The strengths of this method stem from its simplicity: it requires
-only a rough estimate of the satellite mass $m_{\rm sat}$ combined
-with backwards integration of orbits. There are no assumptions made
+independent potentiometer. There are also no assumptions made
 about, or N-body modeling of, the internal distribution of satellite
 stars. Thus, the \emph{Rewinder} is applicable to any debris that is
 known to come from a single object and not restricted to the coldest
@@ -496,25 +488,13 @@ satellite to be detected. Second, the current version of the algorithm
 relies on accurate knowledge of the current position and velocity of
 the parent satellite, which may not be available in some cases
 \citep[for example, the Orphan Stream;][]{belokurov07}. Lastly, the
-present prescription treats the progenitor as a point-mass during
-orbit integration. Second-order effects in orbit evolution (e.g.,
-dynamical friction) are currently ignored, leading to minor biases in
-the estimated potential parameters (for example, XXX in
-Figure~\ref{fig:bootstrap}).
-
-[KVJ: Ok, there is a question as to whether we even want to say something like the below...?]
-
-The objective function presented above is an approximation to a more
-general likelihood function, described in depth in forthcoming work
-(Price-Whelan \& Johnston in prep.). The results shown in section
-\ref{sec:results} are meant to illustrate the strength and concept
-behind the method, but [...] [I want to say one more sentence about
-  the upcoming work, and possibly how it will solve some of the
-  limitations presented above.]
+present prescription neglects second-order effects in orbit evolution (e.g.,
+dynamical friction) which may lead to biases in
+the estimated potential parameters.
 
 %With a justified probabilistic framework, we will also be able to provide iven sufficient data, position and motion of the original host could be solved for as additional free parameters, but the effectiveness of this approach has yet to be investigated.
 
-\section{Conclusions}
+\section{Conclusions and motivation for future work}
 \label{sec:conclusion}
 
 This paper presents an algorithm for measuring the Galactic potential
@@ -524,13 +504,22 @@ Lyrae stars in the halo of our Galaxy. When applied to a sample of 100
 stars (with realistic observational errors) sampled from the
 \cite{law10} N-body simulation of the destruction of the Sgr dwarf
 satellite, the method recovers the shape and orientation of the dark
-matter potential XXX. This success provides strong motivation for 1)
-further theoretical work to develop a robust generative model (and therefore likelihood) that utilizes the concepts demonstrated by the \emph{Rewinder}, 2) an investigation of the power of
-using multiple, complimentary debris structures (e.g., with different
+matter potential XXX. 
+
+The objective function presented above is an approximation to a more
+general likelihood function, described in depth in forthcoming work
+(Price-Whelan \& Johnston in prep.). The results shown in section
+\ref{sec:results} are meant to illustrate the strength and concept
+behind the method, but [...] [I want to say one more sentence about
+  the upcoming work, and possibly how it will solve some of the
+  limitations presented above.]
+
+This success provides strong motivation for 1)
+further theoretical work to develop a robust generative model (and therefore likelihood) that utilizes the concepts demonstrated by the \emph{Rewinder}, 2) an investigation of the power of using multiple, complimentary debris structures (e.g., with different
 morphologies and orientations) in building a comprehensive picture of
 the Galactic mass distribution, and 3) a Spitzer survey of RR Lyrae
 stars in debris structures around the Milky Way to get precise
-distances to combine with near-future Gaia velocity data. We conclude by noting that this method is complimentary to the orbit fitting algorithm presented in \citet{sanders13b} by favoring warmer, more massive debris structures like Sgr. By developing and comparing independent methods for measuring the potential of the Milky Way, we will begin to develop a deeper understanding of the vast structures of dark matter that permeate the universe. [Yea, the last sentence I wrote in the late night and am probably delirious...]
+distances to combine with near-future Gaia velocity data. 
 
 \acknowledgments
 We thank ...
