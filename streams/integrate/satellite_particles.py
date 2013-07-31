@@ -31,9 +31,9 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         v_0 = np.vstack((satellite._v, particles._v))
         
         self.satellite_mass = satellite.m.value
-        
+        self._acc_placeholder = np.zeros((len(r_0), 3))
         super(SatelliteParticleIntegrator, self).__init__(potential._acceleration_at,
-                                                          r_0, v_0, args=(len(r_0),))
+                                                          r_0, v_0, args=(len(r_0),self._acc_placeholder))
     
     def _adaptive_run(self, timestep_func, timestep_args=(), resolution=1., **time_spec):
         """ """
