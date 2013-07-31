@@ -101,7 +101,7 @@ class LawMajewski2010(CompositePotential):
         """
         
         # Radius of Sgr center relative to galactic center
-        R_orbit = math.sqrt(r[0]*r[0] + r[1]*r[1] + r[2]*r[2])
+        R_orbit = np.sqrt(np.sum(r**2., axis=-1)) 
         
         m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R_orbit/self._G
         m_enc = self["disk"]._parameters["m"] + \
@@ -155,7 +155,7 @@ class LawMajewski2010(CompositePotential):
         else:
             raise ValueError("Must specify just r or r_tide.")
         
-        return math.sqrt(2. * self._G * m / r_tide)
+        return np.sqrt(2. * self._G * m / r_tide)
     
     def escape_velocity(self, m, r=None, r_tide=None):
         """ Compute the escape velocity of a satellite in a potential given
