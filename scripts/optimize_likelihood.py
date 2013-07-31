@@ -13,7 +13,7 @@ import os, sys
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
-from scipy.optimize import anneal
+from scipy.optimize import anneal, fmin_l_bfgs_b
 
 # Project
 from streams.io.lm10 import particles_today, satellite_today, time
@@ -29,11 +29,12 @@ satellite = satellite_today()
 param_initial = dict(q1=1.4,
                      qz=1.4,
                      phi=1.3)
-param_ranges = dict(q1=(1.25,1.45),
-                    qz=(1.25,1.45),
+param_ranges = dict(q1=(1.2,1.5),
+                    qz=(1.2,1.5),
                     phi=(1.6,1.8))
 
-posterior = lambda *args,**kwargs: -np.exp(ln_posterior(*args,**kwargs))
+#posterior = lambda *args,**kwargs: -np.exp(ln_posterior(*args,**kwargs))
+posterior = lambda *args,**kwargs: -ln_posterior(*args,**kwargs)
 
 def anneal_lm10(params):
     """ anneal() returns:
@@ -59,6 +60,7 @@ def anneal_lm10(params):
                  args=(params, particles, satellite, t1, t2, 3.),
                  T0=1E4,
                  Tf=1.,
+                 learn_rate=5.,
                  maxiter=100,
                  full_output=True,
                  lower=[param_ranges[p][0] for p in params],
@@ -75,9 +77,11 @@ def minimize_lm10(params):
                         args=(params, particles, satellite, t1, t2, 3.),
                         bounds=[param_ranges[p] for p in params],
                         approx_grad=True,
-                        epsilon=1E-4,
-                        factr=1E8)
-    return ret
+                        epsilon=1E-5,
+                        factr=10)
+    xmin = ret[0]
+    retval = ret[-1]           
+    return xmin, retval
 
 def plot_objective(params, xmin, Nbins=25, fname="objective"):
     fig,axes = plt.subplots(len(params),1,figsize=(8,5*len(params)))
@@ -126,12 +130,15 @@ if __name__ == '__main__':
     #vary_q1qz()
     #sys.exit(0)
 
-    params = ['q1', 'phi']
+    params = ['q1', 'qz']
     
-    print("starting annealing")
-    xmin, converged = anneal_lm10(params)
+    #print("starting annealing")
+    #xmin, converged = anneal_lm10(params)
+    
+    print("starting minimizer")
+    xmin, converged = minimize_lm10(params)
     
     print("Found minimum at: {0}".format(xmin))
     print("Converged: {0}".format(converged))
 
-    plot_objective(params, xmin, fname="anneal")
+    plot_objective(params, xmin, fname="minimize")
