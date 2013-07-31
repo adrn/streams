@@ -1,5 +1,6 @@
-%\documentclass{emulateapj}
-\documentclass[preprint]{aastex}
+\documentclass{emulateapj}
+%\documentclass[preprint]{aastex}
+
 %\documentclass{aastex}
 %\usepackage{emulateapj5}
 %\usepackage{lscape}
@@ -355,17 +356,31 @@ the tangential velocity errors depend on the distance to the star and
 are computed from the expected Gaia error curve (shown in
 Figure~\ref{fig:gaia_errors}), and the distance errors on a star of distance
 $D$ are $\epsilon_{dist} \sim \mathcal{N}(0,0.02\times
-D)$. Figure~\ref{fig:variance6d} shows all two-dimensional projections of the six-dimensional minimum
+D)$. Figure~\ref{fig:variance_proj} shows two-dimensional projections of the six-dimensional minimum
 phase-space distance distribution for the observed particles in the
 correct and an incorrect potential: it is clear that the
 variance of the distribution increases in the wrong potential. The 
 generalized variance defines a convex hypersurface over which we
 optimize four of the six logarithmic potential parameters:
-$v_{circ}$, $\phi$, $q_1$, and $q_z$. We fix $q_2$ and $R_c$, which are degenerate with combinations of the other parameters. Figure~\ref{fig:} shows one-dimensional slices of the objective function
+$v_{circ}$, $\phi$, $q_1$, and $q_z$. We fix $q_2$ and $R_c$, which are degenerate with combinations of the other parameters. Figure~\ref{fig:objective} shows one-dimensional slices of the objective function
 produced by varying each of the potential parameters by
 $\pm10\%$ around the true values and holding all others fixed.
 
-In anticipation of extending the above method to include a true likelihood function, we use a parallelized Markov Chain Monte Carlo (MCMC) algorithm \citep{foremanmackey2013} to sample from our objective function.\footnote{Though MCMC is typically not an efficient optimization tool, the stochasticity and easy parallelization of the algorithm mean it easily outperforms other optimizers on this problem, where the objective function is noisy and expensive to compute.} We use the median value of the samples as a point estimate for the potential parameters. To assess the uncertainty in the derived halo parameters, we bootstrap resample our 100 stars 100 times and estimate the potential parameters with each sample. Figure~\ref{fig:bootstrap} shows the recovered parameters for each bootstrapped sample and demonstrates the power of the combined Spitzer and Gaia data: a moderately sized sample of RR Lyrae alone places strong constraints on the shape and mass of the Milky Way potential.
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=1.\textwidth]{/Users/adrian/projects/streams/plots/paper1/variance_projections.pdf}
+\caption{ todo }\label{fig:variance_proj}
+\end{center}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=1.\textwidth]{/Users/adrian/projects/streams/plots/paper1/objective_function.pdf}
+\caption{ todo }\label{fig:objective}
+\end{center}
+\end{figure}
+
+In anticipation of extending the above method to include a true likelihood function, we use a parallelized Markov Chain Monte Carlo (MCMC) algorithm \citep{foremanmackey2013} to sample from our objective function.\footnote{Though MCMC is typically not an efficient optimization tool, in this case objective function is both noisy and expensive to compute. The stochasticity and easy parallelization of the algorithm mean it outperforms other optimizers on this problem.} We use the median value of the (burnt-in) sample distribution as a point estimate for the potential parameters. To assess the uncertainty in the derived halo parameters, we bootstrap resample our 100 stars 100 times and estimate the potential parameters with each resampling. Figure~\ref{fig:bootstrap} shows the recovered parameters for each bootstrapped sample and demonstrates the power of the combined Spitzer and Gaia data: a moderately sized sample of RR Lyrae alone places quite strong constraints on the shape and mass of the Galaxy's dark matter halo.
 
 % APW Note: The optimization, in a way, is getting a bunch of orbits (curves) to intersect another curve (the progenitor orbit) at some points (over time).
 
@@ -377,16 +392,17 @@ orbit. \cite{sanders13a} show that this assumption can lead to nearly 100\% erro
 estimated potential parameters, even without realistic observational errors on
 the kinematic data. The \emph{Rewinder} is
 free of this assumption and instead \emph{relies} on the fact that
-each star is on a different orbit, and is thus an independent potentiometer; the best potential is the one that gets the
-most of these orbits to intersect the progenitor
-over the history of interaction with the system. 
+each star is on a different orbit, and is thus an independent potentiometer. Qualitatively, the best potential is the one that gets the
+most of these orbits to intersect the progenitor over the history of interaction with the system. 
 
-The strengths of this method stem from the simplicity: it requires only a rough estimate of the satellite mass $m_{\rm sat}$ combined with backwards integration of orbits. There are no assumptions made about, or N-body modeling of, the internal distribution of satellite stars. Thus, \emph{The Rewinder} is applicable to any debris that is known to come from a single object, and not restricted only to the very coldest tidal streams. In principle, the
-method could applied to the vast debris {\it clouds} that have been discovered over large areas of the sky \citep[e.g. the Triangulum Andromeda
+The strengths of this method stem from its simplicity: it requires only a rough estimate of the satellite mass $m_{\rm sat}$ combined with backwards integration of orbits. There are no assumptions made about, or N-body modeling of, the internal distribution of satellite stars. Thus, the \emph{Rewinder} is applicable to any debris that is known to come from a single object and not restricted to the coldest tidal streams. In principle, the
+method could also be applied to the vast debris {\it clouds} that have been discovered over large areas of the sky \citep[e.g. the Triangulum Andromeda
 and Hercules-Aquila clouds]{rochapinto04,belokurov06}, or even stars that have only associations in orbital properties and do not form a coherent spatial structure
 \citep[such as the angular momentum groupings in local giants found by][]{helmi99}. The method trivially extends to combining constraints from multiple debris systems at once by simply integrating all debris from several satellites simultaneously, with $D_{\rm ps}$ defined appropriately for each star.
 
-It is also important to characterize the the limitations of this method. Firstly, the measurement errors for RR Lyraes associated with the very coldest streams \citep[e.g. the globular clusters Pal5 and GD1][]{odenkirchen02,koposov10} will likely be too large to resolve the minute differences in orbital properties between the debris and satellite to be detected. Second, the current version of the algorithm relies on accurate knowledge of the current position and velocity of the parent satellite, which may not be available in some cases \citep[for example, the Orphan Stream;][]{belokurov07}. Lastly, the present prescription treats the progenitor as a point-mass during orbit integration. Second-order effects in orbit evolution (e.g., dynamical friction) are currently ignored, leading to minor biases in the estimated potential parameters (for example, XXX in Figure~\ref{fig:bootstrap}). 
+It is also important to characterize the the limitations of this method. Firstly, the measurement errors for RR Lyraes associated with the very coldest streams \citep[e.g., the globular clusters Pal5 and GD1;][]{odenkirchen02,koposov10} will likely be too large to resolve the minute differences in orbital properties between the debris and satellite to be detected. Second, the current version of the algorithm relies on accurate knowledge of the current position and velocity of the parent satellite, which may not be available in some cases \citep[for example, the Orphan Stream;][]{belokurov07}. Lastly, the present prescription treats the progenitor as a point-mass during orbit integration. Second-order effects in orbit evolution (e.g., dynamical friction) are currently ignored, leading to minor biases in the estimated potential parameters (for example, XXX in Figure~\ref{fig:bootstrap}). 
+
+[Ok, there is a question as to whether we even want to say something like the below...?]
 
 The objective function presented above is an approximation to a more general likelihood function, described in depth in forthcoming work (Price-Whelan \& Johnston in prep.). The results shown in section \ref{sec:results} are meant to illustrate the strength and concept behind the method, but [...] [I want to say one more sentence about the upcoming work, and possibly how it will solve some of the limitations presented above.] 
 
