@@ -15,7 +15,7 @@ import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-from matplotlib import rc_context, rcParams
+from matplotlib import rc_context, rcParams, cm
 from matplotlib.patches import Rectangle
 import triangle
 
@@ -29,12 +29,12 @@ from streams.inference.lm10 import timestep
 from streams.potential import LawMajewski2010
 from streams.potential.lm10 import true_params, param_to_latex
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
-from streams.io.lm10 import particles_today, satellite_today, time
+from streams.io.lm10 import particle_table, particles_today, satellite_today, time
 
 matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18)
 #matplotlib.rc('text', usetex=True)
-matplotlib.rc('axes', edgecolor='#444444', labelsize=24, labelweight=400)
+matplotlib.rc('axes', edgecolor='#444444', labelsize=24, labelweight=400, linewidth=2.0)
 matplotlib.rc('lines', markeredgewidth=0)
 matplotlib.rc('font', family='Source Sans Pro')
 #matplotlib.rc('savefig', bbox='standard')
@@ -345,8 +345,65 @@ def phase_space_d_vs_time(N=10):
     
     return 
 
+def sgr():
+    """ Top-down plot of Sgr particles, with selected stars and then 
+        re-observed
+    """
+    
+    cached_data_file = os.path.join(plot_path, 'sgr_kde.pickle')
+    
+    fig,ax = plt.subplots(1, 1, figsize=(8,8))
+    
+    # read in all particles as a table
+    pdata = particle_table(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
+    extent = {'x':(-90,55), 
+              'y':(-58,68)}
+    
+    if not os.path.exists(cached_data_file):    
+        Z = sgr_kde(pdata, extent=extent)
+        
+        with open(cached_data_file, 'w') as f:
+            pickle.dump(Z, f)
+    
+    with open(cached_data_file, 'r') as f:
+        Z = pickle.load(f)
+    
+    ax.imshow(Z**0.5, interpolation="nearest", 
+              extent=extent['x']+extent['y'],
+              cmap=cm.Blues, aspect=1)
+    
+    np.random.seed(42)
+    pdata = particle_table(N=100, expr="(Pcol>-1) & (Pcol<7) & (abs(Lmflag)==1)")
+    
+    rcparams = {'lines.linestyle' : 'none', 
+                'lines.color' : 'k',
+                'lines.marker' : 'o'}
+    
+    with rc_context(rc=rcparams): 
+        ax.plot(pdata['x'], pdata['z'], marker='.', alpha=0.85, ms=9)
+        
+        # add solar symbol
+        ax.text(-8., 0., s=r"$\odot$")
+
+        ax.set_xlabel("$X_{GC}$ [kpc]")
+        ax.set_xlabel("$X_{GC}$ [kpc]")
+    
+    ax.set_xlim(extent['x'])
+    ax.set_ylim(extent['y'])
+    
+    # turn off right, left ticks respectively
+    ax.yaxis.tick_left()
+    
+    # turn off top ticks
+    ax.xaxis.tick_bottom()
+    
+    ax.set_aspect('equal')
+    
+    fig.savefig(os.path.join(plot_path, "lm10.png"))
+
 if __name__ == '__main__':
     #gaia_spitzer_errors()
+    #sgr()
     phase_space_d_vs_time()
-    #normed_objective_plot()
+    normed_objective_plot()
     #variance_projections()
