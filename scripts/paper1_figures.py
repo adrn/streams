@@ -283,7 +283,7 @@ def phase_space_d_vs_time(N=10):
     for potential in [true_potential, wrong_potential]:
         integrator = SatelliteParticleIntegrator(potential, satellite, particles)
         s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-                                      timestep_args=(potential, satellite.m.value),
+                                      timestep_args=(),
                                       resolution=resolution,
                                       t1=t1, t2=t2)
         
