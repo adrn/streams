@@ -341,7 +341,7 @@ def bootstrapped_parameters_v1():
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
     
-    lims = dict(q1=(1.3,1.44), qz=(1.3,1.44), v_halo=(116,130), phi=(90,104))
+    lims = dict(q1=(1.28,1.44), qz=(1.28,1.44), v_halo=(116,130), phi=(90,104))
     
     for ii,x_param in enumerate(x_params):
         ydata = data[y_param]
@@ -366,7 +366,7 @@ def bootstrapped_parameters_v1():
         
         # hack to set tick marks
         if 'q' in x_param:
-            axes[ii].set_xticks([1.32, 1.34, 1.36, 1.38, 1.4, 1.42])
+            axes[ii].set_xticks([1.3, 1.32, 1.34, 1.36, 1.38, 1.4, 1.42])
         elif x_param == 'phi':
             axes[ii].set_xticks(range(92,102+2,2))
         
@@ -392,6 +392,6 @@ def bootstrapped_parameters_v1():
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
 if __name__ == '__main__':
-    gaia_spitzer_errors()
+    #gaia_spitzer_errors()
     #sgr()
-    #bootstrapped_parameters_v1()
+    bootstrapped_parameters_v1()
