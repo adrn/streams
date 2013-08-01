@@ -288,7 +288,7 @@ def phase_space_d_vs_time(N=10):
                                       t1=t1, t2=t2)
         
         R,V = relative_normalized_coordinates(potential, p_orbits, s_orbit) 
-        D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
+        D_ps = np.sqrt(np.sum(R**2, axis=-1)/5. + np.sum(V**2, axis=-1))
         D_pses.append(D_ps)
         sat_R.append(np.sqrt(np.sum(s_orbit._r**2, axis=-1)))
         ts.append(s_orbit._t)
@@ -315,8 +315,8 @@ def phase_space_d_vs_time(N=10):
     
     with rc_context(rc=rcparams):  
         fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(10,10))
-        axes[0].axhline(1, linestyle='--', color='#444444')
-        axes[1].axhline(1, linestyle='--', color='#444444')
+        axes[0].axhline(np.sqrt(2), linestyle='--', color='#444444')
+        axes[1].axhline(np.sqrt(2), linestyle='--', color='#444444')
         
         for ii in randidx:
             for jj in range(2):
@@ -325,9 +325,13 @@ def phase_space_d_vs_time(N=10):
                 axes[jj].semilogy(ts[jj]/1000, d, alpha=0.25, color=rcparams['lines.color'])
                 axes[jj].semilogy(ts[jj]/1000, 0.3*0.9*(sR-sR.min())/(sR.max()-sR.min()) + 0.45, 
                                   alpha=0.75, color='#CA0020')
-                axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='o',
+                #axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='o',
+                #                  alpha=0.9, color=rcparams['lines.color'], 
+                #                  markersize=8)
+                axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='+',
+                                  markeredgewidth=2, markeredgecolor='k',
                                   alpha=0.9, color=rcparams['lines.color'], 
-                                  markersize=8)
+                                  markersize=10)
         
         axes[1].set_ylim(0.4,20)
         axes[1].set_xlim(-6, 0)
@@ -405,5 +409,5 @@ if __name__ == '__main__':
     #gaia_spitzer_errors()
     #sgr()
     phase_space_d_vs_time()
-    normed_objective_plot()
+    #normed_objective_plot()
     #variance_projections()
