@@ -219,21 +219,19 @@ def gaia_spitzer_errors():
     
     # Now add rectangles for Sgr, Orphan
     sgr_d = Rectangle((10., 0.15), 60., 0.15, 
-                      color=sgr_color, alpha=1., label='Sgr stream width')
+                      color=sgr_color, alpha=1., label='Sgr stream')
     axes[0].add_patch(sgr_d)
     
     # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.pdf+html
     orp_d = Rectangle((10., 0.03), 35., 0.03,
-                      color=orp_color, alpha=1., label='Orp stream width')
+                      color=orp_color, alpha=1., label='Orp stream')
     axes[0].add_patch(orp_d)
     
     # Dispersion from Majewski 2004: 10 km/s
-    sgr_v = Rectangle((10., 10), 60., 1., color=sgr_color, alpha=0.75,
-                      label='Sgr stream dispersion')
+    sgr_v = Rectangle((10., 10), 60., 1., color=sgr_color, alpha=0.75)
     axes[1].add_patch(sgr_v)
     
-    orp_v = Rectangle((10., 8.), 35., 1., color=orp_color, alpha=0.75,
-                      label='Orp stream dispersion')
+    orp_v = Rectangle((10., 8.), 35., 1., color=orp_color, alpha=0.75)
     axes[1].add_patch(orp_v)
     
     axes[0].set_ylim(top=10.)
@@ -255,7 +253,7 @@ def gaia_spitzer_errors():
     
     # add legends
     axes[0].legend(loc='upper left', fancybox=True)
-    axes[1].legend(loc='upper left', fancybox=True)
+    #axes[1].legend(loc='upper left', fancybox=True)
     
     fig.subplots_adjust(hspace=0.0)
     plt.tight_layout()
