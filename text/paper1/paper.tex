@@ -18,11 +18,11 @@
 
 \title{Spitzer, Gaia and the Potential of the Milky Way}
 
-\author{Adrian~M.~Price-Whelan\altaffilmark{1,2} Kathryn V. Johnston\altaffilmark{1}}
+\author{Adrian~M.~Price-Whelan\altaffilmark{1} Kathryn V. Johnston\altaffilmark{1}}
 
 % affiliations
 \altaffiltext{1}{Department of Astronomy, Columbia University, 550 W 120th St., New York, NY 027, USA}
-\altaffiltext{2}{NSF Graduate Fellow}
+%\altaffiltext{2}{NSF Graduate Fellow}
 
 \begin{abstract}
 .
@@ -370,7 +370,7 @@ scalar objective function, $f(\bs{\theta})$, used in constraining the potential 
 Milky Way
 \begin{align}
   \Sigma_n &= \mathrm{Cov}( \bs{A}_{ik}) \\
-  f(\bs{\theta}) &= \ln \det \Sigma.
+  f(\bs{\theta}) &= \ln \det \Sigma_n.
 \end{align}
 
 %[Still working on this bit...need to figure out best way to express
@@ -504,22 +504,13 @@ Lyrae stars in the halo of our Galaxy. When applied to a sample of 100
 stars (with realistic observational errors) sampled from the
 \cite{law10} N-body simulation of the destruction of the Sgr dwarf
 satellite, the method recovers the shape and orientation of the dark
-matter potential XXX. 
+matter potential [APW: again, quote errors]. 
 
-The objective function presented above is an approximation to a more
-general likelihood function, described in depth in forthcoming work
-(Price-Whelan \& Johnston in prep.). The results shown in section
-\ref{sec:results} are meant to illustrate the strength and concept
-behind the method, but [...] [I want to say one more sentence about
-  the upcoming work, and possibly how it will solve some of the
-  limitations presented above.]
+The success of this method provides strong motivation for 1) further theoretical work to develop a robust generative model (and therefore likelihood) that utilizes the concepts demonstrated by the \emph{Rewinder} and 2) an observational campaign with \emph{Spitzer} to survey RR Lyrae stars in debris structures around the Milky Way to get precise
+distances to combine with near-future Gaia velocity data. Forthcoming work will develop the \emph{Rewinder} in a probabilistically rigorous regime; this method will then naturally incorporate observational errors, missing data, and more complex dynamical models. This work also calls for an investigation of the power of using multiple, complimentary debris structures (e.g., with different morphologies and orientations) in building a comprehensive picture of
+the Galactic mass distribution.
 
-This success provides strong motivation for 1)
-further theoretical work to develop a robust generative model (and therefore likelihood) that utilizes the concepts demonstrated by the \emph{Rewinder}, 2) an investigation of the power of using multiple, complimentary debris structures (e.g., with different
-morphologies and orientations) in building a comprehensive picture of
-the Galactic mass distribution, and 3) a Spitzer survey of RR Lyrae
-stars in debris structures around the Milky Way to get precise
-distances to combine with near-future Gaia velocity data. 
+[KVJ: Some concluding thoughts?]
 
 \acknowledgments
 We thank ...
