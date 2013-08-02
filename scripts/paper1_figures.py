@@ -97,7 +97,7 @@ def normed_objective_plot():
     ax.legend(loc='upper right', fancybox=True)
     
     ax.set_yticks([])
-    ax.set_xlabel('Normalized potential parameter value', labelpad=15)
+    ax.set_xlabel('Normalized parameter value', labelpad=15)
     ax.set_ylabel('Generalized variance', labelpad=15)
     
     fig.savefig(os.path.join(plot_path, "objective_function.pdf"))
@@ -218,6 +218,9 @@ def gaia_spitzer_errors():
     
         # Add spitzer 2% line to distance plot
         axes[0].axhline(0.02, linestyle='--', linewidth=4, color='k', alpha=0.75)
+        
+        # Add photometric 20% line to distance plot
+        axes[0].axhline(0.2, linestyle='-.', linewidth=4, color='k', alpha=0.75)
     
     # Now add rectangles for Sgr, Orphan
     sgr_d = Rectangle((10., 0.15), 60., 0.15, 
@@ -250,7 +253,7 @@ def gaia_spitzer_errors():
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
     
     # add Gaia and Spitzer text to first plot
-    axes[0].text(4., 0.12, 'Gaia', fontsize=16, rotation=45, fontweight=500)
+    axes[0].text(4., 0.11, 'Gaia', fontsize=16, rotation=32, fontweight=500)
     axes[0].text(4., 0.011, 'Spitzer', fontsize=16, alpha=0.75, fontweight=500)
     
     # add legends
