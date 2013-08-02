@@ -16,8 +16,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import rc_context, rcParams, cm
-from matplotlib.patches import Rectangle
-import triangle
+from matplotlib.patches import Rectangle, Ellipse
+from scipy.stats import gaussian_kde
 
 from streams.util import project_root
 from streams.observation import apparent_magnitude
@@ -410,6 +410,67 @@ def sgr():
     
     fig.savefig(os.path.join(plot_path, "lm10.png"))
 
+def plot_point_cov(points, nstd=2, ax=None, **kwargs):
+    """
+    Plots an `nstd` sigma ellipse based on the mean and covariance of a point
+    "cloud" (points, an Nx2 array).
+
+    Parameters
+    ----------
+        points : An Nx2 array of the data points.
+        nstd : The radius of the ellipse in numbers of standard deviations.
+            Defaults to 2 standard deviations.
+        ax : The axis that the ellipse will be plotted on. Defaults to the 
+            current axis.
+        Additional keyword arguments are pass on to the ellipse patch.
+
+    Returns
+    -------
+        A matplotlib ellipse artist
+    """
+    pos = points.mean(axis=0)
+    cov = np.cov(points, rowvar=False)
+    return plot_cov_ellipse(cov, pos, nstd, ax, **kwargs)
+
+def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
+    """
+    Plots an `nstd` sigma error ellipse based on the specified covariance
+    matrix (`cov`). Additional keyword arguments are passed on to the 
+    ellipse patch artist.
+
+    Parameters
+    ----------
+        cov : The 2x2 covariance matrix to base the ellipse on
+        pos : The location of the center of the ellipse. Expects a 2-element
+            sequence of [x0, y0].
+        nstd : The radius of the ellipse in numbers of standard deviations.
+            Defaults to 2 standard deviations.
+        ax : The axis that the ellipse will be plotted on. Defaults to the 
+            current axis.
+        Additional keyword arguments are pass on to the ellipse patch.
+
+    Returns
+    -------
+        A matplotlib ellipse artist
+    """
+    def eigsorted(cov):
+        vals, vecs = np.linalg.eigh(cov)
+        order = vals.argsort()[::-1]
+        return vals[order], vecs[:,order]
+
+    if ax is None:
+        ax = plt.gca()
+
+    vals, vecs = eigsorted(cov)
+    theta = np.degrees(np.arctan2(*vecs[:,0][::-1]))
+
+    # Width and height are "full" widths, not radius
+    width, height = 2 * nstd * np.sqrt(vals)
+    ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwargs)
+
+    ax.add_artist(ellip)
+    return ellip
+
 def bootstrapped_parameters():
     data_file = os.path.join(project_root, "plots", "hotfoot", 
                              "SMASH", "all_best_parameters.pickle")
@@ -422,10 +483,29 @@ def bootstrapped_parameters():
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
     
+    # for KDE
+    X,Y = np.mgrid[-0.1:0.1:50j, -0.1:0.1:50j] 
+    positions = np.vstack([X.ravel(),Y.ravel()])
+    
     for ii,x_param in enumerate(x_params):
         ydata = (np.array(data[y_param])-_true_params[y_param]) / _true_params[y_param]
         xdata = (np.array(data[x_param])-_true_params[x_param]) / _true_params[x_param]
-            
+    
+        #values = np.vstack([ydata, xdata])
+        #kernel = gaussian_kde(values)
+        #Z = np.reshape(kernel(positions).T, X.shape).T
+        #Z = np.flipud(Z)
+        
+        #print(kernel.covariance)
+        #axes[ii].imshow(Z, interpolation="nearest", 
+        #                extent=[-0.1,0.1,-0.1,0.1],
+        #                cmap=cm.Blues, aspect=1)
+        points = np.vstack([ydata, xdata]).T
+        plot_point_cov(points, nstd=2, ax=axes[ii], alpha=0.25, color='#777777')
+        plot_point_cov(points, nstd=1, ax=axes[ii], alpha=0.5, color='#777777')
+        plot_point_cov(points, nstd=2, ax=axes[ii], color='#000000', fill=False)
+        plot_point_cov(points, nstd=1, ax=axes[ii], color='#000000', fill=False)
+        
         axes[ii].axhline(0., linewidth=1, color='#2B8CBE', alpha=0.5)
         axes[ii].axvline(0., linewidth=1, color='#2B8CBE', alpha=0.5)
         axes[ii].plot(ydata, xdata, marker='o', alpha=0.75, linestyle='none')
