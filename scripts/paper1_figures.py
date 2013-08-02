@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib import rc_context, rcParams, cm
 from matplotlib.patches import Rectangle, Ellipse
-from scipy.stats import gaussian_kde
 
 from streams.util import project_root
 from streams.observation import apparent_magnitude
@@ -482,42 +481,32 @@ def bootstrapped_parameters():
 
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
-    
-    # for KDE
-    X,Y = np.mgrid[-0.1:0.1:50j, -0.1:0.1:50j] 
-    positions = np.vstack([X.ravel(),Y.ravel()])
-    
+
     for ii,x_param in enumerate(x_params):
         ydata = (np.array(data[y_param])-_true_params[y_param]) / _true_params[y_param]
         xdata = (np.array(data[x_param])-_true_params[x_param]) / _true_params[x_param]
-    
-        #values = np.vstack([ydata, xdata])
-        #kernel = gaussian_kde(values)
-        #Z = np.reshape(kernel(positions).T, X.shape).T
-        #Z = np.flipud(Z)
         
-        #print(kernel.covariance)
-        #axes[ii].imshow(Z, interpolation="nearest", 
-        #                extent=[-0.1,0.1,-0.1,0.1],
-        #                cmap=cm.Blues, aspect=1)
+        axes[ii].axhline(0., linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
+        axes[ii].axvline(0., linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
+        
         points = np.vstack([ydata, xdata]).T
         plot_point_cov(points, nstd=2, ax=axes[ii], alpha=0.25, color='#777777')
         plot_point_cov(points, nstd=1, ax=axes[ii], alpha=0.5, color='#777777')
         plot_point_cov(points, nstd=2, ax=axes[ii], color='#000000', fill=False)
         plot_point_cov(points, nstd=1, ax=axes[ii], color='#000000', fill=False)
         
-        axes[ii].axhline(0., linewidth=1, color='#2B8CBE', alpha=0.5)
-        axes[ii].axvline(0., linewidth=1, color='#2B8CBE', alpha=0.5)
-        axes[ii].plot(ydata, xdata, marker='o', alpha=0.75, linestyle='none')
+        axes[ii].plot(ydata, xdata, marker='.', markersize=7, alpha=0.75, 
+                      color='#2B83BA', linestyle='none')
         axes[ii].set_xlim((-0.1, 0.1))
         axes[ii].set_ylim((-0.1, 0.1))
         
         axes[ii].yaxis.tick_left()
+        axes[ii].xaxis.tick_bottom()
     
     axes[2].set_xlabel(r"$\delta v_{\rm halo}$", 
                        fontsize=26, rotation='horizontal')
-    axes[0].set_xticks([])
-    axes[1].set_xticks([])
+    axes[0].set_xticklabels([])
+    axes[1].set_xticklabels([])
     
     axes[0].set_ylabel(r"$\delta q_1$", fontsize=26)
     axes[1].set_ylabel(r"$\delta q_z$", fontsize=26)
