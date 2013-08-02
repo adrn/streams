@@ -19,6 +19,7 @@ from matplotlib import rc_context, rcParams, cm
 from matplotlib.patches import Rectangle
 import triangle
 
+from streams.util import project_root
 from streams.observation import apparent_magnitude
 from streams.observation.gaia import parallax_error, proper_motion_error, \
                                      add_uncertainties_to_particles
@@ -85,7 +86,7 @@ def normed_objective_plot():
     fig,ax = plt.subplots(1,1,figsize=(8,8))
     
     nstats = np.linspace(p_range[0], p_range[1], Nbins)
-    linestyles = [(1,'-'), (2,'-.'), (2,'--'), (2,':')]
+    linestyles = [(2,'-'), (3,'-.'), (3,'--'), (3,':')]
     for ii, name in enumerate(['q1','qz','phi','v_halo']):
         vals = variances[name]
         ls = linestyles[ii] 
@@ -178,8 +179,8 @@ def gaia_spitzer_errors():
                 'lines.marker' : None,
                 'axes.facecolor' : '#ffffff'}
     
-    sgr_color = '#67A9CF'
-    orp_color = '#EF8A62'
+    sgr_color = '#2B83BA'
+    orp_color = '#ABDDA4'
     
     with rc_context(rc=rcparams):
         fig,axes = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
@@ -209,10 +210,11 @@ def gaia_spitzer_errors():
             dVtan = (dpm*D).to(u.km*u.radian/u.s).value
         
             # Plot Gaia distance errors
-            axes[0].loglog(D.kiloparsec, (dD/D).decompose(), color='k', alpha=0.1)
+            axes[0].loglog(D.kiloparsec, (dD/D).decompose(), color='#666666', 
+                           alpha=0.1)
                 
             # Plot tangential velocity errors
-            axes[1].loglog(D.kiloparsec, dVtan, color='k', alpha=0.1)
+            axes[1].loglog(D.kiloparsec, dVtan, color='#666666', alpha=0.1)
     
         # Add spitzer 2% line to distance plot
         axes[0].axhline(0.02, linestyle='--', linewidth=4, color='k', alpha=0.75)
@@ -228,10 +230,10 @@ def gaia_spitzer_errors():
     axes[0].add_patch(orp_d)
     
     # Dispersion from Majewski 2004: 10 km/s
-    sgr_v = Rectangle((10., 10), 60., 1., color=sgr_color, alpha=0.75)
+    sgr_v = Rectangle((10., 10), 60., 1., color=sgr_color)
     axes[1].add_patch(sgr_v)
     
-    orp_v = Rectangle((10., 8.), 35., 1., color=orp_color, alpha=0.75)
+    orp_v = Rectangle((10., 8.), 35., 1., color=orp_color)
     axes[1].add_patch(orp_v)
     
     axes[0].set_ylim(top=10.)
@@ -314,7 +316,7 @@ def phase_space_d_vs_time(N=10):
                 'axes.labelweight' : 100}
     
     with rc_context(rc=rcparams):  
-        fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(10,10))
+        fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(8,12))
         axes[0].axhline(np.sqrt(2), linestyle='--', color='#444444')
         axes[1].axhline(np.sqrt(2), linestyle='--', color='#444444')
         
@@ -405,9 +407,72 @@ def sgr():
     
     fig.savefig(os.path.join(plot_path, "lm10.png"))
 
+def bootstrapped_parameters():
+    data_file = os.path.join(project_root, "plots", "hotfoot", 
+                             "SMASH", "all_best_parameters.pickle")
+    
+    with open(data_file) as f:
+        data = pickle.load(f)
+    
+    fig,axes = plt.subplots(3,1,figsize=(5,12))
+
+    y_param = 'v_halo'
+    x_params = ['q1', 'qz', 'phi']
+    
+    lims = dict(q1=(1.28,1.44), qz=(1.28,1.44), v_halo=(116,130), phi=(90,104))
+    
+    for ii,x_param in enumerate(x_params):
+        ydata = data[y_param]
+        xdata = data[x_param]
+        
+        y_true = true_params[y_param]
+        x_true = true_params[x_param]
+        
+        if y_param == 'v_halo':
+            ydata = (ydata*u.kpc/u.Myr).to(u.km/u.s).value
+            y_true = y_true.to(u.km/u.s).value
+            
+        if x_param == 'phi':
+            xdata = (xdata*u.radian).to(u.degree).value
+            x_true = x_true.to(u.degree).value
+            
+        axes[ii].axhline(x_true, linewidth=2, color='#2B8CBE', alpha=0.6)
+        axes[ii].axvline(y_true, linewidth=2, color='#2B8CBE', alpha=0.6)
+        axes[ii].plot(ydata, xdata, marker='o', alpha=0.75, linestyle='none')
+        axes[ii].set_xlim(lims[y_param])
+        axes[ii].set_ylim(lims[x_param])
+        
+        # hack to set tick marks
+        if 'q' in x_param:
+            axes[ii].set_yticks([1.3, 1.32, 1.34, 1.36, 1.38, 1.4, 1.42])
+        elif x_param == 'phi':
+            axes[ii].set_yticks(range(92,102+2,2))
+        
+        if ii == 0:
+            axes[ii].set_xticks(range(118,128+2,2))
+        
+        # turn off top ticks
+        axes[ii].xaxis.tick_bottom()
+    
+    axes[2].set_xlabel(r"$v_{\rm halo}$", 
+                       fontsize=26, rotation='horizontal')
+    #TODO: fig.text(0.025, 0.49, "[km/s]", fontsize=16)
+    axes[0].set_xticklabels([])
+    axes[1].set_xticklabels([])
+    
+    axes[0].set_ylabel(r"$q_1$", fontsize=26)
+    axes[1].set_ylabel(r"$q_z$", fontsize=26)
+    axes[2].set_ylabel(r"$\phi$", fontsize=26)
+    #TODO: fig.text(0.855, 0.07, "[deg]", fontsize=16)
+    
+    plt.tight_layout()
+    fig.subplots_adjust(wspace=0.04)
+    fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
+
 if __name__ == '__main__':
-    #gaia_spitzer_errors()
+    gaia_spitzer_errors()
     #sgr()
-    phase_space_d_vs_time()
+    #phase_space_d_vs_time()
     #normed_objective_plot()
     #variance_projections()
+    #bootstrapped_parameters()
