@@ -28,7 +28,7 @@ from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
 from streams.inference import relative_normalized_coordinates, generalized_variance, minimum_distance_matrix
 from streams.inference.lm10 import timestep
 from streams.potential import LawMajewski2010
-from streams.potential.lm10 import true_params, param_to_latex
+from streams.potential.lm10 import true_params, _true_params, param_to_latex
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.io.lm10 import particle_table, particles_today, satellite_today, time
 
@@ -422,60 +422,35 @@ def bootstrapped_parameters():
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
     
-    lims = dict(q1=(1.28,1.44), qz=(1.28,1.44), v_halo=(116,130), phi=(90,104))
-    
     for ii,x_param in enumerate(x_params):
-        ydata = data[y_param]
-        xdata = data[x_param]
-        
-        y_true = true_params[y_param]
-        x_true = true_params[x_param]
-        
-        if y_param == 'v_halo':
-            ydata = (ydata*u.kpc/u.Myr).to(u.km/u.s).value
-            y_true = y_true.to(u.km/u.s).value
+        ydata = (np.array(data[y_param])-_true_params[y_param]) / _true_params[y_param]
+        xdata = (np.array(data[x_param])-_true_params[x_param]) / _true_params[x_param]
             
-        if x_param == 'phi':
-            xdata = (xdata*u.radian).to(u.degree).value
-            x_true = x_true.to(u.degree).value
-            
-        axes[ii].axhline(x_true, linewidth=2, color='#2B8CBE', alpha=0.6)
-        axes[ii].axvline(y_true, linewidth=2, color='#2B8CBE', alpha=0.6)
+        axes[ii].axhline(0., linewidth=1, color='#2B8CBE', alpha=0.5)
+        axes[ii].axvline(0., linewidth=1, color='#2B8CBE', alpha=0.5)
         axes[ii].plot(ydata, xdata, marker='o', alpha=0.75, linestyle='none')
-        axes[ii].set_xlim(lims[y_param])
-        axes[ii].set_ylim(lims[x_param])
+        axes[ii].set_xlim((-0.1, 0.1))
+        axes[ii].set_ylim((-0.1, 0.1))
         
-        # hack to set tick marks
-        if 'q' in x_param:
-            axes[ii].set_yticks([1.3, 1.32, 1.34, 1.36, 1.38, 1.4, 1.42])
-        elif x_param == 'phi':
-            axes[ii].set_yticks(range(92,102+2,2))
-        
-        if ii == 0:
-            axes[ii].set_xticks(range(118,128+2,2))
-        
-        # turn off top ticks
-        axes[ii].xaxis.tick_bottom()
+        axes[ii].yaxis.tick_left()
     
-    axes[2].set_xlabel(r"$v_{\rm halo}$", 
+    axes[2].set_xlabel(r"$\delta v_{\rm halo}$", 
                        fontsize=26, rotation='horizontal')
-    #TODO: fig.text(0.025, 0.49, "[km/s]", fontsize=16)
-    axes[0].set_xticklabels([])
-    axes[1].set_xticklabels([])
+    axes[0].set_xticks([])
+    axes[1].set_xticks([])
     
-    axes[0].set_ylabel(r"$q_1$", fontsize=26)
-    axes[1].set_ylabel(r"$q_z$", fontsize=26)
-    axes[2].set_ylabel(r"$\phi$", fontsize=26)
-    #TODO: fig.text(0.855, 0.07, "[deg]", fontsize=16)
+    axes[0].set_ylabel(r"$\delta q_1$", fontsize=26)
+    axes[1].set_ylabel(r"$\delta q_z$", fontsize=26)
+    axes[2].set_ylabel(r"$\delta \phi$", fontsize=26)
     
     plt.tight_layout()
     fig.subplots_adjust(wspace=0.04)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
 if __name__ == '__main__':
-    gaia_spitzer_errors()
+    #gaia_spitzer_errors()
     #sgr()
     #phase_space_d_vs_time()
     #normed_objective_plot()
     #variance_projections()
-    #bootstrapped_parameters()
+    bootstrapped_parameters()
