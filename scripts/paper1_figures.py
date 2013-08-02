@@ -477,7 +477,10 @@ def bootstrapped_parameters():
     with open(data_file) as f:
         data = pickle.load(f)
     
-    fig,axes = plt.subplots(3,1,figsize=(5,12))
+    rcparams = {'axes.linewidth' : 3.,
+                'xtick.major.size' : 8.}
+    with rc_context(rc=rcparams): 
+        fig,axes = plt.subplots(3,1,figsize=(5,12))
 
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
@@ -497,23 +500,26 @@ def bootstrapped_parameters():
         
         axes[ii].plot(ydata, xdata, marker='.', markersize=7, alpha=0.75, 
                       color='#2B83BA', linestyle='none')
-        axes[ii].set_xlim((-0.1, 0.1))
-        axes[ii].set_ylim((-0.1, 0.1))
+        axes[ii].set_xlim((-0.12, 0.12))
+        axes[ii].set_ylim((-0.12, 0.12))
         
-        axes[ii].yaxis.tick_left()
-        axes[ii].xaxis.tick_bottom()
+        axes[ii].yaxis.tick_left()        
+        axes[ii].set_yticks([-0.1, -0.05, 0., 0.05, 0.1])
     
     axes[2].set_xlabel(r"$\delta v_{\rm halo}$", 
                        fontsize=26, rotation='horizontal')
+    
+    axes[0].xaxis.tick_bottom()
     axes[0].set_xticklabels([])
     axes[1].set_xticklabels([])
+    axes[2].set_xticks([-0.1, -0.05, 0., 0.05, 0.1])
     
-    axes[0].set_ylabel(r"$\delta q_1$", fontsize=26)
-    axes[1].set_ylabel(r"$\delta q_z$", fontsize=26)
-    axes[2].set_ylabel(r"$\delta \phi$", fontsize=26)
+    axes[0].set_ylabel(r"$\delta q_1$", fontsize=26, rotation='horizontal')
+    axes[1].set_ylabel(r"$\delta q_z$", fontsize=26, rotation='horizontal')
+    axes[2].set_ylabel(r"$\delta \phi$", fontsize=26, rotation='horizontal')
     
     plt.tight_layout()
-    fig.subplots_adjust(wspace=0.04)
+    fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
 if __name__ == '__main__':
