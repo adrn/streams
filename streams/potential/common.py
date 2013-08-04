@@ -250,6 +250,80 @@ class HernquistPotential(CartesianPotential):
                                                  parameters=parameters)
 
 ####################################################################################
+#    Plummer potential
+#
+def _cartesian_plummer_model(bases):
+    """ Generates functions to evaluate a Plummer potential and its 
+        derivatives at a specified position.
+        
+        Physical parameters for this potential are:
+            mass : total mass in the potential
+            a : core/concentration parameter
+    """
+    
+    # scale G to be in this unit system
+    _G = G.decompose(bases=bases).value
+    
+    def f(r,r_0,m,a): 
+        try:
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))[:,np.newaxis]
+        except IndexError:
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))
+        val = -_G * m / np.sqrt(rr**2 + a**2)
+        return val
+    
+    def df(r,r_0,m,a):
+        rr = r-r_0
+        try:
+            R_sq = np.sum((rr)**2, axis=-1)[:,np.newaxis]
+        except IndexError:
+            R_sq = np.sum((rr)**2, axis=-1)
+        
+        fac = _G*m / (R_sq + a**2)**1.5
+        return fac*rr
+        
+    return (f, df)
+    
+class PlummerPotential(CartesianPotential):
+    
+    def __init__(self, unit_system, **parameters):
+        """ Represents the Plummer potential
+
+            $\Phi = -\frac{GM}{\sqrt{r^2 + a^2}}$
+            
+            The parameters dictionary should include:
+                r_0 : location of the origin
+                m : mass in the potential
+                a : core concentration
+            
+            Parameters
+            ----------
+            unit_system : UnitSystem
+                Defines a system of physical base units for the potential.
+            parameters : dict
+                A dictionary of parameters for the potential definition.
+
+        """
+
+        
+        latex = r"$\Phi = -\frac{GM}{\sqrt{r^2 + a^2}}$"
+        
+        unit_system = self._validate_unit_system(unit_system)
+        
+        if "r_0" not in parameters.keys():
+            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+        
+        assert "m" in parameters.keys(), "You must specify a mass."
+        assert "a" in parameters.keys(), "You must specify the parameter 'a'."
+        
+        # get functions for evaluating potential and derivatives
+        f,df = _cartesian_plummer_model(unit_system.bases)
+        super(PlummerPotential, self).__init__(unit_system, 
+                                                 f=f, f_prime=df, 
+                                                 latex=latex, 
+                                                 parameters=parameters)
+
+####################################################################################
 #    Triaxial, Logarithmic potential (see: Johnston et al. 1998)
 #    http://adsabs.harvard.edu/abs/1999ApJ...512L.109J
 #
@@ -337,110 +411,3 @@ class LogarithmicPotentialLJ(CartesianPotential):
                                                      parameters=parameters)
 
 
-"""
-
-def _logarithmic_model_cartesian_jzsh(params):
-    ''' A function that accepts model parameters, and returns a tuple of
-        functions that accept coordinates and evaluates this component of the
-        potential and its derivatives for cartesian coordinates.
-    '''
-    f = lambda x,y,z: params["v_circ"]**2 / 2. * np.log(x**2 + y**2/params["p"]**2 + z**2/params["q"]**2 + params["c"]**2)
-    df_dx = lambda x,y,z: params["v_circ"]**2 * x / (x**2 + y**2/params["p"]**2 + z**2/params["q"]**2 + params["c"]**2)
-    df_dy = lambda x,y,z: params["v_circ"]**2 * y / (x**2 + y**2/params["p"]**2 + z**2/params["q"]**2 + params["c"]**2) / params["p"]**2
-    df_dz = lambda x,y,z: params["v_circ"]**2 * z / (x**2 + y**2/params["p"]**2 + z**2/params["q"]**2 + params["c"]**2) / params["q"]**2
-    return (f, df_dx, df_dy, df_dz)
-
-class LogarithmicPotentialJZSH(Potential):
-
-    def __init__(self, v_circ, c, p, q, coordinate_system=CartesianCoordinates,\
-                 length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
-        ''' Represents a triaxial Logarithmic potential (e.g. triaxial halo).
-
-            $\Phi_{halo} = \frac{v_{circ}^2}{2}\ln(x^2 + y^2/p^2 + z^2/q^2 + c^2)$
-
-        '''
-        super(LogarithmicPotentialJZSH, self).\
-            __init__(coordinate_system=coordinate_system)
-        self.length_unit = u.Unit(length_unit)
-        self.time_unit = u.Unit(time_unit)
-        self.mass_unit = u.Unit(mass_unit)
-
-        # First see if v_circ is a Quantity-like object
-        if hasattr(v_circ, 'to'):
-            v_circ_val = v_circ.to(self.length_unit / self.time_unit).value
-        else:
-            v_circ_val = float(v_circ)
-
-        self.params = {"c" : float(c),
-                       "p" : float(p),
-                       "q" : float(q),
-                       "v_circ" : float(v_circ_val)}
-
-        if coordinate_system == CartesianCoordinates:
-            f_derivs = _logarithmic_model_cartesian_jzsh(self.params)
-        else:
-            raise ValueError("'coordinate_system' can only be cartesian.")
-
-        self.coordinate_system = coordinate_system
-        self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
-        self.add_component = lambda *args: \
-            _raise(AttributeError("'add_component' is only available for the "
-                                  "base Potential class."))
-
-    def _repr_latex_(self):
-        ''' Custom latex representation for IPython Notebook '''
-        return "$\\Phi_{halo} = \\frac{v_{circ}^2}{2}\\ln(x^2 + y^2/p^2 + z^2/q^2 + c^2)$"
-
-LogarithmicPotential = LogarithmicPotentialJZSH
-
-def _logarithmic_model_cartesian_jhb(params):
-    ''' A function that accepts model parameters, and returns a tuple of
-        functions that accept coordinates and evaluates this component of the
-        potential and its derivatives for cartesian coordinates.
-    '''
-    f = lambda x,y,z: params["v_halo"]**2 * np.log(x**2 + y**2 + z**2 + params["d"]**2)
-    df_dx = lambda x,y,z: params["v_halo"]**2 * 2 * x / (x**2 + y**2 + z**2 + params["d"]**2)
-    df_dy = lambda x,y,z: params["v_halo"]**2 * 2 * y / (x**2 + y**2 + z**2 + params["d"]**2)
-    df_dz = lambda x,y,z: params["v_halo"]**2 * 2 * z / (x**2 + y**2 + z**2 + params["d"]**2)
-    return (f, df_dx, df_dy, df_dz)
-
-class LogarithmicPotentialJHB(Potential):
-
-    def __init__(self, v_halo, d, coordinate_system=CartesianCoordinates, \
-                 length_unit=u.kpc, time_unit=u.Myr, mass_unit=u.solMass):
-        ''' Represents a triaxial Logarithmic potential (e.g. triaxial halo).
-
-            $\Phi_{halo} = v_{halo}^2\ln(x^2 + y^2/p^2 + z^2/q^2 + c^2)$
-
-        '''
-        super(LogarithmicPotentialJHB, self).\
-            __init__(coordinate_system=coordinate_system)
-        self.length_unit = u.Unit(length_unit)
-        self.time_unit = u.Unit(time_unit)
-        self.mass_unit = u.Unit(mass_unit)
-
-        # First see if v_halo is a Quantity-like object
-        if hasattr(v_halo, 'to'):
-            v_halo_val = v_halo.to(self.length_unit / self.time_unit).value
-        else:
-            v_halo_val = float(v_halo)
-
-        self.params = {"d" : float(d),
-                       "v_halo" : float(v_halo_val)}
-
-        if coordinate_system == CartesianCoordinates:
-            f_derivs = _logarithmic_model_cartesian_jhb(self.params)
-        else:
-            raise ValueError("'coordinate_system' can only be cartesian.")
-
-        self.coordinate_system = coordinate_system
-        self.add_component(uuid.uuid4(), f_derivs[0], derivs=f_derivs[1:])
-        self.add_component = lambda *args: \
-            _raise(AttributeError("'add_component' is only available for the "
-                                  "base Potential class."))
-
-    def _repr_latex_(self):
-        ''' Custom latex representation for IPython Notebook '''
-        return "$\\Phi_{halo} = v_{halo}^2\\ln(x^2 + y^2 + z^2 + d^2)$"
-
-"""
