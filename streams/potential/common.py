@@ -21,7 +21,8 @@ from .core import CartesianPotential
 #import _common # minimal gains from using Cython
 
 __all__ = ["PointMassPotential", "MiyamotoNagaiPotential",\
-           "HernquistPotential", "LogarithmicPotentialLJ"]
+           "HernquistPotential", "LogarithmicPotentialLJ",
+           "PlummerPotential"]
 
 ############################################################
 #    Potential due to a point mass at a given position
@@ -279,7 +280,7 @@ def _cartesian_plummer_model(bases):
         except IndexError:
             R_sq = np.sum((rr)**2, axis=-1)
         
-        fac = _G*m / (R_sq + a**2)**1.5
+        fac = -_G*m / (R_sq + a**2)**1.5
         return fac*rr
         
     return (f, df)
@@ -304,7 +305,6 @@ class PlummerPotential(CartesianPotential):
                 A dictionary of parameters for the potential definition.
 
         """
-
         
         latex = r"$\Phi = -\frac{GM}{\sqrt{r^2 + a^2}}$"
         
