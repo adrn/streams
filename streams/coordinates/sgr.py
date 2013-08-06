@@ -130,8 +130,8 @@ def galactic_to_sgr(galactic_coord):
         heliocentric Sgr coordinates. 
     """
 
-    l = galactic_coord.l.radians
-    b = galactic_coord.b.radians
+    l = galactic_coord.l.radian
+    b = galactic_coord.b.radian
 
     X = cos(b)*cos(l)
     Y = cos(b)*sin(l)
@@ -157,8 +157,8 @@ def sgr_to_galactic(sgr_coord):
     """ Compute the transformation from heliocentric Sgr coordinates to 
         spherical Galactic. 
     """
-    L = sgr_coord.Lambda.radians
-    B = sgr_coord.Beta.radians
+    L = sgr_coord.Lambda.radian
+    B = sgr_coord.Beta.radian
 
     Xs = cos(B)*cos(L)
     Ys = cos(B)*sin(L)
@@ -181,8 +181,8 @@ def galactic_to_sgr_gc(galactic_coord):
     """ Compute the transformation from Galactic spherical to Sgr coordinates. 
     """
 
-    l = galactic_coord.l.radians
-    b = galactic_coord.b.radians
+    l = galactic_coord.l.radian
+    b = galactic_coord.b.radian
 
     X = cos(b)*cos(l)
     Y = cos(b)*sin(l)
@@ -207,8 +207,8 @@ def galactic_to_sgr_gc(galactic_coord):
 def sgr_gc_to_galactic(sgr_coord):
     """ Compute the transformation from Sgr coordinates to spherical Galactic. 
     """
-    L = sgr_coord.Lambda.radians
-    B = sgr_coord.Beta.radians
+    L = sgr_coord.Lambda.radian
+    B = sgr_coord.Beta.radian
 
     Xs = cos(B)*cos(L)
     Ys = cos(B)*sin(L)
@@ -245,6 +245,6 @@ def distance_to_sgr_plane(ra, dec, heliocentric_distance):
     sgr_coords = eq_coords.transform_to(SgrCoordinates)
     sgr_coords.distance = coord.Distance(heliocentric_distance, unit=u.kpc)
 
-    Z_sgr_sol = sgr_coords.distance.kpc * np.sin(sgr_coords.Beta.radians)
+    Z_sgr_sol = sgr_coords.distance.kpc * np.sin(sgr_coords.Beta.radian)
 
     return Z_sgr_sol
