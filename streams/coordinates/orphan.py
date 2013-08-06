@@ -68,9 +68,9 @@ theta = radians(54.39)
 psi = radians(90.70)
 
 # Generate the rotation matrix using the x-convention (see Goldstein)
-D = rotation_matrix(phi, "z", degrees=False)
-C = rotation_matrix(theta, "x", degrees=False)
-B = rotation_matrix(psi, "z", degrees=False)
+D = rotation_matrix(phi, "z", unit=u.radian)
+C = rotation_matrix(theta, "x", unit=u.radian)
+B = rotation_matrix(psi, "z", unit=u.radian)
 sgr_matrix = np.array(B.dot(C).dot(D))
 
 # Galactic to Orphan coordinates
