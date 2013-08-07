@@ -76,7 +76,7 @@ class LeapfrogIntegrator(object):
         self.r_im1 = r_initial
         self.v_im1 = v_initial
         self.v_im1_2 = None
-        self.dt = None
+        self._dt = None
         
     def _position_step(self, r, v, dt):
         """ The 'drift' part of the leapfrog integration. Update the positions
@@ -114,7 +114,7 @@ class LeapfrogIntegrator(object):
         """ Leapfrog updates the velocities offset a half-step from the 
             position updates. If we're given initial conditions aligned in
             time, e.g. the positions and velocities at the same 0th step, 
-            then we have to initiall scoot the velocities forward by a half 
+            then we have to initially scoot the velocities forward by a half 
             step to prime the integrator.
         """
             
