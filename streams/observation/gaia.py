@@ -150,20 +150,30 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     
     rv_err = rv_err.to(u.km/u.s)
     vr += np.random.normal(0., rv_err.value, size=len(vr))*rv_err.unit
-
-    dmu = proper_motion_error(V, rrl_V_minus_I)
-        
+    
+    # PROPER MOTION ERROR
+    if kwargs.has_key("proper_motion_error") and \
+        kwargs["proper_motion_error"] is not None:
+        dmu = kwargs["proper_motion_error"]
+    else:
+        dmu = proper_motion_error(V, rrl_V_minus_I)            
+    
     dmu = (dmu.to(u.rad/u.s).value / u.s).to(u.km / (u.kpc*u.s))
+    
     mul += np.random.normal(0., dmu.value)*dmu.unit
     mub += np.random.normal(0., dmu.value)*dmu.unit
-        
+    
+    # compute tangential velocities as distance times proper motion
+    v_l = d*mul
+    v_b = d*mub
+    
     new_x = (d*cosb*cosl - rsun).to(d.unit).value
     new_y = (d*cosb*sinl).to(d.unit).value
     new_z = (d*sinb).to(d.unit).value
     
-    new_vx = (vr*cosb*cosl - d*mul*sinl - d*mub*sinb*cosl).to(vr.unit).value
-    new_vy = (vr*cosb*sinl + d*mul*cosl - d*mub*sinb*sinl).to(vr.unit).value
-    new_vz = (vr*sinb + d*mub*cosb).to(vr.unit).value
+    new_vx = (vr*cosb*cosl - v_l*sinl - v_b*sinb*cosl).to(vr.unit).value
+    new_vy = (vr*cosb*sinl + v_l*cosl - v_b*sinb*sinl).to(vr.unit).value
+    new_vz = (vr*sinb + v_b*cosb).to(vr.unit).value
     
     return (new_x*x.unit, new_y*x.unit, new_z*x.unit, 
             new_vx*vx.unit, new_vy*vx.unit, new_vz*vx.unit)
