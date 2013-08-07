@@ -25,7 +25,9 @@
 %\altaffiltext{2}{NSF Graduate Fellow}
 
 \begin{abstract}
-.
+
+Near-future data from ESA's Gaia mission will provide precise, full phase-space information for hundreds of millions of stars out to heliocentric distances of a few kiloparsecs. This ``horizon'' can be extended with more accurate distances, allowing for more precise tangential velocity measurements out to several tens of kiloparsecs if we limit studies to samples of RR Lyrae stars. Recent work has demonstrated how Spitzer observations of RR Lyrae stars can be used to make distance estimates accurate to 2\%, effectively extending the Gaia, precise-data horizon by a factor of ten in distance and a factor of 1000 in volume. In this \emph{Letter} we develop and demonstrate a new method that uses small samples of stars associated with debris from satellite destruction to measure the Galactic potential. We then apply this method to simulated observations of stars from the end point of a simulation of satellite destruction and discuss the success of the algorithm in recovering the true potential used for the simulation. The results suggest that we will be able to probe the three-dimensional structure of the Galaxy's dark matter halo, constraining its shape, orientation, and depth as a function of radius. The opportunity to examine a dark matter halo in such great detail is truly unique and is enabled by the combination of Spitzer and Gaia with our intimate perspective on our own Galaxy.
+
 \end{abstract}
 
 
@@ -40,28 +42,16 @@ Hence, measurements of the shape, orientation, radial profile, and extent of dar
 
 The Milky Way is the best candidate for such a detailed study of a dark matter halo. 
 Our presence in the Galaxy means that we can resolve and use individual stars as tracers and hence build large samples that probe deep into the halo.
-%er into the halo than globular cluster or planetary nebula studies of external galaxies \citep[e.g.][]{mendez01,cote03}. Our internal perspective allows us to measure the three-dimensional mass distribution around the Galaxy rather than a two-dimensional projection, such as in lensing studies \citep{bolton06}.
-%Hence we can hope to reconstruct not only the density, but also the shape and orientation of the dark matter halo as function of radius well beyond the disk.
 To date, thousands of blue horizontal branch stars selected from the Sloan Digital Sky Survey (SDSS) have been used to probe the Milky Way mass out to tens of
 kpc \citep[SDSS, see][]{deason12a,kafle12}, and estimates with combined tracers extend to 150kpc \citep{deason12b}.
-%\citet{loebman12} demonstrates that even larger stellar samples from current (e.g., SDSS) and future  (e.g., Gaia and LSST) stellar surveys will also be sensitive to any asphericity of the halo.
 
 The caveat to working with tracer populations is the assumption that the tracer stars represent a random sampling of orbits drawn from a smooth distribution function and are well-mixed in orbital phase. However, the same surveys that provide large samples of tracers have also revealed the existence of large-scale spatial inhomogeneities in the form of giant stellar streams and clouds \citep{newberg02,majewski03,belokurov06}, clearly demonstrating that a significant fraction of the stellar halo is neither randomly sampled from a smooth distribution function nor is fully phase-mixed.
-%The degree of substructure increases with Galactocentric radius \citep{bell08} in agreement with models where the stellar halo is formed purely from accretion events \citep{bullock05,cooper10,rashkov12}.
-%Moreover, even in the smoother, inner halo which is likely to be phase-mixed, significant clumpings in velocity \citep{schlauffman10} and orbital properties \citep{helmi99} have been observed, which indicate a non-smooth component to the orbit distribution.
-%By ``observing'' particles in a sample of simulated stellar halos, \citet{yencho06} showed that, if stellar halos are indeed entirely formed via accretion events, then the expected degree of non-randomness  could lead to systematic biases in mass estimates of order several tens of percent.
-%This encouraging result suggests that, if our expectations for the typical number and size of accretion events contributing to the stellar halo are correct, then the number of orbits effectively explored is sufficiently large that the assumption of random, fully phase-mixed orbits is reasonable for the current samples.
 
-% --- analogous to our exploitation of matter in disks moving on near-circular orbits.
 A complimentary method to measure the mass distribution is to instead take full advantage of the {\it non}-random nature of the stellar distribution in the Galactic halo.
 While we do not know the exact orbits of  stellar debris from satellite destruction 
-%--- though \citet{eyre09b} propose a method of full orbit reconstruction from incomplete kinematic data --- 
 we do know something more about stars in a debris structure: the stars were once all part of the same object.
 Methods that utilize this knowledge on dynamically cold  tidal streams can require orders of magnitude fewer tracers than a randomly sampled population to achieve comparable accuracy on derived constraints.
-%In the simplest case, we might {\it assume} that debris stars are actually still on the same orbit as their progenitor system.
-%Then we can imagine that measuring the full-space velocities ${\bf v}$ at different points ${\bf x}$ in the structure (e.g. along a stream) would actually give us a direct measure of differences in potential $\Phi$ (i.e. $\Phi({\bf x}_1)-\Phi({\bf x}_2)=(v_2^2-v_1^2)/2$). [KVJ: incomplete sentence? Not sure what the point you were making is?] In reality, With current data, we usually know at most four of the six phase-space co-ordinates for debris stars, often with significant error bars and 
 One approach to potential measurement is to simply fit orbits to observations of streams 
-%\citep[e.g.,][]{helmi04,johnston05,koposov10}.
 \citep[e.g.,][]{koposov10}.
 However, the assumption that debris traces a single orbit is actually incorrect \citep[see][for discussions of the orbit distribution in tidal debris]{johnston98,helmi99}, with
 systematic changes in orbital energy along debris streams that can lead to systematic biases in our measurements of the Galactic potential \citep{eyre09a,varghese11}.
@@ -70,10 +60,8 @@ In particular, \citet{sanders13a} recently demonstrated that this bias is equall
 One way to address these systematic biases is to run fully self-consistent N-body simulations of satellite destruction in a variety of potentials (which naturally generate a
 distribution of orbital properties in the debris and along tidal streams) with the aim of simultaneously constraining both the properties of the satellite and the Milky Way.
 Many studies of the Sagittarius debris system (hereafter Sgr) --- whose tidal streams entirely encircle the Milky Way --- have adopted this approach 
-%\citep[e.g.][]{law05,fellhauer06} 
 with the most recent work for the first time attempting to place constraints on the triaxiality and orientation of the Milky Way's matter distribution
 \citep{law10}.
-%Studies which first fit the Sgr stream to a single orbit \citep{johnston05,law09} and were subsequently followed up with full N-body simulations \citep{law05,law12} offer another demonstration of the limitation of the former approach as potential parameters are revised when moving to the N-body approach.
 
 Other approaches have been proposed that avoid the cost of full N-body simulations yet recognize the limitations of single orbit integration.
 For example, using the results of N-body simulations as a guide, simple corrections around a single orbit can be adopted to make model predictions that closely
@@ -84,7 +72,6 @@ stream.
 \citet{binney08} and \citet{penarrubia12} demonstrate conceptually that the distribution of energy and entropy (respectively) in debris will be minimized only for a correct
 assumption of the form of the Galactic potential.
 \citet{sanders13b} examine the distribution of debris in action-angle co-ordinates and show that stars stripped from the same disrupted object must lie along a single line in angle-frequency space, providing a constraint that can be used as a potential measure.
-%\citet{johnston99a} (hereafter JZSH) showed that backwards integration of the positions of stars and their parent satellite could be used to distinguish Milky Way mass models: only in the correct potential would the stars' and satellite's  path coincide within a Hubble time.The JZSH method was designed and tested for the proposed characteristics of the Space Interferometry Mission \citep{}, which was expected to be able to measure proper motions with $\mu$as/year accuracy for stars as faint as $V=20$. Distances to stream members would only be poorly known and were estimated using anticipated properties of tidal debris.
 
 In this paper we re-examine and update a complimentary approach to using tidal debris as a potential measure \citep[originially proposed by][]{johnston99a}  in the context of current and near-future observational capabilities. We illustrate the power of this method by applying it to a simulation of the Sgr debris system.
 In Section \ref{sec:context} we outline the observational prospects and Sgr properties that motivated this re-examination.
@@ -107,7 +94,6 @@ tracing of debris associated with Sgr around the entire Galaxy
 
 There is a long tradition for using RR Lyrae stars in the Galaxy to
 study structure 
-%citep[going back to first estimates of the distanceto the Galactic center]
 \citep[e.g.][]{shapley18}, substructure
 \citep[e.g.][]{sesar10}, and distances to satellite galaxies
 \citep[e.g.][]{clementini03}.  However, studies of RR Lyrae at optical
@@ -123,7 +109,6 @@ At longer wavelengths, RR Lyrae promise tighter constraints on
 distances.  The near-infrared period-luminosity (PL) relation for RR
 Lyrae stars was first mapped by \citet{longmore86} using $K$-band
 observations of stars in Galactic globular clusters 
-%and later shown to be due to the changing bolometric correction for these stars as a function of the observed wavelength \citep{catelan04}.
 \citet{madore12} have recently shown, 
 using five stars with
 trigonometric parallaxes measured by Hubble \citep{benedict11},
@@ -185,8 +170,7 @@ Sagittarius stream.
 The Sagittarius Dwarf Galaxy (hereafter Sgr) was discovered
 serendipitously during a radial velocity survey of the Galactic bulge
 \citep{ibata94}. 
-%While the number of known Milky Way satellites has more than doubled recently \citep[e.g.,][]{mcconnachie12}, in many ways Sgr remains the most studied and most intriguing: it is the closest satellite, among the largest, and has the most prominent tidal tails.
-%The first maps of the Sgr core \citep{ibata94, ibata95} revealed its elongated morphology and suggested tidal deformation, as would be anticipated from its proximity to the Galaxy. Subsequent N-body models confirmed this interpretation \citep{velazquez95} and showed that debris from Sgr should form coherent streams of stars that encircle the Galaxy \citep{johnston95}. 
+
 Signatures of extensive stellar
 streams associated with Sgr have since been discovered in many studies and have been
 mapped across the sky in carbon stars \citep{totten98}, M giants
@@ -233,7 +217,6 @@ LM10 demonstrate how a comparison of such simulations with the
 observed debris enables a detailed reconstruction of Sgr's history:
 its mass and stellar populations, orbit, rate of destruction, and even
 original distribution in populations. 
-%The LM10 constraints on Sgr's mass and orbit have invigorated discussions of Sgr in a more cosmological context, the mass and extent of the original dark matter halo that hosted it, as well as its effect on the Milky Way itself \citep{bailin03,purcell11,micheldansac11,gomez12}.
 Moreover, this comparison enabled the first 
 reconstruction of the 3-dimensional mass distribution of a dark matter
 halo through the constraints on the potential parameters $v_{\rm halo}$,$q_1$, $q_z$ and $\phi$.
@@ -261,8 +244,9 @@ orbit of the progenitor are integrated \emph{backwards} in a a potential that ac
 (imagine watching satellite destruction in ``rewind"), the stars
 should recombine with the progenitor. If the potential is incorrect,
 the orbits of the stars will diverge from that of the progenitor and
-thus will not be recaptured by the satellite system
-(Figure~\ref{fig:ps_distance}).
+thus will not be recaptured by the satellite system.
+
+%(Figure~\ref{fig:ps_distance}).
 
 This approach was originally proposed by \citet{johnston99a} and was
 designed and tested for the proposed characteristics of the Space
@@ -279,7 +263,7 @@ with the satellite has been rigorously redefined.
 
 \begin{figure}[h]
 \begin{center}
-\includegraphics[width=0.5\textwidth]{/Users/adrian/projects/streams/plots/paper1/ps_distance.pdf}
+\includegraphics[width=0.47\textwidth,trim=5 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/ps_distance.pdf}
 \caption{Phase space distance ($D_{\rm ps}$) for 10 stars integrated backwards in the correct potential (top) and a potential where $q_z$ is 25\% larger (bottom). The same 10 particles are used in both figures, so the initial conditions are identical. Red (thick, solid line) shows the galactocentric distance of the progenitor (in arbitrary, normalized units) over the integration. Horizontal (dashed) line shows $D_{\rm ps}=\sqrt{2}$.}\label{fig:ps_distance}
 \end{center}
 \end{figure}
@@ -324,7 +308,6 @@ optimization. What follows is a description of an updated procedure
 with a more natural, statistically-motivated choice for an objective
 function.
 
-%As a measure of how many stars have recombined, we treat the minimum phase-space vectors (for each star over the individual, integrated orbits) as samples from an underlying six-dimensional distribution.
 
 For each star, $i$,
 the phase-space distance, $D_{\rm ps}$, is computed at each timestep
@@ -350,22 +333,6 @@ Milky Way
   f(\bs{\theta}) &= \ln \det \Sigma_n.
 \end{align}
 
-%[Still working on this bit...need to figure out best way to express
-%  what I'm trying to say.] Though this is not explicitly a
-%\emph{likelihood}, optimizing over this statistic is a very simple
-%approximation to performing a maximum-likelihood
-%optimization. Assuming the samples in $\bs{A}_{ik}$ are approximately
-%normal-distributed, the variance is closely related to the Shannon
-%entropy \citep{shannon1948}, $H$,
-%\begin{equation}
-%  H \propto \log \sigma .
-%\end{equation}
-%Minimizing the entropy is then equivalent to minimizing the loss of
-%\emph{information} for a given choice of parameters, $\bs{\theta}$,
-%given the ``data,'' $\bs{A}_{ik}$, and is thus related to
-%maximum-likelihood estimation \citep[see][for more
-%  detail]{mackay2002}.
-
 \subsection{Application to Simulated Data} \label{sec:results}
 The LM10 simulation data (see Section \ref{sec:sgr}) is a perfect
 test-bed for evaluating the effectiveness of this method. We start by
@@ -387,13 +354,6 @@ the objective function produced by varying each of the potential
 parameters by $\pm10\%$ around the true values and holding all others
 fixed.
 
-%\begin{figure}[h]
-%\begin{center}
-%\includegraphics[width=1.\textwidth]{/Users/adrian/projects/streams/plots/paper1/variance_projections.pdf}
-%\caption{ todo }\label{fig:variance_proj}
-%\end{center}
-%\end{figure}
-
 \begin{figure}[h]
 \begin{center}
 \includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/objective_function.pdf}
@@ -410,13 +370,17 @@ objective function.\footnote{Though MCMC is typically not an efficient
   the algorithm mean it outperforms other optimizers on this problem.}
 We use the median value of the (burnt-in) sample distribution as a
 point estimate for the potential parameters. To assess the uncertainty
-in the derived halo parameters, we bootstrap resample our 100 stars
+in the derived halo parameters, we sample 100 stars
 100 times and estimate the potential parameters with each
 resampling. Figure~\ref{fig:bootstrap} shows the recovered parameters
-for each bootstrapped sample and demonstrates the power of the
+for each sample and demonstrates the power of the
 combined Spitzer and Gaia data: a moderately sized sample of RR Lyrae
 alone places quite strong constraints on the shape and mass of the
-Galaxy's dark matter halo. [APW: explicitly state limits here, 1-sigma bounds]
+Galaxy's dark matter halo. From the covariance matrix derived from the 
+distribution of points in Figure~\ref{fig:bootstrap}, we find the mean 
+recovered parameters and one-sigma deviation to be 
+$q_1 = 1.36 \pm 0.02$, $q_z = 1.35 \pm 0.03$, $\phi = 96.6 \pm 0.6$ degrees,
+and $v_{\rm halo} = 123.0 \pm 1.5$ km/s.
 
 %\begin{figure}[h]
 %\begin{center}
@@ -427,10 +391,8 @@ Galaxy's dark matter halo. [APW: explicitly state limits here, 1-sigma bounds]
 
 \begin{figure*}[!t]
 \centering\includegraphics[width=0.9\textwidth,trim=0 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/bootstrap.pdf}
-\caption{ Blue points show the ``best-fit'' parameters resulting from each bootstrap resample of 100 stars from the Sgr stream particle density shown in Figure~\ref{fig:lm10}. Green (vertical and horizontal) lines show the true values of the parameters. Grey ellipses show one- and two-sigma margins, assuming the points are normally distributed. }\label{fig:bootstrap}
+\caption{ Blue points show the ``best-fit'' parameters resulting from each resample of 100 stars from the Sgr stream particle density shown in Figure~\ref{fig:lm10}. Green (vertical and horizontal) lines show the true values of the parameters. Grey ellipses show one- and two-sigma margins, assuming the points are normally distributed. }\label{fig:bootstrap}
 \end{figure*}	
-
-% APW Note: The optimization, in a way, is getting a bunch of orbits (curves) to intersect another curve (the progenitor orbit) at some points (over time).
 
 \section{Discussion, strengths, and limitations}
 \label{sec:discussion}
@@ -469,10 +431,8 @@ relies on accurate knowledge of the current position and velocity of
 the parent satellite, which may not be available in some cases
 \citep[for example, the Orphan Stream;][]{belokurov07}. Lastly, the
 present prescription neglects second-order effects in orbit evolution (e.g.,
-dynamical friction) which may lead to biases in
+dynamical friction) and N-body interactions which may lead to biases in
 the estimated potential parameters.
-
-%With a justified probabilistic framework, we will also be able to provide ... given sufficient data, position and motion of the original host could be solved for as additional free parameters, but the effectiveness of this approach has yet to be investigated.
 
 \section{Conclusions and motivation for future work}
 \label{sec:conclusion}
@@ -483,8 +443,8 @@ missions that promise precise, full phase-space measurements of RR
 Lyrae stars in the halo of our Galaxy. When applied to a sample of 100
 stars (with realistic observational errors) sampled from the
 \cite{law10} N-body simulation of the destruction of the Sgr dwarf
-satellite, the method recovers the shape and orientation of the dark
-matter potential [APW: again, quote errors]. 
+satellite, \emph{Rewinder} recovers the shape and orientation of the dark
+matter potential.
 
 While the tests presented in this paper are very simple, the accuracy of potential recovery promised by such a small sample of stars 
 provides strong motivation for further theoretical work to: 1) develop a robust generative model (and therefore likelihood) that utilizes the concepts demonstrated by \emph{Rewinder}; 2) investigate the power of using multiple debris structures; and 3) examine how \emph{Rewinder} might work with less accurate measurements or missing dimensions. 
@@ -493,12 +453,236 @@ Our results also motivate an observational campaign with \emph{Spitzer} to surve
 If just 100 stars in a single stellar stream allow us to measure the depth, shape, and orientation of the Milky Way potential, larger samples in multiple structures offer the prospect of assessing these quantities as a function of Galactocentric radius. Tracing the mass in a dark matter halo with this level of detail is impossible for any other galaxy in the Universe.
 
 \acknowledgments
-We thank ...
+We thank Barry Madore for providing the inspiration for this work. Thanks to 
+David Hogg for statistical advice and many useful discussions. Thanks also to
+Steve Majewski, David Law, and David Nidever.
 
 APW is supported by a National Science Foundation Graduate Research
-Fellowship under Grant No.\ 11-44155.
+Fellowship under Grant No.\ 11-44155. This work was supported in part by 
+the National Science Foundation under Grant No. PHYS-1066293 and the 
+hospitality of the Aspen Center for Physics.
 
-\bibliography{refs}
+%\bibliography{refs}
 \bibliographystyle{apj}
+
+\begin{thebibliography}{47}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[{{Bailin} {et~al.}(2005){Bailin}, {Kawata}, {Gibson}, {Steinmetz},
+  {Navarro}, {Brook}, {Gill}, {Ibata}, {Knebe}, {Lewis}, \&
+  {Okamoto}}]{bailin05}
+{Bailin}, J., {Kawata}, D., {Gibson}, B.~K., {et~al.} 2005, \apjl, 627, L17
+
+\bibitem[{{Bellazzini} {et~al.}(2006){Bellazzini}, {Newberg}, {Correnti},
+  {Ferraro}, \& {Monaco}}]{bellazzini06}
+{Bellazzini}, M., {Newberg}, H.~J., {Correnti}, M., {Ferraro}, F.~R., \&
+  {Monaco}, L. 2006, \aap, 457, L21
+
+\bibitem[{{Belokurov} {et~al.}(2006){Belokurov}, {Zucker}, {Evans}, {Gilmore},
+  {Vidrih}, {Bramich}, {Newberg}, {Wyse}, {Irwin}, {Fellhauer}, {Hewett},
+  {Walton}, {Wilkinson}, {Cole}, {Yanny}, {Rockosi}, {Beers}, {Bell},
+  {Brinkmann}, {Ivezi{\'c}}, \& {Lupton}}]{belokurov06}
+{Belokurov}, V., {Zucker}, D.~B., {Evans}, N.~W., {et~al.} 2006, \apjl, 642,
+  L137
+
+\bibitem[{{Belokurov} {et~al.}(2007){Belokurov}, {Evans}, {Irwin},
+  {Lynden-Bell}, {Yanny}, {Vidrih}, {Gilmore}, {Seabroke}, {Zucker},
+  {Wilkinson}, {Hewett}, {Bramich}, {Fellhauer}, {Newberg}, {Wyse}, {Beers},
+  {Bell}, {Barentine}, {Brinkmann}, {Cole}, {Pan}, \& {York}}]{belokurov07}
+{Belokurov}, V., {Evans}, N.~W., {Irwin}, M.~J., {et~al.} 2007, \apj, 658, 337
+
+\bibitem[{{Belokurov} {et~al.}(2013){Belokurov}, {Koposov}, {Evans},
+  {Pe{\~n}arrubia}, {Irwin}, {Smith}, {Lewis}, {Gieles}, {Wilkinson},
+  {Gilmore}, {Olszewski}, \& {Niederste-Ostholt}}]{belokurov13}
+{Belokurov}, V., {Koposov}, S.~E., {Evans}, N.~W., {et~al.} 2013, ArXiv
+  e-prints
+
+\bibitem[{{Benedict} {et~al.}(2011){Benedict}, {McArthur}, {Feast}, {Barnes},
+  {Harrison}, {Bean}, {Menzies}, {Chaboyer}, {Fossati}, {Nesvacil}, {Smith},
+  {Kolenberg}, {Laney}, {Kochukhov}, {Nelan}, {Shulyak}, {Taylor}, \&
+  {Freedman}}]{benedict11}
+{Benedict}, G.~F., {McArthur}, B.~E., {Feast}, M.~W., {et~al.} 2011, \aj, 142,
+  187
+
+\bibitem[{{Binney}(2008)}]{binney08}
+{Binney}, J. 2008, \mnras, 386, L47
+
+\bibitem[{{Chou} {et~al.}(2010){Chou}, {Cunha}, {Majewski}, {Smith},
+  {Patterson}, {Mart{\'{\i}}nez-Delgado}, \& {Geisler}}]{chou10}
+{Chou}, M.-Y., {Cunha}, K., {Majewski}, S.~R., {et~al.} 2010, \apj, 708, 1290
+
+\bibitem[{{Clementini} {et~al.}(2003){Clementini}, {Gratton}, {Bragaglia},
+  {Carretta}, {Di Fabrizio}, \& {Maio}}]{clementini03}
+{Clementini}, G., {Gratton}, R., {Bragaglia}, A., {et~al.} 2003, \aj, 125, 1309
+
+\bibitem[{{Deason} {et~al.}(2012{\natexlab{a}}){Deason}, {Belokurov}, {Evans},
+  \& {An}}]{deason12a}
+{Deason}, A.~J., {Belokurov}, V., {Evans}, N.~W., \& {An}, J.
+  2012{\natexlab{a}}, \mnras, 424, L44
+
+\bibitem[{{Deason} {et~al.}(2012{\natexlab{b}}){Deason}, {Belokurov}, {Evans},
+  {Koposov}, {Cooke}, {Pe{\~n}arrubia}, {Laporte}, {Fellhauer}, {Walker}, \&
+  {Olszewski}}]{deason12b}
+{Deason}, A.~J., {Belokurov}, V., {Evans}, N.~W., {et~al.} 2012{\natexlab{b}},
+  \mnras, 425, 2840
+
+\bibitem[{{Drake} {et~al.}(2013){Drake}, {Catelan}, {Djorgovski}, {Torrealba},
+  {Graham}, {Belokurov}, {Koposov}, {Mahabal}, {Prieto}, {Donalek}, {Williams},
+  {Larson}, {Christensen}, \& {Beshore}}]{drake13}
+{Drake}, A.~J., {Catelan}, M., {Djorgovski}, S.~G., {et~al.} 2013, \apj, 763,
+  32
+
+\bibitem[{{Eyre} \& {Binney}(2009)}]{eyre09a}
+{Eyre}, A., \& {Binney}, J. 2009, \mnras, 400, 548
+
+\bibitem[{{Fellhauer} {et~al.}(2006){Fellhauer}, {Belokurov}, {Evans},
+  {Wilkinson}, {Zucker}, {Gilmore}, {Irwin}, {Bramich}, {Vidrih}, {Wyse},
+  {Beers}, \& {Brinkmann}}]{fellhauer06}
+{Fellhauer}, M., {Belokurov}, V., {Evans}, N.~W., {et~al.} 2006, \apj, 651, 167
+
+\bibitem[{{Foreman-Mackey} {et~al.}(2013){Foreman-Mackey}, {Hogg}, {Lang}, \&
+  {Goodman}}]{foremanmackey2013}
+{Foreman-Mackey}, D., {Hogg}, D.~W., {Lang}, D., \& {Goodman}, J. 2013, \pasp,
+  125, 306
+
+\bibitem[{{Helmi} \& {White}(1999)}]{helmi99}
+{Helmi}, A., \& {White}, S.~D.~M. 1999, \mnras, 307, 495
+
+\bibitem[{{Ibata} {et~al.}(1994){Ibata}, {Gilmore}, \& {Irwin}}]{ibata94}
+{Ibata}, R.~A., {Gilmore}, G., \& {Irwin}, M.~J. 1994, \nat, 370, 194
+
+\bibitem[{{Ivezi{\'c}} {et~al.}(2008){Ivezi{\'c}}, {Sesar}, {Juri{\'c}},
+  {Bond}, {Dalcanton}, {Rockosi}, {Yanny}, {Newberg}, {Beers}, {Allende
+  Prieto}, {Wilhelm}, {Lee}, {Sivarani}, {Norris}, {Bailer-Jones}, {Re
+  Fiorentin}, {Schlegel}, {Uomoto}, {Lupton}, {Knapp}, {Gunn}, {Covey},
+  {Smith}, {Miknaitis}, {Doi}, {Tanaka}, {Fukugita}, {Kent}, {Finkbeiner},
+  {Munn}, {Pier}, {Quinn}, {Hawley}, {Anderson}, {Kiuchi}, {Chen}, {Bushong},
+  {Sohi}, {Haggard}, {Kimball}, {Barentine}, {Brewington}, {Harvanek},
+  {Kleinman}, {Krzesinski}, {Long}, {Nitta}, {Snedden}, {Lee}, {Harris},
+  {Brinkmann}, {Schneider}, \& {York}}]{ivezic08}
+{Ivezi{\'c}}, {\v Z}., {Sesar}, B., {Juri{\'c}}, M., {et~al.} 2008, \apj, 684,
+  287
+
+\bibitem[{{Jing} \& {Suto}(2002)}]{jing02}
+{Jing}, Y.~P., \& {Suto}, Y. 2002, \apj, 574, 538
+
+\bibitem[{{Johnston}(1998)}]{johnston98}
+{Johnston}, K.~V. 1998, \apj, 495, 297
+
+\bibitem[{{Johnston} {et~al.}(1999{\natexlab{a}}){Johnston}, {Majewski},
+  {Siegel}, {Reid}, \& {Kunkel}}]{johnston99b}
+{Johnston}, K.~V., {Majewski}, S.~R., {Siegel}, M.~H., {Reid}, I.~N., \&
+  {Kunkel}, W.~E. 1999{\natexlab{a}}, \aj, 118, 1719
+
+\bibitem[{{Johnston} {et~al.}(1999{\natexlab{b}}){Johnston}, {Zhao}, {Spergel},
+  \& {Hernquist}}]{johnston99a}
+{Johnston}, K.~V., {Zhao}, H., {Spergel}, D.~N., \& {Hernquist}, L.
+  1999{\natexlab{b}}, \apjl, 512, L109
+
+\bibitem[{{Kafle} {et~al.}(2012){Kafle}, {Sharma}, {Lewis}, \&
+  {Bland-Hawthorn}}]{kafle12}
+{Kafle}, P.~R., {Sharma}, S., {Lewis}, G.~F., \& {Bland-Hawthorn}, J. 2012,
+  \apj, 761, 98
+
+\bibitem[{{Keller} {et~al.}(2010){Keller}, {Yong}, \& {Da Costa}}]{keller10}
+{Keller}, S.~C., {Yong}, D., \& {Da Costa}, G.~S. 2010, \apj, 720, 940
+
+\bibitem[{{Koposov} {et~al.}(2010){Koposov}, {Rix}, \& {Hogg}}]{koposov10}
+{Koposov}, S.~E., {Rix}, H.-W., \& {Hogg}, D.~W. 2010, \apj, 712, 260
+
+\bibitem[{{Law} \& {Majewski}(2010)}]{law10}
+{Law}, D.~R., \& {Majewski}, S.~R. 2010, \apj, 714, 229
+
+\bibitem[{{Longmore} {et~al.}(1986){Longmore}, {Fernley}, \&
+  {Jameson}}]{longmore86}
+{Longmore}, A.~J., {Fernley}, J.~A., \& {Jameson}, R.~F. 1986, \mnras, 220, 279
+
+\bibitem[{{Madore} \& {Freedman}(2012)}]{madore12}
+{Madore}, B.~F., \& {Freedman}, W.~L. 2012, \apj, 744, 132
+
+\bibitem[{{Majewski} {et~al.}(2003){Majewski}, {Skrutskie}, {Weinberg}, \&
+  {Ostheimer}}]{majewski03}
+{Majewski}, S.~R., {Skrutskie}, M.~F., {Weinberg}, M.~D., \& {Ostheimer}, J.~C.
+  2003, \apj, 599, 1082
+
+\bibitem[{{Majewski} {et~al.}(2004){Majewski}, {Kunkel}, {Law}, {Patterson},
+  {Polak}, {Rocha-Pinto}, {Crane}, {Frinchaboy}, {Hummels}, {Johnston}, {Rhee},
+  {Skrutskie}, \& {Weinberg}}]{majewski04}
+{Majewski}, S.~R., {Kunkel}, W.~E., {Law}, D.~R., {et~al.} 2004, \aj, 128, 245
+
+\bibitem[{{Mart{\'{\i}}nez-Delgado} {et~al.}(2004){Mart{\'{\i}}nez-Delgado},
+  {G{\'o}mez-Flechoso}, {Aparicio}, \& {Carrera}}]{martinezdelgado04}
+{Mart{\'{\i}}nez-Delgado}, D., {G{\'o}mez-Flechoso}, M.~{\'A}., {Aparicio}, A.,
+  \& {Carrera}, R. 2004, \apj, 601, 242
+
+\bibitem[{{Navarro} {et~al.}(1996){Navarro}, {Frenk}, \& {White}}]{navarro96}
+{Navarro}, J.~F., {Frenk}, C.~S., \& {White}, S.~D.~M. 1996, \apj, 462, 563
+
+\bibitem[{{Newberg} {et~al.}(2002){Newberg}, {Yanny}, {Rockosi}, {Grebel},
+  {Rix}, {Brinkmann}, {Csabai}, {Hennessy}, {Hindsley}, {Ibata}, {Ivezi{\'c}},
+  {Lamb}, {Nash}, {Odenkirchen}, {Rave}, {Schneider}, {Smith}, {Stolte}, \&
+  {York}}]{newberg02}
+{Newberg}, H.~J., {Yanny}, B., {Rockosi}, C., {et~al.} 2002, \apj, 569, 245
+
+\bibitem[{{Odenkirchen} {et~al.}(2002){Odenkirchen}, {Grebel}, {Dehnen}, {Rix},
+  \& {Cudworth}}]{odenkirchen02}
+{Odenkirchen}, M., {Grebel}, E.~K., {Dehnen}, W., {Rix}, H.-W., \& {Cudworth},
+  K.~M. 2002, \aj, 124, 1497
+
+\bibitem[{{Pe{\~n}arrubia} {et~al.}(2012){Pe{\~n}arrubia}, {Koposov}, \&
+  {Walker}}]{penarrubia12}
+{Pe{\~n}arrubia}, J., {Koposov}, S.~E., \& {Walker}, M.~G. 2012, \apj, 760, 2
+
+\bibitem[{{Perryman} {et~al.}(2001){Perryman}, {de Boer}, {Gilmore}, {H{\o}g},
+  {Lattanzi}, {Lindegren}, {Luri}, {Mignard}, {Pace}, \& {de Zeeuw}}]{gaia01}
+{Perryman}, M.~A.~C., {de Boer}, K.~S., {Gilmore}, G., {et~al.} 2001, \aap,
+  369, 339
+
+\bibitem[{{Pontzen} \& {Governato}(2012)}]{pontzen12}
+{Pontzen}, A., \& {Governato}, F. 2012, \mnras, 421, 3464
+
+\bibitem[{{Rocha-Pinto} {et~al.}(2004){Rocha-Pinto}, {Majewski}, {Skrutskie},
+  {Crane}, \& {Patterson}}]{rochapinto04}
+{Rocha-Pinto}, H.~J., {Majewski}, S.~R., {Skrutskie}, M.~F., {Crane}, J.~D., \&
+  {Patterson}, R.~J. 2004, \apj, 615, 732
+
+\bibitem[{{Rubin} \& {Ford}(1970)}]{rubin70}
+{Rubin}, V.~C., \& {Ford}, Jr., W.~K. 1970, \apj, 159, 379
+
+\bibitem[{{Sanders} \& {Binney}(2013{\natexlab{a}})}]{sanders13a}
+{Sanders}, J.~L., \& {Binney}, J. 2013{\natexlab{a}}, \mnras, 433, 1813
+
+\bibitem[{{Sanders} \& {Binney}(2013{\natexlab{b}})}]{sanders13b}
+---. 2013{\natexlab{b}}, \mnras, 433, 1826
+
+\bibitem[{{Sesar} {et~al.}(2010){Sesar}, {Ivezi{\'c}}, {Grammer}, {Morgan},
+  {Becker}, {Juri{\'c}}, {De Lee}, {Annis}, {Beers}, {Fan}, {Lupton}, {Gunn},
+  {Knapp}, {Jiang}, {Jester}, {Johnston}, \& {Lampeitl}}]{sesar10}
+{Sesar}, B., {Ivezi{\'c}}, {\v Z}., {Grammer}, S.~H., {et~al.} 2010, \apj, 708,
+  717
+
+\bibitem[{{Shapley}(1918)}]{shapley18}
+{Shapley}, H. 1918, \apj, 48, 154
+
+\bibitem[{{Totten} \& {Irwin}(1998)}]{totten98}
+{Totten}, E.~J., \& {Irwin}, M.~J. 1998, \mnras, 294, 1
+
+\bibitem[{{Unwin} {et~al.}(2008){Unwin}, {Shao}, {Tanner}, {Allen}, {Beichman},
+  {Boboltz}, {Catanzarite}, {Chaboyer}, {Ciardi}, {Edberg}, {Fey}, {Fischer},
+  {Gelino}, {Gould}, {Grillmair}, {Henry}, {Johnston}, {Johnston}, {Jones},
+  {Kulkarni}, {Law}, {Majewski}, {Makarov}, {Marcy}, {Meier}, {Olling}, {Pan},
+  {Patterson}, {Pitesky}, {Quirrenbach}, {Shaklan}, {Shaya}, {Strigari},
+  {Tomsick}, {Wehrle}, \& {Worthey}}]{unwin08}
+{Unwin}, S.~C., {Shao}, M., {Tanner}, A.~M., {et~al.} 2008, \pasp, 120, 38
+
+\bibitem[{{Varghese} {et~al.}(2011){Varghese}, {Ibata}, \&
+  {Lewis}}]{varghese11}
+{Varghese}, A., {Ibata}, R., \& {Lewis}, G.~F. 2011, \mnras, 417, 198
+
+\bibitem[{{Vivas} {et~al.}(2005){Vivas}, {Zinn}, \& {Gallart}}]{vivas05}
+{Vivas}, A.~K., {Zinn}, R., \& {Gallart}, C. 2005, \aj, 129, 189
+
+\end{thebibliography}
+
 
 \end{document}
