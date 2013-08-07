@@ -219,7 +219,7 @@ def gaia_spitzer_errors():
         axes[0].axhline(0.02, linestyle='--', linewidth=4, color='k', alpha=0.75)
         
         # Add photometric 20% line to distance plot
-        axes[0].axhline(0.2, linestyle='-.', linewidth=4, color='k', alpha=0.75)
+        axes[0].axhline(0.1, linestyle=':', linewidth=4, color='k', alpha=0.75)
     
     # Now add rectangles for Sgr, Orphan
     sgr_d = Rectangle((10., 0.15), 60., 0.15, 
@@ -522,10 +522,64 @@ def bootstrapped_parameters():
     fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
+def bootstrapped_parameters_transpose():
+    data_file = os.path.join(project_root, "plots", "hotfoot", 
+                             "SMASH", "all_best_parameters.pickle")
+    
+    with open(data_file) as f:
+        data = pickle.load(f)
+    
+    rcparams = {'axes.linewidth' : 3.,
+                'xtick.major.size' : 8.}
+    with rc_context(rc=rcparams): 
+        fig,axes = plt.subplots(1,3,figsize=(12,5))
+
+    y_param = 'v_halo'
+    x_params = ['q1', 'qz', 'phi']
+
+    for ii,x_param in enumerate(x_params):
+        
+        xdata = (np.array(data[x_param])-_true_params[x_param]) / _true_params[x_param]
+        ydata = (np.array(data[y_param])-_true_params[y_param]) / _true_params[y_param]
+        
+        axes[ii].axhline(0., linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
+        axes[ii].axvline(0., linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
+        
+        points = np.vstack([xdata, ydata]).T
+        plot_point_cov(points, nstd=2, ax=axes[ii], alpha=0.25, color='#777777')
+        plot_point_cov(points, nstd=1, ax=axes[ii], alpha=0.5, color='#777777')
+        plot_point_cov(points, nstd=2, ax=axes[ii], color='#000000', fill=False)
+        plot_point_cov(points, nstd=1, ax=axes[ii], color='#000000', fill=False)
+        
+        axes[ii].plot(xdata, ydata, marker='.', markersize=7, alpha=0.75, 
+                      color='#2B83BA', linestyle='none')
+        axes[ii].set_xlim((-0.12, 0.12))
+        axes[ii].set_ylim((-0.12, 0.12))
+        
+        axes[ii].yaxis.tick_left()        
+        axes[ii].set_yticks([-0.1, -0.05, 0., 0.05, 0.1])
+        axes[ii].xaxis.tick_bottom()
+    
+    axes[2].set_xlabel(r"$\delta v_{\rm halo}$", 
+                       fontsize=26, rotation='horizontal')
+    
+    axes[0].set_yticks([-0.1, -0.05, 0., 0.05, 0.1])
+    axes[1].set_yticklabels([])
+    axes[2].set_yticklabels([])
+    
+    axes[0].set_xlabel(r"$\delta q_1$", fontsize=26, rotation='horizontal')
+    axes[1].set_xlabel(r"$\delta q_z$", fontsize=26, rotation='horizontal')
+    axes[2].set_xlabel(r"$\delta \phi$", fontsize=26, rotation='horizontal')
+    
+    plt.tight_layout()
+    fig.subplots_adjust(hspace=0., wspace=0.)
+    fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
+
 if __name__ == '__main__':
     #gaia_spitzer_errors()
     #sgr()
     #phase_space_d_vs_time()
     #normed_objective_plot()
     #variance_projections()
-    bootstrapped_parameters()
+    #bootstrapped_parameters()
+    bootstrapped_parameters_transpose()
