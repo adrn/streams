@@ -242,8 +242,8 @@ def gaia_spitzer_errors():
     axes[0].set_xlim(1, 100)
     axes[1].set_ylim(0.01, 100)
     
-    axes[0].set_ylabel("Frac. distance error $\sigma_D/D$")
-    axes[1].set_ylabel("$v_{tan}$ error [km/s]")
+    axes[0].set_ylabel(r"$\sigma_D/D$ (frac. dist. error)")
+    axes[1].set_ylabel(r"$\sigma_\mu \times$ $D$ ($v_{tan}$ error) [km/s]")
     axes[1].set_xlabel("Distance [kpc]")
     
     axes[0].set_xticklabels(["1", "10", "100"])
@@ -252,7 +252,7 @@ def gaia_spitzer_errors():
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
     
     # add Gaia and Spitzer text to first plot
-    axes[0].text(4., 0.11, 'Gaia', fontsize=16, rotation=32, fontweight=500)
+    axes[0].text(15., 1.5, 'Gaia', fontsize=16, rotation=32, fontweight=500)
     axes[0].text(4., 0.011, 'Spitzer', fontsize=16, alpha=0.75, fontweight=500)
     
     # add legends
@@ -594,11 +594,11 @@ def parameter_errors():
         print("{0} = {1:.2f} + {2:.2f}".format(p, np.mean(d[ii]), errors[ii]))
 
 if __name__ == '__main__':
-    #gaia_spitzer_errors()
+    gaia_spitzer_errors()
     #sgr()
     #phase_space_d_vs_time()
     #normed_objective_plot()
     #variance_projections()
     #bootstrapped_parameters()
     #bootstrapped_parameters_transpose()
-    parameter_errors()
+    #parameter_errors()
