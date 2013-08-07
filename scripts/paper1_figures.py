@@ -560,7 +560,7 @@ def bootstrapped_parameters_transpose():
         axes[ii].set_yticks([-0.1, -0.05, 0., 0.05, 0.1])
         axes[ii].xaxis.tick_bottom()
     
-    axes[2].set_xlabel(r"$\delta v_{\rm halo}$", 
+    axes[0].set_ylabel(r"$\delta v_{\rm halo}$", 
                        fontsize=26, rotation='horizontal')
     
     axes[0].set_yticks([-0.1, -0.05, 0., 0.05, 0.1])
@@ -575,6 +575,23 @@ def bootstrapped_parameters_transpose():
     fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
+def parameter_errors():
+    data_file = os.path.join(project_root, "plots", "hotfoot", 
+                             "SMASH", "all_best_parameters.pickle")
+    
+    with open(data_file) as f:
+        data = pickle.load(f)
+    
+    params = ['q1', 'qz', 'phi', 'v_halo']
+    d = np.vstack(tuple([data[p] for p in params]))
+    cov = np.cov(d)
+    
+    errors = np.sqrt(np.diag(cov))
+    print("q1", errors[0])
+    print("qz", errors[1])
+    print("phi", np.degrees(errors[2]))
+    print("v_halo", (errors[3]*u.kpc/u.Myr).to(u.km/u.s).value)
+
 if __name__ == '__main__':
     #gaia_spitzer_errors()
     #sgr()
@@ -582,4 +599,5 @@ if __name__ == '__main__':
     #normed_objective_plot()
     #variance_projections()
     #bootstrapped_parameters()
-    bootstrapped_parameters_transpose()
+    #bootstrapped_parameters_transpose()
+    parameter_errors()
