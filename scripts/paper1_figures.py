@@ -584,13 +584,14 @@ def parameter_errors():
     
     params = ['q1', 'qz', 'phi', 'v_halo']
     d = np.vstack(tuple([data[p] for p in params]))
+    d[2] = np.degrees(d[2])
+    d[3] = (d[3]*u.kpc/u.Myr).to(u.km/u.s).value
     cov = np.cov(d)
-    
+
     errors = np.sqrt(np.diag(cov))
-    print("q1", errors[0])
-    print("qz", errors[1])
-    print("phi", np.degrees(errors[2]))
-    print("v_halo", (errors[3]*u.kpc/u.Myr).to(u.km/u.s).value)
+    
+    for ii,p in enumerate(params):
+        print("{0} = {1:.2f} + {2:.2f}".format(p, np.mean(d[ii]), errors[ii]))
 
 if __name__ == '__main__':
     #gaia_spitzer_errors()
