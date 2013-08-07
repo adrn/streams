@@ -220,7 +220,7 @@ if __name__ == "__main__":
     # Read in particles from Law & Majewski 2010 simulation of Sgr
     #expr="(Pcol>0) & (abs(Lmflag)==1)"
     t,satellite, particles = read_lm10(N=N, 
-                                      expr="(Pcol > -1) & (Pcol < 6) & (abs(Lmflag) == 1)",
+                                      expr="(Pcol > -1) & (Pcol < 7) & (abs(Lmflag) == 1)",
                                       dt=dt)
     
     # Define correct potential, and 10% wrong potential
