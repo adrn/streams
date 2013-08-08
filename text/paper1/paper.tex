@@ -26,7 +26,7 @@
 
 \begin{abstract}
 
-Near-future data from ESA's Gaia mission will provide precise, full phase-space information for hundreds of millions of stars out to heliocentric distances of a few kiloparsecs. This ``horizon'' can be extended with more accurate distances, allowing for more precise tangential velocity measurements out to several tens of kiloparsecs if we limit studies to samples of RR Lyrae stars. Recent work has demonstrated how Spitzer observations of RR Lyrae stars can be used to make distance estimates accurate to 2\%, effectively extending the Gaia, precise-data horizon by a factor of ten in distance and a factor of 1000 in volume. In this \emph{Letter} we develop and demonstrate a new method that uses small samples of stars associated with debris from satellite destruction to measure the Galactic potential. We then apply this method to simulated observations of stars from the end point of a simulation of satellite destruction and discuss the success of the algorithm in recovering the true potential used for the simulation. The results suggest that we will be able to probe the three-dimensional structure of the Galaxy's dark matter halo, constraining its shape, orientation, and depth as a function of radius. The opportunity to examine a dark matter halo in such great detail is truly unique and is enabled by the combination of Spitzer and Gaia with our intimate perspective on our own Galaxy.
+Near-future data from ESA's Gaia mission will provide precise, full phase-space information for hundreds of millions of stars out to heliocentric distances of $\sim$ 10 kpc. This ``horizon'' for full phase-space measurements is imposed by the Gaia parallax errors degrading to worse than 10\%, and could be significantly extended by an accurate distance indicator. Recent work has demonstrated how Spitzer observations of RR Lyrae stars can be used to make distance estimates accurate to 2\%, effectively extending the Gaia, precise-data horizon by a factor of ten in distance and a factor of 1000 in volume. This \emph{Letter} presents one approach to exploit data of such accuracy to measure the Galactic potential using small samples of stars associated with debris from satellite destruction. The method is tested with synthetic observations of 100 stars from the end point of a simulation of satellite destruction: the shape, orientation, and depth of the potential used in the simulation are recovered to within a few percent. The success of this simple test with such a small sample in a single debris stream suggests that constraints from multiple streams could be combined to examine the Galaxy's  dark matter halo in even more  detail --- a truly unique opportunity that is enabled by the combination of Spitzer and Gaia with our intimate perspective on our own Galaxy.
 
 \end{abstract}
 
@@ -34,20 +34,20 @@ Near-future data from ESA's Gaia mission will provide precise, full phase-space 
 \section{Introduction}
 \label{intro.sec}
  The existence of vast halos of unseen {\it dark} matter surrounding each galaxy has long been proposed to explain the surprisingly large
-motions of the {\it baryonic} matter (i.e. stars, gas and dust) that we can see \citep[e.g.,][]{rubin70}.
+motions of the {\it baryonic} matter that we can see \citep[e.g.,][]{rubin70}.
 Dark-matter-only simulations of structure formation lead us to expect that these dark matter halos should have density distributions that are described by a universal radial profile \citep{navarro96} with a variety of triaxial shapes \citep{jing02}.
 The inclusion of baryons in the simulations tends to soften the triaxiality of the dark matter in the inner regions of the halo \citep[e.g., as the disk forms,][]{bailin05} and
-can potentially alter the radial profile through a combination of adiabatic contraction and energetic feedback \citep[e.g.][]{pontzen12}.
-Hence, measurements of the shape, orientation, radial profile, and extent of dark matter halos provides information about the formation of these vast structures, as well as the messy baryonic processes of gas inflow, star formation, and feedback that continue to shape them.
+can alter the radial profile through a combination of adiabatic contraction and energetic feedback \citep[e.g.][]{pontzen12}.
+Hence, measurements of the shape, orientation, radial profile, and extent of dark matter halos provides information about the formation of these vast structures, as well as the messy baryonic processes that continue to shape them.
 
 The Milky Way is the best candidate for such a detailed study of a dark matter halo
-since we can resolve large samples of individual stars to use as tracers.
+since we can resolve large samples of stellar tracers.
 To date, thousands of blue horizontal branch stars selected from the Sloan Digital Sky Survey (SDSS) have been used to probe the Milky Way mass out to tens of
 kpc \citep[SDSS, see][]{deason12a,kafle12}, and estimates with combined tracers extend to 150kpc \citep{deason12b}.
 
-This approach assumes that the tracers represent a random sampling of orbits drawn from a smooth distribution function and are well-mixed in orbital phase. However, the same surveys that provide large samples have also revealed the existence of large-scale spatial inhomogeneities in the form of giant stellar streams \citep{newberg02,majewski03,belokurov06}, clearly demonstrating that a significant fraction of the stellar halo is neither randomly sampled from a smooth distribution function nor is fully phase-mixed.
+This approach assumes that the tracers represent a random sampling of orbits drawn from a smooth distribution function and are well-mixed in orbital phase. However, the same surveys that provide large samples have also revealed the existence of large-scale spatial inhomogeneities in the form of giant stellar streams \citep{newberg02,majewski03,belokurov06}, demonstrating that a significant fraction of the stellar halo is neither randomly sampled nor is fully phase-mixed.
 
-A complimentary approach to measuring the mass distribution is to instead take full advantage of the {\it non}-random nature of the Galaxy's stellar distribution, i.e. utilizing the knowledge that stars in streams were once all part of the same object.
+A complimentary approach to measuring the mass distribution is to instead take full advantage of the {\it non}-random nature of the Galaxy's stellar distribution and utilize the knowledge that stars in streams were once all part of the same object.
 Such approaches can require orders of magnitude fewer tracers than a randomly sampled population to achieve comparable accuracy.
 One method is to simply fit orbits to observations of streams 
 \citep[e.g.,][]{koposov10}.
@@ -55,7 +55,7 @@ However, the assumption that debris traces a single orbit is actually incorrect 
 systematic changes in orbital properties along debris streams that can lead to systematic biases in our measurements of the Galactic potential \citep{eyre09a,varghese11}.
 In particular, \citet{sanders13a} recently demonstrated that this bias is equally problematic for the very thinnest, coldest streams, whose observed properties may be indistinguishable from those of the parent orbit \citep[e.g. such as the globular cluster, GD1 --- see][]{koposov10}, as for the much more extended and hotter streams \citep[e.g. such as debris from the Sagittarius dwarf galaxy --- see][]{majewski03} where offsets from a single orbit are clearly apparent.
 
-One way to address these systematic biases is to run fully self-consistent N-body simulations of satellite destruction in a variety of potentials with the aim of simultaneously constraining both the properties of the satellite and the Milky Way.
+One way to address these biases is to run self-consistent N-body simulations of satellite destruction in a variety of potentials with the aim of simultaneously constraining both the properties of the satellite and the Milky Way.
 Many studies of the Sagittarius debris system (hereafter Sgr) --- whose tidal streams entirely encircle the Milky Way --- have adopted this approach 
 with the most recent work for the first time attempting to place constraints on the triaxiality and orientation of the dark matter halo
 \citep{law10}.
@@ -64,7 +64,7 @@ Other approaches have been proposed that avoid the cost of full N-body simulatio
 For example, using the results of N-body simulations as a guide, simple corrections around a single orbit can be adopted to make model predictions that closely
 mimic expected debris behavior \citep[e.g.][]{johnston99b,varghese11}.
 
-The promise of near-future data sets including full phase-space information has also inspired other approaches. \citet{binney08} and \citet{penarrubia12} demonstrate conceptually that the distribution of energy and entropy (respectively) in debris will be minimized only for a correct
+The promise of near-future data sets including full phase-space information has also inspired other approaches. \citet{binney08} and \citet{penarrubia12} demonstrate conceptually that the distribution of energy and entropy in debris, respectively, will be minimized only for a correct
 assumption of the form of the Galactic potential.
 \citet{sanders13b} examine the distribution of debris in action-angle co-ordinates and show that stars stripped from the same disrupted object must lie along a single line in angle-frequency space, providing a constraint that can be used as a potential measure.
 
@@ -84,7 +84,7 @@ $\sim$10~$\mu$as/yr precision (Section \ref{sec:gaia}); and (iii) the
 tracing of debris associated with Sgr around the entire Galaxy
 (Section \ref{sec:sgr})
 
-\subsection{{\it Spitzer} and 2\% distance errors for RR Lyrae in the halo}
+\subsection{{\it Spitzer} and 2\% distance errors to RR Lyrae in the halo}
 \label{sec:spitzer}
 
 There is a long tradition for using RR Lyrae stars in the Galaxy to
@@ -95,17 +95,14 @@ study structure
 wavelengths are limited by both metallicity effects on the intrinsic
 brightness of these stars and variable extinction along the line of
 sight.  Moreover, systematic differences between instruments make it
-difficult to tie observations across the sky to a common scale. While
-RR Lyrae are among the best distance indicators available to us today,
-the absolute uncertainty in individual estimates are typically
-$\gtrsim$10\%.
+difficult to tie observations across the sky to a common scale. 
 
 At longer wavelengths, RR Lyrae promise tighter constraints on
 distances.  
 \citet{madore12} have recently shown, 
 using five stars with
 trigonometric parallaxes measured by Hubble \citep{benedict11},
-that the dispersion in the mid-IR PL relation 
+that the dispersion in the mid-IR Period-Luminosity relation 
 \citep[first mapped by][]{longmore86}
 at
 wavelengths measurable by NASA's {\it Spitzer} mission is $\sim$0.03~mag.
@@ -116,16 +113,22 @@ Spitzer's ability to detect and measure RR Lyrae variables for modest
 integration times). 
 For comparison, distance measurements of Blue Horizontal Branch
 stars typically
-achieve $\sim$10-15\% uncertainties  \citep[if appropriate color measurements are available. e.g.,][]{deason12b}.
+achieve $\sim$10-15\% uncertainties  \citep[if appropriate color measurements are available, e.g.,][]{deason12b}.
 
+\begin{figure}[h!]
+\begin{center}
+\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/gaia.pdf}
+\caption{Expected \emph{Gaia} distance and tangential velocity errors as a function of heliocentric distance for RR Lyrae stars. Errors are a function of color and magnitude of the source, and hence the metallicity. Parallax distance errors from \emph{Gaia} are larger than the line-of-sight size of both Sgr and Orphan (Orp), but photometric distance errors are comparable to the the Sgr scale (assuming 10\% errors, dotted line). Bottom panel shows that the \emph{Gaia} tangential velocity errors are smaller than the internal velocity dispersion of both Sgr and Orp.\footnote{\url{http://www.rssd.esa.int/index.php?page=Science_Performance&project=GAIA}} }\label{fig:gaia_errors}
+\end{center}
+\end{figure}
 
 \subsection{Gaia and the age of astrometry}
 \label{sec:gaia}
 The Gaia satellite \citep{gaia01} is
 an astrometric mission which aims to measure the positions of billions
-of stars with 10-100~$\mu$as accuracies and sufficient
-proper motion accuracy to create full six-dimensional phase-space maps
-of the Galaxy with $<$10\% distance errors for heliocentric distances of
+of stars with 10-100~$\mu$as accuracies. Combined with expected 
+proper motion accuracies, this will enable full six-dimensional phase-space 
+maps of the Galaxy with $<$10\% distance errors to heliocentric distances of
 up to $\sim$6~kpc for RR Lyrae stars.
 
 Figure~\ref{fig:gaia_errors} shows the Gaia end-of-mission distance
@@ -137,24 +140,13 @@ the Galactic halo from \cite{ivezic08} (centered around [Fe/H] $\sim$
 -1.5). Within 2~kpc, Gaia will measure distances to these stars with
 better than 2\% accuracy --- RR Lyrae in this volume can be used to
 test and calibrate the Spitzer PL relation described above. Beyond the
-2~kpc threshold, the mid-IR PL relation for RR Lyrae will provide more
-accurate distance measurements.
+2~kpc threshold, the mid-IR PL relation for RR Lyrae will provide better 
+distance measurements. 
 
-\begin{figure}[h]
-\begin{center}
-\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/gaia.pdf}
-\caption{Expected \emph{Gaia} distance and tangential velocity errors as a function of heliocentric distance for RR Lyrae stars. Errors are a function of color and magnitude of the source, which depend on the metallicity. Parallax distance errors from \emph{Gaia} are larger than the line-of-sight size of both Sgr and Orphan (Orp), but photometric distance errors are comparable to the the Sgr scale (assuming 10\% errors, dotted line). Bottom panel shows that the \emph{Gaia} tangential velocity errors (proper motion error $\times$ distance) are smaller than the internal velocity dispersion of both Sgr and Orp. }\label{fig:gaia_errors}
-\end{center}
-\end{figure}
-
-The anticipated proper motion errors for RR Lyrae correspond to
-tangential velocity errors of order $\sim$1~km/s at 30~kpc, and of
-order $\sim$10~km/s out to several tens of
-kiloparsecs.\footnote{\url{http://www.rssd.esa.int/index.php?page=Science_Performance&project=GAIA}}
-The combination of Spitzer and Gaia data will extend the ``horizon''
-of where full six-dimensional phase-space maps of the Galaxy are
-possible from $<$10~kpc to 60~kpc. This enormous increase in volume
-will greatly refine data on existing debris systems.
+The combination of Spitzer and Gaia data will 
+extend the ``horizon'' of where precise, six-dimensional phase-space 
+maps of the Galaxy are possible from $<$10~kpc to 60~kpc. This enormous 
+increase in volume will greatly refine data on debris systems in the halo.
 
 \subsection{The Sagittarius debris system}
 \label{sec:sgr}
@@ -204,8 +196,8 @@ observed debris enables a detailed reconstruction of Sgr's history:
 its mass and stellar populations, orbit, rate of destruction, and even
 original distribution in populations. 
 Moreover, this comparison enabled the first 
-assessment of the 3-dimensional mass distribution of a dark matter
-halo through the constraints on the potential parameters $v_{\rm halo}$,$q_1$, $q_z$ and $\phi$.
+assessment of the three-dimensional mass distribution of a dark matter
+halo through the constraints on the potential parameters $v_{\rm halo}$, $q_1$, $q_z$, and $\phi$.
 
 Combined Spitzer and Gaia measurements of distances and proper motions
 of RR Lyraes in the Sgr debris will open up new avenues of
@@ -220,20 +212,17 @@ outlines a new method to take advantage of this information.
 
 \section{Description and test of our algorithm}
 \label{sec:method}
-With access to full phase-space information for stars in a tidal
+With access to 6D information for stars in a tidal
 stream, it is possible to use the individual stars as potential
 measures by exploiting the fact that the stars must have come from the
-same progenitor: if the orbits of the stars and the
-orbit of the progenitor are integrated \emph{backwards} in a a potential that accurately models the Milky Way
+same progenitor: if the orbits of the stars and progenitor are integrated 
+\emph{backwards} in a a potential that accurately models the Milky Way
 (imagine watching satellite destruction in ``rewind"), the stars
 should recombine with the progenitor. If the potential is incorrect,
 the orbits of the stars will diverge from that of the progenitor and
-thus will not be recaptured by the satellite system.
+thus will not be recaptured by the satellite system (Figure~\ref{fig:ps_distance}).
 
-%(Figure~\ref{fig:ps_distance}).
-
-This approach was originally proposed by \citet{johnston99a} and was
-designed and tested for the proposed characteristics of the Space
+This approach was originally proposed by \citet{johnston99a} and was tested on the proposed characteristics of the Space
 Interferometry Mission \citep{unwin08}. Below we present an updated version of the algorithm:
 the promise of 2\% distances to RR Lyrae stars (see Section
 \ref{sec:spitzer}) enables a direct measurement (rather than
@@ -317,12 +306,12 @@ extracting both particle data and the satellite orbital parameters
 from the present-day snapshot of the simulation
 data.\footnote{\url{www.astro.virginia.edu/~srm4n/Sgr/data.html}} We
 then ``observe'' a sample of 100 stars from the first leading and
-trailing wraps of the stream; the radial velocity and distance errors are drawn 
+trailing wraps of the stream. The radial velocity and distance errors are drawn 
 from Gaussians ($\varepsilon_{\rm RV} \sim \mathcal{N}(\mu=0,\sigma=10~{\rm
   km/s})$ and $\varepsilon_{\rm D} \sim \mathcal{N}(0,0.02\times
 D)$) and the proper motion errors are computed from the expected Gaia error curve. 
 
-The variance of the six-dimensional minimum phase-space distance distribution increases in the wrong potential. Hence, the generalized variance defines a convex hypersurface over
+The generalized variance defines a convex hypersurface over
 which we optimize four of the six logarithmic potential parameters:
 $v_{circ}$, $\phi$, $q_1$, and $q_z$. We fix $q_2$ and $R_c$, which
 are degenerate with combinations of the other
@@ -344,18 +333,18 @@ likelihood function, we use a parallelized Markov Chain Monte Carlo
 objective function.\footnote{Though MCMC is typically not an efficient
   optimization tool, in this case objective function is both noisy and
   expensive to compute. The stochasticity and easy parallelization of
-  the algorithm mean it outperforms other optimizers on this problem.}
-We use the median value of the (burnt-in) sample distribution as a
+  the algorithm outperforms other optimizers on this problem.}
+We use the median value of the converged sample distribution as a
 point estimate for the potential parameters. To assess the uncertainty
 in the derived halo parameters, we sample 100 stars
 100 times and estimate the potential parameters with each
 resampling. Figure~\ref{fig:bootstrap} shows the recovered parameters
-for each sample and demonstrates the power of the
-combined Spitzer and Gaia data: a moderately sized sample of RR Lyrae
-alone places quite strong constraints on the shape and mass of the
+for each sample and demonstrates the power of this method:
+a moderately sized sample of RR Lyrae
+alone places strong constraints on the shape and mass of the
 Galaxy's dark matter halo. From the covariance matrix derived from the 
 distribution of points in Figure~\ref{fig:bootstrap}, we find the mean 
-recovered parameters and one-sigma deviation to be 
+recovered parameters and one-sigma deviations to be 
 $q_1 = 1.36 \pm 0.02$, $q_z = 1.35 \pm 0.03$, $\phi = 96.6 \pm 0.6$ degrees,
 and $v_{\rm halo} = 123.0 \pm 1.5$ km/s.
 
@@ -377,10 +366,9 @@ and $v_{\rm halo} = 123.0 \pm 1.5$ km/s.
 The strengths of this method stem from its simplicity: it requires
 only a rough estimate of the satellite mass $m_{\rm sat}$ combined
 with backwards integration of orbits. 
-The \emph{Rewinder} is free of the assumption that stars in streams follow
+\emph{Rewinder} does not assume that stream stars follow
 a single orbit and instead \emph{relies}
-on the fact that each star is on a different orbit, and is thus an
-independent potentiometer. There are also no assumptions made
+on the fact that each star is on a different orbit. There are also no assumptions made
 about of the internal distribution of satellite
 stars. Thus, \emph{Rewinder} is applicable to any debris that is
 known to come from a single object and not restricted to the coldest
@@ -399,11 +387,11 @@ method. Firstly, the measurement errors for RR Lyraes associated with
 the very coldest streams \citep[e.g., the globular clusters Pal5 and
   GD1;][]{odenkirchen02,koposov10} will likely be too large to resolve
 the minute differences in orbital properties between the debris and
-satellite to be detected. Second, the current version of the algorithm
+satellite. Second, the current version of the algorithm
 relies on accurate knowledge of the current position and velocity of
-the parent satellite, which may not be available in some cases
+the parent satellite, which may not be available 
 \citep[for example, the Orphan Stream;][]{belokurov07}. Lastly, the
-present prescription neglects second-order effects in orbit evolution (e.g.,
+present prescription neglects orbital evolution (e.g.,
 dynamical friction) and N-body interactions which may lead to biases in
 the estimated potential parameters.
 
@@ -416,14 +404,14 @@ missions which promise precise, full phase-space measurements of RR
 Lyrae stars in the halo of our Galaxy. When applied to a sample of 100
 stars (with realistic observational errors) drawn from the
 \cite{law10} N-body simulation of the destruction of the Sgr dwarf
-satellite, \emph{Rewinder} recovers the depth, shape and orientation of the dark
+satellite, \emph{Rewinder} recovers the depth, shape, and orientation of the dark
 matter potential to within a few percent.
 
 While the tests presented in this paper are very simple, the accuracy of potential recovery promised by such a small sample of stars 
 provides strong motivation for further theoretical work to: 1) develop a robust generative model (and therefore likelihood) that utilizes the concepts demonstrated by \emph{Rewinder}; 2) investigate the power of using multiple debris structures; and 3) examine how \emph{Rewinder} might work with less accurate measurements or missing dimensions. 
 
 Our results also motivate an observational campaign with \emph{Spitzer} to survey RR Lyrae stars in debris structures around the Milky Way to get precise distances to combine with near-future Gaia velocity data. 
-If just 100 stars in a single stellar stream allow us to measure the depth, shape, and orientation of the Milky Way potential, larger samples in multiple structures offer the prospect of assessing these quantities as a function of Galactocentric radius. Tracing the mass in a dark matter halo with this level of detail is impossible for any other galaxy in the Universe.
+If just 100 stars in a single stellar stream allow us to measure the depth, shape, and orientation of the Milky Way potential, larger samples in multiple structures (e.g., the Orphan Stream, already mapped in RR Lyrae by \citet{sesar13}) offer the prospect of assessing these quantities as a function of Galactocentric radius. Tracing the mass in a dark matter halo with this level of detail is impossible for any other galaxy in the Universe.
 
 \acknowledgments
 We thank Barry Madore for providing the inspiration for this work. Thanks to 
@@ -438,18 +426,13 @@ hospitality of the Aspen Center for Physics.
 %\bibliography{refs}
 \bibliographystyle{apj}
 
-\begin{thebibliography}{47}
+\begin{thebibliography}{42}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 
 \bibitem[{{Bailin} {et~al.}(2005){Bailin}, {Kawata}, {Gibson}, {Steinmetz},
   {Navarro}, {Brook}, {Gill}, {Ibata}, {Knebe}, {Lewis}, \&
   {Okamoto}}]{bailin05}
 {Bailin}, J., {Kawata}, D., {Gibson}, B.~K., {et~al.} 2005, \apjl, 627, L17
-
-\bibitem[{{Bellazzini} {et~al.}(2006){Bellazzini}, {Newberg}, {Correnti},
-  {Ferraro}, \& {Monaco}}]{bellazzini06}
-{Bellazzini}, M., {Newberg}, H.~J., {Correnti}, M., {Ferraro}, F.~R., \&
-  {Monaco}, L. 2006, \aap, 457, L21
 
 \bibitem[{{Belokurov} {et~al.}(2006){Belokurov}, {Zucker}, {Evans}, {Gilmore},
   {Vidrih}, {Bramich}, {Newberg}, {Wyse}, {Irwin}, {Fellhauer}, {Hewett},
@@ -464,12 +447,6 @@ hospitality of the Aspen Center for Physics.
   {Bell}, {Barentine}, {Brinkmann}, {Cole}, {Pan}, \& {York}}]{belokurov07}
 {Belokurov}, V., {Evans}, N.~W., {Irwin}, M.~J., {et~al.} 2007, \apj, 658, 337
 
-\bibitem[{{Belokurov} {et~al.}(2013){Belokurov}, {Koposov}, {Evans},
-  {Pe{\~n}arrubia}, {Irwin}, {Smith}, {Lewis}, {Gieles}, {Wilkinson},
-  {Gilmore}, {Olszewski}, \& {Niederste-Ostholt}}]{belokurov13}
-{Belokurov}, V., {Koposov}, S.~E., {Evans}, N.~W., {et~al.} 2013, ArXiv
-  e-prints
-
 \bibitem[{{Benedict} {et~al.}(2011){Benedict}, {McArthur}, {Feast}, {Barnes},
   {Harrison}, {Bean}, {Menzies}, {Chaboyer}, {Fossati}, {Nesvacil}, {Smith},
   {Kolenberg}, {Laney}, {Kochukhov}, {Nelan}, {Shulyak}, {Taylor}, \&
@@ -479,10 +456,6 @@ hospitality of the Aspen Center for Physics.
 
 \bibitem[{{Binney}(2008)}]{binney08}
 {Binney}, J. 2008, \mnras, 386, L47
-
-\bibitem[{{Chou} {et~al.}(2010){Chou}, {Cunha}, {Majewski}, {Smith},
-  {Patterson}, {Mart{\'{\i}}nez-Delgado}, \& {Geisler}}]{chou10}
-{Chou}, M.-Y., {Cunha}, K., {Majewski}, S.~R., {et~al.} 2010, \apj, 708, 1290
 
 \bibitem[{{Clementini} {et~al.}(2003){Clementini}, {Gratton}, {Bragaglia},
   {Carretta}, {Di Fabrizio}, \& {Maio}}]{clementini03}
@@ -557,9 +530,6 @@ hospitality of the Aspen Center for Physics.
 {Kafle}, P.~R., {Sharma}, S., {Lewis}, G.~F., \& {Bland-Hawthorn}, J. 2012,
   \apj, 761, 98
 
-\bibitem[{{Keller} {et~al.}(2010){Keller}, {Yong}, \& {Da Costa}}]{keller10}
-{Keller}, S.~C., {Yong}, D., \& {Da Costa}, G.~S. 2010, \apj, 720, 940
-
 \bibitem[{{Koposov} {et~al.}(2010){Koposov}, {Rix}, \& {Hogg}}]{koposov10}
 {Koposov}, S.~E., {Rix}, H.-W., \& {Hogg}, D.~W. 2010, \apj, 712, 260
 
@@ -582,11 +552,6 @@ hospitality of the Aspen Center for Physics.
   {Polak}, {Rocha-Pinto}, {Crane}, {Frinchaboy}, {Hummels}, {Johnston}, {Rhee},
   {Skrutskie}, \& {Weinberg}}]{majewski04}
 {Majewski}, S.~R., {Kunkel}, W.~E., {Law}, D.~R., {et~al.} 2004, \aj, 128, 245
-
-\bibitem[{{Mart{\'{\i}}nez-Delgado} {et~al.}(2004){Mart{\'{\i}}nez-Delgado},
-  {G{\'o}mez-Flechoso}, {Aparicio}, \& {Carrera}}]{martinezdelgado04}
-{Mart{\'{\i}}nez-Delgado}, D., {G{\'o}mez-Flechoso}, M.~{\'A}., {Aparicio}, A.,
-  \& {Carrera}, R. 2004, \apj, 601, 242
 
 \bibitem[{{Navarro} {et~al.}(1996){Navarro}, {Frenk}, \& {White}}]{navarro96}
 {Navarro}, J.~F., {Frenk}, C.~S., \& {White}, S.~D.~M. 1996, \apj, 462, 563
@@ -634,6 +599,11 @@ hospitality of the Aspen Center for Physics.
 {Sesar}, B., {Ivezi{\'c}}, {\v Z}., {Grammer}, S.~H., {et~al.} 2010, \apj, 708,
   717
 
+\bibitem[{{Sesar} {et~al.}(2013){Sesar}, {Grillmair}, {Cohen}, {Bellm},
+  {Bhalerao}, {Levitan}, {Laher}, {Ofek}, {Surace}, {Tang}, {Waszczak},
+  {Kulkarni}, \& {Prince}}]{sesar13}
+{Sesar}, B., {Grillmair}, C.~J., {Cohen}, J.~G., {et~al.} 2013, ArXiv e-prints
+
 \bibitem[{{Shapley}(1918)}]{shapley18}
 {Shapley}, H. 1918, \apj, 48, 154
 
@@ -651,9 +621,6 @@ hospitality of the Aspen Center for Physics.
 \bibitem[{{Varghese} {et~al.}(2011){Varghese}, {Ibata}, \&
   {Lewis}}]{varghese11}
 {Varghese}, A., {Ibata}, R., \& {Lewis}, G.~F. 2011, \mnras, 417, 198
-
-\bibitem[{{Vivas} {et~al.}(2005){Vivas}, {Zinn}, \& {Gallart}}]{vivas05}
-{Vivas}, A.~K., {Zinn}, R., \& {Gallart}, C. 2005, \aj, 129, 189
 
 \end{thebibliography}
 
