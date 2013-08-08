@@ -74,7 +74,7 @@ def proper_motion_error(V, V_minus_I):
     dp = parallax_error(V, V_minus_I)
     
     # assume 5 year baseline, µas/year
-    dmu = dp/(5.*u.year)
+    dmu = dp/u.year
     
     # too optimistic: following suggests factor 2 more realistic
     #http://www.astro.utu.fi/~cflynn/galdyn/lecture10.html 
