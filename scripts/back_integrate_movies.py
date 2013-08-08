@@ -16,13 +16,11 @@ from matplotlib import cm
 from matplotlib.patches import Circle
 import numpy as np
 
-from streams.data import read_lm10
+from streams.io.lm10 import particles_today, satellite_today, time
 from streams.potential.lm10 import LawMajewski2010, true_params
-from streams.integrate import leapfrog
+from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.dynamics import OrbitCollection
-from streams.inference.backintegrate import relative_normalized_coordinates, \
-                                            tidal_radius, \
-                                            escape_velocity
+from streams.inference import relative_normalized_coordinates
 
 ffmpeg_cmd = "ffmpeg -i {0} -r 12 -b 5000 -vcodec libx264 -vpre medium -b 3000k {1}"
 plot_path = "plots/movies/back_integrate"
@@ -30,25 +28,8 @@ if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
 def back_integrate(potential):
-    xx,r,v = leapfrog(potential._acceleration_at, 
-                      satellite._r, satellite._v,
-                      t=t.value)
-    satellite_orbit = OrbitCollection(t=t, 
-                                      r=r*satellite.r.unit,
-                                      v=v*satellite.v.unit,
-                                      m=[2.5E8]*u.M_sun,
-                                      units=[u.kpc, u.Myr, u.M_sun])
-    
-    xx,r,v = leapfrog(potential._acceleration_at, 
-                      particles._r, particles._v,
-                      t=t.value)
-    particle_orbits = OrbitCollection(t=t, 
-                                      r=r*particles.r.unit, 
-                                      v=v*particles.v.unit, 
-                                      m=np.ones(len(r))*u.M_sun,
-                                      units=[u.kpc, u.Myr, u.M_sun])
-    
-    return satellite_orbit, particle_orbits
+    integrator = SatelliteParticleIntegrator(potential, satellite, particles)
+    return integrator.run(t1=t1, t2=t2, dt=-1.)
 
 def plot_3d_orbits(potential, s, p):
     grid = np.linspace(np.min(p._r)-2., np.max(p._r)+2., 200)*u.kpc
@@ -91,7 +72,7 @@ def plot_3d_animation(potential, s, p, filename=""):
     idx = np.ones(p._r.shape[1]).astype(bool)
     R,V = relative_normalized_coordinates(potential, p, s)
     all_D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
-    r_tide = tidal_radius(potential, s)[:,:,np.newaxis]
+    r_tide = potential.tidal_radius(satellite.m, s.r)[:,:,np.newaxis]
     
     fig,axes = potential.plot(ndim=3, grid=grid)
     jj = 0
@@ -168,7 +149,7 @@ def plot_xz_animation(potential, s, p, filename=""):
     idx = np.ones(p._r.shape[1]).astype(bool)
     R,V = relative_normalized_coordinates(potential, p, s)
     all_D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
-    r_tide = tidal_radius(potential, s)[:,:,np.newaxis]
+    r_tide = potential.tidal_radius(satellite.m, s.r)[:,:,np.newaxis]
     
     fig,ax = xz_potential_contours(potential, grid)
     ax.set_frame_on(False)
@@ -188,12 +169,12 @@ def plot_xz_animation(potential, s, p, filename=""):
         try:
             scatter_map[(1,0)].set_offsets(np.vstack((offsets[:,0],offsets[:,2])).T)
             scatter_map_sat[(1,0)].center = (sat_r[0], sat_r[2])
-            scatter_map_sat[(1,0)].set_radius(r_tide[ii])
+            scatter_map_sat[(1,0)].set_radius(r_tide[ii,0,0].value)
         except NameError:
             scatter_map = dict()
             scatter_map_sat = dict()
             
-            c = Circle((sat_r[0], sat_r[2]), radius=r_tide[ii], 
+            c = Circle((sat_r[0], sat_r[2]), radius=r_tide[ii,0,0].value, 
                        facecolor='#CA0020', alpha=0.3, edgecolor='none')
             ax.add_patch(c)
             scatter_map_sat[(1,0)] = c
@@ -214,14 +195,13 @@ def plot_xz_animation(potential, s, p, filename=""):
 
 if __name__ == "__main__":
     
-    N = 10000
-    dt = 1.*u.Myr
+    N = 1000
     
-    # Read in particles from Law & Majewski 2010 simulation of Sgr
-    #expr="(Pcol>0) & (abs(Lmflag)==1)"
-    t,satellite, particles = read_lm10(N=N, 
-                                      expr="(Pcol > -1) & (Pcol < 6) & (abs(Lmflag) == 1)",
-                                      dt=dt)
+    # read in lm10 stuffs
+    t1,t2 = time()
+    satellite = satellite_today()
+    particles = particles_today(N=N, 
+                                expr="(Pcol > -1) & (Pcol < 7) & (abs(Lmflag) == 1)")
     
     # Define correct potential, and 10% wrong potential
     correct = LawMajewski2010()
@@ -232,7 +212,8 @@ if __name__ == "__main__":
     
     c_s_orbit, c_p_orbit = back_integrate(correct) # correct
     w_s_orbit, w_p_orbit = back_integrate(wrong) # wrong
-        
+    t = c_s_orbit.t
+    
     fig,axes = plot_3d_orbits(correct, c_s_orbit, c_p_orbit)
     fig.savefig(os.path.join(plot_path,"correct_orbits.png"))
     #plot_3d_animation(correct, c_s_orbit, c_p_orbit, filename="correct_")
