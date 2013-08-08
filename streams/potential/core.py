@@ -126,8 +126,8 @@ class CartesianPotential(Potential):
             r : astropy.units.Quantity
                 Position to compute the value at.
         """
-        _r = r.decompose(bases=self.unit_system.bases).value
-        c = (u.J/u.kg).decompose(bases=self.unit_system.bases)
+        _r = r.decompose(bases=self.unit_system).value
+        c = (u.J/u.kg).decompose(bases=self.unit_system)
         return self._value_at(_r) * u.CompositeUnit(1., c.bases, c.powers)
     
     def _acceleration_at(self, r):
@@ -152,8 +152,8 @@ class CartesianPotential(Potential):
                 Position to compute the acceleration at.
         """
         
-        _r = r.decompose(bases=self.unit_system.bases).value
-        c = (u.m/u.s**2).decompose(bases=self.unit_system.bases)
+        _r = r.decompose(bases=self.unit_system).value
+        c = (u.m/u.s**2).decompose(bases=self.unit_system)
         return self._acceleration_at(_r) * u.CompositeUnit(1., c.bases, 
                                                            c.powers)
     
@@ -219,19 +219,18 @@ class CartesianPotential(Potential):
                     r = np.array([np.zeros_like(X1.ravel()) for xx in range(ndim)])
                     r[jj] = X1.ravel()
                     r[i] = X2.ravel()
-                    r = r.T*grid.unit
+                    r = r.T
                     
-                    cs = axes[ii,jj].contourf(X1, X2, 
-                                              self.value_at(r).value.reshape(X1.shape), 
-                                              cmap=cm.bone_r, **kwargs)
+                    Z = self._value_at(r).reshape(X1.shape)
+                    cs = axes[ii,jj].contourf(X1, X2, Z, cmap=cm.bone_r, **kwargs)
 
             cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
             fig.colorbar(cs, cax=cax)
 
             # Label the axes
             for jj in range(ndim-1):
-                axes[-1,jj].set_xlabel("[{0}]".format(r.unit))
-                axes[jj,0].set_ylabel("[{0}]".format(r.unit))
+                axes[-1,jj].set_xlabel("[{0}]".format(grid.unit))
+                axes[jj,0].set_ylabel("[{0}]".format(grid.unit))
 
         fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
         #fig.suptitle(self._repr_latex_(), fontsize=24)
@@ -294,9 +293,9 @@ class CartesianPotential(Potential):
                     r = np.array([np.zeros_like(X1.ravel()) for xx in range(ndim)])
                     r[jj] = X1.ravel()
                     r[i] = X2.ravel()
-                    r = r.T*grid.unit
+                    r = r.T
                     
-                    acc = self.acceleration_at(r).value
+                    acc = self._acceleration_at(r)
                     cs = axes[ii,jj].contourf(X1, X2, 
                                               np.log(np.sum(acc**2,axis=1)).reshape(X1.shape), 
                                               cmap=cm.bone_r, **kwargs)
@@ -306,8 +305,8 @@ class CartesianPotential(Potential):
 
             # Label the axes
             for jj in range(ndim-1):
-                axes[-1,jj].set_xlabel("[{0}]".format(r.unit))
-                axes[jj,0].set_ylabel("[{0}]".format(r.unit))
+                axes[-1,jj].set_xlabel("[{0}]".format(grid.unit))
+                axes[jj,0].set_ylabel("[{0}]".format(grid.unit))
 
         fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.08, bottom=0.08, top=0.9, right=0.9 )
         fig.suptitle(self._repr_latex_(), fontsize=24)
