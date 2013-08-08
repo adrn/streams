@@ -195,7 +195,6 @@ def plot_xz_animation(potential, s, p, filename=""):
     print("{0} unbound at end of run.".format(sum(idx)))
 
 if __name__ == "__main__":
-    
     N = 10000
     
     # read in lm10 stuffs
@@ -223,8 +222,10 @@ if __name__ == "__main__":
     #plot_3d_animation(wrong, w_s_orbit, w_p_orbit, filename="wrong_")
     plot_xz_animation(wrong, w_s_orbit, w_p_orbit, filename="wrong_")
     
+    '''
     os.system(ffmpeg_cmd.format(os.path.join(plot_path, "correct_%4d.png"), 
                                 os.path.join(plot_path, "correct.mp4")))
     
     os.system(ffmpeg_cmd.format(os.path.join(plot_path, "wrong_%4d.png"), 
                                 os.path.join(plot_path, "wrong.mp4")))
+    '''
