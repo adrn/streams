@@ -92,8 +92,8 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         
         usys = UnitSystem(u.kpc, u.Myr, u.M_sun)
         
-        sat_r = r[:,0][:,np.newaxis,:]
-        sat_v = v[:,0][:,np.newaxis,:]
+        sat_r = np.array(r[:,0][:,np.newaxis,:])
+        sat_v = np.array(v[:,0][:,np.newaxis,:])
         satellite_orbit = OrbitCollection(t=t*u.Myr, 
                                           r=sat_r*u.kpc,
                                           v=sat_v*u.kpc/u.Myr,
