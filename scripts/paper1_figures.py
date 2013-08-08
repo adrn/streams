@@ -536,14 +536,31 @@ def bootstrapped_parameters_transpose():
 
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
-
+    
+    data['phi'] = (data['phi']*u.radian).to(u.degree).value
+    _true_params['phi'] = (_true_params['phi']*u.radian).to(u.degree).value
+    data['v_halo'] = (data['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
+    _true_params['v_halo'] = (_true_params['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
+    
+    style = dict()
+    style['q1'] = dict(ticks=[1.3, 1.38, 1.46],
+                       lims=(1.27, 1.49))
+    style['qz'] = dict(ticks=[1.28, 1.36, 1.44],
+                       lims=(1.25, 1.47))
+    style['phi'] = dict(ticks=[92, 97, 102],
+                        lims=(90, 104))
+    style['v_halo'] = dict(ticks=[115, 122, 129],
+                           lims=(110, 134))
+    
     for ii,x_param in enumerate(x_params):
         
-        xdata = (np.array(data[x_param])-_true_params[x_param]) / _true_params[x_param]
-        ydata = (np.array(data[y_param])-_true_params[y_param]) / _true_params[y_param]
+        true_x = _true_params[x_param]
+        true_y = _true_params[y_param]
+        xdata = np.array(data[x_param])
+        ydata = np.array(data[y_param])
         
-        axes[ii].axhline(0., linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
-        axes[ii].axvline(0., linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
+        axes[ii].axhline(true_y, linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
+        axes[ii].axvline(true_x, linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
         
         points = np.vstack([xdata, ydata]).T
         plot_point_cov(points, nstd=2, ax=axes[ii], alpha=0.25, color='#777777')
@@ -553,23 +570,26 @@ def bootstrapped_parameters_transpose():
         
         axes[ii].plot(xdata, ydata, marker='.', markersize=7, alpha=0.75, 
                       color='#2B83BA', linestyle='none')
-        axes[ii].set_xlim((-0.12, 0.12))
-        axes[ii].set_ylim((-0.12, 0.12))
+        axes[ii].set_xlim(style[x_param]['lims'])
+        axes[ii].set_ylim(style[y_param]['lims'])
         
         axes[ii].yaxis.tick_left()        
-        axes[ii].set_yticks([-0.1, -0.05, 0., 0.05, 0.1])
+        axes[ii].set_xticks(style[x_param]['ticks'])
         axes[ii].xaxis.tick_bottom()
     
-    axes[0].set_ylabel(r"$\delta v_{\rm halo}$", 
+    axes[0].set_ylabel(r"$v_{\rm halo}$", 
                        fontsize=26, rotation='horizontal')
     
-    axes[0].set_yticks([-0.1, -0.05, 0., 0.05, 0.1])
+    axes[0].set_yticks(style[y_param]['ticks'])
     axes[1].set_yticklabels([])
     axes[2].set_yticklabels([])
     
-    axes[0].set_xlabel(r"$\delta q_1$", fontsize=26, rotation='horizontal')
-    axes[1].set_xlabel(r"$\delta q_z$", fontsize=26, rotation='horizontal')
-    axes[2].set_xlabel(r"$\delta \phi$", fontsize=26, rotation='horizontal')
+    axes[0].set_xlabel(r"$q_1$", fontsize=26, rotation='horizontal')
+    axes[1].set_xlabel(r"$q_z$", fontsize=26, rotation='horizontal')
+    axes[2].set_xlabel(r"$\phi$", fontsize=26, rotation='horizontal')
+    
+    fig.text(0.855, 0.07, "[deg]", fontsize=16)
+    fig.text(0.025, 0.49, "[km/s]", fontsize=16)
     
     plt.tight_layout()
     fig.subplots_adjust(hspace=0., wspace=0.)
@@ -594,11 +614,11 @@ def parameter_errors():
         print("{0} = {1:.2f} + {2:.2f}".format(p, np.mean(d[ii]), errors[ii]))
 
 if __name__ == '__main__':
-    gaia_spitzer_errors()
+    #gaia_spitzer_errors()
     #sgr()
     #phase_space_d_vs_time()
     #normed_objective_plot()
     #variance_projections()
     #bootstrapped_parameters()
-    #bootstrapped_parameters_transpose()
+    bootstrapped_parameters_transpose()
     #parameter_errors()
