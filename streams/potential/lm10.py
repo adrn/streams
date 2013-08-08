@@ -91,8 +91,9 @@ class LawMajewski2010(CompositePotential):
                                               disk=disk,
                                               halo=halo)
         
-        _params = halo._parameters
+        _params = halo._parameters.copy()
         _params.pop('r_0')
+        
         self._acceleration_at = lambda r, n_particles, acc: lm10_acceleration(r, n_particles, acc, **_params)
         self._G = G.decompose(bases=unit_system).value
         
