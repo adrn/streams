@@ -71,14 +71,15 @@ def plot_3d_animation(potential, s, p, filename=""):
     
     idx = np.ones(p._r.shape[1]).astype(bool)
     R,V = relative_normalized_coordinates(potential, p, s)
+    R = R/3.5
     all_D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
-    r_tide = potential.tidal_radius(satellite.m, s.r)[:,:,np.newaxis]
+    r_tide = potential.tidal_radius(satellite.m, s.r)[:,:,np.newaxis]*2.5
     
     fig,axes = potential.plot(ndim=3, grid=grid)
     jj = 0
     for ii in range(0,len(t),10):
         D_ps = all_D_ps[ii]
-        idx = idx & (D_ps > 2.8)
+        idx = idx & (D_ps > 1.4)
         
         offsets = p._r[ii]
         offsets[np.logical_not(idx)] = np.ones_like(offsets[np.logical_not(idx)])*10000.
@@ -134,11 +135,11 @@ def xz_potential_contours(potential, grid):
     r = np.array([np.zeros_like(X1.ravel()) for xx in range(3)])
     r[0] = X1.ravel()
     r[2] = X2.ravel()
-    r = r.T*grid.unit
+    r = r.T
     
     fig,ax = plt.subplots(1,1,figsize=(12,12))
     cs = ax.contourf(X1, X2, 
-                     potential.value_at(r).value.reshape(X1.shape), 
+                     potential._value_at(r).reshape(X1.shape), 
                      cmap=cm.Greys)
     
     return fig, ax
@@ -195,7 +196,7 @@ def plot_xz_animation(potential, s, p, filename=""):
 
 if __name__ == "__main__":
     
-    N = 1000
+    N = 10000
     
     # read in lm10 stuffs
     t1,t2 = time()
@@ -205,10 +206,8 @@ if __name__ == "__main__":
     
     # Define correct potential, and 10% wrong potential
     correct = LawMajewski2010()
-    wrong = LawMajewski2010(q1=true_params["q1"]*1.05,
-                            qz=true_params["qz"]*1.05,
-                            phi=true_params["phi"]*1.05,
-                            v_halo=true_params["v_halo"]*1.05)
+    wrong = LawMajewski2010(qz=true_params["qz"]*1.2,
+                            v_halo=true_params["v_halo"]*1.1)
     
     c_s_orbit, c_p_orbit = back_integrate(correct) # correct
     w_s_orbit, w_p_orbit = back_integrate(wrong) # wrong
