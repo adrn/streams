@@ -109,12 +109,12 @@ def main(config_file, job_name=None):
     if config["observational_errors"]:
         rv_error = config.get("radial_velocity_error", None)
         d_error = config.get("distance_error_percent", None)
-        vtan_error = config.get("tangential_velocity_error", None)
+        mu_error = config.get("proper_motion_error", None)
         pre_error_particles = copy.copy(particles)
         particles = add_uncertainties_to_particles(particles, 
                                                 radial_velocity_error=rv_error,
                                                 distance_error_percent=d_error,
-                                                tangential_velocity_error=vtan_error)
+                                                proper_motion_error=mu_error)
     
     # Create initial position array for walkers
     for p_name in config["model_parameters"]:
