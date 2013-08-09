@@ -18,15 +18,16 @@
 
 \title{Spitzer, Gaia, and the Potential of the Milky Way}
 
-\author{Adrian~M.~Price-Whelan\altaffilmark{1} Kathryn V. Johnston\altaffilmark{1}}
+\author{Adrian~M.~Price-Whelan\altaffilmark{1,2} Kathryn V. Johnston\altaffilmark{1}}
 
 % affiliations
 \altaffiltext{1}{Department of Astronomy, Columbia University, 550 W 120th St., New York, NY 027, USA}
 %\altaffiltext{2}{NSF Graduate Fellow}
+\altaffiltext{2}{\email{adrn@astro.columia.edu}}
 
 \begin{abstract}
 
-Near-future data from ESA's Gaia mission will provide precise, full phase-space information for hundreds of millions of stars out to heliocentric distances of $\sim$10 kpc. This ``horizon'' for full phase-space measurements is imposed by the Gaia parallax errors degrading to worse than 10\%, and could be significantly extended by an accurate distance indicator. Recent work has demonstrated how Spitzer observations of RR Lyrae stars can be used to make distance estimates accurate to 2\%, effectively extending the Gaia, precise-data horizon by a factor of ten in distance and a factor of 1000 in volume. This \emph{Letter} presents one approach to exploit data of such accuracy to measure the Galactic potential using small samples of stars associated with debris from satellite destruction. The method is tested with synthetic observations of 100 stars from the end point of a simulation of satellite destruction: the shape, orientation, and depth of the potential used in the simulation are recovered to within a few percent. The success of this simple test with such a small sample in a single debris stream suggests that constraints from multiple streams could be combined to examine the Galaxy's  dark matter halo in even more  detail --- a truly unique opportunity that is enabled by the combination of Spitzer and Gaia with our intimate perspective on our own Galaxy.
+Near-future data from ESA's {\it Gaia} mission will provide precise, full phase-space information for hundreds of millions of stars out to heliocentric distances of $\sim$10 kpc. This ``horizon'' for full phase-space measurements is imposed by the {\it Gaia} parallax errors degrading to worse than 10\%, and could be significantly extended by an accurate distance indicator. Recent work has demonstrated how {\it Spitzer} observations of RR Lyrae stars can be used to make distance estimates accurate to 2\%, effectively extending the {\it Gaia}, precise-data horizon by a factor of ten in distance and a factor of 1000 in volume. This \emph{Letter} presents one approach to exploit data of such accuracy to measure the Galactic potential using small samples of stars associated with debris from satellite destruction. The method is tested with synthetic observations of 100 stars from the end point of a simulation of satellite destruction: the shape, orientation, and depth of the potential used in the simulation are recovered to within a few percent. The success of this simple test with such a small sample in a single debris stream suggests that constraints from multiple streams could be combined to examine the Galaxy's  dark matter halo in even more  detail --- a truly unique opportunity that is enabled by the combination of {\it Spitzer} and {\it Gaia} with our intimate perspective on our own Galaxy.
 
 \end{abstract}
 
@@ -51,8 +52,8 @@ A complimentary approach to measuring the mass distribution is to instead take a
 Such approaches can require orders of magnitude fewer tracers than a randomly sampled population to achieve comparable accuracy.
 One method is to simply fit orbits to observations of streams 
 \citep[e.g.,][]{koposov10}.
-However, the assumption that debris traces a single orbit is actually incorrect \citep[see][]{johnston98,helmi99}.
-Changes in orbital properties along debris streams that can lead to systematic biases in measurements of the Galactic potential \citep{eyre09a,varghese11}.
+However, the assumption that debris traces a single orbit is actually incorrect \citep[see][]{johnston98,helmi99} and
+changes in orbital properties along debris streams can lead to systematic biases in measurements of the Galactic potential \citep{eyre09a,varghese11}.
 In particular, \citet{sanders13a} recently demonstrated that this bias is equally problematic for the very thinnest, coldest streams, whose observed properties may be indistinguishable from those of the parent orbit \citep[e.g. such as the globular cluster, GD1 --- see][]{koposov10}, as for the much more extended and hotter streams \citep[e.g. such as debris from the Sagittarius dwarf galaxy --- see][]{majewski03} where offsets from a single orbit are clearly apparent.
 
 One way to address these biases is to run self-consistent N-body simulations of satellite destruction in a variety of potentials with the aim of simultaneously constraining both the properties of the satellite and the Milky Way.
@@ -113,38 +114,37 @@ achieve $\sim$10-15\% uncertainties  \citep[if appropriate color measurements ar
 \begin{center}
 \includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/gaia.pdf}
 
-\caption{Expected \emph{Gaia} distance and tangential velocity errors as a function of heliocentric distance for RR Lyrae stars. Errors are a function of color and magnitude of the source, and hence the metallicity: each line is computed
+\caption{Expected {\it Gaia} distance and tangential velocity errors as a function of heliocentric distance for RR Lyrae stars. Errors are a function of color and magnitude of the source, and hence the metallicity: each line is computed
 by Monte Carlo sampling from the empirical metallicity distribution of
-the Galactic halo from \cite{ivezic08}. Parallax distance errors from \emph{Gaia} are larger than the line-of-sight size of both Sgr and Orphan (Orp), but photometric distance errors are comparable to the the Sgr scale (assuming 10\% errors, dotted line). Bottom panel shows that the \emph{Gaia} tangential velocity errors are smaller than the internal velocity dispersion of both Sgr and Orp.\footnote{\url{http://www.rssd.esa.int/index.php?page=Science_Performance&project=GAIA}} }\label{fig:gaia_errors}
+the Galactic halo from \cite{ivezic08}. Parallax distance errors from {\it Gaia} are larger than the line-of-sight size of both Sgr and Orphan (Orp), but photometric distance errors are comparable to the the Sgr scale (assuming 10\% errors, dotted line). Bottom panel shows that the {\it Gaia} tangential velocity errors are smaller than the internal velocity dispersion of nearer regions of both Sgr and Orp.\footnote{\url{http://www.rssd.esa.int/index.php?page=Science_Performance&project=GAIA}} }\label{fig:gaia_errors}
 \end{center}
 \end{figure}
 
 \subsection{Gaia and the age of astrometry}
 \label{sec:gaia}
-The Gaia satellite \citep{gaia01} is
+The {\it Gaia} satellite \citep{gaia01} is
 an astrometric mission which aims to measure the positions of billions
 of stars with 10-100~$\mu$as accuracies. Combined with expected 
 proper motion accuracies, this will enable full six-dimensional phase-space 
 maps of the Galaxy with $<$10\% distance errors for heliocentric distances of
 up to $\sim$6~kpc for RR Lyrae stars.
 
-Figure~\ref{fig:gaia_errors} shows the Gaia end-of-mission distance
-and tangential velocity error estimates for RR Lyrae. Within 2~kpc, Gaia will measure distances to these stars with
+Figure~\ref{fig:gaia_errors} shows the {\it Gaia} end-of-mission distance
+and tangential velocity error estimates for RR Lyrae. Within 2~kpc, {\it Gaia} will measure distances to these stars with
 better than 2\% accuracy --- RR Lyrae in this volume can be used to
-test and calibrate the Spitzer PL relation described above. Beyond the
+test and calibrate the {\it Spitzer} PL relation described above. Beyond the
 2~kpc threshold, the mid-IR PL relation for RR Lyrae will provide better 
 distance measurements. 
 
-The combination of Spitzer and Gaia data will 
+The combination of {\it Spitzer} and {\it Gaia} data will 
 extend the ``horizon'' of where precise, six-dimensional phase-space 
 maps of the Galaxy are possible from $<$10~kpc to 60~kpc. This enormous 
 increase in volume will greatly refine data on debris systems in the halo.
 
 \subsection{The Sagittarius debris system}
 \label{sec:sgr}
-The Sagittarius Dwarf Galaxy (hereafter Sgr) was discovered
-serendipitously during a radial velocity survey of the Galactic bulge
-\citep{ibata94}. 
+Sgr was discovered serendipitously during a radial velocity 
+survey of the Galactic bulge \citep{ibata94}. 
 Signatures of extensive stellar
 streams associated with Sgr have since  been
 mapped across the sky in carbon stars \citep{totten98}, M giants
@@ -193,13 +193,21 @@ halo through the constraints on the potential parameters $v_{\rm halo}$, $q_1$, 
 
 Combined {\it Spitzer} and {\it Gaia} measurements of distances and proper motions
 of RR Lyrae in the Sgr debris will open up new avenues of
-interpretation. A 2\% distance error at $\sim$30~kpc
-($\epsilon_{d}=0.6~{\rm kpc}$) is smaller than the predicted thickness
-of the stream ($\sim$2-$10$~kpc). When combined with Gaia proper motion errors,
-tangential velocity measurement accuracies ($\epsilon_{v}\sim2$~km/s
-at 30~kpc; see Figure~\ref{fig:gaia_errors}) are less than the intrinsic dispersion for much of the stream
-\citep[$\sigma_v\sim10$~km/s;][]{majewski04}. The next section
-outlines a new method to take advantage of this information.
+interpretation. 
+
+Figure~\ref{fig:gaia_errors} shows that a 2\% distance error is smaller than the 
+distance range in the stream (top panel). Similarly, {\it Gaia} proper motion
+error estimates correspond to tangential velocity errors less than the velocity
+dispersion for much of the stream. The next section outlines a new method to 
+take advantage of this information. 
+
+%A 2\% distance error at $\sim$30~kpc
+%($\epsilon_{d}=0.6~{\rm kpc}$) is smaller than the predicted thickness
+%of the stream ($\sim$2-$10$~kpc). When combined with {\it Gaia} proper motion errors,
+%tangential velocity measurement accuracies ($\epsilon_{v}\sim2$~km/s
+%at 30~kpc; see Figure~\ref{fig:gaia_errors}) are less than the intrinsic dispersion for much of the stream
+%\citep[$\sigma_v\sim10$~km/s;][]{majewski04}. The next section
+%outlines a new method to take advantage of this information.
 
 \section{Description and test of our algorithm}
 \label{sec:method}
@@ -209,9 +217,9 @@ measure by exploiting the fact that the stars must have come from the
 same progenitor: if the orbits of the stars and progenitor are integrated 
 \emph{backwards} in a a potential that accurately models the Milky Way
 (imagine watching satellite destruction in ``rewind"), the stars
-should recombine with the progenitor. If the potential is incorrect,
+should recombine with the progenitor.\footnote{\url{http://dx.doi.org/10.6084/m9.figshare.767305}} If the potential is incorrect,
 the orbits of the stars will diverge from that of the progenitor and
-thus will not be recaptured by the satellite system (Figure~\ref{fig:ps_distance}).
+thus will not be recaptured by the satellite system (Figure~\ref{fig:ps_distance}).\footnote{\url{http://dx.doi.org/10.6084/m9.figshare.767306}}
 
 This approach was originally proposed by \citet{johnston99a} and was tested on the proposed characteristics of the Space
 Interferometry Mission \citep{unwin08}. Below we present an updated version of the algorithm:
@@ -300,7 +308,7 @@ then ``observe'' a sample of 100 stars from the first leading and
 trailing wraps of the stream. The radial velocity and distance errors are drawn 
 from Gaussians ($\varepsilon_{\rm RV} \sim \mathcal{N}(\mu=0,\sigma=10~{\rm
   km/s})$ and $\varepsilon_{\rm D} \sim \mathcal{N}(0,0.02\times
-D)$) and the proper motion errors are computed from the expected Gaia error curve. 
+D)$) and the proper motion errors are computed from the expected {\it Gaia} error curve. 
 
 The generalized variance defines a convex hypersurface over
 which we optimize four of the six logarithmic potential parameters:
@@ -341,8 +349,8 @@ alone places strong constraints on the shape and mass of the
 Galaxy's dark matter halo. From the covariance matrix derived from the 
 distribution of points in Figure~\ref{fig:bootstrap}, we find the mean 
 recovered parameters and one-sigma deviations to be 
-$q_1 = 1.36 \pm 0.02$, $q_z = 1.35 \pm 0.03$, $\phi = 96.6 \pm 0.6$ degrees,
-and $v_{\rm halo} = 123.0 \pm 1.5$ km/s.
+$q_1 = 1.36 \pm 0.02$, $q_z = 1.36 \pm 0.03$, $\phi = 96.0 \pm 1.5$ degrees,
+and $v_{\rm halo} = 123.2 \pm 1.6$ km/s.
 
 \section{Discussion, strengths, and limitations}
 \label{sec:discussion}
@@ -358,8 +366,8 @@ stars. Thus, \emph{Rewinder} is applicable to any debris that is
 known to come from a single object and not restricted to the coldest
 tidal streams. In principle, it could also be applied to the
 vast stellar debris {\it clouds} that have been discovered 
-\citep[e.g. the Triangulum Andromeda and Hercules-Aquila
-  clouds]{rochapinto04,belokurov06}, or even stars that have only
+\citep[e.g., the Triangulum-Andromeda and Hercules-Aquila
+  clouds;][]{rochapinto04,belokurov06}, or even stars that have only
 associations in orbital properties and do not form a coherent spatial
 structure \citep[e.g.][]{helmi99}. The method trivially extends to
 combining constraints from multiple debris systems at once by simply
@@ -383,7 +391,7 @@ the estimated potential parameters.
 \label{sec:conclusion}
 
 This paper presents an algorithm for measuring the Galactic potential
-that anticipates combined data from the Spitzer and Gaia satellite
+that anticipates combined data from the {\it Spitzer} and {\it Gaia} satellite
 missions which promise precise, full phase-space measurements of RR
 Lyrae stars in the halo of our Galaxy. When applied to a sample of 100
 stars (with realistic observational errors) drawn from the
@@ -394,7 +402,7 @@ matter potential to within a few percent.
 While the tests presented in this paper are very simple, the accuracy of potential recovery promised by such a small sample of stars 
 provides strong motivation for further theoretical work to: 1) develop a robust generative model (and therefore likelihood) that utilizes the concepts demonstrated by \emph{Rewinder}; 2) investigate the power of using multiple debris structures; and 3) examine how \emph{Rewinder} might work with less accurate measurements or missing dimensions. 
 
-Our results also motivate an observational campaign with \emph{Spitzer} to survey RR Lyrae stars in debris structures around the Milky Way to get precise distances to combine with near-future Gaia velocity data. 
+Our results also motivate an observational campaign with {\it Spitzer} to survey RR Lyrae stars in debris structures around the Milky Way to get precise distances to combine with near-future {\it Gaia} velocity data. 
 If just 100 stars in a single stellar stream allow us to measure the depth, shape, and orientation of the Milky Way potential, larger samples in multiple structures (e.g., the Orphan Stream, already mapped in RR Lyrae by \citet{sesar13}) offer the prospect of assessing these quantities as a function of Galactocentric radius. Tracing the mass in a dark matter halo with this level of detail is impossible for any other galaxy in the Universe.
 
 \acknowledgments
