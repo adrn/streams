@@ -58,8 +58,7 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     Nparticles = particle_orbits._r.shape[1]
     
     R,V = relative_normalized_coordinates(potential, particle_orbits, satellite_orbit) 
-    D_ps = np.sqrt(np.fabs(np.sum(R**2, axis=-1)-1.) + np.sum(V**2, axis=-1))
-    #D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
+    D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
     
     # Find the index of the time of the minimum D_ps for each particle
     min_time_idx = D_ps.argmin(axis=0)
