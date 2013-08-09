@@ -472,7 +472,7 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
 
 def bootstrapped_parameters():
     data_file = os.path.join(project_root, "plots", "hotfoot", 
-                             "SMASH", "all_best_parameters.pickle")
+                             "SMASH_aspen", "all_best_parameters.pickle")
     
     with open(data_file) as f:
         data = pickle.load(f)
@@ -524,7 +524,7 @@ def bootstrapped_parameters():
 
 def bootstrapped_parameters_transpose():
     data_file = os.path.join(project_root, "plots", "hotfoot", 
-                             "SMASH", "all_best_parameters.pickle")
+                             "SMASH_aspen", "all_best_parameters.pickle")
     
     with open(data_file) as f:
         data = pickle.load(f)
@@ -597,7 +597,7 @@ def bootstrapped_parameters_transpose():
 
 def parameter_errors():
     data_file = os.path.join(project_root, "plots", "hotfoot", 
-                             "SMASH", "all_best_parameters.pickle")
+                             "SMASH_aspen", "all_best_parameters.pickle")
     
     with open(data_file) as f:
         data = pickle.load(f)
@@ -621,4 +621,4 @@ if __name__ == '__main__':
     #variance_projections()
     #bootstrapped_parameters()
     bootstrapped_parameters_transpose()
-    #parameter_errors()
+    parameter_errors()
