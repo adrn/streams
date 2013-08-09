@@ -13,8 +13,8 @@ import cPickle as pickle
 # Third-party
 import astropy.units as u
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
 from matplotlib import rc_context, rcParams, cm
 from matplotlib.patches import Rectangle, Ellipse
 
@@ -391,7 +391,7 @@ def sgr():
         ax.plot(pdata['x'], pdata['z'], marker='.', alpha=0.85, ms=9)
         
         # add solar symbol
-        ax.text(-8., 0., s=r"$\odot$")
+        ax.text(-8., 0., s=r"$\odot$", fontsize=32)
 
         ax.set_xlabel("$X_{GC}$ [kpc]")
         ax.set_xlabel("$X_{GC}$ [kpc]")
@@ -407,7 +407,7 @@ def sgr():
     
     ax.set_aspect('equal')
     
-    fig.savefig(os.path.join(plot_path, "lm10.png"))
+    fig.savefig(os.path.join(plot_path, "lm10.pdf"))
 
 def plot_point_cov(points, nstd=2, ax=None, **kwargs):
     """
@@ -615,10 +615,10 @@ def parameter_errors():
 
 if __name__ == '__main__':
     #gaia_spitzer_errors()
-    #sgr()
+    sgr()
     #phase_space_d_vs_time()
     #normed_objective_plot()
     #variance_projections()
     #bootstrapped_parameters()
-    bootstrapped_parameters_transpose()
-    parameter_errors()
+    #bootstrapped_parameters_transpose()
+    #parameter_errors()
