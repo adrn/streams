@@ -141,12 +141,12 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
         d_err = 0.02
     d += np.random.normal(0., d_err*d.value)*d.unit
     
-    # RADIAL VELOCITY ERROR -- 5 km/s
+    # RADIAL VELOCITY ERROR -- 10 km/s
     if kwargs.has_key("radial_velocity_error") and \
         kwargs["radial_velocity_error"] is not None:
         rv_err = kwargs["radial_velocity_error"]
     else:
-        rv_err = 5.*u.km/u.s
+        rv_err = 10.*u.km/u.s
     
     rv_err = rv_err.to(u.km/u.s)
     vr += np.random.normal(0., rv_err.value, size=len(vr))*rv_err.unit
@@ -160,8 +160,8 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     
     dmu = (dmu.to(u.rad/u.s).value / u.s).to(u.km / (u.kpc*u.s))
     
-    mul += np.random.normal(0., dmu.value)*dmu.unit
-    mub += np.random.normal(0., dmu.value)*dmu.unit
+    mul += np.random.normal(0., dmu.value, size=len(dmu))*dmu.unit
+    mub += np.random.normal(0., dmu.value, size=len(dmu))*dmu.unit
     
     # compute tangential velocities as distance times proper motion
     v_l = d*mul
