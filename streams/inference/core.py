@@ -90,4 +90,4 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
     min_ps = minimum_distance_matrix(potential, particle_orbits, satellite_orbit)
     cov_matrix = np.cov(np.fabs(min_ps.T))
     sign,logdet = np.linalg.slogdet(cov_matrix)
-    return -logdet**2
+    return logdet**2
