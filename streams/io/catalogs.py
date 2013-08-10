@@ -163,8 +163,8 @@ def read_catalina():
     data.add_column(Column(np.array(data["Dec"]).astype(float), 
                            name=str("dec")))
     # has a V column
-    data.add_column(Column(rrl_photometric_distance(data['V'], -1.5), 
-                           name="dist", units=u.kpc))
+    data.add_column(Column(rrl_photometric_distance(np.array(data['V']), -1.5).to(u.kpc).value, 
+                           name="dist", unit=u.kpc))
     return data
 
 def read_asas():

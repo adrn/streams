@@ -153,17 +153,15 @@ def add_sgr_coordinates(data):
     L,B = [], []
     sgr_plane_dist = []
     for star in data:
-        sgr_plane_dist.append(distance_to_sgr_plane(star['ra'],
-                                                    star['dec'],
-                                                    star['dist']))
         icrs = coord.ICRSCoordinates(star['ra'],star['dec'],unit=(u.deg,u.deg))
         sgr = icrs.transform_to(SgrCoordinates)
-        L.append(sgr.Lambda.degrees)
-        B.append(sgr.Beta.degrees)
+        sgr_plane_dist.append(star['dist'] * np.sin(sgr.Beta.radian))
+        L.append(sgr.Lambda.degree)
+        B.append(sgr.Beta.degree)
     
-    Lambda = Column(L, name='Lambda', units=u.degree)
-    Beta = Column(B, name='Beta', units=u.degree)
-    sgr_plane_D = Column(sgr_plane_dist, name='sgr_plane_dist', units=u.kpc)
+    Lambda = Column(L, name='Lambda', unit=u.degree)
+    Beta = Column(B, name='Beta', unit=u.degree)
+    sgr_plane_D = Column(sgr_plane_dist, name='Z_sgr', unit=u.kpc)
     data.add_column(Lambda)
     data.add_column(Beta)
     data.add_column(sgr_plane_D)
