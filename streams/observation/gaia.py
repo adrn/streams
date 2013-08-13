@@ -159,9 +159,13 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
         dmu = proper_motion_error(V, rrl_V_minus_I)            
     
     dmu = (dmu.to(u.rad/u.s).value / u.s).to(u.km / (u.kpc*u.s))
+    try:
+        size = len(dmu)
+    except TypeError:
+        size = len(vr)
     
-    mul += np.random.normal(0., dmu.value, size=len(dmu))*dmu.unit
-    mub += np.random.normal(0., dmu.value, size=len(dmu))*dmu.unit
+    mul += np.random.normal(0., dmu.value, size=size)*dmu.unit
+    mub += np.random.normal(0., dmu.value, size=size)*dmu.unit
     
     # compute tangential velocities as distance times proper motion
     v_l = d*mul
