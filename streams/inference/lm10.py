@@ -117,9 +117,11 @@ def objective(potential, satellite_orbit, particle_orbits):
     Ntimesteps, Nparticles, Ndim = particle_orbits._r.shape
     
     r_tide = potential._tidal_radius(m=satellite_orbit._m,
-                                     r=satellite_orbit._r)[:,:,np.newaxis]
+                                     r=satellite_orbit._r)
     v_esc = potential._escape_velocity(m=satellite_orbit._m,
                                        r_tide=r_tide)
+    r_tide = r_tide[:,:,np.newaxis]
+    v_esc = v_esc[:,:,np.newaxis]
     
     # compute relative, normalized coordinates and then phase-space distance
     R = particle_orbits._r - satellite_orbit._r
