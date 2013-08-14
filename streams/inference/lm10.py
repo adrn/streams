@@ -145,50 +145,8 @@ def objective(potential, satellite_orbit, particle_orbits):
         cov += np.outer(c, c.T)
     cov /= Nparticles
     
-    eig_vals = np.linalg.eigvals(cov)
-    return np.sum(eig_vals)
-    
-'''
-def objective(potential, satellite_orbit, particle_orbits):
-    """ This is a new objective function, motivated by the fact that what 
-        I was doing before doesn't really make sense...
-    """
-    
-    # get numbers for any relevant loops below
-    Ntimesteps, Nparticles, Ndim = particle_orbits._r.shape
-    
-    r_tide = potential._tidal_radius(m=satellite_orbit._m,
-                                     r=satellite_orbit._r)
-    v_esc = potential._escape_velocity(m=satellite_orbit._m,
-                                       r_tide=r_tide)
-    r_tide = r_tide[:,:,np.newaxis]
-    v_esc = v_esc[:,:,np.newaxis]
-    
-    # compute relative, normalized coordinates and then phase-space distance
-    R = particle_orbits._r - satellite_orbit._r
-    V = particle_orbits._v - satellite_orbit._v
-    Q = R / r_tide
-    P = V / v_esc
-    D_ps = np.sqrt(np.sum(Q**2, axis=-1) + np.sum(P**2, axis=-1))
-    
-    # Find the index of the time of the minimum D_ps for each particle
-    min_time_idx = D_ps.argmin(axis=0)
-    cov = np.zeros((6,6))
-    b = np.vstack((R.T, V.T)).T
-    for ii in range(Nparticles):
-        idx = min_time_idx[ii]
-        r_t = np.squeeze(r_tide[idx])
-        v_e = np.squeeze(v_esc[idx])
-        cov += np.outer(b[idx,ii], b[idx,ii].T)
-    cov /= Nparticles
-    
-    # velocity dispersion from measuring the dispersion of the still-bound
-    #   particles from LM10
-    r_disp = np.squeeze(r_tide)
-    v_disp = 0.0133 # kpc/Myr
-    eig_vals = np.linalg.eigvals(cov) / np.array([r_disp]*3+[v_disp]*3)**2
-    return np.sum(eig_vals)
-'''
+    sign,logdet = np.linalg.slogdet(cov)
+    return logdet
 
 def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     """ Evaluate the likelihood function for a given set of halo 
