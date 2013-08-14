@@ -169,7 +169,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
                                       resolution=resolution,
                                       t1=t1, t2=t2)
     
-    return -objective(lm10, p_orbits, s_orbit)
+    return -objective(lm10, satellite_orbit=s_orbit, particle_orbits=p_orbits)
 
 def ln_posterior(p, *args):
     param_names, particles, satellite, t1, t2, resolution = args
