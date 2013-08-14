@@ -144,9 +144,9 @@ def objective(potential, satellite_orbit, particle_orbits):
     
     # velocity dispersion from measuring the dispersion of the still-bound
     #   particles from LM10
-    r_disp = r_tide
     v_disp = 0.0133 # kpc/Myr
-    eig_vals = np.linalg.eigvals(cov) / np.array([r_disp]*3+[v_disp]*3)**2
+    eig_vals = np.linalg.eigvals(cov) / np.array([r_tide]*3+[v_disp]*3)**2
+    
     return np.sum(eig_vals)
 
 def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
