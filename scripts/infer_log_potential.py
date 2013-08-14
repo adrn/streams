@@ -128,7 +128,7 @@ def main(config_file, job_name=None):
         except NameError:
             p0 = this_p
     
-    resolution = config.get("resolution", 2.)
+    resolution = config.get("resolution", 3.)
     
     p0 = p0.T
     if p0.ndim == 1:

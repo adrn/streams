@@ -207,8 +207,8 @@ def sgr_plane_dist(all_rrlyr):
     
     fig = plt.figure(figsize=(10,8))
     ax = fig.add_subplot(111, projection="polar")
-    lm10 = LM10Snapshot(expr="(Pcol > 0) & (dist < 100) & (abs(Lmflag) == 1) & (beta < 10.)")
-    lam = (lm10["lambda"]*u.degree).to(u.radian).value
+    lm10 = LM10Snapshot(expr="(Pcol > 0) & (dist < 100) & (abs(Lmflag) == 1) & (Beta < 10.)")
+    lam = (lm10["Lambda"]*u.degree).to(u.radian).value
     dist = lm10["dist"]
     ax = magic_plot(ax, lam, dist, c="w", s=(np.array(dist)/10.)**1.5+4)
     ax.set_ylim(0., 80.)
@@ -222,7 +222,7 @@ def sgr_plane_dist(all_rrlyr):
     
     xbins = np.linspace(0,360,100)
     ybins = np.linspace(0,100,25)
-    H, x, y = np.histogram2d(lm10["lambda"], lm10["dist"], bins=(xbins,ybins))
+    H, x, y = np.histogram2d(lm10["Lambda"], lm10["dist"], bins=(xbins,ybins))
     
     plt.figure(figsize=(12,8))
     plt.imshow(H.T, interpolation="nearest", extent=[0,360,100,0], 
