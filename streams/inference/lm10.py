@@ -129,7 +129,7 @@ def objective(potential, satellite_orbit, particle_orbits):
     V = particle_orbits._v - satellite_orbit._v
     Q = R / r_tide
     P = V / v_disp
-    D_ps = np.sqrt(np.sum(Q**2, axis=-1) + np.sum(P**2, axis=-1))
+    D_ps = np.sum(Q**2, axis=-1) + np.sum(P**2, axis=-1)
     
     return np.sum(np.min(D_ps, axis=0))
 
