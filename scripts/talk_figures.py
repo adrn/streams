@@ -38,7 +38,7 @@ matplotlib.rc('ytick', labelsize=24, direction='in')
 #matplotlib.rc('text', usetex=True)
 matplotlib.rc('axes', edgecolor='#444444', labelsize=24, labelweight=400, linewidth=2.0)
 matplotlib.rc('lines', markeredgewidth=0)
-matplotlib.rc('font', family='Source Sans Pro', weight=400)
+matplotlib.rc('font', family='Source Sans Pro', weight=200)
 #matplotlib.rc('savefig', bbox='standard')
 
 plot_path = "plots/talks/"
@@ -143,6 +143,147 @@ def dump_gaia_csv():
     
     ascii.write(t, os.path.join(plot_path, "gaia.csv"), Writer=ascii.Basic, delimiter=',')
 
+def plot_point_cov(points, nstd=2, ax=None, **kwargs):
+    """
+    Plots an `nstd` sigma ellipse based on the mean and covariance of a point
+    "cloud" (points, an Nx2 array).
+
+    Parameters
+    ----------
+        points : An Nx2 array of the data points.
+        nstd : The radius of the ellipse in numbers of standard deviations.
+            Defaults to 2 standard deviations.
+        ax : The axis that the ellipse will be plotted on. Defaults to the 
+            current axis.
+        Additional keyword arguments are pass on to the ellipse patch.
+
+    Returns
+    -------
+        A matplotlib ellipse artist
+    """
+    pos = points.mean(axis=0)
+    cov = np.cov(points, rowvar=False)
+    return plot_cov_ellipse(cov, pos, nstd, ax, **kwargs)
+
+def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
+    """
+    Plots an `nstd` sigma error ellipse based on the specified covariance
+    matrix (`cov`). Additional keyword arguments are passed on to the 
+    ellipse patch artist.
+
+    Parameters
+    ----------
+        cov : The 2x2 covariance matrix to base the ellipse on
+        pos : The location of the center of the ellipse. Expects a 2-element
+            sequence of [x0, y0].
+        nstd : The radius of the ellipse in numbers of standard deviations.
+            Defaults to 2 standard deviations.
+        ax : The axis that the ellipse will be plotted on. Defaults to the 
+            current axis.
+        Additional keyword arguments are pass on to the ellipse patch.
+
+    Returns
+    -------
+        A matplotlib ellipse artist
+    """
+    def eigsorted(cov):
+        vals, vecs = np.linalg.eigh(cov)
+        order = vals.argsort()[::-1]
+        return vals[order], vecs[:,order]
+
+    if ax is None:
+        ax = plt.gca()
+
+    vals, vecs = eigsorted(cov)
+    theta = np.degrees(np.arctan2(*vecs[:,0][::-1]))
+
+    # Width and height are "full" widths, not radius
+    width, height = 2 * nstd * np.sqrt(vals)
+    ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwargs)
+
+    ax.add_artist(ellip)
+    return ellip
+
+
+def bootstrapped_parameters_transpose():
+    data_file = os.path.join(project_root, "plots", "hotfoot", 
+                             "SMASH_new", "all_best_parameters.pickle")
+    
+    with open(data_file) as f:
+        data = pickle.load(f)
+    
+    rcparams = {'axes.linewidth' : 3., 'axes.edgecolor' : '#cccccc', 
+                'axes.facecolor' : '#888888', 'figure.facecolor' : '#666666',
+                'xtick.major.size' : 10, 'xtick.minor.size' : 6, 'xtick.major.pad' : 8,
+                'ytick.major.size' : 10, 'ytick.minor.size' : 6, 'ytick.major.pad' : 8,
+                'xtick.color' : '#cccccc', 'ytick.color' : '#cccccc', 
+                'text.color' : '#cccccc', 'axes.labelcolor' : '#cccccc'}
+    with rc_context(rc=rcparams): 
+        fig,axes = plt.subplots(1,3,figsize=(12,5))
+
+    y_param = 'v_halo'
+    x_params = ['q1', 'qz', 'phi']
+    
+    data['phi'] = (data['phi']*u.radian).to(u.degree).value
+    _true_params['phi'] = (_true_params['phi']*u.radian).to(u.degree).value
+    data['v_halo'] = (data['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
+    _true_params['v_halo'] = (_true_params['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
+    
+    style = dict()
+    style['q1'] = dict(ticks=[1.3, 1.38, 1.46],
+                       lims=(1.27, 1.49))
+    style['qz'] = dict(ticks=[1.28, 1.36, 1.44],
+                       lims=(1.25, 1.47))
+    style['phi'] = dict(ticks=[92, 97, 102],
+                        lims=(90, 104))
+    style['v_halo'] = dict(ticks=[115, 122, 129],
+                           lims=(110, 134))
+    
+    for ii,x_param in enumerate(x_params):
+        
+        true_x = _true_params[x_param]
+        true_y = _true_params[y_param]
+        xdata = np.array(data[x_param])
+        ydata = np.array(data[y_param])
+        
+        axes[ii].axhline(true_y, linewidth=2, color='#ABDDA4', alpha=1., zorder=-1)
+        axes[ii].axvline(true_x, linewidth=2, color='#ABDDA4', alpha=1., zorder=-1)
+        
+        points = np.vstack([xdata, ydata]).T
+        plot_point_cov(points, nstd=2, ax=axes[ii], alpha=0.3, color='#ffffff')
+        plot_point_cov(points, nstd=1, ax=axes[ii], alpha=0.55, color='#ffffff')
+        plot_point_cov(points, nstd=2, ax=axes[ii], color='#000000', fill=False)
+        plot_point_cov(points, nstd=1, ax=axes[ii], color='#000000', fill=False)
+        
+        axes[ii].plot(xdata, ydata, marker='.', markersize=7, alpha=0.75, 
+                      color='#2B83BA', linestyle='none', markeredgewidth=1.,
+                      markeredgecolor='#777777')
+        axes[ii].set_xlim(style[x_param]['lims'])
+        axes[ii].set_ylim(style[y_param]['lims'])
+        
+        axes[ii].yaxis.tick_left()        
+        axes[ii].set_xticks(style[x_param]['ticks'])
+        axes[ii].xaxis.tick_bottom()
+    
+    axes[0].set_ylabel(r"$v_{\rm halo}$", 
+                       fontsize=26, rotation='horizontal')
+    
+    axes[0].set_yticks(style[y_param]['ticks'])
+    axes[1].set_yticklabels([])
+    axes[2].set_yticklabels([])
+    
+    axes[0].set_xlabel(r"$q_1$", fontsize=26, rotation='horizontal')
+    axes[1].set_xlabel(r"$q_z$", fontsize=26, rotation='horizontal')
+    axes[2].set_xlabel(r"$\phi$", fontsize=26, rotation='horizontal')
+    
+    fig.text(0.855, 0.07, "[deg]", fontsize=16, color=rcparams['axes.labelcolor'])
+    fig.text(0.025, 0.49, "[km/s]", fontsize=16, color=rcparams['axes.labelcolor'])
+    
+    plt.tight_layout()
+    fig.subplots_adjust(hspace=0., wspace=0.)
+    fig.savefig(os.path.join(plot_path, "bootstrap.pdf"), facecolor=rcparams['figure.facecolor'])
+
 if __name__ == '__main__':
     #gaia_spitzer_errors()
-    dump_gaia_csv()
+    #dump_gaia_csv()
+    bootstrapped_parameters_transpose()
