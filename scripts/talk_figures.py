@@ -283,7 +283,64 @@ def bootstrapped_parameters_transpose():
     fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"), facecolor=rcparams['figure.facecolor'])
 
+def sgr():
+    """ Top-down plot of Sgr particles, with selected stars and then 
+        re-observed
+    """
+    
+    cached_data_file = os.path.join('plots/paper1', 'sgr_kde.pickle')
+    
+    extent = {'x':(-90,55), 
+              'y':(-58,68)}
+    
+    if not os.path.exists(cached_data_file):    
+        # read in all particles as a table
+        pdata = particle_table(N=0, expr="(Pcol<8) & (abs(Lmflag)==1)")
+        Z = sgr_kde(pdata, extent=extent)
+        
+        with open(cached_data_file, 'w') as f:
+            pickle.dump(Z, f)
+    
+    with open(cached_data_file, 'r') as f:
+        Z = pickle.load(f)
+    
+    np.random.seed(44)
+    pdata = particle_table(N=100, expr="(Pcol>-1) & (Pcol<8) & (abs(Lmflag)==1)")
+    
+    rcparams = {'axes.linewidth' : 3., 'axes.edgecolor' : '#cccccc', 
+                'axes.facecolor' : '#eeeeee', 'figure.facecolor' : '#444444',
+                'xtick.major.size' : 10, 'xtick.minor.size' : 6, 'xtick.major.pad' : 8,
+                'ytick.major.size' : 10, 'ytick.minor.size' : 6, 'ytick.major.pad' : 8,
+                'xtick.color' : '#cccccc', 'ytick.color' : '#cccccc', 
+                'text.color' : '#cccccc', 'axes.labelcolor' : '#cccccc',
+                'lines.linestyle' : 'none',  'lines.color' : 'k', 'lines.marker' : 'o'}
+    
+    with rc_context(rc=rcparams): 
+        fig,ax = plt.subplots(1, 1, figsize=(8,8))
+        ax.imshow(Z**0.5, interpolation="nearest", 
+              extent=extent['x']+extent['y'],
+              cmap=cm.bone, aspect=1, alpha=0.65)
+        
+        ax.plot(pdata['x'], pdata['z'], marker='.', alpha=0.85, ms=9)
+        
+        # add solar symbol
+        ax.text(-8., 0., s=r"$\odot$", fontsize=32)
+    
+    ax.set_xlim(extent['x'])
+    ax.set_ylim(extent['y'])
+    
+    # turn off right, left ticks respectively
+    ax.yaxis.tick_left()
+    
+    # turn off top ticks
+    ax.xaxis.tick_bottom()
+    
+    ax.set_aspect('equal')
+    
+    fig.savefig(os.path.join(plot_path, "lm10.pdf"), facecolor=rcparams['figure.facecolor'])
+
 if __name__ == '__main__':
     #gaia_spitzer_errors()
     #dump_gaia_csv()
-    bootstrapped_parameters_transpose()
+    #bootstrapped_parameters_transpose()
+    sgr()
