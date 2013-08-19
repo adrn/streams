@@ -22,7 +22,19 @@ from .core import apparent_magnitude
 __all__ = ["parallax_error", "proper_motion_error",  \
            "apparent_magnitude", "rr_lyrae_add_observational_uncertainties", \
            "add_uncertainties_to_particles"]
-    
+
+def V_to_G(V, V_minus_I):
+    """ Convert Johnson V to Gaia G-band.
+        
+        Parameters
+        ----------
+        V : numeric or iterable
+            The V-band apparent magnitude of a source.
+        V_minus_I : numeric or iterable
+            The V-I color of the source.
+    """
+    return V - 0.0257 - 0.0924*V_minus_I - 0.1623*V_minus_I**2 + 0.009*V_minus_I**3
+
 def parallax_error(V, V_minus_I):
     """ Compute the estimated GAIA parallax error as a function of apparent 
         V-band magnitude and V-I color. All equations are taken from the GAIA
