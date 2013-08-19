@@ -21,7 +21,7 @@ from .core import apparent_magnitude
 
 __all__ = ["parallax_error", "proper_motion_error",  \
            "apparent_magnitude", "rr_lyrae_add_observational_uncertainties", \
-           "add_uncertainties_to_particles"]
+           "add_uncertainties_to_particles", "V_to_G"]
 
 def V_to_G(V, V_minus_I):
     """ Convert Johnson V to Gaia G-band.
