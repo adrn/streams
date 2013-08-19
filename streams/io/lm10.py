@@ -109,6 +109,6 @@ def satellite_orbit():
 def time():
     """ Time information for the Law & Majewski 2010 simulation """    
     t1 = 0.
-    t2 = -8000.
+    t2 = -9000.
     
     return t1, t2
