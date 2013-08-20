@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
 from astropy.io.misc import fnpickle, fnunpickle
+import triangle
 
 # project
 from streams.simulation.config import read
@@ -173,18 +174,14 @@ def main(config_file, job_name=None):
                 sampler.pool = None
                 fnpickle(sampler, data_file)
                 
-                # make sexy plots from the sampler data
-                fig = plot_sampler_pickle(os.path.join(path,data_file), 
-                                          params=config["model_parameters"], 
-                                          acceptance_fraction_bounds=(0.15,0.6),
-                                          show_true=True)
+                fig = triangle.corner(sampler.flatchain)
                 
                 # add the max likelihood estimates to the plots                           
-                for ii,param_name in enumerate(config["model_parameters"]):
-                    fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
-                                                  color="#CA0020",
-                                                  linestyle="--",
-                                                  linewidth=2)
+                #for ii,param_name in enumerate(config["model_parameters"]):
+                #    fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
+                #                                  color="#CA0020",
+                #                                  linestyle="--",
+                #                                  linewidth=2)
                 
                 fig.savefig(os.path.join(path, "emcee_sampler_{0}.png".format(bb)))
     except:
