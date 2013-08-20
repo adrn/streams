@@ -20,16 +20,18 @@ import multiprocessing
 import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
+from astropy.io.misc import fnpickle, fnunpickle
 
 # project
 from streams.simulation.config import read
 from streams.io.pal5 import particles_today, satellite_today, time
-from streams.inference.pal5 import ln_prior, ln_likelihood, ln_posterior, objective
-from streams.potential.pal5 import Palomar5, true_params, _true_params
+from streams.inference.pal5 import ln_likelihood, ln_posterior
+from streams.potential.pal5 import true_params, _true_params
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
-from streams.inference import relative_normalized_coordinates
-from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
+from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
+
+#from streams.observation.gaia import add_uncertainties_to_particles
 
 def test_left_right():
     l = ln_likelihood([], [], true_particles, satellite, t1, t2, resolution)
