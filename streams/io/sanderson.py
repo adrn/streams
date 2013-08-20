@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" Classes for accessing simulation data related to Sagittarius. """
+""" Classes for accessing simulation data for the Gaia Data Challenge. """
 
 from __future__ import division, print_function
 
@@ -14,6 +14,7 @@ import numpy as np
 import numexpr
 import astropy.units as u
 from astropy.constants import G
+from astropy.io import ascii
 
 # Project
 from .core import read_table, table_to_particles, table_to_orbits
@@ -21,23 +22,18 @@ from ..util import project_root
 from ..misc import UnitSystem
 from ..dynamics import ParticleCollection, OrbitCollection
 from ..integrate.leapfrog import LeapfrogIntegrator
-from ..potential.lm10 import LawMajewski2010
 
 __all__ = ["particle_table", "particles_today", "satellite_today", "time", "satellite_orbit"]
 
-_lm10_path = os.path.join(project_root, "data", "simulation", "LM10")
-
-# These are used for the orbit file David Law sent me
-X = (G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value / 0.85**3 * 6.4E8)**-0.5
-length_unit = u.Unit("0.85 kpc")
-mass_unit = u.Unit("6.4E8 M_sun")
-time_unit = u.Unit("{:08f} Myr".format(X))
+_data_path = os.path.join(project_root, "data", "simulation", 
+                          "gaia_challenge", "spherical")
+_particle_file = "MilkyWay1.ne.txt"
 
 # This is used for the SgrTriax*.dat files
-lm10_usys = UnitSystem(u.kpc, u.M_sun, u.Gyr)
+usys = UnitSystem(u.kpc, u.M_sun, u.Myr)
 
-def particle_table(N=None, expr=None):
-    """ Read in particles from Law & Majewski 2010.
+def particle_table(N=None, expr=None, satellite_id=0):
+    """ Read in particles from a specified satellite.
     
         Parameters
         ----------
@@ -46,21 +42,27 @@ def particle_table(N=None, expr=None):
         expr : str
             String selection condition to be fed to numexpr for selecting 
             particles.
+        satellite_id : int
+            The number of the satellite to read in.
         
     """
     
-    # Read in particle data -- a snapshot of particle positions, velocities at
-    #   the end of the simulation
-    col_map = dict(xgc="x", ygc="y", zgc="z", u="vx", v="vy", w="vz")
-    col_scales = dict(x=-1., vx=-1.)
-    data = read_table("SgrTriax_DYN.dat", path=_lm10_path, 
-                      column_map=col_map, column_scales=col_scales,
-                      N=N, expr=expr)
+    # read index of satellite id
+    with open(os.path.join(_data_path, "MilkyWay1.sats.txt")) as f:
+        satellite_indices = f.readlines()[1:]
+    
+    # offset because first line is number of lines...damn IDL
+    particle_index1 = int(satellite_indices[satellite_id]) + 1
+    particle_index2 = int(satellite_indices[satellite_id+1]) + 1
+    
+    data = ascii.read(os.path.join(_data_path, _particle_file), 
+                      data_start=particle_index1, data_end=particle_index2,
+                      names=['x','y','z','vx','vy','vz'])
     
     return data
 
-def particles_today(N=None, expr=None):
-    """ Read in particles from Law & Majewski 2010.
+def particles_today(N=None, expr=None, satellite_id=0):
+    """ Read in particles from a specified satellite.
     
         Parameters
         ----------
@@ -69,10 +71,16 @@ def particles_today(N=None, expr=None):
         expr : str
             String selection condition to be fed to numexpr for selecting 
             particles.
-        
+        satellite_id : int
+            The number of the satellite to read in.
     """
-    data = particle_table(N=N, expr=expr)
-    pc = table_to_particles(data, lm10_usys,
+    data = particle_table(N=N, expr=expr, satellite_id=satellite_id)
+    
+    data['vx'] = (np.array(data['vx'])*u.km/u.s).to(u.kpc/u.Myr).value
+    data['vy'] = (np.array(data['vy'])*u.km/u.s).to(u.kpc/u.Myr).value
+    data['vz'] = (np.array(data['vz'])*u.km/u.s).to(u.kpc/u.Myr).value
+    
+    pc = table_to_particles(data, usys,
                             position_columns=["x","y","z"],
                             velocity_columns=["vx","vy","vz"])
     
