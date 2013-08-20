@@ -17,7 +17,7 @@ import numpy as np
 import astropy.units as u
 
 from ..inference import generalized_variance
-from ..potential.lm10 import LawMajewski2010, true_params, param_units
+from ..potential.pal5 import Palomar5, true_params
 from ..dynamics import OrbitCollection
 from ..integrate.satellite_particles import SatelliteParticleIntegrator
 
@@ -43,28 +43,35 @@ def objective(potential, satellite_orbit, particle_orbits):
     
     r_tide = potential._tidal_radius(m=satellite_orbit._m,
                                      r=satellite_orbit._r)
+    v_esc = potential._escape_velocity(m=satellite_orbit._m,
+                                       r_tide=r_tide)
     r_tide = r_tide[:,:,np.newaxis]
-    
-    # velocity dispersion from measuring the dispersion of the still-bound
-    #   particles from LM10
-    v_disp = 0.0133 # kpc/Myr
+    v_esc = v_esc[:,:,np.newaxis]
     
     # compute relative, normalized coordinates and then phase-space distance
     R = particle_orbits._r - satellite_orbit._r
     V = particle_orbits._v - satellite_orbit._v
     Q = R / r_tide
-    P = V / v_disp
-    D_ps = np.sum(Q**2, axis=-1) + np.sum(P**2, axis=-1)
+    P = V / v_esc
+    D_ps = np.sqrt(np.sum(Q**2, axis=-1) + np.sum(P**2, axis=-1))
     
+    # velocity dispersion from measuring the dispersion of the still-bound
+    #   particles from LM10
+    v_disp = 0.0010 # kpc/Myr
+    
+    # Find the index of the time of the minimum D_ps for each particle
     min_time_idx = D_ps.argmin(axis=0)
-    
-    B = 0.
+    cov = np.zeros((6,6))
+    b = np.vstack((R.T, V.T)).T
     for ii in range(Nparticles):
         idx = min_time_idx[ii]
-        r_disp = np.squeeze(r_tide[idx])        
-        B += np.log(np.prod([r_disp**2]*3+[v_disp**2]*3)) + D_ps[idx,ii]
+        r_disp = np.squeeze(r_tide[idx])
+        c = b[idx,ii] / np.array([r_disp]*3+[v_disp]*3)
+        cov += np.outer(c, c.T)
+    cov /= Nparticles
     
-    return B
+    sign,logdet = np.linalg.slogdet(cov)
+    return logdet
 
 def ln_p_qz(qz):
     """ Flat prior on vertical (z) axis flattening parameter. """
@@ -75,49 +82,12 @@ def ln_p_qz(qz):
     else:
         return 0.
 
-def ln_p_q1(q1):
-    """ Flat prior on x-axis flattening parameter. """
-    lo,hi = param_ranges["q1"]
-    
-    if q1 <= lo or q1 >= hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_q2(q2):
-    """ Flat prior on y-axis flattening parameter. """
-    lo,hi = param_ranges["q2"]
-    
-    if q2 <= lo or q2 >= hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_v_halo(v):
-    """ Flat prior on mass of the halo (v_halo). The range imposed is 
-        roughly a halo mass between 10^10 and 10^12 M_sun at 200 kpc.
+def ln_p_m(m):
+    """ Flat prior on mass of the halo
     """
-    lo,hi = param_ranges["v_halo"]
+    lo,hi = param_ranges["m"]
     
     if v <= lo or v >= hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_phi(phi):
-    """ Flat prior on orientation angle between DM halo and disk. """
-    lo,hi = param_ranges["phi"]
-    
-    if phi < lo or phi > hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_r_halo(r_halo):
-    """ Flat prior on halo concentration parameter. """
-    lo,hi = param_ranges["r_halo"]
-    
-    if r_halo < lo or r_halo > hi:
         return -np.inf
     else:
         return 0.
@@ -139,15 +109,14 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     halo_params = dict(zip(param_names, p))
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
-    lm10 = LawMajewski2010(**halo_params)
-    v_halo = lm10["halo"]._parameters["v_halo"]
+    potential = Palomar5(**halo_params)
     
-    integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
+    integrator = SatelliteParticleIntegrator(potential, satellite, particles, lm10=False)
     
     # not adaptive: s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
-    s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-0.5)
+    s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     
-    return -objective(lm10, p_orbits, s_orbit)
+    return -objective(potential, s_orbit, p_orbits)
 
 def ln_posterior(p, *args):
     param_names, particles, satellite, t1, t2, resolution = args
