@@ -1,3 +1,4 @@
+#!/hpc/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
 """ In this module, I'll try to infer the Palomar 5 potential that Andreas
@@ -17,6 +18,7 @@ from datetime import datetime
 import multiprocessing
 
 # Third-party
+from emcee.utils import MPIPool
 import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
@@ -26,7 +28,7 @@ import triangle
 # project
 from streams.simulation.config import read
 from streams.io.pal5 import particles_today, satellite_today, time
-from streams.inference.pal5 import ln_likelihood, ln_posterior
+from streams.inference.pal5 import ln_likelihood, ln_posterior, param_ranges
 from streams.potential.pal5 import true_params, _true_params
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.inference import infer_potential, max_likelihood_parameters
@@ -97,8 +99,8 @@ def main(config_file, job_name=None):
     # Create initial position array for walkers
     for p_name in config["model_parameters"]:
         # Dan F-M says emcee is better at expanding than contracting...
-        this_p = np.random.uniform(true_params[p_name]*0.8, 
-                                   true_params[p_name]*1.2,
+        this_p = np.random.uniform(param_ranges[p_name][0], 
+                                   param_ranges[p_name][1],
                                    size=config["walkers"])
         
         try:
@@ -174,7 +176,10 @@ def main(config_file, job_name=None):
                 sampler.pool = None
                 fnpickle(sampler, data_file)
                 
-                fig = triangle.corner(sampler.flatchain)
+                fig = triangle.corner(sampler.flatchain, 
+                                      labels=config["model_parameters"], 
+                                      truths=[_true_params[p] for p in config["model_parameters"]], 
+                                      quantiles=[0.16, 0.5, 0.84])
                 
                 # add the max likelihood estimates to the plots                           
                 #for ii,param_name in enumerate(config["model_parameters"]):
