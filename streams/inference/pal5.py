@@ -24,14 +24,9 @@ from ..integrate.satellite_particles import SatelliteParticleIntegrator
 __all__ = ["ln_posterior", "ln_likelihood"]
 
 # Parameter ranges to initialize the walkers over
-# v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
-param_ranges = dict(v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr).value,
-                            (330.*u.km/u.s).to(u.kpc/u.Myr).value),
-                    q1=(1.,2.),
-                    q2=(0.5,1.5),
-                    qz=(1.0,2.),
-                    phi=(np.pi/4, 3*np.pi/4),
-                    r_halo=(8,20)) # kpc
+param_ranges = dict(m=(1.E11, 1.E13),
+                    qz=(0.707,1.2),
+                    Rs=(25.,45.))
 
 def objective(potential, satellite_orbit, particle_orbits):
     """ This is a new objective function, motivated by the fact that what 
@@ -87,7 +82,7 @@ def ln_p_m(m):
     """
     lo,hi = param_ranges["m"]
     
-    if v <= lo or v >= hi:
+    if m <= lo or m >= hi:
         return -np.inf
     else:
         return 0.
