@@ -134,16 +134,16 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     vr = (x*vx + y*vy + z*vz) / d 
     
     # proper motions in km/s/kpc
-    rad = np.sqrt(x.value**2 + y.value**2)*x.unit
-    vrad = (x*vx + y*vy) / rad
-    mul = (x*vy - y*vx) / rad / d
-    mub = (-z*vrad + rad*vz) / d**2
-       
+    xy = np.sqrt(x.value**2 + y.value**2)*x.unit
+    v_xy = (x*vx + y*vy) / xy
+    mul = (x*vy - y*vx) / xy / d
+    mub = (-z*v_xy + xy*vz) / d**2
+    
     # angular position
     sinb = z/d
-    cosb = rad/d
-    cosl = x/rad
-    sinl = y/rad
+    cosb = xy/d
+    cosl = x/xy
+    sinl = y/xy
     
     # DISTANCE ERROR -- assuming 2% distances from RR Lyrae mid-IR
     if kwargs.has_key("distance_error_percent") and \
@@ -176,8 +176,8 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     except TypeError:
         size = len(vr)
     
-    mul += np.random.normal(0., dmu.value, size=size)*dmu.unit
-    mub += np.random.normal(0., dmu.value, size=size)*dmu.unit
+    mul = (mul.value + np.random.normal(0., dmu.value, size=size))*dmu.unit
+    mub = (mub.value + np.random.normal(0., dmu.value, size=size))*dmu.unit
     
     # compute tangential velocities as distance times proper motion
     v_l = d*mul
