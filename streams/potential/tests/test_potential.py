@@ -280,3 +280,22 @@ class TestCompositeGalaxy(object):
         
         fig,axes = potential.plot_acceleration(grid=grid, ndim=3)
         fig.savefig(os.path.join(plot_path, "composite_galaxy_acceleration.png"))
+
+class TestIsochrone(object):
+    usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+    def test_create_plot(self):
+        
+        potential = IsochronePotential(unit_system=self.usys,
+                                       m=1.E11*u.M_sun, 
+                                       b=5.*u.kpc)
+        
+        r = [1.,0.,0.]*u.kpc
+        pot_val = potential.value_at(r)        
+        acc_val = potential.acceleration_at(r)
+    
+        grid = np.linspace(-20.,20, 50)*u.kpc
+        fig,axes = potential.plot(grid=grid,ndim=3)
+        fig.savefig(os.path.join(plot_path, "isochrone.png"))
+        
+        fig,axes = potential.plot_acceleration(grid=grid,ndim=3)
+        fig.savefig(os.path.join(plot_path, "isochrone_acceleration.png"))

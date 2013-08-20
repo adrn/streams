@@ -22,7 +22,7 @@ from .core import CartesianPotential
 
 __all__ = ["PointMassPotential", "MiyamotoNagaiPotential",\
            "HernquistPotential", "LogarithmicPotentialLJ",
-           "PlummerPotential"]
+           "PlummerPotential", "IsochronePotential"]
 
 ############################################################
 #    Potential due to a point mass at a given position
@@ -246,6 +246,80 @@ class HernquistPotential(CartesianPotential):
         # get functions for evaluating potential and derivatives
         f,df = _cartesian_hernquist_model(unit_system.bases)
         super(HernquistPotential, self).__init__(unit_system, 
+                                                 f=f, f_prime=df, 
+                                                 latex=latex, 
+                                                 parameters=parameters)
+                                                 
+####################################################################################
+#    Isochrone potential
+#
+def _cartesian_isochrone_model(bases):
+    """ Generates functions to evaluate an Isochrone potential and its 
+        derivatives at a specified position.
+        
+        Physical parameters for this potential are:
+            m : total mass in the potential
+            b : core/concentration parameter
+    """
+    
+    # scale G to be in this unit system
+    _G = G.decompose(bases=bases).value
+    
+    def f(r,r_0,m,b): 
+        try:
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))[:,np.newaxis]
+        except IndexError:
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))
+        val = -_G * m / (np.sqrt(rr**2 + b**2) + b)
+        return val
+    
+    def df(r,r_0,m,b):
+        rr = r-r_0
+        try:
+            R = np.sqrt(np.sum((rr)**2, axis=-1))[:,np.newaxis]
+        except IndexError:
+            R = np.sqrt(np.sum((rr)**2, axis=-1))
+        
+        fac = -_G*m / (np.sqrt(R**2 + b**2) + b)
+        return fac*rr
+        
+    return (f, df)
+    
+class IsochronePotential(CartesianPotential):
+    
+    def __init__(self, unit_system, **parameters):
+        """ Represents the Isochrone potential.
+
+            $\Phi_{spher} = -\frac{GM}{\sqrt{r^2+b^2} + b}$
+            
+            The parameters dictionary should include:
+                r_0 : location of the origin
+                m : mass in the potential
+                b : core concentration
+            
+            Parameters
+            ----------
+            unit_system : UnitSystem
+                Defines a system of physical base units for the potential.
+            parameters : dict
+                A dictionary of parameters for the potential definition.
+
+        """
+
+        
+        latex = "$\\Phi = -\\frac{GM}{\sqrt{r^2+b^2} + b}$"
+        
+        unit_system = self._validate_unit_system(unit_system)
+        
+        if "r_0" not in parameters.keys():
+            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+        
+        assert "m" in parameters.keys(), "You must specify a mass."
+        assert "b" in parameters.keys(), "You must specify the parameter 'b'."
+        
+        # get functions for evaluating potential and derivatives
+        f,df = _cartesian_isochrone_model(unit_system.bases)
+        super(IsochronePotential, self).__init__(unit_system, 
                                                  f=f, f_prime=df, 
                                                  latex=latex, 
                                                  parameters=parameters)
