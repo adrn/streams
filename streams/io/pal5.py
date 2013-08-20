@@ -46,6 +46,11 @@ def particle_table(N=None, expr=None):
     """
     
     data = ascii.read(os.path.join(_data_path, _particle_file))
+    
+    if N != None and N > 0:
+        idx = np.random.randint(0, len(data), N)
+        data = data[idx]
+    
     return data
 
 def particles_today(N=None, expr=None):
