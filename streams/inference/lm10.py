@@ -21,7 +21,7 @@ from ..potential.lm10 import LawMajewski2010, true_params, param_units
 from ..dynamics import OrbitCollection
 from ..integrate.satellite_particles import SatelliteParticleIntegrator
 
-__all__ = ["ln_posterior", "ln_likelihood"]
+__all__ = ["ln_posterior", "ln_likelihood", "objective"]
 
 # Parameter ranges to initialize the walkers over
 # v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
@@ -108,6 +108,46 @@ def timestep(r, v):
     
     return dt
 
+def objective(potential, satellite_orbit, particle_orbits):
+    """ This is a new objective function, motivated by the fact that what 
+        I was doing before doesn't really make sense...
+    """
+    
+    # get numbers for any relevant loops below
+    Ntimesteps, Nparticles, Ndim = particle_orbits._r.shape
+    
+    r_tide = potential._tidal_radius(m=satellite_orbit._m,
+                                     r=satellite_orbit._r)
+    v_esc = potential._escape_velocity(m=satellite_orbit._m,
+                                       r_tide=r_tide)
+    r_tide = r_tide[:,:,np.newaxis]
+    v_esc = v_esc[:,:,np.newaxis]
+    
+    # compute relative, normalized coordinates and then phase-space distance
+    R = particle_orbits._r - satellite_orbit._r
+    V = particle_orbits._v - satellite_orbit._v
+    Q = R / r_tide
+    P = V / v_esc
+    D_ps = np.sqrt(np.sum(Q**2, axis=-1) + np.sum(P**2, axis=-1))
+    
+    # velocity dispersion from measuring the dispersion of the still-bound
+    #   particles from LM10
+    v_disp = 0.0133 # kpc/Myr
+    
+    # Find the index of the time of the minimum D_ps for each particle
+    min_time_idx = D_ps.argmin(axis=0)
+    cov = np.zeros((6,6))
+    b = np.vstack((R.T, V.T)).T
+    for ii in range(Nparticles):
+        idx = min_time_idx[ii]
+        r_disp = np.squeeze(r_tide[idx])
+        c = b[idx,ii] / np.array([r_disp]*3+[v_disp]*3)
+        cov += np.outer(c, c.T)
+    cov /= Nparticles
+    
+    sign,logdet = np.linalg.slogdet(cov)
+    return logdet
+
 def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     """ Evaluate the likelihood function for a given set of halo 
         parameters.
@@ -116,8 +156,6 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     lm10 = LawMajewski2010(**halo_params)
-    v_halo = lm10["halo"]._parameters["v_halo"]
-    
     integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
     
     # not adaptive: s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
@@ -128,6 +166,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
                                       resolution=resolution,
                                       t1=t1, t2=t2)
     
+    #return -objective(lm10, p_orbits, s_orbit)
     return -generalized_variance(lm10, p_orbits, s_orbit)
 
 def ln_posterior(p, *args):
