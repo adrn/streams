@@ -17,15 +17,14 @@ from astropy.constants import G
 
 from .core import CartesianPotential, CompositePotential, UnitSystem
 from .common import MiyamotoNagaiPotential, HernquistPotential, AxisymmetricNFWPotential
-from ._lm10_acceleration import lm10_acceleration
 
-true_params = dict(m=,
+true_params = dict(m=1.812E12*u.M_sun,
                    qz=0.814,
-                   Rs=10.*u.kpc)
+                   Rs=32.26*u.kpc)
 
-_true_params = dict(m=,
+_true_params = dict(m=1.812E12,
                    qz=0.814,
-                   Rs=10.)
+                   Rs=32.26)
 
 class Palomar5(CompositePotential):
     
@@ -91,12 +90,12 @@ class Palomar5(CompositePotential):
         # Radius of Sgr center relative to galactic center
         R_orbit = np.sqrt(np.sum(r**2., axis=-1)) 
         
-        m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R_orbit/self._G
+        m_halo_enc = self["halo"]._parameters["m"] / 10.
         m_enc = self["disk"]._parameters["m"] + \
                 self["bulge"]._parameters["m"] + \
                 m_halo_enc
         
-        return R_orbit * (m / (3.*m_enc))**(0.33333)
+        return R_orbit * (m / (3.*m_enc))**(0.33333) #*25.
     
     def tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified 
