@@ -26,7 +26,7 @@ __all__ = ["ln_posterior", "ln_likelihood"]
 # Parameter ranges to initialize the walkers over
 param_ranges = dict(m=(1.E11, 1.E13),
                     qz=(0.707,1.2),
-                    Rs=(25.,45.))
+                    Rs=(10.,45.))
 
 def objective(potential, satellite_orbit, particle_orbits):
     """ This is a new objective function, motivated by the fact that what 
@@ -83,6 +83,16 @@ def ln_p_m(m):
     lo,hi = param_ranges["m"]
     
     if m <= lo or m >= hi:
+        return -np.inf
+    else:
+        return 0.
+        
+def ln_p_Rs(Rs):
+    """ Flat prior on the scale length of the halo
+    """
+    lo,hi = param_ranges["Rs"]
+    
+    if Rs <= lo or Rs >= hi:
         return -np.inf
     else:
         return 0.
