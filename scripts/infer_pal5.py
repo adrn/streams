@@ -10,6 +10,11 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import logging
+import shutil
+import logging
+from datetime import datetime
+import multiprocessing
 
 # Third-party
 import matplotlib.pyplot as plt
@@ -17,13 +22,14 @@ import numpy as np
 import astropy.units as u
 
 # project
+from streams.simulation.config import read
 from streams.io.pal5 import particles_today, satellite_today, time
 from streams.inference.pal5 import ln_prior, ln_likelihood, ln_posterior, objective
 from streams.potential.pal5 import Palomar5, true_params, _true_params
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.inference import relative_normalized_coordinates
 from streams.observation.gaia import add_uncertainties_to_particles
-from streams.inference import infer_potential
+from streams.inference import infer_potential, max_likelihood_parameters
 
 def test_left_right():
     l = ln_likelihood([], [], true_particles, satellite, t1, t2, resolution)
@@ -82,24 +88,8 @@ def main(config_file, job_name=None):
     # Read in simulation data
     satellite = satellite_today()
     t1,t2 = time()
-    if isinstance(expr, list):
-        if not isinstance(config["particles"], list):
-            raise ValueError("If multiple expr's provided, multiple "
-                             "particle numbers must be provided!")
-        elif len(config["particles"]) != len(expr):
-            raise ValueError("Must supply a particle count for each expr")
-        
-        for N_i,expr_i in zip(config["particles"], expr):
-            these_p = particles_today(N=N_i*B, expr=expr_i)
-            
-            try:
-                particles = particles.merge(these_p)
-            except NameError:
-                particles = these_p
-        Nparticles = len(particles._r)
-    else:
-        Nparticles = config["particles"]
-        particles = particles_today(N=Nparticles*B, expr=expr)
+    Nparticles = config["particles"]
+    particles = particles_today(N=Nparticles*B)
     
     # Create initial position array for walkers
     for p_name in config["model_parameters"]:
