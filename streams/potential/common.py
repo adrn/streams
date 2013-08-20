@@ -21,8 +21,9 @@ from .core import CartesianPotential
 #import _common # minimal gains from using Cython
 
 __all__ = ["PointMassPotential", "MiyamotoNagaiPotential",\
-           "HernquistPotential", "LogarithmicPotentialLJ",
-           "PlummerPotential", "IsochronePotential"]
+           "HernquistPotential", "LogarithmicPotentialLJ",\
+           "PlummerPotential", "IsochronePotential",\
+           "AxisymmetricNFWPotential"]
 
 ############################################################
 #    Potential due to a point mass at a given position
@@ -484,4 +485,72 @@ class LogarithmicPotentialLJ(CartesianPotential):
                                                      latex=latex, 
                                                      parameters=parameters)
 
+
+####################################################################################
+#    Axisymmetric NFW potential
+#
+def _cartesian_axisymmetric_nfw_model(bases):
+    """ Generates functions to evaluate an NFW potential and its 
+        derivatives at a specified position.
+        
+        Physical parameters for this potential are:
+            m : total mass in the potential
+            qz : z axis flattening
+            Rs : scale-length
+    """
+    
+    # scale G to be in this unit system
+    _G = G.decompose(bases=bases).value
+    
+    def f(r,r_0,m,qz,Rs): 
+        rr = r-r_0
+        try:
+            x,y,z = rr[:,0],rr[:,1],rr[:,2]
+        except IndexError:
+            x,y,z = rr
+        
+        R_sq = x**2 + y**2
+        sqrt_term = np.sqrt(R_sq + (z/qz)**2)
+        val = -_G * m / sqrt_term * np.log(1. + sqrt_term/Rs)
+        
+        return val
+    
+    def df(r,r_0,m,qz,Rs): 
+        rr = r-r_0
+        try:
+            x,y,z = rr[:,0],rr[:,1],rr[:,2]
+        except IndexError:
+            x,y,z = rr
+        
+        R = np.sqrt(x*x + y*y + (z/qz)**2)
+        fac = -_G*m/R * (np.log(1.0 + R/Rs)/R - 1.0/(Rs+R))
+        _x = x/R * fac
+        _y = y/R * fac
+        _z = z/(qz*qz*R) * fac
+
+        return np.array([_x,_y,_z]).T
+        
+    return (f, df)
+    
+class AxisymmetricNFWPotential(CartesianPotential):
+    
+    def __init__(self, unit_system, **parameters):
+        
+        latex = "$\sigma$"
+        
+        unit_system = self._validate_unit_system(unit_system)
+        
+        if "r_0" not in parameters.keys():
+            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+        
+        assert "m" in parameters.keys(), "You must specify a mass."
+        assert "qz" in parameters.keys(), "You must specify the parameter 'qz'."
+        assert "Rs" in parameters.keys(), "You must specify the parameter 'Rs'."
+        
+        # get functions for evaluating potential and derivatives
+        f,df = _cartesian_axisymmetric_nfw_model(unit_system.bases)
+        super(AxisymmetricNFWPotential, self).__init__(unit_system, 
+                                                 f=f, f_prime=df, 
+                                                 latex=latex, 
+                                                 parameters=parameters)
 
