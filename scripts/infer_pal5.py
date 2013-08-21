@@ -18,7 +18,11 @@ from datetime import datetime
 import multiprocessing
 
 # Third-party
-from emcee.utils import MPIPool
+try:
+    from emcee.utils import MPIPool
+except ImportError:
+    print("Failed to import MPIPool from emcee! MPI functionality won't work.")
+    
 import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
@@ -254,10 +258,11 @@ if __name__ == "__main__":
         t1,t2 = time()
         resolution = 4.
 
-        fig = test_likelihood(ln_likelihood, true_particles, frac_bounds=(0.6,1.4))
+        fig = test_likelihood(ln_likelihood, true_particles, 
+                              frac_bounds=(0.6,1.4), Nbins=5)
         plt.show()
         
-        test_left_right()
+        #test_left_right()
         sys.exit(0)
     
     if args.verbose:
