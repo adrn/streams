@@ -137,17 +137,31 @@ def objective2(potential, satellite_orbit, particle_orbits, v_disp):
     # get numbers for any relevant loops below
     Ntimesteps, Nparticles, Ndim = particle_orbits._r.shape
     
-    #r_tide = potential._tidal_radius(m=satellite_orbit._m,
-    #                                 r=satellite_orbit._r)
-    #r_tide = r_tide[:,:,np.newaxis]
+    r_tide = potential._tidal_radius(m=satellite_orbit._m,
+                                     r=satellite_orbit._r)
     
     # compute relative, normalized coordinates and then phase-space distance
     R = particle_orbits._r - satellite_orbit._r
     V = particle_orbits._v - satellite_orbit._v
-    #Q = R / r_tide
-    #P = V / v_disp
-    Q = R
-    P = V
+    
+    full_r_tide = np.repeat(r_tide, 3, axis=1)
+    full_v_disp = np.zeros_like(full_r_tide) + v_disp
+    cov = np.hstack((full_r_tide, full_v_disp))**2
+    
+    L = []
+    for jj in range(Nparticles):
+        X = np.hstack((R[:,jj], V[:,jj]))
+        fac = np.prod(cov,axis=1)**-0.5
+        a = -0.5 * np.sum(X**2 / cov)
+        A = np.max(a)
+        l = A + np.log(sum(fac * np.exp(a-A)))
+        L.append(l)
+    
+    return np.sum(L)
+    
+    #
+    ##
+    #
     
     D_ps = np.sum(Q**2, axis=-1) + np.sum(P**2, axis=-1)
     return np.sum(np.min(D_ps, axis=0))

@@ -22,6 +22,8 @@ if not os.path.exists(plot_path):
 
 resolution = 4.
 
+Nparticles = 100
+
 class TestLM10(object):
     
     def setup_class(self):
@@ -36,7 +38,7 @@ class TestLM10(object):
         np.random.seed(42)
         self.t1,self.t2 = time()
         self.satellite = satellite_today()
-        self.particles = particles_today(N=500, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
+        self.particles = particles_today(N=Nparticles, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
 
     def test_time_posterior(self):
         N = 10
@@ -79,7 +81,7 @@ class TestPal5(object):
         np.random.seed(42)
         self.t1,self.t2 = time()
         self.satellite = satellite_today()
-        self.particles = particles_today(N=500)
+        self.particles = particles_today(N=Nparticles)
 
     def test_time_posterior(self):
         N = 10
@@ -89,7 +91,7 @@ class TestPal5(object):
                               self.t1, self.t2, resolution)
         print("Pal5: {0} seconds per ln_posterior call".format(float(pytime.time() - a) / N))
     
-    def test_posterior_shape(self, frac_bounds=(0.8,1.2), Nbins=11):
+    def test_posterior_shape(self, frac_bounds=(0.5,1.5), Nbins=11):
         for p_name in self._true_params.keys():
             true_p = self._true_params[p_name]
             vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
