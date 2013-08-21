@@ -92,7 +92,7 @@ class TestPal5(object):
                               self.t1, self.t2, resolution)
         print("Pal5: {0} seconds per ln_posterior call".format(float(pytime.time() - a) / N))
     
-    def test_posterior_shape(self, frac_bounds=(0.5,1.5), Nbins=15):
+    def test_posterior_shape(self, frac_bounds=(0.5,1.5), Nbins=25):
         for p_name in self._true_params.keys():
             true_p = self._true_params[p_name]
             vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
