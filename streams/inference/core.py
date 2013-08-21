@@ -152,9 +152,10 @@ def objective2(potential, satellite_orbit, particle_orbits, v_disp):
     for jj in range(Nparticles):
         X = np.hstack((R[:,jj], V[:,jj]))
         fac = np.prod(cov,axis=1)**-0.5
-        a = -0.5 * np.sum(X**2 / cov)
+        a = -0.5 * np.sum(X**2 / cov, axis=1)
+        
         A = np.max(a)
-        l = A + np.log(sum(fac * np.exp(a-A)))
+        l = A + np.log(np.sum(fac * np.exp(a-A)))
         L.append(l)
     
     return np.sum(L)

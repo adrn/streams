@@ -128,7 +128,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
                                       t1=t1, t2=t2)
     
     # v_disp measured from still-bound LM10 particles
-    return -objective(lm10, s_orbit, p_orbits, v_disp=0.0133)
+    return -objective2(lm10, s_orbit, p_orbits, v_disp=0.0133)
 
 def ln_posterior(p, *args):
     param_names, particles, satellite, t1, t2, resolution = args
