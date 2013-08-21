@@ -98,7 +98,7 @@ def emcee_plot(sampler, params, converged_idx,
                     color="#555555",
                     alpha=0.5)
                     
-        ax1.set_ylabel(param_to_latex[param], 
+        ax1.set_ylabel(param, 
                        fontsize=36,
                        labelpad=18,
                        rotation="horizontal",
