@@ -68,6 +68,46 @@ def objective(potential, satellite_orbit, particle_orbits):
     sign,logdet = np.linalg.slogdet(cov)
     return logdet
 
+def objective2(potential, satellite_orbit, particle_orbits):
+    """ This is a new objective function, motivated by the fact that what 
+        I was doing before doesn't really make sense...
+    """
+    
+    # get numbers for any relevant loops below
+    Ntimesteps, Nparticles, Ndim = particle_orbits._r.shape
+    
+    #r_tide = potential._tidal_radius(m=satellite_orbit._m,
+    #                                 r=satellite_orbit._r)
+    #r_tide = r_tide[:,:,np.newaxis]
+    
+    # velocity dispersion from measuring the dispersion of the still-bound
+    #   particles from LM10
+    #v_disp = 0.0013 # kpc/Myr
+    
+    # compute relative, normalized coordinates and then phase-space distance
+    R = particle_orbits._r - satellite_orbit._r
+    V = particle_orbits._v - satellite_orbit._v
+    #Q = R / r_tide
+    #P = V / v_disp
+    Q = R
+    P = V
+    
+    D_ps = np.sum(Q**2, axis=-1) + np.sum(P**2, axis=-1)
+    return np.sum(np.min(D_ps, axis=0))
+    
+    min_time_idx = D_ps.argmin(axis=0)
+    print(min_time_idx[0])
+    print(np.sum(Q**2, axis=-1)[min_time_idx[0],0], np.sum(P**2, axis=-1)[min_time_idx[0],0])
+    sys.exit(0)
+    
+    B = 0.
+    for ii in range(Nparticles):
+        idx = min_time_idx[ii]
+        r_disp = np.squeeze(r_tide[idx])        
+        B += np.log(np.prod([r_disp**2]*3+[v_disp**2]*3)) + D_ps[idx,ii]
+    
+    return B
+
 def ln_p_qz(qz):
     """ Flat prior on vertical (z) axis flattening parameter. """
     lo,hi = param_ranges["qz"]
@@ -121,7 +161,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     # not adaptive: s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     
-    return -objective(potential, s_orbit, p_orbits)
+    return -objective2(potential, s_orbit, p_orbits)
 
 def ln_posterior(p, *args):
     param_names, particles, satellite, t1, t2, resolution = args
