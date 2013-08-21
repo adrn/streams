@@ -22,7 +22,7 @@ if not os.path.exists(plot_path):
 
 resolution = 4.
 
-Nparticles = 100
+Nparticles = 300
 
 class TestLM10(object):
     

@@ -158,7 +158,7 @@ def objective2(potential, satellite_orbit, particle_orbits, v_disp):
         l = A + np.log(np.sum(fac * np.exp(a-A)))
         L.append(l)
     
-    return np.log(np.fabs(np.sum(L)))
+    return np.sum(L)
     
     #
     ##
