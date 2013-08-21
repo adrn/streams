@@ -10,6 +10,9 @@ numpy_incl_path = os.path.join(numpy_base_path, "core", "include")
 lm10_acc = Extension("streams.potential._lm10_acceleration", 
                       ["streams/potential/_lm10_acceleration.pyx"],
                      include_dirs=[numpy_incl_path])
+pal5_acc = Extension("streams.potential._pal5_acceleration", 
+                      ["streams/potential/_pal5_acceleration.pyx"],
+                     include_dirs=[numpy_incl_path])
 
 setup(
     name="Streams",
@@ -18,5 +21,5 @@ setup(
     author_email="adrn@astro.columbia.edu",
     license="BSD",
     cmdclass = {'build_ext': build_ext},
-    ext_modules=[lm10_acc]
+    ext_modules=[lm10_acc, pal5_acc]
 )

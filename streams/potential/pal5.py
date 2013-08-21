@@ -17,6 +17,7 @@ from astropy.constants import G
 
 from .core import CartesianPotential, CompositePotential, UnitSystem
 from .common import MiyamotoNagaiPotential, HernquistPotential, AxisymmetricNFWPotential
+from ._pal5_acceleration import pal5_acceleration
 
 true_params = dict(m=1.812E12*u.M_sun,
                    qz=0.814,
@@ -72,6 +73,7 @@ class Palomar5(CompositePotential):
         _params = halo._parameters.copy()
         _params.pop('r_0')
         
+        self._acceleration_at = lambda r, n_particles, acc: pal5_acceleration(r, n_particles, acc, **_params)
         self._G = G.decompose(bases=unit_system).value
         
     def _tidal_radius(self, m, r):

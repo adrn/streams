@@ -522,11 +522,15 @@ def _cartesian_axisymmetric_nfw_model(bases):
         except IndexError:
             x,y,z = rr
         
-        R = np.sqrt(x*x + y*y + (z/qz)**2)
-        fac = -_G*m/R * (np.log(1.0 + R/Rs)/R - 1.0/(Rs+R))
-        _x = x/R * fac
-        _y = y/R * fac
-        _z = z/(qz*qz*R) * fac
+        zz = z/qz
+        R = np.sqrt(x*x + y*y + zz*zz)
+        
+        term1 = 1./(R*R*(Rs+R))
+        term2 = -np.log(1. + R/Rs) / (R*R*R)
+        fac = _G*m * (term1 + term2)
+        _x = fac * x
+        _y = fac * y
+        _z = fac * z / qz**2
 
         return np.array([_x,_y,_z]).T
         

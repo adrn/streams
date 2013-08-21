@@ -20,31 +20,24 @@ from ...misc.units import UnitSystem
 from ..core import *
 from ..common import *
 from ..lm10 import LawMajewski2010
+from ..pal5 import Palomar5
 
 Ntrials = 100
-Nparticles = 10000
+Nparticles = 1000
 
 usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
 
-def time_potential(potential):
-    r = np.random.uniform(1, 50, size=(Nparticles, 3))*u.kpc
+def time_potential(potential, *args):
+    _r = np.random.uniform(1, 50, size=(Nparticles, 3))
     print()
     print(potential)
     
     a = time.time()
     for ii in range(Ntrials):
-        potential.acceleration_at(r)
+        potential._acceleration_at(_r, *args)
         
     t = (time.time()-a)/float(Ntrials)
-    print("With units: {0:.3f} ms per call".format(t*1E3))
-    
-    _r = r.value
-    a = time.time()
-    for ii in range(Ntrials):
-        potential._acceleration_at(_r)
-        
-    t = (time.time()-a)/float(Ntrials)
-    print("Without units: {0:.3f} ms per call".format(t*1E3))
+    print("{0} particles, {1:.3f} ms per call".format(Nparticles, t*1E3))
 
 def test_time_miyamoto():
            
@@ -97,8 +90,15 @@ def test_time_composite():
     print("Pure-python LM10")
     time_potential(potential)
 
-def test_compare_cython():
-    print("cython LM10")
+def test_lm10():
+    print("LM10")
     py = LawMajewski2010(v_halo=121*u.km/u.s)
-    time_potential(py)
+    acc = np.zeros((Nparticles,3))
+    time_potential(py, Nparticles, acc)
+    
+def test_pal5():
+    print("Pal5")
+    py = Palomar5()
+    acc = np.zeros((Nparticles,3))
+    time_potential(py, Nparticles, acc)
 

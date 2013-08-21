@@ -77,7 +77,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     potential = Palomar5(**halo_params)
     
-    integrator = SatelliteParticleIntegrator(potential, satellite, particles, lm10=False)
+    integrator = SatelliteParticleIntegrator(potential, satellite, particles)
     
     # not adaptive: s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
