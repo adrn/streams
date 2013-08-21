@@ -22,7 +22,7 @@ if not os.path.exists(plot_path):
 
 resolution = 4.
 
-Nparticles = 500
+Nparticles = 100
 
 class TestLM10(object):
     
@@ -82,8 +82,9 @@ class TestPal5(object):
         self.t1,self.t2 = time()
         self.satellite = satellite_today()
         self.particles = particles_today(N=Nparticles)
-
+    
     def test_time_posterior(self):
+        pytest.skip()
         N = 10
         a = pytime.time()
         for ii in range(N):
@@ -103,10 +104,11 @@ class TestPal5(object):
                 posterior_shape.append(post_val)
             
             posterior_shape = np.array(posterior_shape)
+            idx = ~np.isinf(posterior_shape)
             
             fig = plt.figure(figsize=(6,6))
             ax = fig.add_subplot(111)
-            ax.plot(vals, posterior_shape, lw=2.)
+            ax.plot(vals[idx], posterior_shape[idx], lw=2.)
             ax.axvline(self._true_params[p_name], color='b', linestyle='--')
             fig.savefig(os.path.join(plot_path, "pal5_{0}.png".format(p_name)))
         
