@@ -22,7 +22,6 @@ from scipy.stats import gaussian_kde
 
 from ..potential.lm10 import param_to_latex
 from ..potential.lm10 import true_params
-from ..inference.lm10 import param_ranges
 
 __all__ = ["discrete_cmap", "emcee_plot", "plot_sampler_pickle", \
            "bootstrap_scatter_plot", "sgr_kde"]
@@ -41,7 +40,9 @@ def discrete_cmap(N=8):
 
 # TODO: make this more general...
 def emcee_plot(sampler, params, converged_idx, 
-                acceptance_fraction_bounds=(None,None), show_true=False):
+                acceptance_fraction_bounds=(None,None), 
+                show_true=False,
+                param_ranges=None):
     """ Plot posterior probability distributions and chain traces from the 
         chains associated with the given sampler. 
         

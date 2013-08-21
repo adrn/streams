@@ -196,7 +196,8 @@ def main(config_file, job_name=None):
                 # now plot the walker traces
                 fig = plot_sampler_pickle(os.path.join(path,data_file), 
                                           params=config["model_parameters"], 
-                                          acceptance_fraction_bounds=(0.15,0.6))
+                                          acceptance_fraction_bounds=(0.15,0.6),
+                                          param_ranges=param_ranges)
                 
                 # add the max likelihood estimates to the plots                           
                 for ii,param_name in enumerate(config["model_parameters"]):
