@@ -191,7 +191,7 @@ def main(config_file, job_name=None):
                 # print MAP values
                 idx = sampler.flatlnprobability.argmax()
                 best_p = sampler.flatchain[idx]
-                print("MAP values: ".format(best_p))
+                print("MAP values: {0}".format(best_p))
                 
                 # now plot the walker traces
                 fig = plot_sampler_pickle(os.path.join(path,data_file), 
