@@ -183,16 +183,30 @@ def main(config_file, job_name=None):
                 fig = triangle.corner(sampler.flatchain, 
                                       labels=config["model_parameters"], 
                                       truths=[_true_params[p] for p in config["model_parameters"]], 
-                                      quantiles=[0.16, 0.5, 0.84])
-                
-                # add the max likelihood estimates to the plots                           
-                #for ii,param_name in enumerate(config["model_parameters"]):
-                #    fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
-                #                                  color="#CA0020",
-                #                                  linestyle="--",
-                #                                  linewidth=2)
+                                      quantiles=[0.16, 0.5, 0.84],
+                                      plot_datapoints=False)
                 
                 fig.savefig(os.path.join(path, "emcee_sampler_{0}.png".format(bb)))
+                
+                # print MAP values
+                idx = sampler.flatlnprobability.argmax()
+                best_p = sampler.flatchain[idx]
+                print("MAP values: ".format(",".join(best_p)))
+                
+                # now plot the walker traces
+                fig = plot_sampler_pickle(os.path.join(path,data_file), 
+                                          params=config["model_parameters"], 
+                                          acceptance_fraction_bounds=(0.15,0.6))
+                
+                # add the max likelihood estimates to the plots                           
+                for ii,param_name in enumerate(config["model_parameters"]):
+                    fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
+                                                  color="#CA0020",
+                                                  linestyle="--",
+                                                  linewidth=2)
+                
+                fig.savefig(os.path.join(path, "emcee_trace_{0}.png".format(bb)))
+                
     except:
         if config["mpi"]: pool.close()
         raise
