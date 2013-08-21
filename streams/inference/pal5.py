@@ -83,7 +83,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     
     # v_disp from Andreas
-    return -objective2(potential, s_orbit, p_orbits, v_disp=0.0010)
+    return objective2(potential, s_orbit, p_orbits, v_disp=0.0010)
 
 def ln_posterior(p, *args):
     param_names, particles, satellite, t1, t2, resolution = args
