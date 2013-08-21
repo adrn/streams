@@ -22,7 +22,7 @@ if not os.path.exists(plot_path):
 
 resolution = 4.
 
-Nparticles = 100
+Nparticles = 500
 
 class TestLM10(object):
     
@@ -48,7 +48,7 @@ class TestLM10(object):
                               self.t1, self.t2, resolution)
         print("LM10: {0} seconds per ln_posterior call".format(float(pytime.time() - a) / N))
     
-    def test_posterior_shape(self, frac_bounds=(0.8,1.2), Nbins=11):
+    def test_posterior_shape(self, frac_bounds=(0.8,1.2), Nbins=15):
         for p_name in self._true_params.keys():
             true_p = self._true_params[p_name]
             vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
@@ -91,7 +91,7 @@ class TestPal5(object):
                               self.t1, self.t2, resolution)
         print("Pal5: {0} seconds per ln_posterior call".format(float(pytime.time() - a) / N))
     
-    def test_posterior_shape(self, frac_bounds=(0.5,1.5), Nbins=11):
+    def test_posterior_shape(self, frac_bounds=(0.5,1.5), Nbins=15):
         for p_name in self._true_params.keys():
             true_p = self._true_params[p_name]
             vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
