@@ -502,26 +502,28 @@ def _cartesian_axisymmetric_nfw_model(bases):
     # scale G to be in this unit system
     _G = G.decompose(bases=bases).value
     
-    def f(r,r_0,m,qz,Rs): 
+    def f(r,r_0,log_m,qz,Rs): 
         rr = r-r_0
         try:
             x,y,z = rr[:,0],rr[:,1],rr[:,2]
         except IndexError:
             x,y,z = rr
         
+        m = np.exp(log_m)
         R_sq = x**2 + y**2
         sqrt_term = np.sqrt(R_sq + (z/qz)**2)
         val = -_G * m / sqrt_term * np.log(1. + sqrt_term/Rs)
         
         return val
     
-    def df(r,r_0,m,qz,Rs): 
+    def df(r,r_0,log_m,qz,Rs): 
         rr = r-r_0
         try:
             x,y,z = rr[:,0],rr[:,1],rr[:,2]
         except IndexError:
             x,y,z = rr
         
+        m = np.exp(log_m)
         zz = z/qz
         R = np.sqrt(x*x + y*y + zz*zz)
         
@@ -547,7 +549,7 @@ class AxisymmetricNFWPotential(CartesianPotential):
         if "r_0" not in parameters.keys():
             parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
         
-        assert "m" in parameters.keys(), "You must specify a mass."
+        assert "log_m" in parameters.keys(), "You must specify a log-mass."
         assert "qz" in parameters.keys(), "You must specify the parameter 'qz'."
         assert "Rs" in parameters.keys(), "You must specify the parameter 'Rs'."
         

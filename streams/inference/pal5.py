@@ -25,7 +25,7 @@ from .core import objective, objective2
 __all__ = ["ln_posterior", "ln_likelihood"]
 
 # Parameter ranges to initialize the walkers over
-param_ranges = dict(m=(5.E11, 5.E12),
+param_ranges = dict(log_m=(26.93787, 29.24046),
                     qz=(0.707,1.2),
                     Rs=(10.,45.))
 
@@ -38,12 +38,12 @@ def ln_p_qz(qz):
     else:
         return 0.
 
-def ln_p_m(m):
+def ln_p_log_m(log_m):
     """ Flat prior on mass of the halo
     """
-    lo,hi = param_ranges["m"]
+    lo,hi = param_ranges["log_m"]
     
-    if m <= lo or m >= hi:
+    if log_m <= lo or log_m >= hi:
         return -np.inf
     else:
         return 0.

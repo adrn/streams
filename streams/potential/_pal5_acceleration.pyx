@@ -25,6 +25,7 @@ cdef extern from "math.h":
     double sin(double x)
     double cos(double x)
     double log(double x)
+    double exp(double x)
 
 #DTYPE = np.double
 #ctypedef np.double_t DTYPE_t
@@ -36,7 +37,7 @@ cdef extern from "math.h":
 @cython.nonecheck(False)
 def pal5_acceleration(double[:, ::1] r not None, int n_particles, 
                       np.ndarray[double, ndim=2] data,
-                      double qz, double m, double Rs):
+                      double qz, double log_m, double Rs):
     
     #cdef double[:, ::1] data = np.empty((n_particles, 3))
     
@@ -56,7 +57,7 @@ def pal5_acceleration(double[:, ::1] r not None, int n_particles,
     # Halo
     cdef double qz_sq
     qz_sq = qz*qz
-    Gm_halo = G*m
+    Gm_halo = G*exp(log_m)
     
     cdef double x, y, z
     cdef double xx, yy, zz

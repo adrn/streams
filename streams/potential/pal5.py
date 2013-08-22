@@ -19,11 +19,11 @@ from .core import CartesianPotential, CompositePotential, UnitSystem
 from .common import MiyamotoNagaiPotential, HernquistPotential, AxisymmetricNFWPotential
 from ._pal5_acceleration import pal5_acceleration
 
-true_params = dict(m=1.812E12*u.M_sun,
+true_params = dict(log_m=28.2254523235*u.M_sun,
                    qz=0.814,
                    Rs=32.26*u.kpc)
 
-_true_params = dict(m=1.812E12,
+_true_params = dict(log_m=28.2254523235,
                    qz=0.814,
                    Rs=32.26)
 
@@ -37,7 +37,7 @@ class Palomar5(CompositePotential):
             Hernquist bulge
             Axisymmetric, flattened NFW halo
             
-            Model parameters: M, qz, Rs
+            Model parameters: log_M, qz, Rs
             
             Parameters
             ----------
@@ -50,7 +50,7 @@ class Palomar5(CompositePotential):
         unit_system = UnitSystem(u.kpc, u.Myr, u.radian, u.M_sun)
         unit_system = self._validate_unit_system(unit_system)
         
-        for p in ["m", "qz", "Rs"]:
+        for p in ["log_m", "qz", "Rs"]:
             if p not in parameters.keys():
                 parameters[p] = true_params[p]
         
@@ -66,9 +66,9 @@ class Palomar5(CompositePotential):
                                         **parameters)
         
         super(Palomar5, self).__init__(unit_system, 
-                                              bulge=bulge,
-                                              disk=disk,
-                                              halo=halo)
+                                       bulge=bulge,
+                                       disk=disk,
+                                       halo=halo)
         
         _params = halo._parameters.copy()
         _params.pop('r_0')
@@ -92,7 +92,7 @@ class Palomar5(CompositePotential):
         # Radius of Sgr center relative to galactic center
         R_orbit = np.sqrt(np.sum(r**2., axis=-1)) 
         
-        m_halo_enc = self["halo"]._parameters["m"] / 10.
+        m_halo_enc = np.exp(self["halo"]._parameters["log_m"]) / 10.
         m_enc = self["disk"]._parameters["m"] + \
                 self["bulge"]._parameters["m"] + \
                 m_halo_enc

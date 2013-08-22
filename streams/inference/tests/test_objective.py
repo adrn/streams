@@ -95,14 +95,19 @@ class TestPal5(object):
     def test_posterior_shape(self, frac_bounds=(0.5,1.5), Nbins=25):
         for p_name in self._true_params.keys():
             true_p = self._true_params[p_name]
-            vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
+            if p_name == 'log_m':
+                vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * np.exp(true_p)
+                vals = np.log(vals)
+            else:
+                vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
+                
             posterior_shape = []
             for val in vals:
                 post_val = self.ln_posterior([val], [p_name], self.particles, 
                                              self.satellite, self.t1, self.t2, 
                                              resolution)
                 posterior_shape.append(post_val)
-            
+                
             posterior_shape = np.array(posterior_shape)
             idx = ~np.isinf(posterior_shape)
             
