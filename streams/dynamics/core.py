@@ -39,14 +39,30 @@ class DynamicalBase(object):
     @property
     def _v(self):
         return self._x[...,self.ndim:]
+        
+    @property
+    def _dr(self):
+        return self._dx[...,:self.ndim]
+    
+    @property
+    def _dv(self):
+        return self._dx[...,self.ndim:]
     
     @property
     def r(self):
         return self._r * self.unit_system['length']
+        
+    @property
+    def dr(self):
+        return self._dr * self.unit_system['length']
     
     @property
     def v(self):
         return self._v * self.unit_system['length'] / self.unit_system['time']
+    
+    @property
+    def dv(self):
+        return self._dv * self.unit_system['length'] / self.unit_system['time']
     
     @property
     def m(self):

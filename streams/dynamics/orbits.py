@@ -22,7 +22,7 @@ __all__ = ["OrbitCollection"]
 
 class OrbitCollection(DynamicalBase):
         
-    def __init__(self, t, r, v, m=None, unit_system=None):
+    def __init__(self, t, r, v, m=None, dr=None, dv=None, unit_system=None):
         """ Represents a collection of orbits, e.g. positions and velocities 
             over time for a set of particles.
             
@@ -36,6 +36,10 @@ class OrbitCollection(DynamicalBase):
                 Position.
             v : astropy.units.Quantity
                 Velocity.
+            dr : astropy.units.Quantity (optional)
+                Uncertainty in position.
+            dv : astropy.units.Quantity (optional)
+                Uncertainty in velocity.
             m : astropy.units.Quantity (optional)
                 Mass.
             unit_system : UnitSystem (optional)
@@ -77,10 +81,28 @@ class OrbitCollection(DynamicalBase):
         self._m = m.decompose(unit_system).value
         self._t = t.decompose(unit_system).value
         
+        if dr is not None:
+            _validate_quantity(dr, unit_like=u.km)
+            assert dr.value.shape == r.value.shape
+            _dr = dr.decompose(unit_system).value
+        else:
+            _dr = np.zeros_like(_r)
+        
+        if dv is not None:
+            _validate_quantity(dv, unit_like=u.km/u.s)
+            assert dv.value.shape == v.value.shape
+            _dv = dv.decompose(unit_system).value
+        else:
+            _dv = np.zeros_like(_v)
+        
         # create container for all 6 phasespace 
         self._x = np.zeros((self.ntimesteps, self.nparticles, self.ndim*2))
         self._x[..., :self.ndim] = _r
         self._x[..., self.ndim:] = _v
+        
+        self._dx = np.zeros((self.ntimesteps, self.nparticles, self.ndim*2))
+        self._dx[..., :self.ndim] = _dr
+        self._dx[..., self.ndim:] = _dv
         
         self.unit_system = unit_system
     

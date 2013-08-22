@@ -64,3 +64,13 @@ def test_slice():
     
     assert isinstance(pc[0], ParticleCollection)
     assert isinstance(pc[0:15], OrbitCollection)
+
+def test_with_errors():
+    t = np.linspace(0., 10., 100)*u.yr
+    r = np.random.random((100,10,3))*u.kpc
+    dr = np.random.random((100,10,3))*u.kpc
+    v = np.random.random((100,10,3))*u.kpc/u.yr
+    dv = np.random.random((100,10,3))*u.kpc/u.yr
+    m = np.random.random(10)*u.M_sun
+    
+    oc = OrbitCollection(t=t, r=r, v=v, m=m, dr=dr, dv=dv)
