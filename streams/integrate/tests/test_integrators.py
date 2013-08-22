@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from ...misc.units import UnitSystem
 from ..leapfrog import LeapfrogIntegrator
 from ...potential import *
+from ...potential.pal5 import Palomar5
 
 plot_path = "plots/tests/integrate"
 animation_path = os.path.join(plot_path, "animation")
