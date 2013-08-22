@@ -94,3 +94,46 @@ def pal5_acceleration(double[:, ::1] r not None, int n_particles,
         data[ii,2] = fac1*z*(1.+_tmp) + fac2*z + fac3*z/qz_sq
             
     return np.array(data)
+
+@cython.boundscheck(False) # turn of bounds-checking for entire function
+@cython.cdivision(True) 
+@cython.wraparound(False)
+@cython.nonecheck(False)
+def pal5_logarithmic(double[:, ::1] r not None, int n_particles, 
+                      np.ndarray[double, ndim=2] data,
+                      double qz, double log_m, double Rs):
+    
+    #cdef double[:, ::1] data = np.empty((n_particles, 3))
+    
+    cdef double G, fac3, _tmp, _tmp_1, _tmp_2, R_pl_c
+    G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
+    
+    # Halo
+    cdef double qz_sq
+    qz_sq = qz*qz
+    Gm_halo = G*exp(log_m)
+    
+    cdef double x, y, z
+    cdef double xx, yy, zz
+    
+    for ii in range(n_particles):
+        x = r[ii,0]
+        y = r[ii,1]
+        z = r[ii,2]
+        
+        xx = x*x
+        yy = y*y
+        zz = z*z
+        
+        # Halo
+        R = sqrt(x*x + y*y + z*z/qz_sq)
+        
+        term1 = 1./(R*R*(Rs+R))
+        term2 = -log(1. + R/Rs) / (R*R*R)
+        fac3 = Gm_halo * (term1 + term2)
+        
+        data[ii,0] = fac3*x
+        data[ii,1] = fac3*y
+        data[ii,2] = fac3*z/qz_sq
+            
+    return np.array(data)
