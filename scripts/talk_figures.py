@@ -283,6 +283,84 @@ def bootstrapped_parameters_transpose():
     fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"), facecolor=rcparams['figure.facecolor'])
 
+def bootstrapped_parameters_transpose_wide():
+    data_file = os.path.join(project_root, "plots", "hotfoot", 
+                             "SMASH_new", "all_best_parameters.pickle")
+    
+    with open(data_file) as f:
+        data = pickle.load(f)
+    
+    rcparams = {'axes.linewidth' : 3., 'axes.edgecolor' : '#cccccc', 
+                'axes.facecolor' : '#888888', 'figure.facecolor' : '#666666',
+                'xtick.major.size' : 10, 'xtick.minor.size' : 6, 'xtick.major.pad' : 8,
+                'ytick.major.size' : 10, 'ytick.minor.size' : 6, 'ytick.major.pad' : 8,
+                'xtick.color' : '#cccccc', 'ytick.color' : '#cccccc', 
+                'text.color' : '#cccccc', 'axes.labelcolor' : '#cccccc'}
+    with rc_context(rc=rcparams): 
+        fig,axes = plt.subplots(1,3,figsize=(12,5))
+
+    y_param = 'v_halo'
+    x_params = ['q1', 'qz', 'phi']
+    
+    data['phi'] = (data['phi']*u.radian).to(u.degree).value
+    _true_params['phi'] = (_true_params['phi']*u.radian).to(u.degree).value
+    data['v_halo'] = (data['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
+    _true_params['v_halo'] = (_true_params['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
+    
+    style = dict()
+    style['q1'] = dict(ticks=[1.3, 1.38, 1.46],
+                       lims=(1., 2.))
+    style['qz'] = dict(ticks=[1.28, 1.36, 1.44],
+                       lims=(1., 2.))
+    style['phi'] = dict(ticks=[92, 97, 102],
+                        lims=(45, 180))
+    style['v_halo'] = dict(ticks=[115, 122, 129],
+                           lims=(100, 330))
+    
+    for ii,x_param in enumerate(x_params):
+        
+        true_x = _true_params[x_param]
+        true_y = _true_params[y_param]
+        xdata = np.array(data[x_param])
+        ydata = np.array(data[y_param])
+        
+        axes[ii].axhline(true_y, linewidth=2, color='#ABDDA4', alpha=1., zorder=-1)
+        axes[ii].axvline(true_x, linewidth=2, color='#ABDDA4', alpha=1., zorder=-1)
+        
+        points = np.vstack([xdata, ydata]).T
+        plot_point_cov(points, nstd=2, ax=axes[ii], alpha=0.3, color='#ffffff')
+        plot_point_cov(points, nstd=1, ax=axes[ii], alpha=0.55, color='#ffffff')
+        plot_point_cov(points, nstd=2, ax=axes[ii], color='#000000', fill=False)
+        plot_point_cov(points, nstd=1, ax=axes[ii], color='#000000', fill=False)
+        
+        axes[ii].plot(xdata, ydata, marker='.', markersize=7, alpha=0.75, 
+                      color='#2B83BA', linestyle='none', markeredgewidth=1.,
+                      markeredgecolor='#777777')
+        axes[ii].set_xlim(style[x_param]['lims'])
+        axes[ii].set_ylim(style[y_param]['lims'])
+        
+        axes[ii].yaxis.tick_left()        
+        axes[ii].set_xticks(style[x_param]['ticks'])
+        axes[ii].xaxis.tick_bottom()
+    
+    axes[0].set_ylabel(r"$v_{\rm halo}$", 
+                       fontsize=26, rotation='horizontal')
+    
+    axes[0].set_yticks(style[y_param]['ticks'])
+    axes[1].set_yticklabels([])
+    axes[2].set_yticklabels([])
+    
+    axes[0].set_xlabel(r"$q_1$", fontsize=26, rotation='horizontal')
+    axes[1].set_xlabel(r"$q_z$", fontsize=26, rotation='horizontal')
+    axes[2].set_xlabel(r"$\phi$", fontsize=26, rotation='horizontal')
+    
+    fig.text(0.855, 0.07, "[deg]", fontsize=16, color=rcparams['axes.labelcolor'])
+    fig.text(0.025, 0.49, "[km/s]", fontsize=16, color=rcparams['axes.labelcolor'])
+    
+    plt.tight_layout()
+    fig.subplots_adjust(hspace=0., wspace=0.)
+    fig.savefig(os.path.join(plot_path, "bootstrap_wide.pdf"), facecolor=rcparams['figure.facecolor'])
+
 def sgr():
     """ Top-down plot of Sgr particles, with selected stars and then 
         re-observed
@@ -343,4 +421,5 @@ if __name__ == '__main__':
     #gaia_spitzer_errors()
     #dump_gaia_csv()
     #bootstrapped_parameters_transpose()
-    sgr()
+    #sgr()
+    bootstrapped_parameters_transpose_wide()
