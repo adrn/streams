@@ -129,6 +129,14 @@ def objective(potential, satellite_orbit, particle_orbits, v_disp):
     sign,logdet = np.linalg.slogdet(cov)
     return logdet
 
+def frac_err(d):
+    if d < 10:
+        return 0.02
+    elif d > 75:
+        return 0.1
+    else:
+        return ((8./55)*d - 10./11)/100.
+
 def objective2(potential, satellite_orbit, particle_orbits, v_disp):
     """ This is a new objective function, motivated by the fact that what 
         I was doing before doesn't really make sense...
@@ -148,11 +156,18 @@ def objective2(potential, satellite_orbit, particle_orbits, v_disp):
     full_v_disp = np.zeros_like(full_r_tide) + v_disp
     cov = np.hstack((full_r_tide, full_v_disp))**2
     
+    _r = particle_orbits._r[0]
+    
     L = []
     for jj in range(Nparticles):
         X = np.hstack((R[:,jj], V[:,jj]))
-        fac = np.prod(cov,axis=1)**-0.5
-        a = -0.5 * np.sum(X**2 / cov, axis=1)
+        y = np.hstack((particle_orbits._r[:,jj], particle_orbits._v[:,jj]))
+        frac = frac_err(np.sqrt(np.sum(_r[jj]**2, axis=-1)))
+        err_var = frac*y
+        this_cov = cov + err_var**2.
+        
+        fac = np.prod(this_cov,axis=1)**-0.5
+        a = -0.5 * np.sum(X**2 / this_cov, axis=1)
         
         A = np.max(a)
         l = A + np.log(np.sum(fac * np.exp(a-A)))

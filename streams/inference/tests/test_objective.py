@@ -7,6 +7,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import copy
 import time as pytime
 
 # Third-party
@@ -22,7 +23,7 @@ if not os.path.exists(plot_path):
 
 resolution = 4.
 
-Nparticles = 300
+Nparticles = 100
 
 class TestLM10(object):
     
@@ -49,6 +50,29 @@ class TestLM10(object):
         print("LM10: {0} seconds per ln_posterior call".format(float(pytime.time() - a) / N))
     
     def test_posterior_shape(self, frac_bounds=(0.8,1.2), Nbins=15):
+        for p_name in self._true_params.keys():
+            true_p = self._true_params[p_name]
+            vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
+            posterior_shape = []
+            for val in vals:
+                post_val = self.ln_posterior([val], [p_name], self.particles, 
+                                             self.satellite, self.t1, self.t2, 
+                                             resolution)
+                posterior_shape.append(post_val)
+            
+            posterior_shape = np.array(posterior_shape)
+            
+            fig = plt.figure(figsize=(6,6))
+            ax = fig.add_subplot(111)
+            ax.plot(vals, posterior_shape, lw=2.)
+            ax.axvline(self._true_params[p_name], color='b', linestyle='--')
+            fig.savefig(os.path.join(plot_path, "lm10_{0}.png".format(p_name)))
+    
+    def test_posterior_shape_w_errors(self, frac_bounds=(0.8,1.2), Nbins=15):
+        
+        particles = copy.deepcopy(self.particles)
+        particles._dx = particles._x / 100.
+        
         for p_name in self._true_params.keys():
             true_p = self._true_params[p_name]
             vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
