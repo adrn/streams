@@ -89,7 +89,7 @@ class ParticleCollection(DynamicalBase):
         self._x[:,:self.ndim] = _r
         self._x[:,self.ndim:] = _v
         
-        self._dx = np.zeros((self.ntimesteps, self.nparticles, self.ndim*2))
+        self._dx = np.zeros((self.nparticles, self.ndim*2))
         self._dx[..., :self.ndim] = _dr
         self._dx[..., self.ndim:] = _dv
         
