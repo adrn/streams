@@ -159,23 +159,3 @@ def objective2(potential, satellite_orbit, particle_orbits, v_disp):
         L.append(l)
     
     return np.sum(L)
-    
-    #
-    ##
-    #
-    
-    D_ps = np.sum(Q**2, axis=-1) + np.sum(P**2, axis=-1)
-    return np.sum(np.min(D_ps, axis=0))
-    
-    min_time_idx = D_ps.argmin(axis=0)
-    print(min_time_idx[0])
-    print(np.sum(Q**2, axis=-1)[min_time_idx[0],0], np.sum(P**2, axis=-1)[min_time_idx[0],0])
-    sys.exit(0)
-    
-    B = 0.
-    for ii in range(Nparticles):
-        idx = min_time_idx[ii]
-        r_disp = np.squeeze(r_tide[idx])        
-        B += np.log(np.prod([r_disp**2]*3+[v_disp**2]*3)) + D_ps[idx,ii]
-    
-    return B

@@ -17,7 +17,7 @@ import numpy as np
 import astropy.units as u
 
 from ..inference import generalized_variance
-from ..potential.pal5 import Palomar5, true_params
+from ..potential.pal5 import Palomar5, Palomar5Logarithmic, true_params
 from ..dynamics import OrbitCollection
 from ..integrate.satellite_particles import SatelliteParticleIntegrator
 from .core import objective, objective2
@@ -76,6 +76,7 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
     potential = Palomar5(**halo_params)
+    #potential = Palomar5Logarithmic(**halo_params)
     
     integrator = SatelliteParticleIntegrator(potential, satellite, particles)
     
