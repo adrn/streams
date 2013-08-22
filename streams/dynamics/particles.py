@@ -21,7 +21,7 @@ __all__ = ["ParticleCollection"]
     
 class ParticleCollection(DynamicalBase):
     
-    def __init__(self, r, v, m=None, unit_system=None):
+    def __init__(self, r, v, m=None, dr=None, dv=None, unit_system=None):
         """ A collection of massive or test particles. 
             
             Parameters
@@ -31,7 +31,11 @@ class ParticleCollection(DynamicalBase):
             v : astropy.units.Quantity
                 Velocity.
             m : astropy.units.Quantity (optional)
-                Mass.
+                Mass.    
+            dr : astropy.units.Quantity (optional)
+                Uncertainty in position.
+            dv : astropy.units.Quantity (optional)
+                Uncertainty in velocity.
             unit_system : UnitSystem (optional)
                 The desired unit system for the particles. If not provided, will
                 use the units of the input Quantities.
@@ -66,10 +70,28 @@ class ParticleCollection(DynamicalBase):
         _v = v.decompose(unit_system).value
         self._m = m.decompose(unit_system).value
         
+        if dr is not None:
+            _validate_quantity(dr, unit_like=u.km)
+            assert dr.value.shape == r.value.shape
+            _dr = dr.decompose(unit_system).value
+        else:
+            _dr = np.zeros_like(_r)
+        
+        if dv is not None:
+            _validate_quantity(dv, unit_like=u.km/u.s)
+            assert dv.value.shape == v.value.shape
+            _dv = dv.decompose(unit_system).value
+        else:
+            _dv = np.zeros_like(_v)
+        
         # create container for all 6 phasespace 
         self._x = np.zeros((self.nparticles, self.ndim*2))
         self._x[:,:self.ndim] = _r
         self._x[:,self.ndim:] = _v
+        
+        self._dx = np.zeros((self.ntimesteps, self.nparticles, self.ndim*2))
+        self._dx[..., :self.ndim] = _dr
+        self._dx[..., self.ndim:] = _dv
         
         # Create internal G in the correct unit system for speedy acceleration
         #   computation
