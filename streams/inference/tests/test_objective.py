@@ -17,6 +17,8 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
+from ...observation.gaia import add_uncertainties_to_particles
+
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
@@ -70,15 +72,14 @@ class TestLM10(object):
     
     def test_posterior_shape_w_errors(self, frac_bounds=(0.8,1.2), Nbins=15):
         
-        particles = copy.deepcopy(self.particles)
-        particles._dx = particles._x / 100.
+        particles = add_uncertainties_to_particles(self.particles)
         
-        for p_name in self._true_params.keys():
+        for p_name in self._true_params.keys()[:1]:
             true_p = self._true_params[p_name]
             vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
             posterior_shape = []
             for val in vals:
-                post_val = self.ln_posterior([val], [p_name], self.particles, 
+                post_val = self.ln_posterior([val], [p_name], particles, 
                                              self.satellite, self.t1, self.t2, 
                                              resolution)
                 posterior_shape.append(post_val)
@@ -89,7 +90,7 @@ class TestLM10(object):
             ax = fig.add_subplot(111)
             ax.plot(vals, posterior_shape, lw=2.)
             ax.axvline(self._true_params[p_name], color='b', linestyle='--')
-            fig.savefig(os.path.join(plot_path, "lm10_{0}.png".format(p_name)))
+            fig.savefig(os.path.join(plot_path, "lm10_errors_{0}.png".format(p_name)))
 
 class TestPal5(object):
     

@@ -18,6 +18,7 @@ from astropy.utils.misc import isiterable
 from ..dynamics import ParticleCollection
 from .rrlyrae import rrl_M_V, rrl_V_minus_I
 from .core import apparent_magnitude
+from ..coordinates import gc_to_hel, hel_to_gc
 
 __all__ = ["parallax_error", "proper_motion_error",  \
            "apparent_magnitude", "rr_lyrae_add_observational_uncertainties", \
@@ -124,26 +125,16 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     M_V, dM_V = rrl_M_V(-0.5)
     
     # Transform to heliocentric coordinates
-    rsun = 8.*u.kpc
+    x = x.to(u.kpc)
+    y = y.to(u.kpc)
+    z = z.to(u.kpc)
     
-    x = x + rsun
+    vx = vx.to(u.km/u.s)
+    vy = vy.to(u.km/u.s)
+    vz = vz.to(u.km/u.s)
     
-    d = np.sqrt(x.value**2 + y.value**2 + z.value**2)*x.unit
+    l, b, d, mul, mub, vr = gc_to_hel(x,y,z,vx,vy,vz)
     V = apparent_magnitude(M_V, d)
-    
-    vr = (x*vx + y*vy + z*vz) / d 
-    
-    # proper motions in km/s/kpc
-    xy = np.sqrt(x.value**2 + y.value**2)*x.unit
-    v_xy = (x*vx + y*vy) / xy
-    mul = (x*vy - y*vx) / xy / d
-    mub = (-z*v_xy + xy*vz) / d**2
-    
-    # angular position
-    sinb = z/d
-    cosb = xy/d
-    cosl = x/xy
-    sinl = y/xy
     
     # DISTANCE ERROR -- assuming 2% distances from RR Lyrae mid-IR
     if kwargs.has_key("distance_error_percent") and \
@@ -170,29 +161,18 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     else:
         dmu = proper_motion_error(V, rrl_V_minus_I)            
     
-    dmu = (dmu.to(u.rad/u.s).value / u.s).to(u.km / (u.kpc*u.s))
+    dmu = dmu.to(u.rad/u.s)
+    
     try:
         size = len(dmu)
     except TypeError:
         size = len(vr)
     
-    mul = (mul.value + np.random.normal(0., dmu.value, size=size))*dmu.unit
-    mub = (mub.value + np.random.normal(0., dmu.value, size=size))*dmu.unit
+    mul = mul + np.random.normal(0., dmu.value, size=size)*dmu.unit
+    mub = mub + np.random.normal(0., dmu.value, size=size)*dmu.unit
     
-    # compute tangential velocities as distance times proper motion
-    v_l = d*mul
-    v_b = d*mub
-    
-    new_x = (d*cosb*cosl - rsun).to(d.unit).value
-    new_y = (d*cosb*sinl).to(d.unit).value
-    new_z = (d*sinb).to(d.unit).value
-    
-    new_vx = (vr*cosb*cosl - v_l*sinl - v_b*sinb*cosl).to(vr.unit).value
-    new_vy = (vr*cosb*sinl + v_l*cosl - v_b*sinb*sinl).to(vr.unit).value
-    new_vz = (vr*sinb + v_b*cosb).to(vr.unit).value
-    
-    return (new_x*x.unit, new_y*x.unit, new_z*x.unit, 
-            new_vx*vx.unit, new_vy*vx.unit, new_vz*vx.unit)
+    x2,y2,z2,vx2,vy2,vz2 = hel_to_gc(l,b,d,mul,mub,vr)
+    return (x2*x.unit, y2*x.unit, z2*x.unit, vx2*vx.unit, vy2*vx.unit, vz2*vx.unit)
 
 def add_uncertainties_to_particles(particles, **kwargs):
     """ Given a ParticleCollection object, add RR Lyrae-like uncertainties 
