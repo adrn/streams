@@ -23,7 +23,7 @@ from .core import CartesianPotential
 __all__ = ["PointMassPotential", "MiyamotoNagaiPotential",\
            "HernquistPotential", "LogarithmicPotentialLJ",\
            "PlummerPotential", "IsochronePotential",\
-           "AxisymmetricNFWPotential"]
+           "AxisymmetricNFWPotential", "AxisymmetricLogarithmicPotential"]
 
 ############################################################
 #    Potential due to a point mass at a given position
@@ -560,3 +560,75 @@ class AxisymmetricNFWPotential(CartesianPotential):
                                                  latex=latex, 
                                                  parameters=parameters)
 
+####################################################################################
+#    Axisymmetric, Logarithmic potential
+#
+def _cartesian_axisymmetric_logarithmic_model(bases):
+    """ Generates functions to evaluate a Logarithmic potential and its 
+        derivatives at a specified position. 
+        
+        Physical parameters for this potential are:
+            qz : z-axis flattening parameter
+            v_c : circular velocity of the halo
+    """
+
+    def f(r,r_0,v_c,qz): 
+        rr = r-r_0
+        try:
+            x,y,z = rr[:,0],rr[:,1],rr[:,2]
+        except IndexError:
+            x,y,z = rr
+        
+        return 0.5*v_c*v_c * np.log(x*x + y*y + z*z/qz**2)
+    
+    def df(r,r_0,v_c,qz): 
+        rr = r-r_0
+        try:
+            x,y,z = rr[:,0],rr[:,1],rr[:,2]
+        except IndexError:
+            x,y,z = rr
+        
+        fac = v_c*v_c / (x*x + y*y + z*z/(qz*qz))
+        
+        dx = fac * x
+        dy = fac * y
+        dz = fac * z / (qz*qz)
+        
+        return -np.array([dx,dy,dz]).T
+        
+    return (f, df)
+
+class AxisymmetricLogarithmicPotential(CartesianPotential):
+
+    def __init__(self, unit_system, **parameters):
+        """ Represents an axisymmetric Logarithmic potential
+            
+            $\Phi_{halo} = v_{c}^2/2\ln(x^2 + y^2 + z^2/q_z^2)$
+            
+            Model parameters: v_c, qz
+            
+            Parameters
+            ----------
+            unit_system : UnitSystem
+                Defines a system of physical base units for the potential.
+            parameters : dict
+                A dictionary of parameters for the potential definition.
+        """
+        
+        latex = "$\\Phi_{halo} = v_{halo}^2\\ln(C_1x^2 + C_2y^2 + C_3xy + z^2/q_z^2 + r_halo^2)$"
+        
+        unit_system = self._validate_unit_system(unit_system)
+        
+        if "r_0" not in parameters.keys():
+            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+        
+        for p in ["qz", "v_c"]:
+            assert p in parameters.keys(), \
+                    "You must specify the parameter '{0}'.".format(p)
+        
+        # get functions for evaluating potential and derivatives
+        f,df = _cartesian_logarithmic_lj_model(unit_system.bases)
+        super(AxisymmetricLogarithmicPotential, self).__init__(unit_system, 
+                                                     f=f, f_prime=df, 
+                                                     latex=latex, 
+                                                     parameters=parameters)
