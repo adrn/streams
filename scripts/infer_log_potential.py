@@ -157,8 +157,11 @@ def main(config_file, job_name=None):
         all_best_parameters = []
         for bb in range(B):
             # bootstrap resample particles
-            p_idx = np.random.randint(Nparticles*B, size=Nparticles)
-            b_particles = particles[p_idx]
+            if B > 1:
+                p_idx = np.random.randint(Nparticles*B, size=Nparticles)
+                b_particles = particles[p_idx]
+            else:
+                b_particles = particles
             
             try:
                 sampler = infer_potential(ln_posterior, p0, steps=config["steps"],
