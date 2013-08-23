@@ -24,8 +24,7 @@ if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
 resolution = 4.
-
-Nparticles = 2
+Nparticles = 100
 
 class TestLM10(object):
     
