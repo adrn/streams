@@ -27,7 +27,8 @@ __all__ = ["ln_posterior", "ln_likelihood"]
 # Parameter ranges to initialize the walkers over
 param_ranges = dict(log_m=(26.93787, 29.24046),
                     qz=(0.707,1.2),
-                    Rs=(10.,45.))
+                    Rs=(10.,45.),
+                    v_c=(0.1840881,0.286359406))
 
 def ln_p_qz(qz):
     """ Flat prior on vertical (z) axis flattening parameter. """
@@ -58,6 +59,16 @@ def ln_p_Rs(Rs):
     else:
         return 0.
 
+# for pure log potential
+def ln_p_v_c(v_c):
+    """ Flat prior on vertical (z) axis flattening parameter. """
+    lo,hi = param_ranges["v_c"]
+    
+    if v_c <= lo or v_c >= hi:
+        return -np.inf
+    else:
+        return 0.
+
 def ln_prior(p, param_names):
     """ Joint prior over all parameters. """
     
@@ -75,10 +86,10 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     halo_params = dict(zip(param_names, p))
     
     # LawMajewski2010 contains a disk, bulge, and logarithmic halo 
-    potential = Palomar5(**halo_params)
-    #potential = Palomar5Logarithmic(**halo_params)
-    
-    integrator = SatelliteParticleIntegrator(potential, satellite, particles)
+    #potential = Palomar5(**halo_params)
+    #integrator = SatelliteParticleIntegrator(potential, satellite, particles)
+    potential = Palomar5Logarithmic(**halo_params)
+    integrator = SatelliteParticleIntegrator(potential, satellite, particles, lm10=False)
     
     # not adaptive: s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)

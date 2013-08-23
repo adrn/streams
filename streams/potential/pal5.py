@@ -16,9 +16,11 @@ import astropy.units as u
 from astropy.constants import G
 
 from .core import CartesianPotential, CompositePotential, UnitSystem
-from .common import MiyamotoNagaiPotential, HernquistPotential, AxisymmetricNFWPotential
+from .common import MiyamotoNagaiPotential, HernquistPotential, \
+                    AxisymmetricNFWPotential, AxisymmetricLogarithmicPotential
 from ._pal5_acceleration import pal5_acceleration, pal5_logarithmic
 
+'''
 true_params = dict(log_m=28.2254523235*u.M_sun,
                    qz=0.814,
                    Rs=32.26*u.kpc)
@@ -26,6 +28,13 @@ true_params = dict(log_m=28.2254523235*u.M_sun,
 _true_params = dict(log_m=28.2254523235,
                    qz=0.814,
                    Rs=32.26)
+'''
+
+true_params = dict(qz=0.814,
+                   v_c=0.2454509*u.kpc/u.Myr)
+
+_true_params = dict(v_c=0.2454509,
+                    qz=0.814)
 
 class Palomar5(CompositePotential):
     
@@ -202,20 +211,20 @@ class Palomar5Logarithmic(CompositePotential):
         unit_system = UnitSystem(u.kpc, u.Myr, u.radian, u.M_sun)
         unit_system = self._validate_unit_system(unit_system)
         
-        for p in ["log_m", "qz", "Rs"]:
+        for p in ["v_c", "qz"]:
             if p not in parameters.keys():
                 parameters[p] = true_params[p]
         
-        halo = AxisymmetricNFWPotential(unit_system,
-                                        **parameters)
+        halo = AxisymmetricLogarithmicPotential(unit_system,
+                                                **parameters)
         
         super(Palomar5Logarithmic, self).__init__(unit_system, 
-                                       halo=halo)
+                                                  halo=halo)
         
         _params = halo._parameters.copy()
         _params.pop('r_0')
         
-        self._acceleration_at = lambda r, n_particles, acc: pal5_acceleration(r, n_particles, acc, **_params)
+        #self._acceleration_at = lambda r, n_particles, acc: pal5_acceleration(r, n_particles, acc, **_params)
         self._G = G.decompose(bases=unit_system).value
         
     def _tidal_radius(self, m, r):
@@ -234,7 +243,7 @@ class Palomar5Logarithmic(CompositePotential):
         # Radius of Sgr center relative to galactic center
         R_orbit = np.sqrt(np.sum(r**2., axis=-1)) 
         
-        m_halo_enc = np.exp(self["halo"]._parameters["log_m"]) / 10.
+        m_halo_enc = self["halo"]._parameters["v_c"]**2 * R_orbit/self._G
         m_enc = m_halo_enc
         
         return R_orbit * (m / (3.*m_enc))**(0.33333) #*25.
