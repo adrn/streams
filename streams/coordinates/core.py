@@ -16,7 +16,7 @@ from numpy import cos, sin
 import astropy.coordinates as coord
 import astropy.units as u
 
-__all__ = ["vgsr_to_vhel", "vhel_to_vgsr", "ra_dec_dist_to_xyz"]
+__all__ = ["vgsr_to_vhel", "vhel_to_vgsr", "ra_dec_dist_to_xyz", "gc_to_hel", "hel_to_gc"]
 
 def vgsr_to_vhel(l, b, v_gsr, 
                  v_sun_lsr=[10.,5.25,7.17]*u.km/u.s, 
@@ -108,3 +108,45 @@ def __radial_velocity(r, v):
     v_hel = np.sum((v_rel*r_hat), axis=-1)[:,np.newaxis]
     
     return np.squeeze(v_hel)
+    
+def gc_to_hel(x,y,z,vx,vy,vz,
+              Rsun=8.*u.kpc,Vcirc=220.*u.km/u.s):
+    # transform to heliocentric cartesian
+    x = x + Rsun
+    vy = vy - Vcirc # don't use -= or +=!!!
+    
+    # transform from cartesian to spherical
+    d = np.sqrt(x**2 + y**2 + z**2)
+    l = np.arctan2(y, x)
+    b = np.pi/2.*u.rad - np.arccos(z/d)
+    
+    # transform cartesian velocity to spherical
+    d_xy = np.sqrt(x**2 + y**2)
+    vr = (vx*x + vy*y + vz*z) / d # velocity
+    omega_l = -(vx*y - x*vy) / d_xy**2 # angular velocity
+    omega_b = -(z*(x*vx + y*vy) - d_xy**2*vz) / (d**2 * d_xy) # angular velocity
+    
+    mul = (omega_l.decompose()*u.rad).to(u.milliarcsecond / u.yr)
+    mub = (omega_b.decompose()*u.rad).to(u.milliarcsecond / u.yr)
+    
+    return l,b,d,mul,mub,vr
+
+def hel_to_gc(l,b,d,mul,mub,vr,
+              Rsun=8.*u.kpc,Vcirc=220.*u.km/u.s):
+    # transform from spherical to cartesian
+    x = d*np.cos(b)*np.cos(l)
+    y = d*np.cos(b)*np.sin(l)
+    z = d*np.sin(b)
+    
+    # transform spherical velocity to cartesian
+    omega_l = -mul.to(u.rad/u.s).value/u.s
+    omega_b = -mub.to(u.rad/u.s).value/u.s
+    
+    vx = x/d*vr + y*omega_l + z*np.cos(l)*omega_b
+    vy = y/d*vr - x*omega_l + z*np.sin(l)*omega_b
+    vz = z/d*vr - d*np.cos(b)*omega_b
+    
+    x -= Rsun
+    vy += Vcirc
+    
+    return x,y,z,vx,vy,vz
