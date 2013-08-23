@@ -140,4 +140,31 @@ class TestPal5(object):
             ax.plot(vals[idx], posterior_shape[idx], lw=2.)
             ax.axvline(self._true_params[p_name], color='b', linestyle='--')
             fig.savefig(os.path.join(plot_path, "pal5_{0}.png".format(p_name)))
+    
+    def test_posterior_shape_w_errors(self, frac_bounds=(0.5,1.5), Nbins=15):
         
+        particles = add_uncertainties_to_particles(self.particles,
+                                                   radial_velocity_error=2.*u.km/u.s)
+        
+        for p_name in self._true_params.keys():
+            true_p = self._true_params[p_name]
+            if p_name == 'log_m':
+                vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * np.exp(true_p)
+                vals = np.log(vals)
+            else:
+                vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
+                
+            posterior_shape = []
+            for val in vals:
+                post_val = self.ln_posterior([val], [p_name], particles, 
+                                             self.satellite, self.t1, self.t2, 
+                                             resolution)
+                posterior_shape.append(post_val)
+            
+            posterior_shape = np.array(posterior_shape)
+            
+            fig = plt.figure(figsize=(6,6))
+            ax = fig.add_subplot(111)
+            ax.plot(vals, posterior_shape, lw=2.)
+            ax.axvline(self._true_params[p_name], color='b', linestyle='--')
+            fig.savefig(os.path.join(plot_path, "pal5_errors_{0}_{1}particles.png".format(p_name,Nparticles)))
