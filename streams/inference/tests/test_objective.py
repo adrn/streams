@@ -25,6 +25,7 @@ if not os.path.exists(plot_path):
 
 resolution = 4.
 Nparticles = 100
+Nbins = 35
 
 class TestLM10(object):
     
@@ -50,7 +51,7 @@ class TestLM10(object):
                               self.t1, self.t2, resolution)
         print("LM10: {0} seconds per ln_posterior call".format(float(pytime.time() - a) / N))
     
-    def test_posterior_shape(self, frac_bounds=(0.8,1.2), Nbins=15):
+    def test_posterior_shape(self, frac_bounds=(0.8,1.2), Nbins=Nbins):
         for p_name in self._true_params.keys():
             true_p = self._true_params[p_name]
             vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
@@ -69,7 +70,7 @@ class TestLM10(object):
             ax.axvline(self._true_params[p_name], color='b', linestyle='--')
             fig.savefig(os.path.join(plot_path, "lm10_{0}.png".format(p_name)))
     
-    def test_posterior_shape_w_errors(self, frac_bounds=(0.5,1.5), Nbins=15):
+    def test_posterior_shape_w_errors(self, frac_bounds=(0.5,1.5), Nbins=Nbins):
         
         particles = add_uncertainties_to_particles(self.particles)
         
@@ -116,7 +117,7 @@ class TestPal5(object):
                               self.t1, self.t2, resolution)
         print("Pal5: {0} seconds per ln_posterior call".format(float(pytime.time() - a) / N))
     
-    def test_posterior_shape(self, frac_bounds=(0.5,1.5), Nbins=25):
+    def test_posterior_shape(self, frac_bounds=(0.9,1.1), Nbins=Nbins):
         for p_name in self._true_params.keys():
             true_p = self._true_params[p_name]
             if p_name == 'log_m':
@@ -139,9 +140,10 @@ class TestPal5(object):
             ax = fig.add_subplot(111)
             ax.plot(vals[idx], posterior_shape[idx], lw=2.)
             ax.axvline(self._true_params[p_name], color='b', linestyle='--')
+            ax.set_ylim(-1000,3000)
             fig.savefig(os.path.join(plot_path, "pal5_{0}.png".format(p_name)))
     
-    def test_posterior_shape_w_errors(self, frac_bounds=(0.5,1.5), Nbins=15):
+    def test_posterior_shape_w_errors(self, frac_bounds=(0.9,1.1), Nbins=Nbins):
         
         particles = add_uncertainties_to_particles(self.particles,
                                                    radial_velocity_error=2.*u.km/u.s)
