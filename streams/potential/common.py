@@ -627,7 +627,7 @@ class AxisymmetricLogarithmicPotential(CartesianPotential):
                     "You must specify the parameter '{0}'.".format(p)
         
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_logarithmic_lj_model(unit_system.bases)
+        f,df = _cartesian_axisymmetric_logarithmic_model(unit_system.bases)
         super(AxisymmetricLogarithmicPotential, self).__init__(unit_system, 
                                                      f=f, f_prime=df, 
                                                      latex=latex, 

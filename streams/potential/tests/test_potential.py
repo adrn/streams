@@ -305,7 +305,7 @@ class TestAxisymmetricNFWPotential(object):
     def test_create_plot(self):
         
         potential = AxisymmetricNFWPotential(unit_system=self.usys,
-                                           m=1.E11*u.M_sun, 
+                                           log_m=28., 
                                            qz=0.71,
                                            Rs=5.*u.kpc)
         
@@ -319,4 +319,23 @@ class TestAxisymmetricNFWPotential(object):
         
         fig,axes = potential.plot_acceleration(grid=grid,ndim=3)
         fig.savefig(os.path.join(plot_path, "nfw_acceleration.png"))
+
+class TestAxisymmetricLogarithmicPotential(object):
+    usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+    def test_create_plot(self):
+        
+        potential = AxisymmetricLogarithmicPotential(unit_system=self.usys,
+                                           v_c=10.*u.km/u.s, 
+                                           qz=0.71)
+        
+        r = [0.,0.,0.]*u.kpc
+        pot_val = potential.value_at(r)        
+        acc_val = potential.acceleration_at(r)
+    
+        grid = np.linspace(-20.,20, 50)*u.kpc
+        fig,axes = potential.plot(grid=grid,ndim=3)
+        fig.savefig(os.path.join(plot_path, "axisym_log.png"))
+        
+        fig,axes = potential.plot_acceleration(grid=grid,ndim=3)
+        fig.savefig(os.path.join(plot_path, "axisym_log_acceleration.png"))
         
