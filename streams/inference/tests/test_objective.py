@@ -25,7 +25,7 @@ if not os.path.exists(plot_path):
 
 resolution = 4.
 
-Nparticles = 100
+Nparticles = 2
 
 class TestLM10(object):
     
@@ -41,7 +41,7 @@ class TestLM10(object):
         np.random.seed(42)
         self.t1,self.t2 = time()
         self.satellite = satellite_today()
-        self.particles = particles_today(N=Nparticles, expr="(Pcol > -1) & (abs(Lmflag)==1) & (dist<75)")
+        self.particles = particles_today(N=Nparticles, expr="(Pcol>-1) & (abs(Lmflag)==1) & (dist<60)")
 
     def test_time_posterior(self):
         N = 10
@@ -70,11 +70,11 @@ class TestLM10(object):
             ax.axvline(self._true_params[p_name], color='b', linestyle='--')
             fig.savefig(os.path.join(plot_path, "lm10_{0}.png".format(p_name)))
     
-    def test_posterior_shape_w_errors(self, frac_bounds=(0.8,1.2), Nbins=15):
+    def test_posterior_shape_w_errors(self, frac_bounds=(0.5,1.5), Nbins=15):
         
         particles = add_uncertainties_to_particles(self.particles)
         
-        for p_name in self._true_params.keys()[:1]:
+        for p_name in self._true_params.keys():
             true_p = self._true_params[p_name]
             vals = np.linspace(frac_bounds[0], frac_bounds[1], Nbins) * true_p
             posterior_shape = []
@@ -90,7 +90,7 @@ class TestLM10(object):
             ax = fig.add_subplot(111)
             ax.plot(vals, posterior_shape, lw=2.)
             ax.axvline(self._true_params[p_name], color='b', linestyle='--')
-            fig.savefig(os.path.join(plot_path, "lm10_errors_{0}.png".format(p_name)))
+            fig.savefig(os.path.join(plot_path, "lm10_errors_{0}_{1}particles.png".format(p_name,Nparticles)))
 
 class TestPal5(object):
     

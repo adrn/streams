@@ -48,9 +48,7 @@ def test_add_uncertainties():
     derp = rr_lyrae_add_observational_uncertainties(x[0],x[1],x[2],v[0],v[1],v[2])
 
 def test_particles_uncertainties():
-    #particles = add_uncertainties_to_particles(particles, distance_error_percent, radial_velocity_error)
-    
-    particles = particles_today(N=100)
+    particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag)==1)")
     
     fig,axes = particles.plot_r('xyz')
     particles_error = add_uncertainties_to_particles(particles, distance_error_percent=2)

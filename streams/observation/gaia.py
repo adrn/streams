@@ -172,7 +172,8 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     mub = mub + np.random.normal(0., dmu.value, size=size)*dmu.unit
     
     x2,y2,z2,vx2,vy2,vz2 = hel_to_gc(l,b,d,mul,mub,vr)
-    return (x2*x.unit, y2*x.unit, z2*x.unit, vx2*vx.unit, vy2*vx.unit, vz2*vx.unit)
+    return (x2.to(u.kpc), y2.to(u.kpc), z2.to(u.kpc), \
+            vx2.to(u.kpc/u.Myr), vy2.to(u.kpc/u.Myr), vz2.to(u.kpc/u.Myr))
 
 def add_uncertainties_to_particles(particles, **kwargs):
     """ Given a ParticleCollection object, add RR Lyrae-like uncertainties 
