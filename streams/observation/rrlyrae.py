@@ -10,7 +10,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 
 # Third-party
-from astropy.time import Time
+from astropy.time import Time, TimeDelta
 import numpy as np
 import astropy.units as u
 from astropy.utils.misc import isiterable
@@ -88,6 +88,30 @@ def time_to_phase(time, period, t0):
             Peak time.
     """
     return ((time.jd-t0.jd) % period.to(u.day).value) / period.to(u.day).value
+
+def phase_to_time(phase, day, period, t0):
+    """ Convert an array astropy.time.Time to an array of phases. 
+        
+        Parameters
+        ----------
+        phase : array_like
+            The grid of phases.
+        day : astropy.time.Time
+        period : astropy.units.Quantity
+            Period of the source.
+        t0 : astropy.time.Time
+            Peak time.
+    """
+    
+    T = period.to(u.day).value
+    
+    tt = t0.jd
+    while tt < day.jd:
+        tt += T
+    tt -= T
+    
+    time_jd = tt + phase*T
+    return Time(time_jd, format='jd', scale='utc')
     
 def extrapolate_light_curve(time, period, t0):
     """ Extrapolate a model light curve to the given times.
