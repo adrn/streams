@@ -10,6 +10,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 
 # Third-party
+from astropy.time import Time
 import numpy as np
 import astropy.units as u
 from astropy.utils.misc import isiterable
@@ -67,3 +68,49 @@ def rrl_photometric_distance(m_V, fe_h):
     d = 10**(mu/5. + 1) * u.pc
     
     return d.to(u.kpc)
+
+def sawtooth_fourier(n_max, x):
+    total = np.zeros_like(x)
+    for n in range(1, n_max+1):
+        total += (-1)**(n+1) * 12 / (np.pi*n) * np.sin(2*np.pi*n*x)
+    return -total
+
+def time_to_phase(time, period, t0):
+    """ Convert an array astropy.time.Time to an array of phases. 
+        
+        Parameters
+        ----------
+        time : astropy.time.Time
+            The grid of times to extrapolate to.
+        period : astropy.units.Quantity
+            Period of the source.
+        t0 : astropy.time.Time
+            Peak time.
+    """
+    return ((time.jd-t0.jd) % period.to(u.day).value) / period.to(u.day).value
+    
+def extrapolate_light_curve(time, period, t0):
+    """ Extrapolate a model light curve to the given times.
+        
+        Parameters
+        ----------
+        time : astropy.time.Time
+            The grid of times to extrapolate to.
+        period : astropy.units.Quantity
+            Period of the source.
+        t0 : astropy.time.Time
+            Peak time.
+    """
+    try:
+        time = Time(time)
+        t0 = Time(t0)
+    except:
+        print("You must pass in a valid astropy.time.Time object or a "
+              "parseable representation for 'time' and 't0'.")
+        raise
+    
+    # really simple model for an RR Lyrae light curve...
+    phase_t = time_to_phase(time, period, t0)
+    mag = sawtooth_fourier(25, phase_t)
+    
+    return mag
