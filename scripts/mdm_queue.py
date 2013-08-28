@@ -20,9 +20,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Project
+from streams.observation import gmst_time_to_utc
 from streams.observation.rrlyrae import time_to_phase, phase_to_time
 from streams.util import project_root
 
+output_path = "/Users/adrian/Documents/GraduateSchool/Observing Runs/2013-08-27 MDM"
 data_file = os.path.join(project_root, "data", "catalog", "TriAnd_RRLyr.txt")
 stars = ascii.read(data_file, 
                    converters={'objectID' : [ascii.convert_numpy(np.str)]},
@@ -44,47 +46,54 @@ RRLyr_stds2.add_column(Column(RRLyr_stds2['hjd0_2450000'] + 2450000., name='rhjd
 RRLyr_stds2['ra'] = [coord.Angle(x, unit=u.hour).degree for x in RRLyr_stds2['ra_str']]
 RRLyr_stds2['dec'] = [coord.Angle(x, unit=u.degree).degree for x in RRLyr_stds2['dec_str']]
 
-#stars = join(stars, RRLyr_stds1, join_type='outer')
-stars = join(stars, RRLyr_stds2, join_type='outer')
+standards = join(RRLyr_stds1, RRLyr_stds2, join_type='outer')
+all_stars = join(stars, RRLyr_stds1, join_type='outer')
+all_stars = join(all_stars, RRLyr_stds2, join_type='outer')
 
 kitt_peak_longitude = (111. + 35/60. + 40.9/3600)*u.deg
 
-def print_tcs_list(table):
+def tcs_list(decimal=False):
     """ Given the table of stars, ouput a list to be fed in to the TCS """
     
+    names = []
+    ras = []
+    decs = []
+    epoch = []
     for ii,star in enumerate(stars):
-        name = "TriAndRRL{0}".format(ii+1)
+        names.append("TriAndRRL{0}".format(ii+1))
+            
         ra = coord.RA(star['ra']*u.deg)
         dec = coord.Dec(star['dec']*u.deg)
-        print("{name}\t{ra}\t{dec}\t2000.0".format(name=name,
-                                                ra=ra.to_string(unit=u.hour, sep=' ', pad=True, precision=1),
-                                                dec=dec.to_string(unit=u.deg, sep=' ', alwayssign=True, precision=1)))
-
-def print_tcs_list_decimal(table):
-    """ Given the table of stars, ouput a list to be fed in to the TCS """
+        
+        if decimal:
+            ras.append(ra.degree)
+            decs.append(dec.degree)
+        else:
+            ras.append(ra.to_string(unit=u.hour, sep=' ', pad=True, precision=1))
+            decs.append(dec.to_string(unit=u.deg, sep=' ', alwayssign=True, precision=1))
+        epoch.append(2000.0)
     
-    for ii,star in enumerate(stars):
-        name = "TriAndRRL{0}".format(ii+1)
-        print("{name}\t{ra}\t{dec}\t2000.0".format(name=name,
-                                                ra=star['ra'],
-                                                dec=star['dec']))
-
-def gmst_time_to_utc(t):
-    jd = int(t.jd) + 0.5
+    for ii,star in enumerate(standards):
+        names.append(star['name'].replace(' ', '_'))
+        ra = coord.RA(star['ra']*u.deg)
+        dec = coord.Dec(star['dec']*u.deg)
+        
+        if decimal:
+            ras.append(ra.degree)
+            decs.append(dec.degree)
+        else:
+            ras.append(ra.to_string(unit=u.hour, sep=' ', pad=True, precision=1))
+            decs.append(dec.to_string(unit=u.deg, sep=' ', alwayssign=True, precision=1))
+        epoch.append(2000.0)
     
-    S = jd - 2451545.0
-    T = S / 36525.0
-    T0 = 6.697374558 + (2400.051336*T) + (0.000025862*T**2)
-    T0 = T0 % 24
+    t = Table()
+    t.add_column(Column(names, name='name'))
+    t.add_column(Column(ras, name='ra'))
+    t.add_column(Column(decs, name='dec'))
+    if not decimal:
+        t.add_column(Column(epoch, name='epoch'))
     
-    h = (t.jd - jd)*24.
-    GST = (h - T0) % 24
-    UT = GST * 0.9972695663
-    
-    tt = Time(jd, format='jd', scale='utc')
-    dt = tt.datetime + timedelta(hours=UT)
-    
-    return Time(dt, scale='utc')
+    return t
 
 def source_meridian_window(ra, day, buffer_time=2.*u.hour):
     """ Compute the minimum and maximum time (UTC) for the window 
@@ -114,13 +123,19 @@ def open_finder_charts():
         print(url.format(ii+1, ra=star['ra'], dec=star['dec']))
         os.system("open '{0}'".format(url.format(ii+1, ra=star['ra'], dec=star['dec'])))
 
-#print_tcs_list(stars)
+# output list of all targets to be added to the TCS
+#tcs = tcs_list()
+#fn = "tcs_list.txt"
+#ascii.write(tcs, os.path.join(output_path, fn), Writer=ascii.Basic)
 
+tcs = tcs_list(True)
+fn = "iobserve_list.txt"
+ascii.write(tcs, os.path.join(output_path, fn), Writer=ascii.Basic)
+
+# Create a queue for the given day
 queue = []
-
-# stuff
 day = Time(datetime(2013, 8, 29), scale='utc')
-for star in stars:
+for star in all_stars:
     # For each star, figure out its observability window, e.g., the times
     #   that it is at -2 hr from meridian and +2 hr from meridian
     t1,t2 = source_meridian_window(star['ra']*u.deg, day)
@@ -157,20 +172,22 @@ for star in stars:
     if np.any(idx1):
         first_obs_time = jds[idx1][0]
         phase_at_first = phases[idx1][0]
-        queue.append({'name' : star['name'], 
-                      'time' : first_obs_time.datetime,
+        queue.append({'name' : str(star['name']), 
+                      'time' : first_obs_time.datetime.time(),
                       'phase' : phase_at_first,
                       'info' : "pre-mean"})
     
     if np.any(idx2):
         first_obs_time = jds[idx2][0]
         phase_at_first = phases[idx2][0]
-        queue.append({'name' : star['name'], 
-                      'time' : first_obs_time.datetime,
+        queue.append({'name' : str(star['name']), 
+                      'time' : first_obs_time.datetime.time(),
                       'phase' : phase_at_first,
                       'info' : "post-mean"})
 
 queue = Table(queue)
 queue = queue['name','time','phase','info']
 queue.sort('time')
-ascii.write(queue, '/Users/adrian/Downloads/test.txt', Writer=ascii.Basic)
+
+fn = "queue_{0}.txt".format(day.datetime)
+ascii.write(queue, os.path.join(output_path, fn), Writer=ascii.Basic, delimiter='\t')
