@@ -8,14 +8,16 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+from datetime import datetime, timedelta
 
 # Third-party
 import numpy as np
 import astropy.coordinates as coord
 import astropy.units as u
+from astropy.time import Time
 
 __all__ = ["apparent_magnitude", "absolute_magnitude", "distance_modulus", \
-           "distance"]
+           "distance", "gmst_time_to_utc"]
 
 def apparent_magnitude(M, d):
     """ Compute the apparent magnitude of a source given an absolute magnitude
@@ -75,3 +77,20 @@ def distance(distance_modulus):
             The distance modulus
     """
     return 10**(distance_modulus/5. + 1) * u.pc
+
+def gmst_time_to_utc(t):
+    jd = int(t.jd) + 0.5
+    
+    S = jd - 2451545.0
+    T = S / 36525.0
+    T0 = 6.697374558 + (2400.051336*T) + (0.000025862*T**2)
+    T0 = T0 % 24
+    
+    h = (t.jd - jd)*24.
+    GST = (h - T0) % 24
+    UT = GST * 0.9972695663
+    
+    tt = Time(jd, format='jd', scale='utc')
+    dt = tt.datetime + timedelta(hours=UT)
+    
+    return Time(dt, scale='utc')
