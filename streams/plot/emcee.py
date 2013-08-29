@@ -36,17 +36,17 @@ def emcee_plot(xs, labels=None, truths=None, extents=None, fig=None):
     nwalkers, nsamples, ndim = xs.shape
     
     if fig is None:
-        fig = plt.figure(figsize=(16,20.6))
+        #fig = plt.figure(figsize=(16,20.6))
+        fig = plt.figure()
     
     # I want the trace plots to span two columns, the histograms one column
-    gs = gridspec.GridSpec(len(params), 3)
+    gs = gridspec.GridSpec(len(labels), 3)
             
     # For each parameter, I want to plot each walker on one panel, and a histogram
     #   of all links from all walkers
     for ii in range(ndim):
         walkers = xs[:,:,ii]
-        flatchain = np.vstack(walkers)
-        
+        flatchain = np.hstack(walkers)
         ax1 = plt.subplot(gs[ii, :2])
         
         steps = np.arange(nsamples)
@@ -84,8 +84,8 @@ def emcee_plot(xs, labels=None, truths=None, extents=None, fig=None):
         # Create a histogram of all samples. Make 100 bins between the y-axis 
         #   bounds defined by the 'walkers' plot.
         ax2.hist(flatchain, 
-                 bins=np.linspace(ax1.get_ylim()[0],ax1.get_ylim()[1],100),
                  orientation='horizontal',
+                 bins=np.linspace(ax1.get_ylim()[0],ax1.get_ylim()[1],100),
                  facecolor="#67A9CF",
                  edgecolor="none")
         
@@ -106,15 +106,6 @@ def emcee_plot(xs, labels=None, truths=None, extents=None, fig=None):
         
         # Removes the top tick marks
         ax1.get_xaxis().tick_bottom()
-        
-        # Hack because the tick labels for phi are wonky... but this removed the 
-        #   first and last tick labels so I can squash the plots right up against
-        #   each other
-        if param == "phi":
-            #ax2.set_yticks(ax2.get_yticks()[1:-2])
-            ax2.set_yticks(ax2.get_yticks()[1:-1])
-        else:
-            ax2.set_yticks(ax2.get_yticks()[1:-1])
     
     fig.subplots_adjust(hspace=0.02, wspace=0.0, bottom=0.075, top=0.9, left=0.12, right=0.88)
     return fig
