@@ -27,6 +27,7 @@ scipy.seterr(all="ignore")
 import astropy.units as u
 from astropy.io.misc import fnpickle, fnunpickle
 from astropy.utils.console import color_print
+import triangle
 
 try:
     from emcee.utils import MPIPool
