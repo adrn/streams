@@ -16,7 +16,7 @@ import astropy.units as u
 
 __all__ = ["sex_to_dec", "dec_to_sex"]
 
-def sex_to_dec(x):
+def sex_to_dec(x, ms=False):
     """ Convert a sexagesimal representation to a decimal value.
         
         Parameters
@@ -24,9 +24,12 @@ def sex_to_dec(x):
         x : tuple
             A length 3 tuple containing the components.
     """
-    return x[0] + x[1]/60. + x[2]/3600.
+    if ms:
+        return x[0] + x[1]/60. + (x[2]+x[3]/1E6)/3600.
+    else:
+        return x[0] + x[1]/60. + x[2]/3600.
 
-def dec_to_sex(x):
+def dec_to_sex(x, ms=False):
     """ Convert a decimal value to a sexigesimal tuple.
         
         Parameters
@@ -36,5 +39,12 @@ def dec_to_sex(x):
     a = int(x)
     _b = (x-a)*60.
     b = int(_b)
-    c = (_b - b)*60.
-    return (a,b,c)
+    
+    if not ms:
+        c = (_b - b)*60.
+        return (a,b,c)
+    else:
+        _c = (_b - b)*60.
+        c = int(_c)
+        d = (_c-c)*1E6
+        return (a,b,c,int(d))
