@@ -13,7 +13,6 @@ import cPickle as pickle
 # Third-party
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 import astropy.units as u
 
 from streams.plot import plot_sampler_pickle
@@ -26,7 +25,7 @@ if __name__ == "__main__":
                     help="Path to the sampler pickle file.")
     parser.add_argument("--params", dest="params", default=[], nargs='+', 
                     required=True, action='store', help="The halo parameters.")
-    parser.add_argument("-o", "--output-file", dest="output_file", required=True,
+    parser.add_argument("-o", "--output-file", dest="output_file", default=None,
                     help="Path to save the plot.")
     parser.add_argument("-a", "--acceptance-fraction", dest="acc_frac", nargs=2,
                     type=float, default=(None,None), help="Allowed range of "
@@ -39,5 +38,9 @@ if __name__ == "__main__":
     fig = plot_sampler_pickle(args.file, args.params, 
                               acceptance_fraction_bounds=args.acc_frac, 
                               show_true=args.show_true)
-    fig.savefig(args.output_file)
+    
+    if args.output_file:
+        fig.savefig(args.output_file)
+    else:
+        plt.show()
     
