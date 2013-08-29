@@ -1,10 +1,7 @@
 #!/hpc/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
-""" In this module, I'll test how the distribution of 'energy distance' changes 
-    as I tweak various galaxy potential parameters. Ultimately, I want to come 
-    up with a way to evaluate the 'best' potential.
-"""
+""" Script for using the Rewinder to infer the Galactic host potential """
 
 from __future__ import division, print_function
 
@@ -40,9 +37,6 @@ from streams.simulation.config import read
 from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
 from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
-from streams.io.lm10 import particles_today, satellite_today, time
-from streams.inference.lm10 import ln_posterior, param_ranges
-from streams.potential.lm10 import true_params, _true_params
 
 global pool
 pool = None
@@ -55,6 +49,19 @@ def main(config_file, job_name=None):
     # Read in simulation parameters from config file
     config = read(config_file)
     
+    # Read particles and posterior from whatever simulation
+    if config['particle_source'] == 'lm10':
+        from streams.io.lm10 import particles_today, satellite_today, time
+        from streams.inference.lm10 import ln_posterior, param_ranges
+        from streams.potential.lm10 import true_params, _true_params
+    elif config['particle_source'] == 'pal5':
+        from streams.io.pal5 import particles_today, satellite_today, time
+        from streams.inference.pal5 import ln_likelihood, ln_posterior, param_ranges
+        from streams.potential.pal5 import true_params, _true_params
+    else:
+        raise ValueError("Invalid particle source {0}"
+                         .format(config["particle_source"]))
+                         
     # Expression for selecting particles from the simulation data snapshot
     if len(config["expr"]) > 0:
         expr = config["expr"]
@@ -81,31 +88,27 @@ def main(config_file, job_name=None):
     # Get the number of bootstrap reamples. if not specified, it's just 1
     B = config.get("bootstrap_resamples", 1)
     
-    # Read in Sagittarius simulation data
-    if config["particle_source"] == "lm10":
-        satellite = satellite_today()
-        t1,t2 = time()
-        if isinstance(expr, list):
-            if not isinstance(config["particles"], list):
-                raise ValueError("If multiple expr's provided, multiple "
-                                 "particle numbers must be provided!")
-            elif len(config["particles"]) != len(expr):
-                raise ValueError("Must supply a particle count for each expr")
+    # Actually get simulation data
+    satellite = satellite_today()
+    t1,t2 = time()
+    if isinstance(expr, list):
+        if not isinstance(config["particles"], list):
+            raise ValueError("If multiple expr's provided, multiple "
+                             "particle numbers must be provided!")
+        elif len(config["particles"]) != len(expr):
+            raise ValueError("Must supply a particle count for each expr")
+        
+        for N_i,expr_i in zip(config["particles"], expr):
+            these_p = particles_today(N=N_i*B, expr=expr_i)
             
-            for N_i,expr_i in zip(config["particles"], expr):
-                these_p = particles_today(N=N_i*B, expr=expr_i)
-                
-                try:
-                    particles = particles.merge(these_p)
-                except NameError:
-                    particles = these_p
-            Nparticles = len(particles._r)
-        else:
-            Nparticles = config["particles"]
-            particles = particles_today(N=Nparticles*B, expr=expr)
+            try:
+                particles = particles.merge(these_p)
+            except NameError:
+                particles = these_p
+        Nparticles = len(particles._r)
     else:
-        raise ValueError("Invalid particle source {0}"
-                         .format(config["particle_source"]))
+        Nparticles = config["particles"]
+        particles = particles_today(N=Nparticles*B, expr=expr)
     
     if config["observational_errors"]:
         rv_error = config.get("radial_velocity_error", None)
@@ -120,8 +123,8 @@ def main(config_file, job_name=None):
     # Create initial position array for walkers
     for p_name in config["model_parameters"]:
         # Dan F-M says emcee is better at expanding than contracting...
-        this_p = np.random.uniform(true_params[p_name]*0.9, 
-                                   true_params[p_name]*1.1,
+        this_p = np.random.uniform(param_ranges[p_name][0], 
+                                   param_ranges[p_name][1],
                                    size=config["walkers"])
         
         try:
@@ -129,7 +132,7 @@ def main(config_file, job_name=None):
         except NameError:
             p0 = this_p
     
-    resolution = config.get("resolution", 2.)
+    resolution = config.get("resolution", 4.)
     
     p0 = p0.T
     if p0.ndim == 1:
@@ -230,6 +233,11 @@ def main(config_file, job_name=None):
                                                   linewidth=2)
                 
                 fig.savefig(os.path.join(path, "emcee_sampler_{0}.png".format(bb)))
+                
+                # print MAP values
+                idx = sampler.flatlnprobability.argmax()
+                best_p = sampler.flatchain[idx]
+                print("MAP values: {0}".format(best_p))
                 
                 # make triangle plot with 5-sigma ranges
                 extents = []
