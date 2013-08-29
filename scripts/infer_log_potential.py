@@ -229,6 +229,27 @@ def main(config_file, job_name=None):
                                                   linewidth=2)
                 
                 fig.savefig(os.path.join(path, "emcee_sampler_{0}.png".format(bb)))
+                
+                # make sexy plots from the sampler data, with 5σ ranges
+                param_ranges = dict()
+                for ii,param in enumerate(config["model_parameters"]):
+                    mu = np.median(sampler.flatchain[:,ii])
+                    sigma = np.std(sampler.flatchain[:,ii])
+                    param_ranges[param] = (mu-5*sigma,mu+5*sigma)
+                    
+                fig = plot_sampler_pickle(os.path.join(path,data_file), 
+                                          params=config["model_parameters"], 
+                                          show_true=True, 
+                                          param_ranges=param_ranges)
+                
+                # add the max likelihood estimates to the plots                           
+                for ii,param_name in enumerate(config["model_parameters"]):
+                    fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
+                                                  color="#CA0020",
+                                                  linestyle="--",
+                                                  linewidth=2)
+                
+                fig.savefig(os.path.join(path, "emcee_sampler_{0}_zoom.png".format(bb)))
     except:
         if config["mpi"]: pool.close()
         raise
