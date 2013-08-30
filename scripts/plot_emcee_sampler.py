@@ -15,6 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 from astropy.io.misc import fnunpickle
+import triangle
 
 from streams.plot.emcee import emcee_plot
     
@@ -28,20 +29,15 @@ if __name__ == "__main__":
                     required=True, action='store', help="The halo parameters.")
     parser.add_argument("-s", "--source", dest="particle_source", required=True,
                         help="The source of the particles, e.g., lm10 or pal5")
-    parser.add_argument("-o", "--output-file", dest="output_file", default=None,
-                    help="Path to save the plot.")
-    parser.add_argument("-a", "--acceptance-fraction", dest="acc_frac", nargs=2,
-                    type=float, default=(None,None), help="Allowed range of "
-                                "acceptance fractions for 'good' walkers.")
     parser.add_argument("--show-true", dest="show_true", action="store_true",
                     default=False, help="Plot the true halo parameter values.")
     
     args = parser.parse_args()
     
     if args.particle_source.lower() == 'lm10':
-        from streams.potential.lm10 import _true_params
+        from streams.potential.lm10 import _true_params, param_to_latex
     elif args.particle_source.lower() == 'pal5':
-        from streams.potential.pal5 import _true_params
+        from streams.potential.pal5 import _true_params, param_to_latex
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
@@ -54,10 +50,18 @@ if __name__ == "__main__":
     else:
         truths = None
     
-    fig = emcee_plot(xs, labels=args.params, truths=truths)
+    # make triangle plot with 5-sigma ranges
+    extents = []
+    for ii,param in enumerate(args.params):
+        mu = np.median(sampler.flatchain[:,ii])
+        sigma = np.std(sampler.flatchain[:,ii])
+        extents.append((mu-5*sigma,mu+5*sigma))
     
-    if args.output_file:
-        fig.savefig(args.output_file)
-    else:
-        plt.show()
+    labels = [param_to_latex[p] for p in args.params]
     
+    fig1 = emcee_plot(xs, labels=labels, truths=truths, extents=extents)
+    fig2 = triangle.corner(sampler.flatchain, labels=args.params,
+                           extents=extents, truths=truths,
+                           quantiles=[0.16,0.5,0.84])
+    
+    plt.show()
