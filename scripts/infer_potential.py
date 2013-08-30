@@ -36,7 +36,7 @@ except ImportError:
 from streams.simulation.config import read
 from streams.observation.gaia import add_uncertainties_to_particles
 from streams.inference import infer_potential, max_likelihood_parameters
-from streams.plot import plot_sampler_pickle, bootstrap_scatter_plot
+from streams.plot import emcee_plot, bootstrap_scatter_plot
 
 global pool
 pool = None
@@ -53,11 +53,11 @@ def main(config_file, job_name=None):
     if config['particle_source'] == 'lm10':
         from streams.io.lm10 import particles_today, satellite_today, time
         from streams.inference.lm10 import ln_posterior, param_ranges
-        from streams.potential.lm10 import true_params, _true_params
+        from streams.potential.lm10 import true_params, _true_params, param_to_latex
     elif config['particle_source'] == 'pal5':
         from streams.io.pal5 import particles_today, satellite_today, time
         from streams.inference.pal5 import ln_likelihood, ln_posterior, param_ranges
-        from streams.potential.pal5 import true_params, _true_params
+        from streams.potential.pal5 import true_params, _true_params, param_to_latex
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
@@ -219,20 +219,13 @@ def main(config_file, job_name=None):
                 fnpickle(sampler, data_file)
                 
                 # make sexy plots from the sampler data
-                fig = plot_sampler_pickle(os.path.join(path,data_file), 
-                                          params=config["model_parameters"], 
-                                          acceptance_fraction_bounds=(0.15,0.6),
-                                          show_true=True, 
-                                          param_ranges=param_ranges)
+                truths = [_true_params[p] for p in config["model_parameters"]]
+                labels = [param_to_latex[p] for p in config["model_parameters"]]
+                fig = emcee_plot(sampler.chain, 
+                                 labels=labels, 
+                                 truths=truths)
                 
-                # add the max likelihood estimates to the plots                           
-                for ii,param_name in enumerate(config["model_parameters"]):
-                    fig.axes[int(2*ii+1)].axhline(best_parameters[ii], 
-                                                  color="#CA0020",
-                                                  linestyle="--",
-                                                  linewidth=2)
-                
-                fig.savefig(os.path.join(path, "emcee_sampler_{0}.png".format(bb)))
+                fig.savefig(os.path.join(path, "emcee_trace_{0}.png".format(bb)))
                 
                 # print MAP values
                 idx = sampler.flatlnprobability.argmax()
