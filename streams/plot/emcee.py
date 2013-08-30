@@ -90,7 +90,7 @@ def emcee_plot(xs, labels=None, truths=None, extents=None, fig=None):
                  edgecolor="none")
         
         if truths:
-            ax2.axhline(truths[ii], color="#4682b4", linestyle="--")
+            ax2.axhline(truths[ii], color="#016C59", linestyle="--")
         
         # For the first plot, add titles and shift them up a bit
         if ii == 0:
