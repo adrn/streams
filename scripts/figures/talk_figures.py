@@ -14,11 +14,13 @@ import cPickle as pickle
 import astropy.units as u
 from astropy.table import Table, Column
 from astropy.io import ascii
+from astropy.io.misc import fnunpickle
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rc_context, rcParams, cm
 from matplotlib.patches import Rectangle, Ellipse
+from matplotlib import gridspec
 
 from streams.util import project_root
 from streams.observation import apparent_magnitude
@@ -46,10 +48,10 @@ if not os.path.exists(plot_path):
     os.mkdir(plot_path)
     
 # Read in the LM10 data
-np.random.seed(142)
-particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 8)")
-satellite = satellite_today()
-t1,t2 = time()    
+# np.random.seed(142)
+# particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 8)")
+# satellite = satellite_today()
+# t1,t2 = time()    
 
 def gaia_spitzer_errors():
     """ Visualize the observational errors from Gaia and Spitzer, along with
@@ -417,9 +419,91 @@ def sgr():
     
     fig.savefig(os.path.join(plot_path, "lm10.pdf"), facecolor=rcparams['figure.facecolor'])
 
+def sampler_figure():
+    
+    sampler = fnunpickle(os.path.join(project_root, "plots", "hotfoot", "SMASH", "sampler_data.pickle"))
+    xs = sampler.chain
+    
+    labels = ['q1','qz','phi','v_halo']
+    latex_labels = [r"$q_1$",r"$q_z$",r"$\phi$",r"$v_c$"]
+    truths = [_true_params[p] for p in labels]
+
+    nwalkers, nsamples, ndim = xs.shape
+    
+    rcparams = {'axes.linewidth' : 2., 'axes.edgecolor' : '#cccccc', 
+                'axes.facecolor' : '#888888', 'figure.facecolor' : '#666666',
+                'xtick.major.size' : 10, 'xtick.minor.size' : 6, 'xtick.major.pad' : 8,
+                'ytick.major.size' : 10, 'ytick.minor.size' : 6, 'ytick.major.pad' : 8,
+                'xtick.labelsize' : 20, 'ytick.labelsize' : 20,
+                'xtick.color' : '#eeeeee', 'ytick.color' : '#eeeeee', 
+                'text.color' : '#eeeeee', 'axes.labelcolor' : '#eeeeee'}
+    
+    matplotlib.rc('savefig', bbox='standard')
+
+    with rc_context(rc=rcparams):
+        for ii in range(ndim):
+         
+            fig = plt.figure(figsize=(12,6))
+            
+            # I want the trace plots to span two columns, the histograms one column
+            gs = gridspec.GridSpec(1, 3)
+    
+            # For each parameter, I want to plot each walker on one panel, and a histogram
+            #   of all links from all walkers
+            walkers = xs[:,:,ii]
+            flatchain = np.hstack(walkers)
+            
+            ax1 = plt.subplot(gs[0, :2])
+            ax2 = plt.subplot(gs[0, 2])
+            
+            steps = np.arange(nsamples)
+            for walker in walkers:
+                ax1.plot(steps, walker,
+                         drawstyle="steps", color="#eeeeee", alpha=0.5)
+            
+            ax1.set_ylabel(latex_labels[ii], 
+                           rotation="horizontal", 
+                           labelpad=18, fontsize=30)
+            
+            # Don't show ticks on the y-axis
+            ax1.yaxis.set_ticks([])
+            
+            # For the plot on the bottom, add an x-axis label. Hide all others
+            ax1.set_xlabel("step number")
+            ax1.set_xlim(np.min(steps), np.max(steps))
+            
+            # Same y-bounds as the walkers plot, so they line up
+            #ax1.set_ylim(np.min(these_chains[:,ii]), np.max(these_chains[:,ii]))
+            mu,sigma = np.median(flatchain), np.std(flatchain)
+            ax1.set_ylim(mu-10*sigma, mu+10*sigma)
+                
+            ax2.set_ylim(ax1.get_ylim())
+            ax2.xaxis.set_visible(False)
+            ax2.yaxis.tick_right()
+            
+            # Create a histogram of all samples. Make 100 bins between the y-axis 
+            #   bounds defined by the 'walkers' plot.
+            ax2.hist(flatchain, 
+                     orientation='horizontal',
+                     bins=np.linspace(ax1.get_ylim()[0],ax1.get_ylim()[1],100),
+                     facecolor="#67A9CF",
+                     edgecolor="none")
+            
+            ax2.axhline(truths[ii], color="#016C59", linestyle="--", linewidth=2.)
+            
+            # Removes the top tick marks
+            ax1.get_xaxis().tick_bottom()
+        
+            fig.subplots_adjust(wspace=0.0, bottom=0.15, top=0.95, left=0.05, right=0.93)
+            fig.savefig(os.path.join(plot_path, "sampler_trace_{0}.pdf".format(labels[ii])), 
+                        facecolor=rcparams['figure.facecolor']) 
+    
+    matplotlib.rc('savefig', bbox='tight')
+
 if __name__ == '__main__':
     #gaia_spitzer_errors()
     #dump_gaia_csv()
     #bootstrapped_parameters_transpose()
     #sgr()
-    bootstrapped_parameters_transpose_wide()
+    #bootstrapped_parameters_transpose_wide()
+    sampler_figure()
