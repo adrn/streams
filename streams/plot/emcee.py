@@ -36,11 +36,10 @@ def emcee_plot(xs, labels=None, truths=None, extents=None, fig=None):
     nwalkers, nsamples, ndim = xs.shape
     
     if fig is None:
-        #fig = plt.figure(figsize=(16,20.6))
         fig = plt.figure()
     
     # I want the trace plots to span two columns, the histograms one column
-    gs = gridspec.GridSpec(len(labels), 3)
+    gs = gridspec.GridSpec(ndim, 3)
             
     # For each parameter, I want to plot each walker on one panel, and a histogram
     #   of all links from all walkers
