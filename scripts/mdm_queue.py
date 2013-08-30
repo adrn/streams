@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Project
-from streams.observation import gmst_time_to_utc
+from streams.observation.time import gmst_to_utc, lmst_to_gmst
 from streams.observation.rrlyrae import time_to_phase, phase_to_time
 from streams.util import project_root
 
@@ -95,7 +95,7 @@ def tcs_list(decimal=False):
     
     return t
 
-def source_meridian_window(ra, day, buffer_time=2.*u.hour):
+def source_meridian_window(ra, utc_day, buffer_time=2.*u.hour):
     """ Compute the minimum and maximum time (UTC) for the window 
         of observability for the given source.
         
@@ -103,7 +103,7 @@ def source_meridian_window(ra, day, buffer_time=2.*u.hour):
         ----------
         ra : astropy.units.Quantity
             The right ascension of the object.
-        day : astropy.time.Time
+        utc_day : astropy.time.Time
             The day to compute the window on.
     """
     
@@ -112,8 +112,9 @@ def source_meridian_window(ra, day, buffer_time=2.*u.hour):
     jds = []
     for ha in hour_angles:
         lst = day.datetime + timedelta(hours=(ha + ra).hourangle)
-        gmst = lst + timedelta(hours=kitt_peak_longitude.hourangle)
-        jds.append(gmst_time_to_utc(Time(gmst, scale='utc')).jd)
+        gmst = lmst_to_gmst(lst.time(), kitt_peak_longitude)
+        utc = gmst_to_utc(gmst, utc_day)
+        jds.append(utc.jd)
     
     return Time(jds, scale='utc', format='jd')
 
@@ -134,7 +135,7 @@ ascii.write(tcs, os.path.join(output_path, fn), Writer=ascii.Basic)
 
 # Create a queue for the given day
 queue = []
-day = Time(datetime(2013, 8, 29), scale='utc')
+day = Time(datetime(2013, 8, 30), scale='utc')
 for star in all_stars:
     # For each star, figure out its observability window, e.g., the times
     #   that it is at -2 hr from meridian and +2 hr from meridian
@@ -162,6 +163,7 @@ for star in all_stars:
     jds = Time(np.arange(jd1, jd2+step.day, step.day), format='jd', scale='utc')
     ut_hours = np.array([jd.datetime.hour for jd in jds])
     phases = time_to_phase(jds, period=period, t0=t0)
+    
     idx1 = (phases > 0.1) & (phases < 0.5) & (ut_hours < 13.) & (ut_hours > 3.)
     idx2 = (phases >= 0.5) & (phases < 0.7) & (ut_hours < 13.) & (ut_hours > 3.)
     
