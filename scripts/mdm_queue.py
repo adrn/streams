@@ -135,7 +135,7 @@ ascii.write(tcs, os.path.join(output_path, fn), Writer=ascii.Basic)
 
 # Create a queue for the given day
 queue = []
-day = Time(datetime(2013, 8, 30), scale='utc')
+day = Time(datetime(2013, 9, 1), scale='utc')
 for star in all_stars:
     # For each star, figure out its observability window, e.g., the times
     #   that it is at -2 hr from meridian and +2 hr from meridian
@@ -177,7 +177,8 @@ for star in all_stars:
         queue.append({'name' : str(star['name']), 
                       'time' : first_obs_time.datetime.time(),
                       'phase' : phase_at_first,
-                      'info' : "pre-mean"})
+                      'info' : "pre-mean",
+                      'vmag' : star['magAvg']})
     
     if np.any(idx2):
         first_obs_time = jds[idx2][0]
@@ -185,10 +186,11 @@ for star in all_stars:
         queue.append({'name' : str(star['name']), 
                       'time' : first_obs_time.datetime.time(),
                       'phase' : phase_at_first,
-                      'info' : "post-mean"})
+                      'info' : "post-mean",
+                      'vmag' : star['magAvg']})
 
 queue = Table(queue)
-queue = queue['name','time','phase','info']
+queue = queue['name','time','vmag','phase','info']
 queue.sort('time')
 
 fn = "queue_{0}.txt".format(day.datetime)
