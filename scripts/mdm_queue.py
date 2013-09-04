@@ -16,15 +16,20 @@ import astropy.units as u
 from astropy.io import ascii
 from astropy.time import Time
 from astropy.table import Table, Column, join
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
 # Project
+from streams.coordinates import sex_to_dec
 from streams.observation.time import gmst_to_utc, lmst_to_gmst
 from streams.observation.rrlyrae import time_to_phase, phase_to_time
 from streams.util import project_root
 
-output_path = "/Users/adrian/Documents/GraduateSchool/Observing Runs/2013-08-27 MDM"
+matplotlib.rc('xtick', labelsize=12, direction='in')
+matplotlib.rc('ytick', labelsize=12, direction='in')
+
+output_path = "/Users/adrian/Documents/GraduateSchool/Observing Runs/2013-08 MDM"
 data_file = os.path.join(project_root, "data", "catalog", "TriAnd_RRLyr.txt")
 stars = ascii.read(data_file, 
                    converters={'objectID' : [ascii.convert_numpy(np.str)]},
@@ -135,7 +140,12 @@ ascii.write(tcs, os.path.join(output_path, fn), Writer=ascii.Basic)
 
 # Create a queue for the given day
 queue = []
-day = Time(datetime(2013, 9, 1), scale='utc')
+day = Time(datetime(2013, 9, 3), scale='utc')
+
+phase_plot_path = os.path.join(output_path, str(day.datetime.date()))
+if not os.path.exists(phase_plot_path):
+    os.mkdir(phase_plot_path)
+    
 for star in all_stars:
     # For each star, figure out its observability window, e.g., the times
     #   that it is at -2 hr from meridian and +2 hr from meridian
@@ -159,12 +169,19 @@ for star in all_stars:
     #continue
     
     # Here instead we'll look at the possible times we can observe
-    step = 30.*u.minute
+    step = 1.*u.minute
     jds = Time(np.arange(jd1, jd2+step.day, step.day), format='jd', scale='utc')
-    ut_hours = np.array([jd.datetime.hour for jd in jds])
+    ut_hours = np.array([sex_to_dec((jd.datetime.hour,jd.datetime.minute,jd.datetime.second)) for jd in jds])
     phases = time_to_phase(jds, period=period, t0=t0)
     
-    idx1 = (phases > 0.1) & (phases < 0.5) & (ut_hours < 13.) & (ut_hours > 3.)
+    fig,ax = plt.subplots(1,1,figsize=(4,4))
+    ax.plot(ut_hours, phases)
+    ax.set_xlim(4., 12.)
+    ax.set_ylim(0., 1.)
+    ax.text(5., 0.9, star['name'])
+    fig.savefig(os.path.join(phase_plot_path, "{0}.png".format(star['name'])))
+    
+    idx1 = (phases > 0.1) & (phases < 0.4) & (ut_hours < 13.) & (ut_hours > 3.)
     idx2 = (phases >= 0.5) & (phases < 0.7) & (ut_hours < 13.) & (ut_hours > 3.)
     
     if not np.any(idx1) and not np.any(idx2):
@@ -175,7 +192,7 @@ for star in all_stars:
         first_obs_time = jds[idx1][0]
         phase_at_first = phases[idx1][0]
         queue.append({'name' : str(star['name']), 
-                      'time' : first_obs_time.datetime.time(),
+                      'time' : first_obs_time.datetime.time().strftime("%Hh %Mm %Ss"),
                       'phase' : phase_at_first,
                       'info' : "pre-mean",
                       'vmag' : star['magAvg']})
@@ -184,7 +201,7 @@ for star in all_stars:
         first_obs_time = jds[idx2][0]
         phase_at_first = phases[idx2][0]
         queue.append({'name' : str(star['name']), 
-                      'time' : first_obs_time.datetime.time(),
+                      'time' : first_obs_time.datetime.time().strftime("%Hh %Mm %Ss"),
                       'phase' : phase_at_first,
                       'info' : "post-mean",
                       'vmag' : star['magAvg']})
@@ -193,5 +210,5 @@ queue = Table(queue)
 queue = queue['name','time','vmag','phase','info']
 queue.sort('time')
 
-fn = "queue_{0}.txt".format(day.datetime)
-ascii.write(queue, os.path.join(output_path, fn), Writer=ascii.Basic, delimiter='\t')
+fn = "queue_{0}.csv".format(day.datetime.date())
+ascii.write(queue, os.path.join(output_path, fn), Writer=ascii.Basic, delimiter=',')
