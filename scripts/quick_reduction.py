@@ -40,7 +40,7 @@ def coadd_files(filenames):
 
 def main():
     data_path = "/Users/adrian/Documents/GraduateSchool/Observing/2013-08_MDM/data/m090213"
-    object_name = "TriAndRRL1"
+    object_name = "SW And"
     
     flat_frames = []
     bias_frames = []
