@@ -25,7 +25,7 @@ from ..util import project_root
 from ..dynamics import ParticleCollection, OrbitCollection
 from ..misc import UnitSystem
 
-__all__ = ["particles_today", "satellite_orbit", "satellite_today", "time"]
+__all__ = ["mass_selector"]
 
 _path = os.path.join(project_root, "data", "simulation", "Sgr")
 
@@ -45,61 +45,61 @@ def usys_from_file(scfpar):
     
     return usys
 
-def particles_today(m, N=None, expr=None):
-    """ Read in particles from Kathryn's run of Sgr-like orbits for a 
-        variety of masses.
-    
-        Parameters
-        ----------
-        N : int
-            Number of particles to read. None means 'all'.
-        expr : str
-            String selection condition to be fed to numexpr for selecting 
-            particles.
+def mass_selector(m):
+    _full_path = os.path.join(_path, m)
+    usys = usys_from_file(os.path.join(_full_path, "SCFPAR"))
+
+    def particles_today(N=None, expr=None):
+        """ Read in particles from Kathryn's run of Sgr-like orbits for a 
+            variety of masses.
         
-    """
+            Parameters
+            ----------
+            N : int
+                Number of particles to read. None means 'all'.
+            expr : str
+                String selection condition to be fed to numexpr for selecting 
+                particles.
+            
+        """
+        
+        # Read in particle data -- a snapshot of particle positions, velocities at
+        #   the end of the simulation
+        data = read_table("SNAP", path=_full_path, N=N, expr=expr)
+        pc = table_to_particles(data, usys,
+                                position_columns=["x","y","z"],
+                                velocity_columns=["vx","vy","vz"])
+        
+        return pc.to(UnitSystem.galactic())
     
-    _full_path = os.path.join(_path, m)
-    usys = usys_from_file(os.path.join(_full_path, "SCFPAR"))
+    def satellite_orbit():
+        """ Read in the position and velocity of the Orphan satellite center 
+            over the whole simulation.
+        """
+        
+        data = read_table("SCFCEN", path=_full_path)
+        orbit = table_to_orbits(data, usys,
+                                position_columns=["x","y","z"],
+                                velocity_columns=["vx","vy","vz"])
+        
+        return orbit
     
-    # Read in particle data -- a snapshot of particle positions, velocities at
-    #   the end of the simulation
-    data = read_table("SNAP", path=_full_path, N=N, expr=expr)
-    pc = table_to_particles(data, usys,
-                            position_columns=["x","y","z"],
-                            velocity_columns=["vx","vy","vz"])
+    def satellite_today():
+        """ Read in the position and velocity of the Orphan satellite center 
+            at the end of the simulation (e.g., present day position to be
+            back-integrated).
+        
+        """
+        return satellite_orbit()[-1]
+        
+    def time():
+        """ Read in the time information for Orphan stream simulation 
+        """
+        s = satellite_orbit()
+        
+        t1 = np.max(s.t).to(u.Myr).value
+        t2 = np.min(s.t).to(u.Myr).value
+        
+        return t1, t2
     
-    return pc.to(UnitSystem.galactic())
-
-def satellite_orbit(m):
-    """ Read in the position and velocity of the Orphan satellite center 
-        over the whole simulation.
-    """
-    
-    _full_path = os.path.join(_path, m)
-    usys = usys_from_file(os.path.join(_full_path, "SCFPAR"))
-    
-    data = read_table("SCFCEN", path=_full_path)
-    orbit = table_to_orbits(data, usys,
-                            position_columns=["x","y","z"],
-                            velocity_columns=["vx","vy","vz"])
-    
-    return orbit
-
-def satellite_today(m):
-    """ Read in the position and velocity of the Orphan satellite center 
-        at the end of the simulation (e.g., present day position to be
-        back-integrated).
-    
-    """
-    return satellite_orbit(m)[-1]
-    
-def time(m):
-    """ Read in the time information for Orphan stream simulation 
-    """
-    s = satellite_orbit(m)
-    
-    t1 = np.max(s.t).to(u.Myr).value
-    t2 = np.min(s.t).to(u.Myr).value
-    
-    return t1, t2
+    return particles_today, satellite_today, time

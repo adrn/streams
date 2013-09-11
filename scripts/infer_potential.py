@@ -58,6 +58,13 @@ def main(config_file, job_name=None):
         from streams.io.pal5 import particles_today, satellite_today, time
         from streams.inference.pal5 import ln_likelihood, ln_posterior, param_ranges
         from streams.potential.pal5 import true_params, _true_params, param_to_latex
+    elif 'sgr' in config['particle_source']:
+        # one of Kathryn's Sgr simulations, in the form of Sgr2.5e8
+        m = config['particle_source'][3:]
+        from streams.io.sgr import mass_selector
+        particles_today, satellite_today, time = mass_selector(m)
+        from streams.inference.lm10 import ln_likelihood, ln_posterior, param_ranges
+        from streams.potential.lm10 import true_params, _true_params, param_to_latex
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
