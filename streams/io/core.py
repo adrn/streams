@@ -20,6 +20,7 @@ import astropy.coordinates as coord
 # Project
 from ..coordinates import SgrCoordinates, distance_to_sgr_plane
 from ..dynamics import ParticleCollection, OrbitCollection
+from ..misc import UnitSystem
 
 __all__ = ["read_table", "add_sgr_coordinates", "table_to_particles", \
            "table_to_orbits"]
@@ -101,8 +102,10 @@ def table_to_particles(table, unit_system,
     r = r*unit_system['length']
     v = v*unit_system['length'] / unit_system['time']
     
-    particles = ParticleCollection(r=r, v=v, m=np.zeros(len(r))*u.M_sun,
-                                   unit_system=unit_system)
+    particles = ParticleCollection(r=r.to(u.kpc), 
+                                   v=v.to(u.kpc/u.Myr), 
+                                   m=np.zeros(len(r))*u.M_sun,
+                                   unit_system=UnitSystem.galactic())
     
     return particles
 
@@ -135,8 +138,11 @@ def table_to_orbits(table, unit_system,
     v = v*unit_system['length'] / unit_system['time']
     t = np.array(table['t']) * unit_system['time']
     
-    particles = OrbitCollection(t=t, r=r, v=v, m=np.zeros(len(r))*u.M_sun,
-                                unit_system=unit_system)
+    particles = OrbitCollection(t=t.to(u.Myr), 
+                                r=r.to(u.kpc), 
+                                v=v.to(u.kpc/u.Myr), 
+                                m=np.zeros(len(r))*u.M_sun,
+                                unit_system=UnitSystem.galactic())
     
     return particles
 
