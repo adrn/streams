@@ -159,7 +159,7 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
         kwargs["proper_motion_error"] is not None:
         dmu = kwargs["proper_motion_error"]
     else:
-        dmu = proper_motion_error(V, rrl_V_minus_I)            
+        dmu = proper_motion_error(V, rrl_V_minus_I)         
     
     dmu = dmu.to(u.rad/u.s)
     
