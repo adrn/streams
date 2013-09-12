@@ -63,7 +63,7 @@ def main(config_file, job_name=None):
         m = config['particle_source'][3:]
         from streams.io.sgr import mass_selector
         particles_today, satellite_today, time = mass_selector(m)
-        from streams.inference.lm10 import ln_likelihood, ln_posterior, param_ranges
+        from streams.inference.old_likelihood import ln_likelihood, ln_posterior, param_ranges
         from streams.potential.lm10 import true_params, _true_params, param_to_latex
     else:
         raise ValueError("Invalid particle source {0}"
