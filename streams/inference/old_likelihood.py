@@ -20,7 +20,6 @@ from ..inference import generalized_variance
 from ..potential.lm10 import LawMajewski2010, true_params, param_units
 from ..dynamics import OrbitCollection
 from ..integrate.satellite_particles import SatelliteParticleIntegrator
-from .core import old_objective
 
 __all__ = ["ln_posterior", "ln_likelihood", "objective"]
 

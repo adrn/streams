@@ -20,7 +20,7 @@ __all__ = ["minimum_distance_matrix",
            "relative_normalized_coordinates",
            "generalized_variance"]
     
-def relative_normalized_coordinates(potential, particle_orbits, satellite_orbit):
+def relative_normalized_coordinates(potential, satellite_orbit, particle_orbits):
     """ Compute the coordinates of particles relative to the satellite, 
         with positions normalized by the tidal radius and velocities
         normalized by the escape velocity. 
@@ -39,13 +39,15 @@ def relative_normalized_coordinates(potential, particle_orbits, satellite_orbit)
     # need to add a new axis to normalize each coordinate component
     r_tide = potential._tidal_radius(m=satellite_orbit._m,
                                      r=satellite_orbit._r)[:,:,np.newaxis]
-    v_esc = potential._escape_velocity(m=satellite_orbit._m,
-                                       r_tide=r_tide)
+    #v_esc = potential._escape_velocity(m=satellite_orbit._m,
+    #                                   r_tide=r_tide)
+    
+    v_esc = 0.0133
     
     return (particle_orbits._r - satellite_orbit._r) / (r_tide), \
            (particle_orbits._v - satellite_orbit._v) / v_esc
 
-def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
+def minimum_distance_matrix(potential, satellite_orbit, particle_orbits):
     """ Compute the Nx6 matrix of minimum phase-space distance vectors.
         
         Parameters
@@ -57,9 +59,7 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     
     Nparticles = particle_orbits._r.shape[1]
     
-    R,V = relative_normalized_coordinates(potential, particle_orbits, satellite_orbit) 
-    #D_R = np.fabs(np.sqrt(np.sum(R**2, axis=-1)) - 1.)
-    #D_ps = np.sqrt(D_R**2. + np.sum(V**2, axis=-1))
+    R,V = relative_normalized_coordinates(potential, satellite_orbit, particle_orbits) 
     D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
     
     # Find the index of the time of the minimum D_ps for each particle
@@ -73,7 +73,7 @@ def minimum_distance_matrix(potential, particle_orbits, satellite_orbit):
     
     return min_ps
 
-def generalized_variance(potential, particle_orbits, satellite_orbit):
+def generalized_variance(potential, satellite_orbit, particle_orbits):
     """ Compute the variance scalar that we will minimize.
         
         Parameters
@@ -88,12 +88,13 @@ def generalized_variance(potential, particle_orbits, satellite_orbit):
             time grid for our particles.
     """
     
-    min_ps = minimum_distance_matrix(potential, particle_orbits, satellite_orbit)
+    min_ps = minimum_distance_matrix(potential, satellite_orbit, particle_orbits)
     cov_matrix = np.cov(np.fabs(min_ps.T))
+    
     sign,logdet = np.linalg.slogdet(cov_matrix)
     return logdet
 
-def old_objective(potential, satellite_orbit, particle_orbits, v_disp):
+def objective(potential, satellite_orbit, particle_orbits, v_disp):
     """ This is a new objective function, motivated by the fact that what 
         I was doing before doesn't really make sense...
     """
