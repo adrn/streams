@@ -68,7 +68,7 @@ def main(config_file, job_name=None):
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
-                         
+    
     # Expression for selecting particles from the simulation data snapshot
     if len(config["expr"]) > 0:
         expr = config["expr"]
@@ -86,11 +86,17 @@ def main(config_file, job_name=None):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
+        
+        logger.debug("Running with MPI...")
     else:
         if config.has_key("threads") and config["threads"] > 1:
             pool = multiprocessing.Pool(config["threads"])
         else:
             pool = None
+        
+        logger.debug("Running with multiprocessing...")
+    
+    logger.debug("Particle source: {0}...".format(config['particle_source']))
     
     # Get the number of bootstrap reamples. if not specified, it's just 1
     B = config.get("bootstrap_resamples", 1)
@@ -117,10 +123,15 @@ def main(config_file, job_name=None):
         Nparticles = config["particles"]
         particles = particles_today(N=Nparticles*B, expr=expr)
     
+    logger.debug("Read in {0} particles...".format(Nparticles))
+    
     if config["observational_errors"]:
         rv_error = config.get("radial_velocity_error", None)
         d_error = config.get("distance_error_percent", None)
         mu_error = config.get("proper_motion_error", None)
+        
+        logger.debug("Adding observational errors...")
+        
         pre_error_particles = copy.copy(particles)
         particles = add_uncertainties_to_particles(particles, 
                                                 radial_velocity_error=rv_error,
@@ -140,6 +151,7 @@ def main(config_file, job_name=None):
             p0 = this_p
     
     resolution = config.get("resolution", 4.)
+    logger.debug("Running with a timestep resolution of {0}...".format(resolution))
     
     p0 = p0.T
     if p0.ndim == 1:
@@ -163,6 +175,8 @@ def main(config_file, job_name=None):
                 raise IOError("Path {0} already exists!".format(path))
             
         os.mkdir(path)
+        
+        logger.debug("Will save plots to {0}...".format(path))
     
     try:
         all_best_parameters = []
