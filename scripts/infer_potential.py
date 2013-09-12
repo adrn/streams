@@ -203,6 +203,9 @@ def main(config_file, job_name=None):
                 best_parameters = max_likelihood_parameters(sampler)
             except:
                 continue
+            
+            if len(best_parameters) == 0:
+                best_parameters = np.array([0.]*len(config['model_parameters']))
                 
             all_best_parameters.append(best_parameters)
             
@@ -251,7 +254,7 @@ def main(config_file, job_name=None):
                 # print MAP values
                 idx = sampler.flatlnprobability.argmax()
                 best_p = sampler.flatchain[idx]
-                print("MAP values: {0}".format(best_p))
+                logger.info("MAP values: {0}".format(best_p))
                 
                 # make triangle plot with 5-sigma ranges
                 extents = []

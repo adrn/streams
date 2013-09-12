@@ -97,6 +97,9 @@ def max_likelihood_parameters(sampler):
     logger.info("{0} walkers ({1:.1f}%) converged"
                 .format(sum(good_walkers), sum(good_walkers)/nwalkers*100))
     
+    if np.all(~good_walkers):
+        return np.array([])
+    
     good_chain = sampler.chain[good_walkers] # (sum(good_walkers), nsteps, nparams)
     good_probs = sampler.lnprobability[good_walkers] # (sum(good_walkers), nsteps)
     flatchain = np.vstack(good_chain)
