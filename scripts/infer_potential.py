@@ -199,10 +199,7 @@ def main(config_file, job_name=None):
                 if config["mpi"]: pool.close()
                 raise
             
-            try:
-                best_parameters = max_likelihood_parameters(sampler)
-            except:
-                continue
+            best_parameters = max_likelihood_parameters(sampler)
             
             if len(best_parameters) == 0:
                 best_parameters = np.array([0.]*len(config['model_parameters']))
