@@ -90,7 +90,9 @@ def mass_selector(m):
             back-integrated).
         
         """
-        return satellite_orbit()[-1]
+        sat = satellite_orbit()[-1]
+        sat._m = float(m)
+        return sat
         
     def time():
         """ Read in the time information for Orphan stream simulation 
