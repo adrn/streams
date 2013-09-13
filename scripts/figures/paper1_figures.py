@@ -615,10 +615,11 @@ def parameter_errors():
 
 if __name__ == '__main__':
     #gaia_spitzer_errors()
-    sgr()
+    #sgr()
     #phase_space_d_vs_time()
     #normed_objective_plot()
     #variance_projections()
     #bootstrapped_parameters()
     #bootstrapped_parameters_transpose()
     #parameter_errors()
+    pass
