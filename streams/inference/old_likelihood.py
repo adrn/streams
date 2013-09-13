@@ -28,7 +28,7 @@ __all__ = ["ln_posterior", "ln_likelihood", "objective"]
 param_ranges = dict(v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr).value,
                             (330.*u.km/u.s).to(u.kpc/u.Myr).value),
                     q1=(1.,2.),
-                    q2=(0.5,1.5),
+                    q2=(0.5,2.),
                     qz=(1.0,2.),
                     phi=(np.pi/4, 3*np.pi/4),
                     r_halo=(8,20)) # kpc
@@ -127,7 +127,8 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     #                                  t1=t1, t2=t2)
     
     # v_disp measured from still-bound LM10 particles
-    return -generalized_variance(lm10, s_orbit, p_orbits) #, v_disp=0.0133)
+    val = -generalized_variance(lm10, s_orbit, p_orbits) #, v_disp=0.0133)
+    return val
 
 def ln_posterior(p, *args):
     param_names, particles, satellite, t1, t2, resolution = args
