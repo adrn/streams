@@ -31,6 +31,7 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
         v_0 = np.vstack((satellite._v, particles._v))
         
         self.satellite_mass = satellite.m.value
+        
         if lm10:
             self._acc_placeholder = np.zeros((len(r_0), 3))
             super(SatelliteParticleIntegrator, self).__init__(potential._acceleration_at,
