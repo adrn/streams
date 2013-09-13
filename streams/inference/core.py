@@ -39,12 +39,13 @@ def relative_normalized_coordinates(potential, satellite_orbit, particle_orbits)
     # need to add a new axis to normalize each coordinate component
     r_tide = potential._tidal_radius(m=satellite_orbit._m,
                                      r=satellite_orbit._r)[:,:,np.newaxis]
+    
     #v_esc = potential._escape_velocity(m=satellite_orbit._m,
     #                                   r_tide=r_tide)
     
     v_esc = 0.0133
     
-    return (particle_orbits._r - satellite_orbit._r) / (r_tide), \
+    return (particle_orbits._r - satellite_orbit._r) / r_tide, \
            (particle_orbits._v - satellite_orbit._v) / v_esc
 
 def minimum_distance_matrix(potential, satellite_orbit, particle_orbits):
