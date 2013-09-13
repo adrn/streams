@@ -219,3 +219,6 @@ class ParticleCollection(DynamicalBase):
         m = self._m[key] * self.unit_system['mass']
         
         return ParticleCollection(r=r, v=v, m=m, unit_system=self.unit_system)
+    
+    def __len__(self):
+        return self.nparticles
