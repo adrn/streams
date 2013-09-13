@@ -118,22 +118,25 @@ if __name__ == "__main__":
         fnpickle(frac_recombined, data_file)
     
     frac_recombined = fnunpickle(data_file)    
-    kwargs = dict(marker="o", linestyle="-", lw=1., alpha=0.95)
+    kwargs = dict(marker="o", linestyle="-", lw=1., alpha=0.5)
+    colors = ["#D73027","#FC8D59","#E6F598","#99D594","#000000","#3288BD"][:frac_recombined.shape[1]]
     
     plt.figure(figsize=(12,8))
-    for ii in range(len(frac_recombined)):
+    for ee in range(frac_recombined.shape[1]):
         pp = kwargs.copy()
-        if ii == 2:
+        pp['c'] = colors[ee]        
+        if error_fracs[ee] == 1.:
             pp['lw'] = 2.
             pp['c'] = 'k'
         
-        if jj == 0:
-            plt.semilogx([float(m) for m in masses], frac_recombined[ii], 
-                         label=error_dicts[ii]['distance_error_percent'], **pp)
-        else:
-            plt.semilogx([float(m) for m in masses], frac_recombined[ii], **pp)
+        for ii in range(frac_recombined.shape[2]):
+            if ii == 0:
+                plt.semilogx([float(m) for m in masses], frac_recombined[:,ee,ii], 
+                             label="{0:0.2f}".format(error_fracs[ee]), **pp)
+            else:
+                plt.semilogx([float(m) for m in masses], frac_recombined[:,ee,ii], **pp)
     
-    plt.legend(title='$\sigma_D/D$')
+    plt.legend(title=r'$\times$ canonical', loc='lower right')
     plt.xticks([float(m) for m in masses], masses)
     plt.xlabel("Satellite mass [$M_\odot$]", fontsize=26)
     plt.ylabel("# of particles that recombine", fontsize=26)
