@@ -161,9 +161,9 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     else:
         dmu = proper_motion_error(V, rrl_V_minus_I)
     
-    if kwargs.has_key("proper_motion_error_percent") and \
-        kwargs["proper_motion_error_percent"] is not None:
-        prc = kwargs["proper_motion_error_percent"] / 100.
+    if kwargs.has_key("proper_motion_error_frac") and \
+        kwargs["proper_motion_error_frac"] is not None:
+        prc = kwargs["proper_motion_error_frac"]
         dmu = proper_motion_error(V, rrl_V_minus_I)*prc
     
     dmu = dmu.to(u.rad/u.s)
