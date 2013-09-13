@@ -49,6 +49,8 @@ if __name__ == "__main__":
                     help="Number of particles")
     parser.add_argument("-D", dest="D_ps_lim", default=2., type=float,
                     help="Cutoff for phase-space distance")
+    parser.add_argument("-I", dest="iter", default=10, type=int,
+                    help="Number of iterations")
     parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite", 
                     default=False, help="Overwrite pre-existing shite.")
     
@@ -69,13 +71,12 @@ if __name__ == "__main__":
     if not os.path.exists(plot_path):
         os.mkdir(plot_path)
     
-    data_file = os.path.join(plot_path, "frac_Dps{0}.pickle".format(Dps_lim))
-    
+    data_file = os.path.join(plot_path, "frac_Dps{0}_N{1}.pickle".format(Dps_lim, N_particles))
     if args.overwrite and os.path.exists(data_file):
         os.remove(data_file)
     
     masses = ['2.5e{0}'.format(xx) for xx in range(6, 10)]
-    canonical_errors = {"proper_motion_error_percent" : 1.,
+    canonical_errors = {"proper_motion_error_frac" : 1.,
                         "distance_error_percent" : 2.,
                         "radial_velocity_error" : 10.*u.km/u.s}
     error_fracs = [0.0001, 0.01, 0.1, 0.5, 1., 2.]
@@ -83,38 +84,37 @@ if __name__ == "__main__":
     if not os.path.exists(data_file):
         lm10 = LawMajewski2010()
         
-        frac_recombined = []
-        for mass in masses:
+        frac_recombined = np.zeros((len(masses), len(error_fracs), args.iter))
+        for mm,mass in enumerate(masses):
+            
             logger.info("Starting mass {0}...".format(mass))
             particles_today, satellite_today, time = mass_selector(mass) 
-                    
+            
             np.random.seed(args.seed)
-            true_particles = particles_today(N=N_particles)
+            all_particles = particles_today(N=0)
             satellite = satellite_today()
             t1, t2 = time()
-            
-            frac_recombined_per_mass = []
-            for ii,errors in enumerate(error_dicts):
-                if ii > 0:
+            for ii in range(args.iter):
+                logger.debug("\t iteration {0}...".format(ii))
+                true_particles = all_particles[np.random.randint(len(all_particles), 
+                                                                 size=N_particles)]
+                
+                for ee,error_frac in enumerate(error_fracs):
+                    errors = canonical_errors.copy()
+                    errors = dict([(k,v*error_frac) for k,v in errors.items()])
                     particles = add_uncertainties_to_particles(true_particles, **errors)
-                else:
-                    particles = true_particles
                 
-                logger.info("\t with errors: {0}...".format(errors))
+                    logger.debug("\t error frac.: {0}...".format(error_frac))
                 
-                # integrate the orbits backwards, compute the minimum phase-space distance
-                integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
-                s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
-                min_ps = minimum_distance_matrix(lm10, s_orbit, p_orbits)
-                
-                D_ps = np.sqrt(np.sum(min_ps**2, axis=-1))
-                frac = np.sum(D_ps < Dps_lim) / N_particles
-                #print(mass, ii, frac)
-                frac_recombined_per_mass.append(frac)
-            
-            frac_recombined.append(frac_recombined_per_mass)
-        
-        frac_recombined = np.array(frac_recombined).T
+                    # integrate the orbits backwards, compute the minimum phase-space distance
+                    integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
+                    s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+                    min_ps = minimum_distance_matrix(lm10, s_orbit, p_orbits)
+                    
+                    D_ps = np.sqrt(np.sum(min_ps**2, axis=-1))
+                    frac = np.sum(D_ps < Dps_lim) / N_particles
+                    frac_recombined[mm,ee,ii] = frac
+
         fnpickle(frac_recombined, data_file)
     
     frac_recombined = fnunpickle(data_file)    
