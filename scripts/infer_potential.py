@@ -206,6 +206,8 @@ def main(config_file, job_name=None):
                 
             all_best_parameters.append(best_parameters)
             
+            logger.debug("Making particle position / velocity plots...")
+
             # Create a new path for the output
             if config["make_plots"]:
                 # Plot the positions of the particles in galactic XYZ coordinates
@@ -232,13 +234,17 @@ def main(config_file, job_name=None):
                                                 scatter_kwargs={"alpha":0.75, "c":"k"})
     
                 fig.savefig(os.path.join(path, "velocities_{0}.png".format(bb)))
-                
+    
+                logger.debug("Saving sampler data...")
+
                 # write the sampler to a pickle file
                 data_file = os.path.join(path, "sampler_data.pickle")
                 sampler.lnprobfn = None
                 sampler.pool = None
                 fnpickle(sampler, data_file)
                 
+                logger.debug("Making emcee trace plot...")
+
                 # make sexy plots from the sampler data
                 truths = [_true_params[p] for p in config["model_parameters"]]
                 labels = [param_to_latex[p] for p in config["model_parameters"]]
@@ -253,6 +259,8 @@ def main(config_file, job_name=None):
                 best_p = sampler.flatchain[idx]
                 logger.info("MAP values: {0}".format(best_p))
                 
+                logger.debug("Making triangle plot...")
+
                 # make triangle plot with 5-sigma ranges
                 extents = []
                 truths = []
