@@ -23,6 +23,7 @@ from streams.potential.lm10 import true_params, LawMajewski2010
 from streams.util import project_root
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.inference import minimum_distance_matrix
+from streams.inference.lm10 import timestep
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -108,7 +109,15 @@ if __name__ == "__main__":
                 
                     # integrate the orbits backwards, compute the minimum phase-space distance
                     integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
+                    
+                    import time
+                    a = time.time()
                     s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+                    #s_orbit,p_orbits = integrator.run(timestep_func=timestep,
+                    #                                  timestep_args=(lm10,),
+                    #                                  resolution=5.,
+                    #                                  t1=t1, t2=t2)
+                    print(time.time()-a)
                     min_ps = minimum_distance_matrix(lm10, s_orbit, p_orbits)
                     
                     D_ps = np.sqrt(np.sum(min_ps**2, axis=-1))
@@ -139,6 +148,6 @@ if __name__ == "__main__":
     plt.legend(title=r'$\times$ canonical', loc='lower right')
     plt.xticks([float(m) for m in masses], masses)
     plt.xlabel("Satellite mass [$M_\odot$]", fontsize=26)
-    plt.ylabel("# of particles that recombine", fontsize=26)
+    plt.ylabel("Fraction that recombine", fontsize=26)
     plt.tight_layout()
     plt.show()
