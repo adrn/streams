@@ -47,10 +47,10 @@ def plot_energies(potential, ts, xs, vs, axes1=None):
     axes1[1].set_ylabel(r"$E_{pot}$")
     
     E_total = (E_kin + E_pot)
-    axes1[2].plot(ts[1:], (E_total[1:]-E_total[0])/E_total[0]*100., marker=None)
+    axes1[2].semilogy(ts[1:], np.fabs((E_total[1:]-E_total[0])/E_total[0]), marker=None)
     axes1[2].set_ylabel(r"$\Delta E/E \times 100$")
     axes1[2].set_ylim(-1., 1.)
-
+    
     grid = np.linspace(np.min(xs)-1., np.max(xs)+1., 100)*u.kpc
     fig2, axes2 = potential.plot(ndim=3, grid=grid)
     axes2[0,0].plot(xs[:,0,0], xs[:,0,1], color='w', marker=None)
