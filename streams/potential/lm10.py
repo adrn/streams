@@ -96,7 +96,19 @@ class LawMajewski2010(CompositePotential):
         
         self._acceleration_at = lambda r, n_particles, acc: lm10_acceleration(r, n_particles, acc, **_params)
         self._G = G.decompose(bases=unit_system).value
+    
+    def _enclosed_mass(self, R):
+        """ Compute the enclosed mass at the position r. Assumes it's far from
+            the disk and bulge.
+        """ 
         
+        m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R/self._G
+        m_enc = self["disk"]._parameters["m"] + \
+                self["bulge"]._parameters["m"] + \
+                m_halo_enc
+        
+        return m_enc
+    
     def _tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified 
             position(s). Assumes position and mass are in the same unit 
@@ -111,14 +123,10 @@ class LawMajewski2010(CompositePotential):
         """
         
         # Radius of Sgr center relative to galactic center
-        R_orbit = np.sqrt(np.sum(r**2., axis=-1)) 
+        R_orbit = np.sqrt(np.sum(r**2., axis=-1))
+        m_enc = self._enclosed_mass(R_orbit)
         
-        m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R_orbit/self._G
-        m_enc = self["disk"]._parameters["m"] + \
-                self["bulge"]._parameters["m"] + \
-                m_halo_enc
-        
-        return R_orbit * (m / (3.*m_enc))**(0.33333)
+        return R_orbit * (m / (m_enc))**(0.33333)
     
     def tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified 
