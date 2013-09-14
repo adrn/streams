@@ -99,15 +99,14 @@ def ln_prior(p, param_names):
     
     return sum
 
-def timestep(r, v):
-    R_orbit = math.sqrt(r[0,0]*r[0,0] + r[0,1]*r[0,1] + r[0,2]*r[0,2])
-    dt = -0.18*R_orbit + 0.8
+def timestep(r, v, potential):
+    """ From Dehnen & Read 2011 """
+    r_i = np.sqrt(np.sum(r**2, axis=-1))
+    m_encs = potential._enclosed_mass(r_i)
+    dt = np.min(np.sqrt(r_i**3 / (potential._G * m_encs)))
     
-    if abs(dt) < 1:
-        return -1
+    return -dt / 10.
     
-    return dt
-
 def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     """ Evaluate the likelihood function for a given set of halo 
         parameters.
@@ -121,10 +120,10 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     # not adaptive: s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     
-    #s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-    #                                  timestep_args=(),
-    #                                  resolution=resolution,
-    #                                  t1=t1, t2=t2)
+    # s_orbit,p_orbits = integrator.run(timestep_func=timestep,
+    #                                   timestep_args=(lm10,),
+    #                                   resolution=resolution,
+    #                                   t1=t1, t2=t2)
     
     # v_disp measured from still-bound LM10 particles
     val = -generalized_variance(lm10, s_orbit, p_orbits) #, v_disp=0.0133)
