@@ -25,7 +25,7 @@ from ..util import project_root
 from ..dynamics import ParticleCollection, OrbitCollection
 from ..misc import UnitSystem
 
-__all__ = ["mass_selector"]
+__all__ = ["mass_selector", "usys_from_file"]
 
 _path = os.path.join(project_root, "data", "simulation", "Sgr")
 
