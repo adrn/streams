@@ -17,6 +17,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rc_context, rcParams, cm
 from matplotlib.patches import Rectangle, Ellipse
+import scipy.optimize as so
 
 from streams.util import project_root
 from streams.observation import apparent_magnitude
@@ -30,6 +31,7 @@ from streams.potential import LawMajewski2010
 from streams.potential.lm10 import true_params, _true_params, param_to_latex
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.io.lm10 import particle_table, particles_today, satellite_today, time
+from streams.io import read_table
 
 matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18)
@@ -613,6 +615,77 @@ def parameter_errors():
     for ii,p in enumerate(params):
         print("{0} = {1:.2f} + {2:.2f}".format(p, np.mean(d[ii]), errors[ii]))
 
+# ============================================================================
+# Below here, responding to referee
+#
+
+def num_particles_recombine():
+    pass
+    
+def when_particles_recombine():
+    """ I should plot number of bound particles vs. time over the orbit of 
+        the progenitor vs. time. 
+    """
+    from streams.io.sgr import mass_selector, usys_from_file
+    from streams.integrate import LeapfrogIntegrator
+    particles_today, satellite_today, time = mass_selector("2.5e8")
+    
+    potential = LawMajewski2010()
+    satellite = satellite_today()
+    particles = particles_today(expr="tub>0")
+    print(len(particles))
+    return
+    t1,t2 = time()
+    plchldr = np.zeros((len(satellite._r), 3))
+    integrator = LeapfrogIntegrator(potential._acceleration_at, 
+                                    np.array(satellite._r), np.array(satellite._v),
+                                    args=(len(satellite._r), plchldr))
+    ts, xs, vs = integrator.run(t1=t1, t2=t2, dt=-1.)
+    
+    _full_path = os.path.join(project_root, "data", "simulation", "Sgr", "2.5e8")
+    usys = usys_from_file(os.path.join(_full_path, "SCFPAR"))
+    data = read_table("SNAP", path=_full_path, N=0)
+    
+    tub = (data['tub']*usys['time']).to(u.Myr).value
+    R_orbit = np.sqrt(np.sum(xs**2, axis=-1))
+    
+    from scipy.signal import argrelextrema
+    apos,xxx = argrelextrema(R_orbit, np.greater)
+    peris,xxx = argrelextrema(R_orbit, np.less)
+    
+    fig,axes = plt.subplots(2,1,sharex=True)
+    bound_stars = []
+    for t in ts:
+        bound_stars.append(np.sum(tub < t))
+    #axes[0].semilogy(-ts, bound_stars)
+    axes[0].semilogy(ts[::-1], bound_stars)
+    axes[0].set_ylabel("Num. of bound particles")
+    axes[0].set_ylim(3E4, 1E5)
+    
+    #axes[1].plot(ts-max(ts), np.sqrt(np.sum(xs**2, axis=-1)))
+    axes[1].plot(ts, R_orbit)
+    axes[1].plot(t1, np.sqrt(np.sum(satellite._r**2, axis=-1)), marker='o', color='r')
+    axes[1].set_xlabel("Time [Myr]")
+    axes[1].set_ylabel("$R_{GC}$ of sat.")
+    axes[1].set_xlim(min(ts), max(ts))
+    
+    for ii,peri in enumerate(peris):
+        if ii == 0:
+            axes[0].axvline(ts[peri], color='#F4A582', label='peri')
+        else:
+            axes[0].axvline(ts[peri], color='#F4A582')
+        axes[1].axvline(ts[peri], color='#F4A582')
+    
+    for ii,apo in enumerate(apos):
+        if ii == 0:
+            axes[0].axvline(ts[apo], color='#92C5DE', label='apo')
+        else:
+            axes[0].axvline(ts[apo], color='#92C5DE')
+        axes[1].axvline(ts[apo], color='#92C5DE')
+    
+    axes[0].legend(loc='upper right')
+    fig.savefig(os.path.join(plot_path, "when_recombine.png"))
+
 if __name__ == '__main__':
     #gaia_spitzer_errors()
     #sgr()
@@ -622,4 +695,4 @@ if __name__ == '__main__':
     #bootstrapped_parameters()
     #bootstrapped_parameters_transpose()
     #parameter_errors()
-    pass
+    when_particles_recombine()
