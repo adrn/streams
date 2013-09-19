@@ -273,6 +273,8 @@ velocity,
   R_{\rm tide}=R\Big(\frac{m_{\rm sat}}{3M_{\rm enc}}\Big)^{1/3}\,\,\,\,,\,\,\,\,
   v_{\rm esc}=\sqrt{\frac{2Gm_{\rm sat}}{R_{\rm tide}}}.
 \end{equation}
+These quantities are computed at each time step to take the time 
+dependence into account, neglecting mass-loss from the satellite.
 Qualitatively, when the distance in this normalized six-dimensional
 space, $D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} <
 \sqrt{2}$, the star is likely recaptured by the
