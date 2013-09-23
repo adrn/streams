@@ -12,6 +12,7 @@ import cPickle as pickle
 
 # Third-party
 import astropy.units as u
+from astropy.io.misc import fnpickle, fnunpickle
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -46,10 +47,10 @@ if not os.path.exists(plot_path):
     os.mkdir(plot_path)
     
 # Read in the LM10 data
-np.random.seed(142)
-particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
-satellite = satellite_today()
-t1,t2 = time()    
+#np.random.seed(142)
+#particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+#satellite = satellite_today()
+#t1,t2 = time()    
 
 def normed_objective_plot():
     """ Plot our objective function in each of the 4 parameters we vary """
@@ -626,15 +627,16 @@ def when_particles_recombine():
     """ I should plot number of bound particles vs. time over the orbit of 
         the progenitor vs. time. 
     """
+
+    N = 10000
+    D_ps_limit = 2.1
+
     from streams.io.sgr import mass_selector, usys_from_file
     from streams.integrate import LeapfrogIntegrator
     particles_today, satellite_today, time = mass_selector("2.5e8")
     
     potential = LawMajewski2010()
     satellite = satellite_today()
-    particles = particles_today(expr="tub>0")
-    print(len(particles))
-    return
     t1,t2 = time()
     plchldr = np.zeros((len(satellite._r), 3))
     integrator = LeapfrogIntegrator(potential._acceleration_at, 
@@ -645,46 +647,77 @@ def when_particles_recombine():
     _full_path = os.path.join(project_root, "data", "simulation", "Sgr", "2.5e8")
     usys = usys_from_file(os.path.join(_full_path, "SCFPAR"))
     data = read_table("SNAP", path=_full_path, N=0)
-    
+
     tub = (data['tub']*usys['time']).to(u.Myr).value
     R_orbit = np.sqrt(np.sum(xs**2, axis=-1))
     
+    tub_file = os.path.join(_full_path, "tub_back{0}_{1}.pickle".format(N,D_ps_limit))
+    if not os.path.exists(tub_file):
+        # read full orbits of particles from running on hotfoot
+        p_x = np.load(os.path.join(project_root, "data", "{0}particles_p.npy".format(N)))
+        s_x = np.load(os.path.join(project_root, "data", "{0}particles_s.npy".format(N)))
+
+        r_tide = potential._tidal_radius(m=satellite._m,
+                                         r=s_x[...,:3])[:,:,np.newaxis]
+
+        v_esc = potential._escape_velocity(m=satellite._m,
+                                           r_tide=r_tide)
+    
+        R,V = (p_x[...,:3] - s_x[...,:3]) / r_tide, (p_x[...,3:] - s_x[...,3:]) / v_esc
+        D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
+        tub_back = []
+        for ii in range(D_ps.shape[1]):
+            idx = D_ps[:,ii] < D_ps_limit
+            
+            if np.any(idx):
+                #tub_back.append(np.mean(ts[idx]))
+                tub_back.append(ts[idx][-1])
+            else:
+                tub_back.append(np.nan)
+        tub_back = np.array(tub_back)
+        fnpickle(tub_back, tub_file)
+
+    tub_back = fnunpickle(tub_file)
+
     from scipy.signal import argrelextrema
     apos,xxx = argrelextrema(R_orbit, np.greater)
-    peris,xxx = argrelextrema(R_orbit, np.less)
+    peris,xxx = argrelextrema(R_orbit, np.less)    
+
+    bound_stars = []
+    bound_stars_back = []
+    for t in ts:
+        bound_stars.append(np.sum(tub > t)) 
+        bound_stars_back.append(np.sum(tub_back > t))
     
     fig,axes = plt.subplots(2,1,sharex=True)
-    bound_stars = []
-    for t in ts:
-        bound_stars.append(np.sum(tub < t))
-    #axes[0].semilogy(-ts, bound_stars)
-    axes[0].semilogy(ts[::-1], bound_stars)
-    axes[0].set_ylabel("Num. of bound particles")
-    axes[0].set_ylim(3E4, 1E5)
+    fig.suptitle("Dps boundary: {0}".format(D_ps_limit))
+    axes[0].semilogy(ts, bound_stars/max(bound_stars), color='k', lw=2.)
+    axes[0].set_ylabel("Frac. of bound particles")
+    axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color='#1A9641', lw=2.)
+    axes[0].set_ylim(1E-2, 1.1)
     
-    #axes[1].plot(ts-max(ts), np.sqrt(np.sum(xs**2, axis=-1)))
-    axes[1].plot(ts, R_orbit)
-    axes[1].plot(t1, np.sqrt(np.sum(satellite._r**2, axis=-1)), marker='o', color='r')
-    axes[1].set_xlabel("Time [Myr]")
-    axes[1].set_ylabel("$R_{GC}$ of sat.")
-    axes[1].set_xlim(min(ts), max(ts))
+    axes[-1].plot(ts, R_orbit)
+    axes[-1].plot(t1, np.sqrt(np.sum(satellite._r**2, axis=-1)), marker='o', color='r')
+    axes[-1].set_xlabel("Time [Myr]")
+    axes[-1].set_ylabel("$R_{GC}$ of sat.")
+    axes[-1].set_xlim(min(ts), max(ts))
     
     for ii,peri in enumerate(peris):
         if ii == 0:
             axes[0].axvline(ts[peri], color='#F4A582', label='peri')
         else:
             axes[0].axvline(ts[peri], color='#F4A582')
-        axes[1].axvline(ts[peri], color='#F4A582')
+        axes[-1].axvline(ts[peri], color='#F4A582')
     
     for ii,apo in enumerate(apos):
         if ii == 0:
             axes[0].axvline(ts[apo], color='#92C5DE', label='apo')
         else:
             axes[0].axvline(ts[apo], color='#92C5DE')
-        axes[1].axvline(ts[apo], color='#92C5DE')
+        axes[-1].axvline(ts[apo], color='#92C5DE')
     
-    axes[0].legend(loc='upper right')
-    fig.savefig(os.path.join(plot_path, "when_recombine.png"))
+    axes[0].legend(loc='lower left')
+    fig.savefig(os.path.join(plot_path, "when_recombine_N{0}_Dps{1}.png".format(N,D_ps_limit)))
 
 if __name__ == '__main__':
     #gaia_spitzer_errors()
