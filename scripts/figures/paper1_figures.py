@@ -45,23 +45,20 @@ matplotlib.rc('font', family='Source Sans Pro')
 plot_path = "plots/paper1/"
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
-    
-# Read in the LM10 data
-np.random.seed(142)
-particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
-satellite = satellite_today()
-t1,t2 = time()    
 
-def normed_objective_plot():
+def normed_objective_plot(**kwargs):
     """ Plot our objective function in each of the 4 parameters we vary """
     
     # data file to cache data in, makes plotting faster...
-    cached_data_file = os.path.join(plot_path, 'normed_objective.pickle')
+    data_file = os.path.join(plot_path, 'normed_objective.pickle')
     
     Nbins = 15
     p_range = (0.9, 1.1)
+
+    if os.path.exists(data_file) and kwargs.get("overwrite", False):
+        os.remove(data_file)
     
-    if not os.path.exists(cached_data_file):
+    if not os.path.exists(data_file):
         variances = dict()
         for param in ['q1','qz','v_halo','phi']:
             if not variances.has_key(param):
@@ -79,10 +76,10 @@ def normed_objective_plot():
                 s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
                 variances[param].append(generalized_variance(lm10, p_orbits, s_orbit))
         
-        with open(cached_data_file, 'w') as f:
+        with open(data_file, 'w') as f:
             pickle.dump(variances, f)
     
-    with open(cached_data_file, 'r') as f:
+    with open(data_file, 'r') as f:
         variances = pickle.load(f)
     
     fig,ax = plt.subplots(1,1,figsize=(8,8))
@@ -170,7 +167,7 @@ def variance_projections():
     #plt.show()
     fig.savefig(os.path.join(plot_path, "variance_projections.pdf"))
 
-def gaia_spitzer_errors():
+def gaia_spitzer_errors(**kwargs):
     """ Visualize the observational errors from Gaia and Spitzer, along with
         dispersion and distance scale of Sgr and Orphan. 
     """
@@ -719,9 +716,51 @@ def when_particles_recombine():
     fig.savefig(os.path.join(plot_path, "when_recombine_N{0}_Dps{1}.png".format(N,D_ps_limit)))
 
 if __name__ == '__main__':
+    from argparse import ArgumentParser
+    import logging
+    
+    # Create logger
+    logger = logging.getLogger(__name__)
+    ch = logging.StreamHandler()
+    formatter = logging.Formatter("%(name)s / %(levelname)s / %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    
+    # Define parser object
+    parser = ArgumentParser(description="")
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
+                        default=False, help="Be chatty! (default = False)")
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", 
+                        default=False, help="Be quiet! (default = False)")
+    parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite", 
+                        default=False, help="Overwrite existing files.")
+    parser.add_argument("-f", "--function", dest="function", type=str,
+                        required=True, help="The name of the function to execute.")
+
+    args = parser.parse_args()
+    
+
+    """# Read in the LM10 data
+np.random.seed(142)
+particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+satellite = satellite_today()
+t1,t2 = time()    """
+
+    # Set logger level based on verbose flags
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    elif args.quiet:
+        logger.setLevel(logging.ERROR)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    kwargs = args.__dict__
+    func = getattr(sys.modules[__name__], kwargs.pop("function"))
+    func(**kwargs)
+
     #gaia_spitzer_errors()
     #sgr()
-    phase_space_d_vs_time()
+    #phase_space_d_vs_time()
     #normed_objective_plot()
     #variance_projections()
     #bootstrapped_parameters()
