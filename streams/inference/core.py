@@ -17,6 +17,7 @@ from astropy.constants import G
 from ..potential import *
 
 __all__ = ["minimum_distance_matrix",
+           "phase_space_distance",
            "relative_normalized_coordinates",
            "generalized_variance"]
     
@@ -32,8 +33,8 @@ def relative_normalized_coordinates(potential, satellite_orbit, particle_orbits)
         Parameters
         ----------
         potential : streams.CartesianPotential
-        particle_orbits : OrbitCollection
         satellite_orbit : OrbitCollection
+        particle_orbits : OrbitCollection
     """
     
     # need to add a new axis to normalize each coordinate component
@@ -43,8 +44,20 @@ def relative_normalized_coordinates(potential, satellite_orbit, particle_orbits)
     v_esc = potential._escape_velocity(m=satellite_orbit._m,
                                        r_tide=r_tide)
     
-    return (particle_orbits._r - satellite_orbit._r) / full_r_tide, \
+    return (particle_orbits._r - satellite_orbit._r) / r_tide, \
            (particle_orbits._v - satellite_orbit._v) / v_esc
+
+def phase_space_distance(potential, satellite_orbit, particle_orbits):
+    """ Compute the phase-space distance for a set of particles relative
+        to a satellite in a given potential.
+
+        Parameters
+        ----------
+        potential : streams.CartesianPotential
+        satellite_orbit : OrbitCollection
+        particle_orbits : OrbitCollection
+    """
+    return np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
 
 def minimum_distance_matrix(potential, satellite_orbit, particle_orbits):
     """ Compute the Nx6 matrix of minimum phase-space distance vectors.
@@ -52,21 +65,19 @@ def minimum_distance_matrix(potential, satellite_orbit, particle_orbits):
         Parameters
         ----------
         potential : Potential
-        particle_orbits : OrbitCollection
         satellite_orbit : OrbitCollection
+        particle_orbits : OrbitCollection
     """
-    
-    Nparticles = particle_orbits._r.shape[1]
     
     R,V = relative_normalized_coordinates(potential, satellite_orbit, particle_orbits) 
     D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
     
     # Find the index of the time of the minimum D_ps for each particle
     min_time_idx = D_ps.argmin(axis=0)
+    min_ps = np.zeros((particle_orbits.nparticles,6))
     
-    min_ps = np.zeros((Nparticles,6))
-    xx = zip(min_time_idx, range(Nparticles))
-    for kk in range(Nparticles):
+    xx = zip(min_time_idx, range(particle_orbits.nparticles))
+    for kk in range(particle_orbits.nparticles):
         jj,ii = xx[kk]
         min_ps[ii] = np.append(R[jj,ii], V[jj,ii])
     
