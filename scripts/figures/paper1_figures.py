@@ -47,10 +47,10 @@ if not os.path.exists(plot_path):
     os.mkdir(plot_path)
     
 # Read in the LM10 data
-#np.random.seed(142)
-#particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
-#satellite = satellite_today()
-#t1,t2 = time()    
+np.random.seed(142)
+particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+satellite = satellite_today()
+t1,t2 = time()    
 
 def normed_objective_plot():
     """ Plot our objective function in each of the 4 parameters we vary """
@@ -269,7 +269,8 @@ def gaia_spitzer_errors():
 def phase_space_d_vs_time(N=10):
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
-    np.random.seed(112)
+    #np.random.seed(112)
+    np.random.seed(41)
     randidx = np.random.randint(100, size=N)
     selected_star_idx = np.zeros(100).astype(bool)
     selected_star_idx[randidx] = True
@@ -283,19 +284,17 @@ def phase_space_d_vs_time(N=10):
     wrong_potential = LawMajewski2010(**wrong_params)
     
     resolution = 3.
-    
+
     sat_R = list()
     D_pses = list()
     ts = list()
     for potential in [true_potential, wrong_potential]:
         integrator = SatelliteParticleIntegrator(potential, satellite, particles)
-        s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-                                      timestep_args=(),
-                                      resolution=resolution,
-                                      t1=t1, t2=t2)
+        s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
         
-        R,V = relative_normalized_coordinates(potential, p_orbits, s_orbit) 
-        D_ps = np.sqrt(np.sum(R**2, axis=-1)/5. + np.sum(V**2, axis=-1))
+        R,V = relative_normalized_coordinates(potential, s_orbit, p_orbits) 
+        #D_ps = np.sqrt(np.sum(R**2, axis=-1)/2 + np.sum(V**2, axis=-1))
+        D_ps = np.sqrt(np.sum(R**2, axis=-1)/2)
         D_pses.append(D_ps)
         sat_R.append(np.sqrt(np.sum(s_orbit._r**2, axis=-1)))
         ts.append(s_orbit._t)
@@ -722,10 +721,10 @@ def when_particles_recombine():
 if __name__ == '__main__':
     #gaia_spitzer_errors()
     #sgr()
-    #phase_space_d_vs_time()
+    phase_space_d_vs_time()
     #normed_objective_plot()
     #variance_projections()
     #bootstrapped_parameters()
     #bootstrapped_parameters_transpose()
     #parameter_errors()
-    when_particles_recombine()
+    #when_particles_recombine()
