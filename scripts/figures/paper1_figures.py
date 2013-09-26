@@ -623,13 +623,10 @@ def parameter_errors():
 def num_particles_recombine():
     pass
     
-def when_particles_recombine():
+def when_particles_recombine(N=10000, D_ps_limit=2., overwrite=False):
     """ I should plot number of bound particles vs. time over the orbit of 
         the progenitor vs. time. 
     """
-
-    N = 10000
-    D_ps_limit = 2.1
 
     from streams.io.sgr import mass_selector, usys_from_file
     from streams.integrate import LeapfrogIntegrator
@@ -652,6 +649,9 @@ def when_particles_recombine():
     R_orbit = np.sqrt(np.sum(xs**2, axis=-1))
     
     tub_file = os.path.join(_full_path, "tub_back{0}_{1}.pickle".format(N,D_ps_limit))
+    if overwrite and os.path.exists(tub_file):
+        os.remove(tub_file)
+
     if not os.path.exists(tub_file):
         # read full orbits of particles from running on hotfoot
         p_x = np.load(os.path.join(project_root, "data", "{0}particles_p.npy".format(N)))
@@ -670,31 +670,39 @@ def when_particles_recombine():
             idx = D_ps[:,ii] < D_ps_limit
             
             if np.any(idx):
-                #tub_back.append(np.mean(ts[idx]))
-                tub_back.append(ts[idx][-1])
+                tub_back.append(np.median(ts[idx]))
+                #tub_back.append(ts[idx][-1])
             else:
+                #print("min Dps:",np.min(D_ps[:,ii]))
+                #print(ts[D_ps[:,ii].argmin()])
                 tub_back.append(np.nan)
         tub_back = np.array(tub_back)
         fnpickle(tub_back, tub_file)
 
     tub_back = fnunpickle(tub_file)
+    bound_stars_back = [np.sum(tub_back > t) for t in ts]
 
     from scipy.signal import argrelextrema
     apos,xxx = argrelextrema(R_orbit, np.greater)
     peris,xxx = argrelextrema(R_orbit, np.less)    
 
-    bound_stars = []
-    bound_stars_back = []
-    for t in ts:
-        bound_stars.append(np.sum(tub > t)) 
-        bound_stars_back.append(np.sum(tub_back > t))
-    
-    fig,axes = plt.subplots(2,1,sharex=True)
+    fig,axes = plt.subplots(3,1,sharex=True,figsize=(18,12))
     fig.suptitle("Dps boundary: {0}".format(D_ps_limit))
-    axes[0].semilogy(ts, bound_stars/max(bound_stars), color='k', lw=2.)
+    
+    bins = np.linspace(0., max(tub), 100)
+    N_bootstrap = 10
+    for ii in range(N_bootstrap):
+        tub_b = tub[np.random.randint(len(tub), size=N)]
+        bound_stars = [np.sum(tub_b > t) for t in ts]
+        axes[0].semilogy(ts, bound_stars/max(bound_stars), color='k', lw=1., alpha=0.25)
+        n,bins,patches = axes[1].hist(tub_b[tub_b!=0], normed=True, bins=bins, color='k', histtype="step", alpha=0.25)
+
     axes[0].set_ylabel("Frac. of bound particles")
-    axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color='#1A9641', lw=2.)
+    axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color='#1A9641', lw=3.)
     axes[0].set_ylim(1E-2, 1.1)
+
+    axes[1].hist(tub_back, normed=True, bins=bins, color='#1A9641', histtype="step", lw=3.)
+    axes[1].yaxis.set_ticks([])
     
     axes[-1].plot(ts, R_orbit)
     axes[-1].plot(t1, np.sqrt(np.sum(satellite._r**2, axis=-1)), marker='o', color='r')
@@ -707,16 +715,20 @@ def when_particles_recombine():
             axes[0].axvline(ts[peri], color='#F4A582', label='peri')
         else:
             axes[0].axvline(ts[peri], color='#F4A582')
-        axes[-1].axvline(ts[peri], color='#F4A582')
+        for ax in axes[1:]:
+            ax.axvline(ts[peri], color='#F4A582')
     
     for ii,apo in enumerate(apos):
         if ii == 0:
             axes[0].axvline(ts[apo], color='#92C5DE', label='apo')
         else:
             axes[0].axvline(ts[apo], color='#92C5DE')
-        axes[-1].axvline(ts[apo], color='#92C5DE')
+        for ax in axes[1:]:
+            ax.axvline(ts[apo], color='#92C5DE')
+    
     
     axes[0].legend(loc='lower left')
+    fig.subplots_adjust(hspace=0.05)
     fig.savefig(os.path.join(plot_path, "when_recombine_N{0}_Dps{1}.png".format(N,D_ps_limit)))
 
 if __name__ == '__main__':
@@ -728,4 +740,4 @@ if __name__ == '__main__':
     #bootstrapped_parameters()
     #bootstrapped_parameters_transpose()
     #parameter_errors()
-    when_particles_recombine()
+    when_particles_recombine(N=1000, D_ps_limit=1.3, overwrite=True)
