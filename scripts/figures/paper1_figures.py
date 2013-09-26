@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import cPickle as pickle
+import inspect
 
 # Third-party
 import astropy.units as u
@@ -510,7 +511,8 @@ def when_particles_recombine(**kwargs):
     """
 
     N = int(kwargs.get("N",10000))
-    D_ps_limit = float(kwargs.get("D_ps_limit", 2.1))
+    D_ps_limit = float(kwargs.get("D_ps_limit", 2.))
+    overwrite = kwargs.get("overwrite", False)
 
     from streams.io.sgr import mass_selector, usys_from_file
     from streams.integrate import LeapfrogIntegrator
@@ -552,8 +554,9 @@ def when_particles_recombine(**kwargs):
         tub_back = []
         for ii in range(D_ps.shape[1]):
             idx = D_ps[:,ii] < D_ps_limit
-            
-            if np.any(idx):
+            if np.any(ts[idx] == ts[0]):
+                tub_back.append(ts[0])
+            elif np.any(idx):
                 tub_back.append(np.median(ts[idx]))
                 #tub_back.append(ts[idx][-1])
             else:
@@ -570,28 +573,33 @@ def when_particles_recombine(**kwargs):
     apos,xxx = argrelextrema(R_orbit, np.greater)
     peris,xxx = argrelextrema(R_orbit, np.less)    
 
-    fig,axes = plt.subplots(3,1,sharex=True,figsize=(18,12))
-    fig.suptitle("Dps boundary: {0}".format(D_ps_limit))
+    fig,axes = plt.subplots(2,1,sharex=True,figsize=(18,12))
+    fig.suptitle("Capture condition: $D_{{ps}}$<{0}".format(D_ps_limit), fontsize=32)
+        
+    # bins = np.linspace(0., max(tub), 100)
+    # N_bootstrap = 25
+    # for ii in range(N_bootstrap):
+    #     tub_b = tub[np.random.randint(len(tub), size=N)]
+    #     bound_stars = [np.sum(tub_b > t) for t in ts]
+    #     if ii != 0:
+    #         axes[0].semilogy(ts, bound_stars/max(bound_stars), color='#666666', lw=1., alpha=0.1)
+    #     else:
+    #         axes[0].semilogy(ts, bound_stars/max(bound_stars), color='#666666', lw=1., alpha=0.1, label="true mass-loss")
+    #     #n,bins,patches = axes[1].hist(tub_b[tub_b!=0], normed=True, bins=bins, color='k', histtype="step", alpha=0.25)
     
-    bins = np.linspace(0., max(tub), 100)
-    N_bootstrap = 10
-    for ii in range(N_bootstrap):
-        tub_b = tub[np.random.randint(len(tub), size=N)]
-        bound_stars = [np.sum(tub_b > t) for t in ts]
-        axes[0].semilogy(ts, bound_stars/max(bound_stars), color='k', lw=1., alpha=0.25)
-        n,bins,patches = axes[1].hist(tub_b[tub_b!=0], normed=True, bins=bins, color='k', histtype="step", alpha=0.25)
-
-    axes[0].set_ylabel("Frac. of bound particles")
-    axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color='#1A9641', lw=3.)
+    bound_stars = [np.sum(tub > t) for t in ts]
+    axes[0].semilogy(ts, bound_stars/max(bound_stars), color='#666666', lw=1., alpha=0.75, label="true mass-loss")
+    axes[0].set_ylabel("Frac. bound stars")
+    axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color='#1A9641', lw=2., label="recovered mass-loss")
     axes[0].set_ylim(1E-2, 1.1)
 
-    axes[1].hist(tub_back, normed=True, bins=bins, color='#1A9641', histtype="step", lw=3.)
-    axes[1].yaxis.set_ticks([])
+    #axes[1].hist(tub_back, normed=True, bins=bins, color='#1A9641', histtype="step", lw=.)
+    #axes[1].yaxis.set_ticks([])
     
-    axes[-1].plot(ts, R_orbit)
+    axes[-1].plot(ts, R_orbit, lw=2.)
     axes[-1].plot(t1, np.sqrt(np.sum(satellite._r**2, axis=-1)), marker='o', color='r')
     axes[-1].set_xlabel("Time [Myr]")
-    axes[-1].set_ylabel("$R_{GC}$ of sat.")
+    axes[-1].set_ylabel("Satellite $R_{GC}$ [kpc]")
     axes[-1].set_xlim(min(ts), max(ts))
     
     for ii,peri in enumerate(peris):
@@ -632,18 +640,22 @@ if __name__ == '__main__':
                         default=False, help="Be chatty! (default = False)")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", 
                         default=False, help="Be quiet! (default = False)")
+    parser.add_argument("-l", "--list", action="store_true", dest="list", 
+                        default=False, help="List all functions")
     parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite", 
                         default=False, help="Overwrite existing files.")
     parser.add_argument("-f", "--function", dest="function", type=str,
-                        required=True, help="The name of the function to execute.")
+                        help="The name of the function to execute.")
     parser.add_argument("--kwargs", dest="kwargs", nargs="+", type=str,
                         help="kwargs passed in to whatever function you call.")
-
+    
     args = parser.parse_args()
     try:
         kwargs = dict([tuple(k.split("=")) for k in args.kwargs])
     except TypeError:
         kwargs = dict()
+    
+    kwargs["overwrite"] = args.overwrite
 
     # Set logger level based on verbose flags
     if args.verbose:
@@ -653,6 +665,17 @@ if __name__ == '__main__':
     else:
         logger.setLevel(logging.INFO)
     
+    def _print_funcs():
+        fs = inspect.getmembers(sys.modules[__name__], 
+                                lambda member: inspect.isfunction(member) and member.__module__ == __name__ and not member.__name__.startswith("_"))
+        print("\n".join([f[0] for f in fs]))
+
+    if args.list:
+        print("="*79)
+        _print_funcs()
+        print("="*79)
+        sys.exit(0)
+
     func = getattr(sys.modules[__name__], args.__dict__.get("function"))
     func(**kwargs)
 
