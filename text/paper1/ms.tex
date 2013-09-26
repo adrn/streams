@@ -278,15 +278,15 @@ velocity,
 These quantities are computed at each time step to take the time 
 dependence into account, neglecting mass-loss from the satellite.
 Qualitatively, when the distance in this normalized six-dimensional
-space, $D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} <
-\sqrt{2}$, the star is likely recaptured by the
-satellite. \citet{johnston99a} imposed a similar
-condition as a hard boundary and used the number of recaptured
-particles in a given backwards-integration as a cost function for
-optimization. What follows is a description of an updated procedure
-with a more natural, statistically-motivated choice for an objective
-function.
-
+space, $D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} \lesssim 2$, 
+the star is likely recaptured by the satellite (in the absence of errors,
+ we find that $\sim$90\% of the initially bound particles come within
+ this limit when integrating all orbits backwards). \citet{johnston99a} 
+ imposed a similar condition as a hard boundary and used the number 
+of recaptured particles in a given backwards-integration as a cost 
+function for optimization. What follows is a description of an updated 
+procedure with a more natural, statistically-motivated choice for an 
+objective function.
 
 For each star, $i$,
 the phase-space distance, $D_{\rm ps}$, is computed at each timestep

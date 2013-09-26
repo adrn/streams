@@ -37,18 +37,20 @@ progenitor must be discussed in the text, and proper cautionary
 remarks made.
 
 Response:
-In response to points 0-2, we have run a series of 4 new Nbody simulations (i.e. including the effect of self-gravity) of satellite disruption with the same initial orbital conditions (all on Sgr-like orbits), with satellite masses ranging from 2.5 x 10^6 M_sun to 2.5 x 10^9 M_sun, in the triaxial Law and Majewski potential. We have attached a figure that summarizes our findings: we plot the number of particles that recombine as a function of satellite mass, and then also vary the observational errors to see how this effects the recombination. 
+In response to points 0-2, we have run a series of 4 new Nbody simulations (i.e. including the effect of self-gravity) of satellite disruption with the same initial orbital conditions (all on Sgr-like orbits), with satellite masses ranging from 2.5 x 10^6 M_sun to 2.5 x 10^9 M_sun, in the triaxial Law and Majewski potential. We have attached a figure that summarizes our findings: we plot the fractions of originally bound particles that recombine through backwards integration as a function of satellite mass, then vary the observational errors to see how this effects the recombination fraction. 
 
 (Note that the number of particles that recombine from backwards integration obviously depends on a recapture criteria. For these plots, we chose when a particle comes within a phase-space distance (D_ps, as defined in the letter) of 2, that the particle is considered "recaptured". Decreasing this factor to 1 decreases the fraction recaptured to ~20%, possibly explaining the discrepancy with the referee? In any case, our algorithm for potential measure does not require strict recapture so does not depend on this somewhat arbitrary choice of limit.)
 
-The top (red) line shows that in the absence of errors, more particles return for the smaller mass satellites and at 2.5 x 10^9, the fraction drops significantly (as the referee intuited) due to effects of self-gravity. The subsequent colors represent the number of particles that recombine for each mass as we slowly ramp up the errors: orange shows 1% of the canonical errors we use in the paper, yellow shows 10%, and etc. Recall that the "canonical errors" are 2% distance measurements, 10 km/s radial velocities, and Gaia tangential velocity errors. As you can see, as the errors increase to more realistic values (the black and blue lines), the number of particles that recombine to the low mass satellites drops substantially, whereas the effect is smaller for the larger mass cases. 
+The top (red) line shows that in the absence of errors, more particles return for the smaller mass satellites and at 2.5 x 10^9 solar masses, the fraction drops significantly (as the referee intuited) due to effects of self-gravity. The subsequent colors represent the number of particles that recombine for each mass as we slowly ramp up the errors: orange shows 1% of the canonical errors we use in the paper, yellow shows 10%, and etc. Recall that the "canonical errors" are 2% distance measurements, 10 km/s radial velocities, and Gaia tangential velocity errors. As you can see, as the errors increase to more realistic values (the black and blue lines), the number of particles that recombine to the low mass satellites drops substantially, whereas the effect is smaller for the larger mass cases. 
 
-This figure clearly supports the statements in the paper that: (i) this method should work for a satellite of order Sgr current mass; (ii) the method needs to be refined for larger masses; and (iii) that observational errors will degrade the accuracy for the very smallest tidal streams.
+This figure clearly supports the statements in the paper that: (i) this method should work for a satellite of order Sgr current mass; (ii) the method needs to be refined for larger masses; and (iii) that observational errors will degrade the accuracy for the very smallest tidal streams. Note that with no errors, the recombination fraction drops significantly between 10^8 and 10^9 solar masses: if the referee ran tests with a more massive satellite this might explain why the method did not do as well. This does not effect the applicability of the method to real data: aside from the Magellenic clouds, Sgr is the most massive disrupting satellite.
 
 Since the intention of this first paper was only to present the idea, we do not want to include a detailed discussion here, but have made these point in the text…..
 ????where and how????? … and referred to longer exploratory paper…. 
+TODO: how to include in the text?
 
-
+Text changes:
+...
 
 3. The authors should at least acknowledge that the observational
 situation has changed with the work in Belokurov et al. (2013) and
@@ -68,9 +70,13 @@ mapping out the three-dimensional mass distribution of dark halos in a
 number of fields of astronomy by a huge variety of techniques over the
 last 20 years.
 
+Response:
 We agree with the referee's suggestion of qualifications to this section. It was really limited in the original version because the emphasis of the paper to be on the method and not a discussion of Sgr. We have added a footnote describing the recent work by Belokurov and "toned down" the LM10 description as requested.
 
-??? Quote changes here ????
+Text changes:
+"However, new observational work by Belokurov et al. 2013 suggest that the trailing tail of Sgr debris does not match the LM10 model."
+
+TODO: still need to tone down LM10 stuff?
 
 4. Figure 3 is rather concerning. At face value, it seems to suggest
 that Rewinder returns debris to the progenitor when the progenitor is
@@ -78,7 +84,11 @@ at apocenter. This is where we expect least stars to be stripped, but
 we expect the most bunching up of the population and the largest tidal
 radius. It looks as though those effects are skewing the minimization.
 
-??? This was a mistake and has been corrected. See revised figure. Thanks for catching this????
+Response:
+As the referee notes, most particles should be stripped close to pericentric passage, however we find that there is constant mass-loss over the entire phase of the orbit. Because we choose 10 randomly sampled particles, some of these will recombine at seemingly odd times over the orbit of the progenitor. 
+
+Text changes:
+TODO: do we include a figure just showing the mass-loss rate?
 
 5. It is unclear from Figure 3 whether the 10 orbits displayed are
 representative. Have the authors selected the 10 best orbits, or 10
@@ -88,9 +98,18 @@ good to see some statistics on the ensemble of orbits. What percentage
 of the orbits return to the progenitor? In my experiments, this is
 between 15 and 20 per cent.
 
+Response:
 The ten orbits have been randomly sampled, and we have added this clarification to the text. Also statement that, in absence of errors, 90% come within D_ps =2
 
-??? Refine test and quote here ???
+Text changes: 
+(figure caption)
+"Phase space distance (D_ps) for 10 randomly selected stars integrated backwards in the correct potential (top) and a potential where q_z is 25% larger (bottom)."
+and
+"Qualitatively, when the distance in this normalized six-dimensional
+space, $D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} \lesssim 2$, 
+the star is likely recaptured by the satellite (in the absence of errors,
+ we find that ~90% of the initially bound particles come within
+ this limit when integrating all orbits backwards)."
 
 6. It is not clear from eq (6) what effects are taken into account in
 the normalization. In practice, the orbital radius, mass of the
@@ -98,9 +117,11 @@ satellite and enclosed mass are all changing with time. Are all these
 effects taken into account when the normalization is applied to the
 coordinates in eq (5)?
 
+Response:
 We agree that this could be made more explicit in the text. The time-dependence of the orbital radius / enclosed mass (e.g., the escape velocity and tidal radius) are taken into account, but the mass of the satellite is not. We assume the mass of the satellite is just the present-day mass from the simulations, but the results are only very weakly dependent on this value. Since the satellite mass only enters through the tidal radius as a cube-root and the escape velocity as a square-root, it's reasonable to neglect the mass loss even if we assume the mass of Sgr has changed by a factor of 3 over the interaction time. (In principle we could add the mass loss history as an additional parameter.)
 
-??? Explicitly quote text changes ???
+Text changes:
+"These quantities are computed at each time step to take the time dependence into account, neglecting mass-loss from the satellite."
 
 7. The paper links to videos which claim to illustrate stars
 recombining within the progenitor. It looks to me like they are being
