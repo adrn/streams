@@ -148,7 +148,7 @@ def plot_xz_animation(potential, s, p, filename=""):
     grid = np.linspace(-81, 81, 200)*u.kpc
     
     idx = np.ones(p._r.shape[1]).astype(bool)
-    R,V = relative_normalized_coordinates(potential, p, s)
+    R,V = relative_normalized_coordinates(potential, s, p)
     all_D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
     r_tide = potential.tidal_radius(satellite.m, s.r)[:,:,np.newaxis]
     
@@ -161,7 +161,7 @@ def plot_xz_animation(potential, s, p, filename=""):
     jj = 0
     for ii in range(0,len(t),10):
         D_ps = all_D_ps[ii]
-        idx = idx & (D_ps > 2.8)
+        idx = idx & (D_ps > 2.2)
         
         offsets = p._r[ii]
         offsets[np.logical_not(idx)] = np.ones_like(offsets[np.logical_not(idx)])*len(p._r)
@@ -175,7 +175,7 @@ def plot_xz_animation(potential, s, p, filename=""):
             scatter_map = dict()
             scatter_map_sat = dict()
             
-            c = Circle((sat_r[0], sat_r[2]), radius=r_tide[ii,0,0].value, 
+            c = Circle((sat_r[0], sat_r[2]), radius=r_tide[ii,0,0].value*1.4, 
                        facecolor='#CA0020', alpha=0.3, edgecolor='none')
             ax.add_patch(c)
             scatter_map_sat[(1,0)] = c
@@ -192,7 +192,7 @@ def plot_xz_animation(potential, s, p, filename=""):
                     facecolor=(21/255.,21/255.,21/255.))
         jj += 1
     
-    print("{0} unbound at end of run.".format(sum(idx)))
+    print("Fraction bound at end of run: {0}".format(sum(~idx)/p.nparticles))
 
 if __name__ == "__main__":
     N = 10000
