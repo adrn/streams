@@ -165,7 +165,9 @@ Sgr stream data has inspired a rich set of  models
 \citep[e.g.,][]{johnston99b, fellhauer06}.
 Most recently, \citet[][hereafter LM10]{law10} have combined all
 current data on the Sgr debris to constrain both a model of its evolution
-and the potential in which it orbits.
+and the potential in which it orbits.\footnote{However, new observational work by 
+\cite{belokurov13} suggest that the trailing tail of Sgr debris does not
+match the LM10 model.}
 Figure \ref{fig:lm10} shows particle positions
 from the final time-step of the LM10 N-body
 simulation of dwarf satellite disruption along the expected Sgr orbit
@@ -196,8 +198,8 @@ LM10 demonstrate how a comparison of such simulations with the
 observed debris enables a detailed reconstruction of Sgr's history:
 its mass and stellar populations, orbit, rate of destruction, and even
 original distribution in populations. 
-This comparison enabled the first 
-assessment of the three-dimensional mass distribution of a dark matter
+This comparison enabled an assessment of the three-dimensional 
+mass distribution of the Milky Way's dark matter
 halo through the constraints on the potential parameters $v_{\rm halo}$, $q_1$, $q_z$, and $\phi$.
 
 Combined {\it Spitzer} and {\it Gaia} measurements of distances and proper motions
@@ -242,7 +244,7 @@ with the satellite has been rigorously redefined.
 \begin{center}
 %\includegraphics[width=0.47\textwidth,trim=5 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/ps_distance.eps}
 \includegraphics[width=0.47\textwidth,trim=5 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/ps_distance.pdf}
-\caption{Phase space distance ($D_{\rm ps}$) for 10 stars integrated backwards in the correct potential (top) and a potential where $q_z$ is 25\% larger (bottom). The same 10 particles are used in both figures, so the initial conditions are identical. Red (thick, solid line) shows the galactocentric distance of the progenitor (in arbitrary, normalized units) over the integration. Horizontal (dashed) line shows $D_{\rm ps}=\sqrt{2}$.}\label{fig:ps_distance}
+\caption{Phase space distance ($D_{\rm ps}$) for 10 randomly selected stars integrated backwards in the correct potential (top) and a potential where $q_z$ is 25\% larger (bottom). The same 10 particles are used in both figures, so the initial conditions are identical. Red (thick, solid line) shows the galactocentric distance of the progenitor (in arbitrary, normalized units) over the integration. Horizontal (dashed) line shows $D_{\rm ps}=\sqrt{2}$.}\label{fig:ps_distance}
 \end{center}
 \end{figure}
 
@@ -273,6 +275,8 @@ velocity,
   R_{\rm tide}=R\Big(\frac{m_{\rm sat}}{3M_{\rm enc}}\Big)^{1/3}\,\,\,\,,\,\,\,\,
   v_{\rm esc}=\sqrt{\frac{2Gm_{\rm sat}}{R_{\rm tide}}}.
 \end{equation}
+These quantities are computed at each time step to take the time 
+dependence into account, neglecting mass-loss from the satellite.
 Qualitatively, when the distance in this normalized six-dimensional
 space, $D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} <
 \sqrt{2}$, the star is likely recaptured by the
@@ -427,8 +431,8 @@ Fellowship under Grant No.\ 11-44155. This work was supported in part by
 the National Science Foundation under Grant No. PHYS-1066293 and the 
 hospitality of the Aspen Center for Physics.
 
-%\bibliography{refs}
 \bibliographystyle{apj}
+%\bibliography{refs}
 
 \begin{thebibliography}{42}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
@@ -450,6 +454,12 @@ hospitality of the Aspen Center for Physics.
   {Wilkinson}, {Hewett}, {Bramich}, {Fellhauer}, {Newberg}, {Wyse}, {Beers},
   {Bell}, {Barentine}, {Brinkmann}, {Cole}, {Pan}, \& {York}}]{belokurov07}
 {Belokurov}, V., {Evans}, N.~W., {Irwin}, M.~J., {et~al.} 2007, \apj, 658, 337
+
+\bibitem[{{Belokurov} {et~al.}(2013){Belokurov}, {Koposov}, {Evans},
+  {Pe{\~n}arrubia}, {Irwin}, {Smith}, {Lewis}, {Gieles}, {Wilkinson},
+  {Gilmore}, {Olszewski}, \& {Niederste-Ostholt}}]{belokurov13}
+{Belokurov}, V., {Koposov}, S.~E., {Evans}, N.~W., {et~al.} 2013, ArXiv
+  e-prints
 
 \bibitem[{{Benedict} {et~al.}(2011){Benedict}, {McArthur}, {Feast}, {Barnes},
   {Harrison}, {Bean}, {Menzies}, {Chaboyer}, {Fossati}, {Nesvacil}, {Smith},

@@ -33,6 +33,7 @@ from streams.potential.lm10 import true_params, _true_params, param_to_latex
 from streams.integrate.satellite_particles import SatelliteParticleIntegrator
 from streams.io.lm10 import particle_table, particles_today, satellite_today, time
 from streams.io import read_table
+from streams.plot import *
 
 matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18)
@@ -45,30 +46,36 @@ matplotlib.rc('font', family='Source Sans Pro')
 plot_path = "plots/paper1/"
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
-    
-# Read in the LM10 data
-#np.random.seed(142)
-#particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
-#satellite = satellite_today()
-#t1,t2 = time()    
 
-def normed_objective_plot():
+def normed_objective_plot(**kwargs):
     """ Plot our objective function in each of the 4 parameters we vary """
     
+    # Read in the LM10 data
+    np.random.seed(142)
+    particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+    satellite = satellite_today()
+    t1,t2 = time()
+
+    # optional parameters:
+    Nbins = int(kwargs.get("Nbins", 15))
+    percent_bounds = float(kwargs.get("percent_bounds", 10))
+
+    frac_p_range = (1-percent_bounds/100, 1+percent_bounds/100)
+
     # data file to cache data in, makes plotting faster...
-    cached_data_file = os.path.join(plot_path, 'normed_objective.pickle')
+    data_file = os.path.join(plot_path, 'normed_objective.pickle')
+
+    if os.path.exists(data_file) and kwargs.get("overwrite", False):
+        os.remove(data_file)
     
-    Nbins = 15
-    p_range = (0.9, 1.1)
-    
-    if not os.path.exists(cached_data_file):
+    if not os.path.exists(data_file):
         variances = dict()
         for param in ['q1','qz','v_halo','phi']:
             if not variances.has_key(param):
                 variances[param] = []
                 
-            stats = np.linspace(true_params[param]*p_range[0],
-                                true_params[param]*p_range[1], 
+            stats = np.linspace(true_params[param]*frac_p_range[0],
+                                true_params[param]*frac_p_range[1], 
                                 Nbins)
         
             for stat in stats:
@@ -77,17 +84,17 @@ def normed_objective_plot():
                 lm10 = LawMajewski2010(**params)
                 integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
                 s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
-                variances[param].append(generalized_variance(lm10, p_orbits, s_orbit))
+                variances[param].append(generalized_variance(lm10, s_orbit, p_orbits))
         
-        with open(cached_data_file, 'w') as f:
-            pickle.dump(variances, f)
-    
-    with open(cached_data_file, 'r') as f:
-        variances = pickle.load(f)
+        # pickle the data to a file
+        fnpickle(variances, data_file)
+
+    # unpickle data
+    variances = fnunpickle(data_file)
     
     fig,ax = plt.subplots(1,1,figsize=(8,8))
     
-    nstats = np.linspace(p_range[0], p_range[1], Nbins)
+    nstats = np.linspace(frac_p_range[0], frac_p_range[1], Nbins)
     linestyles = [(2,'-'), (3,'-.'), (3,'--'), (3,':')]
     for ii, name in enumerate(['q1','qz','phi','v_halo']):
         vals = variances[name]
@@ -104,73 +111,7 @@ def normed_objective_plot():
     
     fig.savefig(os.path.join(plot_path, "objective_function.pdf"))
 
-def variance_projections():
-    """ Figure showing 2D projections of the 6D variance """
-    
-    #particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
-    
-    params = true_params.copy()
-    params['qz'] = true_params['qz']*1.2
-    #params['v_halo'] = true_params['v_halo']*1.2
-    
-    # define both potentials
-    correct_lm10 = LawMajewski2010(**true_params)
-    wrong_lm10 = LawMajewski2010(**params)
-    
-    rcparams = {'lines.linestyle' : '-', 
-                'lines.linewidth' : 1.,
-                'lines.color' : 'k',
-                'lines.marker' : None,
-                'axes.facecolor' : '#ffffff'}
-    
-    with rc_context(rc=rcparams):
-        fig,axes = plt.subplots(2, 2, figsize=(10,10))
-        colors = ['#0571B0', '#D7191C']
-        markers = ['o', '^']
-        labels = ['true', '20% wrong $q_z$']
-        for ii,potential in enumerate([correct_lm10, wrong_lm10]):
-            integrator = SatelliteParticleIntegrator(potential, satellite, particles)
-            s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
-            min_ps = minimum_distance_matrix(potential, p_orbits, s_orbit)
-            
-            axes[0,0].plot(min_ps[:,0], min_ps[:,3], markers[ii], alpha=0.75, 
-                           linestyle='none', color=colors[ii], label=labels[ii])
-            axes[1,0].plot(min_ps[:,0], min_ps[:,4], markers[ii], alpha=0.75, 
-                           linestyle='none', color=colors[ii])
-            axes[0,1].plot(min_ps[:,1], min_ps[:,3], markers[ii], alpha=0.75, 
-                           linestyle='none', color=colors[ii])
-            axes[1,1].plot(min_ps[:,1], min_ps[:,4], markers[ii], alpha=0.75, 
-                           linestyle='none', color=colors[ii])
-        
-        # limits
-        for ax in np.ravel(axes):
-            ax.set_xlim(-4,4)
-            ax.set_ylim(-4,4)
-            ax.xaxis.tick_bottom()
-            ax.yaxis.tick_left()
-            ax.xaxis.set_ticks([-2,0,2])
-            ax.yaxis.set_ticks([-2,0,2])
-        
-        # tick hacking
-        axes[0,0].set_xticks([])
-        axes[0,1].set_xticks([])
-        axes[0,1].set_yticks([])
-        axes[1,1].set_yticks([])
-        
-        # labels
-        axes[0,0].set_ylabel(r'$p_x$')
-        axes[1,0].set_xlabel(r'$q_x$')
-        axes[1,0].set_ylabel(r'$p_y$')
-        axes[1,1].set_xlabel(r'$q_y$')
-        
-        axes[0,0].legend(loc='upper left', fancybox=True)
-    
-    plt.tight_layout()
-    fig.subplots_adjust(wspace=0., hspace=0.)
-    #plt.show()
-    fig.savefig(os.path.join(plot_path, "variance_projections.pdf"))
-
-def gaia_spitzer_errors():
+def gaia_spitzer_errors(**kwargs):
     """ Visualize the observational errors from Gaia and Spitzer, along with
         dispersion and distance scale of Sgr and Orphan. 
     """
@@ -266,10 +207,20 @@ def gaia_spitzer_errors():
     plt.tight_layout()
     plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
-def phase_space_d_vs_time(N=10):
+def phase_space_d_vs_time(**kwargs):
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
-    np.random.seed(112)
+    # Read in the LM10 data
+    np.random.seed(142)
+    particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+    satellite = satellite_today()
+    t1,t2 = time()
+
+    N = int(kwargs.get("N", 10))
+    seed = int(kwargs.get("seed", 41))
+
+    #np.random.seed(112)
+    np.random.seed(seed)
     randidx = np.random.randint(100, size=N)
     selected_star_idx = np.zeros(100).astype(bool)
     selected_star_idx[randidx] = True
@@ -283,19 +234,17 @@ def phase_space_d_vs_time(N=10):
     wrong_potential = LawMajewski2010(**wrong_params)
     
     resolution = 3.
-    
+
     sat_R = list()
     D_pses = list()
     ts = list()
     for potential in [true_potential, wrong_potential]:
         integrator = SatelliteParticleIntegrator(potential, satellite, particles)
-        s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-                                      timestep_args=(),
-                                      resolution=resolution,
-                                      t1=t1, t2=t2)
+        s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
         
-        R,V = relative_normalized_coordinates(potential, p_orbits, s_orbit) 
-        D_ps = np.sqrt(np.sum(R**2, axis=-1)/5. + np.sum(V**2, axis=-1))
+        R,V = relative_normalized_coordinates(potential, s_orbit, p_orbits) 
+        #D_ps = np.sqrt(np.sum(R**2, axis=-1)/2 + np.sum(V**2, axis=-1))
+        D_ps = np.sqrt(np.sum(R**2, axis=-1)/2)
         D_pses.append(D_ps)
         sat_R.append(np.sqrt(np.sum(s_orbit._r**2, axis=-1)))
         ts.append(s_orbit._t)
@@ -356,12 +305,12 @@ def phase_space_d_vs_time(N=10):
     
     return 
 
-def sgr():
+def sgr(**kwargs):
     """ Top-down plot of Sgr particles, with selected stars and then 
         re-observed
     """
     
-    cached_data_file = os.path.join(plot_path, 'sgr_kde.pickle')
+    data_file = os.path.join(plot_path, 'sgr_kde.pickle')
     
     fig,ax = plt.subplots(1, 1, figsize=(8,8))
     
@@ -370,14 +319,11 @@ def sgr():
     extent = {'x':(-90,55), 
               'y':(-58,68)}
     
-    if not os.path.exists(cached_data_file):    
+    if not os.path.exists(data_file):    
         Z = sgr_kde(pdata, extent=extent)
-        
-        with open(cached_data_file, 'w') as f:
-            pickle.dump(Z, f)
+        fnpickle(Z, data_file)
     
-    with open(cached_data_file, 'r') as f:
-        Z = pickle.load(f)
+    Z = fnunpickle(data_file)
     
     ax.imshow(Z**0.5, interpolation="nearest", 
               extent=extent['x']+extent['y'],
@@ -412,73 +358,10 @@ def sgr():
     
     fig.savefig(os.path.join(plot_path, "lm10.pdf"))
 
-def plot_point_cov(points, nstd=2, ax=None, **kwargs):
-    """
-    Plots an `nstd` sigma ellipse based on the mean and covariance of a point
-    "cloud" (points, an Nx2 array).
-
-    Parameters
-    ----------
-        points : An Nx2 array of the data points.
-        nstd : The radius of the ellipse in numbers of standard deviations.
-            Defaults to 2 standard deviations.
-        ax : The axis that the ellipse will be plotted on. Defaults to the 
-            current axis.
-        Additional keyword arguments are pass on to the ellipse patch.
-
-    Returns
-    -------
-        A matplotlib ellipse artist
-    """
-    pos = points.mean(axis=0)
-    cov = np.cov(points, rowvar=False)
-    return plot_cov_ellipse(cov, pos, nstd, ax, **kwargs)
-
-def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
-    """
-    Plots an `nstd` sigma error ellipse based on the specified covariance
-    matrix (`cov`). Additional keyword arguments are passed on to the 
-    ellipse patch artist.
-
-    Parameters
-    ----------
-        cov : The 2x2 covariance matrix to base the ellipse on
-        pos : The location of the center of the ellipse. Expects a 2-element
-            sequence of [x0, y0].
-        nstd : The radius of the ellipse in numbers of standard deviations.
-            Defaults to 2 standard deviations.
-        ax : The axis that the ellipse will be plotted on. Defaults to the 
-            current axis.
-        Additional keyword arguments are pass on to the ellipse patch.
-
-    Returns
-    -------
-        A matplotlib ellipse artist
-    """
-    def eigsorted(cov):
-        vals, vecs = np.linalg.eigh(cov)
-        order = vals.argsort()[::-1]
-        return vals[order], vecs[:,order]
-
-    if ax is None:
-        ax = plt.gca()
-
-    vals, vecs = eigsorted(cov)
-    theta = np.degrees(np.arctan2(*vecs[:,0][::-1]))
-
-    # Width and height are "full" widths, not radius
-    width, height = 2 * nstd * np.sqrt(vals)
-    ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwargs)
-
-    ax.add_artist(ellip)
-    return ellip
-
-def bootstrapped_parameters():
+def bootstrapped_parameters(**kwargs):
     data_file = os.path.join(project_root, "plots", "hotfoot", 
                              "SMASH_aspen", "all_best_parameters.pickle")
-    
-    with open(data_file) as f:
-        data = pickle.load(f)
+    data = fnunpickle(data_file)
     
     rcparams = {'axes.linewidth' : 3.,
                 'xtick.major.size' : 8.}
@@ -525,7 +408,7 @@ def bootstrapped_parameters():
     fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
-def bootstrapped_parameters_transpose():
+def bootstrapped_parameters_transpose(**kwargs):
     data_file = os.path.join(project_root, "plots", "hotfoot", 
                              "SMASH_aspen", "all_best_parameters.pickle")
     
@@ -598,12 +481,10 @@ def bootstrapped_parameters_transpose():
     fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
-def parameter_errors():
+def parameter_errors(**kwargs):
     data_file = os.path.join(project_root, "plots", "hotfoot", 
                              "SMASH_aspen", "all_best_parameters.pickle")
-    
-    with open(data_file) as f:
-        data = pickle.load(f)
+    data = fnunpickle(data_file)
     
     params = ['q1', 'qz', 'phi', 'v_halo']
     d = np.vstack(tuple([data[p] for p in params]))
@@ -623,10 +504,13 @@ def parameter_errors():
 def num_particles_recombine():
     pass
     
-def when_particles_recombine(N=10000, D_ps_limit=2., overwrite=False):
+def when_particles_recombine(**kwargs):
     """ I should plot number of bound particles vs. time over the orbit of 
         the progenitor vs. time. 
     """
+
+    N = int(kwargs.get("N",10000))
+    D_ps_limit = float(kwargs.get("D_ps_limit", 2.1))
 
     from streams.io.sgr import mass_selector, usys_from_file
     from streams.integrate import LeapfrogIntegrator
@@ -732,12 +616,43 @@ def when_particles_recombine(N=10000, D_ps_limit=2., overwrite=False):
     fig.savefig(os.path.join(plot_path, "when_recombine_N{0}_Dps{1}.png".format(N,D_ps_limit)))
 
 if __name__ == '__main__':
-    #gaia_spitzer_errors()
-    #sgr()
-    #phase_space_d_vs_time()
-    #normed_objective_plot()
-    #variance_projections()
-    #bootstrapped_parameters()
-    #bootstrapped_parameters_transpose()
-    #parameter_errors()
-    when_particles_recombine(N=1000, D_ps_limit=1.3, overwrite=True)
+    from argparse import ArgumentParser
+    import logging
+    
+    # Create logger
+    logger = logging.getLogger(__name__)
+    ch = logging.StreamHandler()
+    formatter = logging.Formatter("%(name)s / %(levelname)s / %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    
+    # Define parser object
+    parser = ArgumentParser(description="")
+    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
+                        default=False, help="Be chatty! (default = False)")
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", 
+                        default=False, help="Be quiet! (default = False)")
+    parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite", 
+                        default=False, help="Overwrite existing files.")
+    parser.add_argument("-f", "--function", dest="function", type=str,
+                        required=True, help="The name of the function to execute.")
+    parser.add_argument("--kwargs", dest="kwargs", nargs="+", type=str,
+                        help="kwargs passed in to whatever function you call.")
+
+    args = parser.parse_args()
+    try:
+        kwargs = dict([tuple(k.split("=")) for k in args.kwargs])
+    except TypeError:
+        kwargs = dict()
+
+    # Set logger level based on verbose flags
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    elif args.quiet:
+        logger.setLevel(logging.ERROR)
+    else:
+        logger.setLevel(logging.INFO)
+    
+    func = getattr(sys.modules[__name__], args.__dict__.get("function"))
+    func(**kwargs)
+
