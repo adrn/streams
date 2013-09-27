@@ -210,21 +210,16 @@ def gaia_spitzer_errors(**kwargs):
 def phase_space_d_vs_time(**kwargs):
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
+    N = int(kwargs.get("N", 10))
+    seed = int(kwargs.get("seed", 112358))
+
     # Read in the LM10 data
-    np.random.seed(142)
-    particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+    np.random.seed(seed)
+    particles = particles_today(N=N, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
     satellite = satellite_today()
     t1,t2 = time()
+    t2 = -6000.
 
-    N = int(kwargs.get("N", 10))
-    seed = int(kwargs.get("seed", 41))
-
-    #np.random.seed(112)
-    np.random.seed(seed)
-    randidx = np.random.randint(100, size=N)
-    selected_star_idx = np.zeros(100).astype(bool)
-    selected_star_idx[randidx] = True
-    
     wrong_params = true_params.copy()
     wrong_params['qz'] = 1.25*wrong_params['qz']
     #wrong_params['v_halo'] = wrong_params['v_halo']
@@ -243,8 +238,7 @@ def phase_space_d_vs_time(**kwargs):
         s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
         
         R,V = relative_normalized_coordinates(potential, s_orbit, p_orbits) 
-        #D_ps = np.sqrt(np.sum(R**2, axis=-1)/2 + np.sum(V**2, axis=-1))
-        D_ps = np.sqrt(np.sum(R**2, axis=-1)/2)
+        D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
         D_pses.append(D_ps)
         sat_R.append(np.sqrt(np.sum(s_orbit._r**2, axis=-1)))
         ts.append(s_orbit._t)
@@ -271,16 +265,16 @@ def phase_space_d_vs_time(**kwargs):
     
     with rc_context(rc=rcparams):  
         fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(8,12))
-        axes[0].axhline(np.sqrt(2), linestyle='--', color='#444444')
-        axes[1].axhline(np.sqrt(2), linestyle='--', color='#444444')
+        axes[0].axhline(2, linestyle='--', color='#444444')
+        axes[1].axhline(2, linestyle='--', color='#444444')
         
-        for ii in randidx:
+        for ii in range(N):
             for jj in range(2):
                 d = D_pses[jj][:,ii]
                 sR = sat_R[jj]
                 axes[jj].semilogy(ts[jj]/1000, d, alpha=0.25, color=rcparams['lines.color'])
-                axes[jj].semilogy(ts[jj]/1000, 0.3*0.9*(sR-sR.min())/(sR.max()-sR.min()) + 0.45, 
-                                  alpha=0.75, color='#CA0020')
+                #axes[jj].semilogy(ts[jj]/1000, 0.3*0.9*(sR-sR.min())/(sR.max()-sR.min()) + 0.45, 
+                #                  alpha=0.75, color='#CA0020')
                 #axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='o',
                 #                  alpha=0.9, color=rcparams['lines.color'], 
                 #                  markersize=8)
@@ -289,8 +283,8 @@ def phase_space_d_vs_time(**kwargs):
                                   alpha=0.9, color=rcparams['lines.color'], 
                                   markersize=10)
         
-        axes[1].set_ylim(0.4,20)
-        axes[1].set_xlim(-6, 0)
+        axes[1].set_ylim(0.6,20)
+        axes[1].set_xlim(-6.1, 0.1)
         
         axes[0].xaxis.tick_bottom()
         axes[1].xaxis.tick_bottom()
