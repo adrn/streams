@@ -1,4 +1,4 @@
-We thank the referee for a constructive report and answer the points in more detail below. Note in advance that we want to keep the emphasis of this paper on the method in principle and to keep it short. Hence we have not always included a detailed discussion of our responses in the paper, but instead refer the reader to the upcoming, more complete exploration that we are currently working on which is intended to look at the method more critically and in practice.
+We thank the referee for a constructive report and answer the points in more detail below. Note in advance that we want to keep the emphasis of this paper on the method in principle and thus keep it short enough to make that point only. We would like to highlight the timeliness of the method given the launch of Gaia and (possibly) last few cycles of Spitzer time. Hence we have not always included a detailed discussion of our responses in the paper, but instead refer the reader to the upcoming, more complete exploration that we are currently working on which is intended to look at the method more critically and in practice.
 
 ------------------------------------------------------------------------------
 
@@ -43,14 +43,24 @@ In response to points 0-2, we have run a series of 4 new Nbody simulations (i.e.
 
 The top (red) line shows that in the absence of errors, more particles return for the smaller mass satellites and at 2.5 x 10^9 solar masses, the fraction drops significantly (as the referee intuited) due to effects of self-gravity. The subsequent colors represent the number of particles that recombine for each mass as we slowly ramp up the errors: orange shows 1% of the canonical errors we use in the paper, yellow shows 10%, and etc. Recall that the "canonical errors" are 2% distance measurements, 10 km/s radial velocities, and Gaia tangential velocity errors. As you can see, as the errors increase to more realistic values (the black and blue lines), the number of particles that recombine to the low mass satellites drops substantially, whereas the effect is smaller for the larger mass cases. 
 
-This figure clearly supports the statements in the paper that: (i) this method should work for a satellite of order Sgr current mass; (ii) the method needs to be refined for larger masses; and (iii) that observational errors will degrade the accuracy for the very smallest tidal streams. Note that with no errors, the recombination fraction drops significantly between 10^8 and 10^9 solar masses: if the referee ran tests with a more massive satellite this might explain why the method did not do as well. This does not effect the applicability of the method to real data: aside from the Magellenic clouds, Sgr is the most massive disrupting satellite.
+This figure clearly supports the statements in the paper that: (i) this method should work for a satellite of order Sgr current mass (from ~10^7-10^9 solar masses); (ii) the method needs to be refined for larger masses; and (iii) that observational errors will degrade the accuracy for the very smallest tidal streams. Note that with no errors, the recombination fraction drops significantly between 10^8 and 10^9 solar masses: if the referee ran tests with a more massive satellite this might offer another explanation for why the method did not do as well. This does not effect the applicability of the method to real data: aside from the Magellenic clouds, Sgr is the most massive disrupting satellite.
 
-Since the intention of this first paper was only to present the idea, we do not want to include a detailed discussion here, but have made these point in the text…..
-????where and how????? … and referred to longer exploratory paper…. 
-TODO: how to include in the text?
+We included a brief discussion of the above points in a revised paragraph in the discussion section.
 
 Text changes:
-...
+"It is also important to characterize the the limitations of this
+method. Firstly, the measurement errors for RR Lyraes associated with
+the very coldest streams \citep[e.g., the globular clusters Pal5 and
+  GD1;][]{odenkirchen02,koposov10} will likely be too large to resolve
+the minute differences in orbital properties between the debris and
+satellite. Second, the present prescription neglects orbital evolution (e.g.,
+dynamical friction) and scattering of stream stars due to the potential
+of the satellite itself. Preliminary simulations (to be fully explored in 
+forthcoming work) suggest that these first two points can be neglected 
+for satellite masses between $\sim$$10^7$ and $\sim$$10^9~\mathrm{M}_{\odot}$. Lastly, the current version of the algorithm
+relies on accurate knowledge of the current position and velocity of
+the parent satellite, which may not be available 
+\citep[for example, the Orphan Stream;][]{belokurov07}."
 
 3. The authors should at least acknowledge that the observational
 situation has changed with the work in Belokurov et al. (2013) and
@@ -71,12 +81,12 @@ number of fields of astronomy by a huge variety of techniques over the
 last 20 years.
 
 Response:
-We agree with the referee's suggestion of qualifications to this section. It was really limited in the original version because the emphasis of the paper to be on the method and not a discussion of Sgr. We have added a footnote describing the recent work by Belokurov and "toned down" the LM10 description as requested.
+We agree with the referee's suggestion of qualifications to this section. It was really limited in the original version because the emphasis of the paper to be on the method and not a discussion of Sgr. We have added a sentence describing the recent work by Belokurov and "toned down" the LM10 description as requested.
 
 Text changes:
 "However, new observational work by Belokurov et al. 2013 suggest that the trailing tail of Sgr debris does not match the LM10 model."
-
-TODO: still need to tone down LM10 stuff?
+and
+"A comparison of simulations and data enabled LM10 to make an assessment of the three-dimensional mass distribution of the Milky Way's dark matter halo through the constraints on the potential parameters $v_{\rm halo}$, $q_1$, $q_z$, and $\phi$. Combined {\it Spitzer} and {\it Gaia} measurements of distances and proper motions of RR Lyrae in the Sgr debris will open up new avenues for potential constraints. Figure~\ref{fig:gaia_errors} shows that a 2\% distance error is smaller than the distance range in the stream (top panel). Similarly, {\it Gaia} proper motion error estimates correspond to tangential velocity errors less than the velocity dispersion for much of the stream (bottom panel). The next section outlines a  new method to take advantage of this information.""
 
 4. Figure 3 is rather concerning. At face value, it seems to suggest
 that Rewinder returns debris to the progenitor when the progenitor is
@@ -85,10 +95,12 @@ we expect the most bunching up of the population and the largest tidal
 radius. It looks as though those effects are skewing the minimization.
 
 Response:
-As the referee notes, most particles should be stripped close to pericentric passage, however we find that there is constant mass-loss over the entire phase of the orbit. Because we choose 10 randomly sampled particles, some of these will recombine at seemingly odd times over the orbit of the progenitor. 
+As the referee notes, most particles should be stripped close to pericentric passage. We have included another figure that shows the mass-loss from the satellite that illustrates this point. In this figure, the green line shows the fraction of stars that are "bound" at each timestep of backwards-integration (as defined by crossing a boundary of D_ps=2) for a random sample of 1000 stars from one of our own simulations (M_sgr = 2.5E8). The grey lines shows the "true" fraction of bound particles as a function of time, as produced by a rough energy criteria during the simulation run.
+
+As the referee notes, during backwards-integration, particles that were disrupted at pericenter appear to be recaptured earlier (though not at apocenter -- somewhere between apocenter and pericenter). However, note that i) on average we do reproduce the mass-loss, ii) there is a nonzero slope between apocenter and pericenter, so stars do unbind over the entire orbit, and iii) this early recombination does not appear to inflict a strong bias on the inferred parameters. This said, it is certainly an interesting point and something we will explore further in forthcoming work. In the mean time, we have removed the orbit of the progenitor from figure 3 so as not to distract the reader from the simple illustration we are trying to convey.
 
 Text changes:
-TODO: do we include a figure just showing the mass-loss rate?
+Updated figure 3.
 
 5. It is unclear from Figure 3 whether the 10 orbits displayed are
 representative. Have the authors selected the 10 best orbits, or 10
@@ -99,7 +111,7 @@ of the orbits return to the progenitor? In my experiments, this is
 between 15 and 20 per cent.
 
 Response:
-The ten orbits have been randomly sampled, and we have added this clarification to the text. Also statement that, in absence of errors, 90% come within D_ps =2
+The ten orbits have been randomly sampled, and we have added this clarification to the text. We have also included an explicit statement about the fraction of particles that recombine given a D_ps boundary of 2.
 
 Text changes: 
 (figure caption)
@@ -132,17 +144,20 @@ nor explained. Either the footnotes to the videos should be removed
 from the paper, or the videos should be properly documented in the main 
 text of the paper.
 
-We have added some further explanation to the videos on figshare. We think they illustrate the method conceptually very well and would like to leave the reference in the text to this resource. However, if the refers is still unhappy with this revision, we can take this reference out of the text. 
+Response:
+There was an error in the initial version where instead of drawing a circle with a radius equal to the tidal radius, the diameter was set to the tidal radius -- this has been fixed, and we thank the referee for catching this bug. We have also added some further explanation to the videos on figshare. We think they illustrate the method conceptually very well and would like to leave the reference in the text to this resource. However, if the referee is still unhappy with this revision, we can take this reference out of the text. 
 
 ???(TODO: upload new videos)???
-
 
 8. Figure 4 has no vertical axis scale at all and so is not easy to
 interpret.
 
+Response:
 The numerical values of the objective function (the generalized variance) are not interesting, but rather the shape of the function shows that there is a minimum at the true value of each parameter. 
 
-??? Add this note to the text and quote here????
+Text changes: 
+(caption)
+"1D slices of the objective function (generalized variance) for each halo potential parameter. The parameter values are normalized by the true values and show the effect of varying each parameter by $\pm10$\%. The values of the objective function (vertical axis) are not interesting, but note the minima around the truth (1.0) for each parameter."
 
 9. It is difficult to reconcile the remarks in Section 4 on the Orphan
 Stream and GD1 with the work of Sanders & Binney referenced in the
@@ -154,7 +169,5 @@ coldest streams", the debris does not trace a single orbit and the
 trace an orbit for GD1 and the Orphan, then the differences are not
 minute, and Rewinder should work.
 
-We like the Sanders & Binney work too, and agree that there is an offset in orbits for even the thinnest streams (e.g. Johnston 1998 for our own statement of the effect). The reason our method is not expected to work for the thinnest/coldest streams is that, while there is always an offset, the offset does depend on the mass of the satellite (see Johnston et al 1998 for the scaling of this offset in energy). Hence, while the _scaled_ offset is always the same, the absolute offset is much smaller for thinner streams. Our method depends critically on begin able to measure this offset for each star, so once the measurement errors are big enough, the method will degrade for the thinner streams (see discussion of points 0-2 and figure). This is not a contradiction of the Sanders/Binney work. 
-
-??? We now include a reference to the upcoming demonstration????
+We like the Sanders & Binney work too, and agree that there is an offset in orbits for even the thinnest streams (e.g. Johnston 1998 for our own statement of the effect). The reason our method is not expected to work for the thinnest/coldest streams is that, while there is always an offset, the offset does depend on the mass of the satellite (see Johnston et al 1998 for the scaling of this offset in energy). Hence, while the _scaled_ offset is always the same, the absolute offset is much smaller for thinner streams. Our method depends critically on being able to measure this offset for each star, so once the measurement errors are big enough, the method will degrade for the thinner streams (see discussion of points 0-2 and figure). This is not a contradiction of the Sanders & Binney work. 
 
