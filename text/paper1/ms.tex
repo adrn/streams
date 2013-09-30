@@ -53,7 +53,7 @@ since we can resolve large samples of stellar tracers.
 Thousands of blue horizontal branch stars selected from the Sloan Digital Sky Survey (SDSS) have been used to probe the Milky Way mass out to tens of
 kpc \citep[SDSS, see][]{deason12a,kafle12}, and estimates with combined tracers extend to 150kpc \citep{deason12b}.
 
-This approach assumes that the tracers represent a random sampling of orbits drawn from a smooth distribution function and are well-mixed in orbital phase. However, the same surveys that provide large samples have also revealed the existence of large-scale spatial inhomogeneities in the form of giant stellar streams \citep{newberg02,majewski03,belokurov06}, demonstrating that a significant fraction of the stellar halo is neither randomly sampled nor is fully phase-mixed.
+This approach assumes that the tracers represent a random sampling of phase-mixed orbits drawn from a smooth distribution function, however large area surveys have revealed the existence of large-scale spatial inhomogeneities in the form of giant stellar streams \citep{newberg02,majewski03,belokurov06}, demonstrating that a significant fraction of the stellar halo is neither randomly sampled nor is fully phase-mixed.
 
 A complimentary approach to measuring the mass distribution is to instead take advantage of the {\it non}-random nature of the Galaxy's stellar distribution and utilize the knowledge that stars in streams were once all part of the same object.
 Such approaches can require orders of magnitude fewer tracers than a randomly sampled population to achieve comparable accuracy.
@@ -61,11 +61,11 @@ One method is to simply fit orbits to observations of streams
 \citep[e.g.,][]{koposov10}.
 However, the assumption that debris traces a single orbit is actually incorrect \citep[see][]{johnston98,helmi99} and
 changes in orbital properties along debris streams can lead to systematic biases in measurements of the Galactic potential \citep{eyre09a,varghese11}.
-In particular, \citet{sanders13a} recently demonstrated that this bias is equally problematic for the very thinnest, coldest streams, whose observed properties may be indistinguishable from those of the parent orbit \citep[e.g. such as the globular cluster, GD1 --- see][]{koposov10}, as for the much more extended and hotter streams \citep[e.g. such as debris from the Sagittarius dwarf galaxy --- see][]{majewski03} where offsets from a single orbit are clearly apparent.
+\citet{sanders13a} recently demonstrated that this bias is equally problematic for the very thinnest, coldest streams, whose observed properties may be indistinguishable from those of the parent orbit \citep[e.g. such as the globular cluster, GD1 --- see][]{koposov10}, as for the much more extended and hotter streams \citep[e.g. such as debris from the Sagittarius dwarf galaxy --- see][]{majewski03} where offsets from a single orbit are clearly apparent.
 
 One way to address these biases is to run self-consistent N-body simulations of satellite destruction in a variety of potentials with the aim of simultaneously constraining both the properties of the satellite and the Milky Way.
-Many studies of the Sagittarius debris system (hereafter Sgr) --- whose tidal streams entirely encircle the Milky Way --- have adopted this approach 
-with the most recent work for the first time attempting to place constraints on the triaxiality and orientation of the dark matter halo
+Many studies of the Sagittarius debris system (hereafter Sgr) have adopted this approach,
+with the most recent work attempting to place constraints on the triaxiality and orientation of the dark matter halo
 \citep{law10}.
 
 The promise of near-future data sets including full phase-space information has also inspired other approaches. \citet{binney08} and \citet{penarrubia12} demonstrate that the distribution of energy and entropy in debris, respectively, will be minimized only for a correct
@@ -119,8 +119,8 @@ achieve $\sim$10-15\% uncertainties  \citep[if appropriate color measurements ar
 
 \begin{figure}[h!]
 \begin{center}
-%\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/gaia.eps}
-\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/gaia.pdf}
+\includegraphics[width=0.45\textwidth]{fig1.eps}
+%\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/gaia.pdf}
 
 \caption{Expected {\it Gaia} distance and tangential velocity errors as a function of heliocentric distance for RR Lyrae stars. Errors are a function of color and magnitude of the source, and hence the metallicity: each line is computed
 by Monte Carlo sampling from the empirical metallicity distribution of
@@ -165,8 +165,8 @@ Sgr stream data has inspired a rich set of  models
 \citep[e.g.,][]{johnston99b, fellhauer06}.
 Most recently, \citet[][hereafter LM10]{law10} combined all
 the (then) current data on the Sgr debris to constrain both a model of its evolution
-and the potential in which it orbits. (Note, new observational work by 
-\cite{belokurov13} suggest that the trailing tail of Sgr debris does not
+and the potential in which it orbits. (Note that new observational work by 
+\citet{belokurov13} suggest that the trailing tail of Sgr debris does not
 match the LM10 model.)
 Figure \ref{fig:lm10} shows particle positions
 from the final time-step of the LM10 N-body
@@ -188,16 +188,16 @@ baryonic disk ($\phi$):
 
 \begin{figure}[h]
 \begin{center}
-%\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/lm10.eps}
-\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/lm10.pdf}
-\caption{ Particle density (blue) of the first leading and trailing wraps from the final time-step of the \citet{law10} simulation of the Sgr stream. Point markers (black) show positions of a representative sample of 100 stars drawn from this density distribution. The position of the Sun is shown with the solar symbol. }\label{fig:lm10}
+\includegraphics[width=0.45\textwidth]{fig2.eps}
+%\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/lm10.pdf}
+\caption{ Particle density (blue) of the first leading and trailing wraps from the final time-step of the \citet{law10} simulation of the Sgr stream. Point markers (black) show positions of a random sample of 100 stars drawn from this density distribution. The position of the Sun is shown with the solar symbol. }\label{fig:lm10}
 \end{center}
 \end{figure}
 
 %LM10 demonstrate how a comparison of such simulations with the observed debris enables a detailed reconstruction of Sgr's history: its mass and stellar populations, orbit, rate of destruction, and even original distribution in populations. 
 A comparison of simulations and data enabled LM10 to make an assessment of the three-dimensional 
 mass distribution of the Milky Way's dark matter
-halo through the constraints on the potential parameters $v_{\rm halo}$, $q_1$, $q_z$, and $\phi$. Combined {\it Spitzer} and {\it Gaia} measurements of distances and proper motions
+halo through constraints on the potential parameters $v_{\rm halo}$, $q_1$, $q_z$, and $\phi$. Combined {\it Spitzer} and {\it Gaia} measurements of distances and proper motions
 of RR Lyrae in the Sgr debris will open up new avenues for potential constraints. Figure~\ref{fig:gaia_errors} shows that a 2\% distance error is smaller than the 
 distance range in the stream (top panel). Similarly, {\it Gaia} proper motion
 error estimates correspond to tangential velocity errors less than the velocity
@@ -218,9 +218,8 @@ With access to 6D information for stars in a tidal
 stream, each star becomes a powerful potential
 measure by exploiting the fact that the stars must have come from the
 same progenitor: if the orbits of the stars and progenitor are integrated 
-\emph{backwards} in a a potential that accurately models the Milky Way
-(imagine watching satellite destruction in ``rewind"), the stars
-should recombine with the progenitor.\footnote{\url{http://dx.doi.org/10.6084/m9.figshare.767305}} If the potential is incorrect,
+\emph{backwards} in a a potential that accurately models the Milky Way, the stars
+should recombine with the progenitor (imagine watching satellite destruction in ``rewind").\footnote{\url{http://dx.doi.org/10.6084/m9.figshare.767305}} If the potential is incorrect,
 the orbits of the stars will diverge from that of the progenitor and
 thus will not be recaptured by the satellite system (Figure~\ref{fig:ps_distance}).\footnote{\url{http://dx.doi.org/10.6084/m9.figshare.767306}}
 
@@ -229,13 +228,13 @@ Interferometry Mission \citep{unwin08}. Below we present an updated version of t
 the promise of 2\% distances to RR Lyrae stars (see Section
 \ref{sec:spitzer}) enables a direct measurement (rather than
 approximate estimate, as previously assumed) of the position of a star within its debris
-structure; and the test statistic that quantifies how well stars recombine
-with the satellite has been rigorously redefined.
+structure. The test statistic that quantifies how well stars recombine
+with the satellite has also been rigorously redefined.
 
 \begin{figure}[h]
 \begin{center}
-%\includegraphics[width=0.47\textwidth,trim=5 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/ps_distance.eps}
-\includegraphics[width=0.47\textwidth,trim=5 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/ps_distance.pdf}
+\includegraphics[width=0.47\textwidth,trim=5 0 0 0, clip]{fig3.eps}
+%\includegraphics[width=0.47\textwidth,trim=5 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/ps_distance.pdf}
 \caption{Phase space distance ($D_{\rm ps}$) for 10 randomly selected stars integrated backwards in the correct potential (top) and a potential where $q_z$ is 25\% larger (bottom). The same 10 particles are used in both figures, so the initial conditions are identical. Horizontal (dashed) line shows $D_{\rm ps}=2$, for reference.}\label{fig:ps_distance}
 \end{center}
 \end{figure}
@@ -274,11 +273,10 @@ space, $D_{{\rm ps},i}=\sqrt{|\bs{q}_{i}|^2+|\bs{p}_{i}|^2} \lesssim 2$,
 the star is likely recaptured by the satellite (in the absence of errors,
  we find that $\sim$90\% of the initially bound particles come within
  this limit when integrating all orbits backwards). \citet{johnston99a} 
- imposed a similar condition as a hard boundary and used the number 
-of recaptured particles in a given backwards-integration as a cost 
-function for optimization. What follows is a description of an updated 
-procedure with a more natural, statistically-motivated choice for an 
-objective function.
+ imposed a similar condition as a hard boundary and maximized the 
+number of recaptured particles in a given backwards-integration.
+What follows is a description of an updated procedure with a 
+statistically-motivated choice for an objective function.
 
 For each star, $i$,
 the phase-space distance, $D_{\rm ps}$, is computed at each timestep
@@ -292,10 +290,9 @@ distance vectors for each star, where $k\in[1,6]$. Intuitively, the
 variance of the distribution of minimum phase-space vectors will be
 larger for orbits integrated in an incorrect potential relative to the
 distribution computed from the `true' orbital history of the stars: in
-an incorrect potential, small differences in the orbits of the stars
-relative to the orbit of the progenitor cause them to spread out in
-this relative, normalized phase space. Thus, the \emph{generalized
-  variance} of the distribution --- computed for a given set of
+an incorrect potential, the orbits of the stars relative to the orbit of 
+the progenitor spread out in phase space. Thus, the \emph{generalized
+ variance} of the distribution --- computed for a given set of
 potential parameters, $\bs{\theta}$ --- is a natural choice for the
 scalar objective function, $f(\bs{\theta})$, used in constraining the potential of the
 Milky Way
@@ -314,28 +311,28 @@ then ``observe'' a sample of 100 stars from the first leading and
 trailing wraps of the stream. The radial velocity and distance errors are drawn 
 from Gaussians ($\varepsilon_{\rm RV} \sim \mathcal{N}(\mu=0,\sigma=10~{\rm
   km/s})$ and $\varepsilon_{\rm D} \sim \mathcal{N}(0,0.02\times
-D)$) and the proper motion errors are computed from the expected {\it Gaia} error curve. 
+D)$) and the proper motion errors are computed from the expected {\it Gaia} error curve.\footnote{\url{http://www.rssd.esa.int/index.php?page=Science_Performance&project=GAIA}} 
 
-The generalized variance defines a convex hypersurface over
+The generalized variance defines a convex function over
 which we optimize four of the six logarithmic potential parameters:
-$v_{circ}$, $\phi$, $q_1$, and $q_z$. We fix $q_2$ and $R_c$, which
-are degenerate with combinations of the other
-parameters. Figure~\ref{fig:objective} shows one-dimensional slices of
+$v_{circ}$, $\phi$, $q_1$, and $q_z$ ($q_2$ and $R_c$
+are degenerate with combinations of the other parameters). 
+Figure~\ref{fig:objective} shows one-dimensional slices of
 the objective function produced by varying each of the potential
 parameters by $\pm10\%$ around the true values and holding all others
 fixed.
 
 \begin{figure}[h]
 \begin{center}
-%\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/objective_function.eps}
-\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/objective_function.pdf}
+\includegraphics[width=0.45\textwidth]{fig4.eps}
+%\includegraphics[width=0.45\textwidth]{/Users/adrian/projects/streams/plots/paper1/objective_function.pdf}
 \caption{ 1D slices of the objective function (generalized variance) for each halo potential parameter. The parameter values are normalized by the true values show the effect of varying each parameter by $\pm10$\%. The values of the objective function (vertical axis) are not interesting but note the minima around the truth (1.0).}\label{fig:objective}
 \end{center}
 \end{figure}
 
 \begin{figure*}[ht!]
-%\centering\includegraphics[width=0.9\textwidth,trim=0 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/bootstrap.eps}
-\centering\includegraphics[width=0.9\textwidth,trim=0 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/bootstrap.pdf}
+\centering\includegraphics[width=0.9\textwidth,trim=0 0 0 0, clip]{fig5.eps}
+%\centering\includegraphics[width=0.9\textwidth,trim=0 0 0 0, clip]{/Users/adrian/projects/streams/plots/paper1/bootstrap.pdf}
 \caption{ Blue points show the ``best-fit'' parameters resulting from each resample of 100 stars from the Sgr stream particle density shown in Figure~\ref{fig:lm10}. Green (vertical and horizontal) lines show the true values of the parameters. Grey ellipses show one- and two-sigma margins, assuming the points are normally distributed. }\label{fig:bootstrap}
 \end{figure*}	
 
@@ -389,13 +386,12 @@ the very coldest streams \citep[e.g., the globular clusters Pal5 and
 the minute differences in orbital properties between the debris and
 satellite. Second, the present prescription neglects orbital evolution (e.g.,
 dynamical friction) and scattering of stream stars due to the potential
-of the satellite itself. Preliminary simulations (to be fully explored in 
-forthcoming work) suggest that these first two points can be neglected 
+of the satellite. Preliminary simulations (to be fully explored in 
+forthcoming work) suggest that these two points can be neglected 
 for satellite masses between $\sim$$10^7$ and $\sim$$10^9~\mathrm{M}_{\odot}$. Lastly, the 
-current version of the algorithm
-relies on accurate knowledge of the current position and velocity of
-the parent satellite, which may not be available 
-\citep[for example, the Orphan Stream;][]{belokurov07}. 
+current version of the algorithm relies on knowledge of the current 
+position and velocity of the parent satellite, which may not be available 
+\citep[e.g., the Orphan Stream;][]{belokurov07}. 
 
 \section{Conclusions and motivation for future work}
 \label{sec:conclusion}
@@ -410,15 +406,16 @@ satellite, \emph{Rewinder} recovers the depth, shape, and orientation of the dar
 matter potential to within a few percent.
 
 While the tests presented in this paper are very simple, the accuracy of potential recovery promised by such a small sample of stars 
-provides strong motivation for further theoretical work to: 1) develop a robust generative model (and therefore likelihood) that utilizes the concepts demonstrated by \emph{Rewinder}; 2) investigate the power of using multiple debris structures; and 3) examine how \emph{Rewinder} might work with less accurate measurements or missing dimensions. 
+provides strong motivation for further theoretical work to: 1) develop a robust generative model that utilizes the concepts demonstrated by \emph{Rewinder}; 2) investigate the power of using multiple debris structures; and 3) examine how \emph{Rewinder} might work with less accurate measurements or missing dimensions. 
 
 Our results also motivate an observational campaign with {\it Spitzer} to survey RR Lyrae stars in debris structures around the Milky Way to get precise distances to combine with near-future {\it Gaia} velocity data. 
-If just 100 stars in a single stellar stream allow us to measure the depth, shape, and orientation of the Milky Way potential, larger samples in multiple structures (e.g., the Orphan Stream, already mapped in RR Lyrae by \citet{sesar13}) offer the prospect of assessing these quantities as a function of Galactocentric radius. Tracing the mass in a dark matter halo with this level of detail is impossible for any other galaxy in the Universe.
+If just 100 stars in a single stellar stream allow us to study the depth, shape, and orientation of the Milky Way potential, larger samples in multiple structures \citep[e.g., the Orphan Stream;][]{sesar13} offer the prospect of assessing these quantities as a function of Galactocentric radius. Tracing the mass in a dark matter halo with this level of detail is impossible for any other galaxy in the Universe.
 
 \acknowledgments
 We thank Barry Madore for providing the inspiration for this work. Thanks to 
-David Hogg for statistical advice and many useful discussions. Thanks also to
-Steve Majewski, David Law, and David Nidever.
+David Hogg for statistical advice. Thanks also to Steve Majewski, David 
+Law, and David Nidever. We also thank the anonymous referee for useful 
+suggestions. 
 
 APW is supported by a National Science Foundation Graduate Research
 Fellowship under Grant No.\ 11-44155. This work was supported in part by 
