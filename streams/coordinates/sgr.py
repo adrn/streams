@@ -21,9 +21,9 @@ from astropy.coordinates.angles import rotation_matrix
 __all__ = ["SgrCoordinates", "distance_to_sgr_plane"]
 
 class SgrCoordinatesGC(coord.SphericalCoordinatesBase):
-    """ A Galactocentric spherical coordinate system defined by the orbit 
-        of the Sagittarius dwarf galaxy, as described in 
-            http://adsabs.harvard.edu/abs/2003ApJ...599.1082M 
+    """ A Galactocentric spherical coordinate system defined by the orbit
+        of the Sagittarius dwarf galaxy, as described in
+            http://adsabs.harvard.edu/abs/2003ApJ...599.1082M
         and further explained in
             http://www.astro.virginia.edu/~srm4n/Sgr/.
 
@@ -37,19 +37,18 @@ class SgrCoordinatesGC(coord.SphericalCoordinatesBase):
 
         if len(args) == 1 and len(kwargs) == 0 and \
             isinstance(args[0], coord.SphericalCoordinatesBase):
-            
+
             newcoord = args[0].transform_to(self.__class__)
             self.Lambda = newcoord.Lambda
             self.Beta = newcoord.Beta
             self._distance = newcoord._distance
         else:
             super(SgrCoordinates, self).\
-                _initialize_latlon('Lambda', 'Beta', False, args, kwargs, 
-                                   anglebounds=((0, 360), (-90,90)))
+                _initialize_latlon('Lambda', 'Beta', args, kwargs)
 
     def __repr__(self):
         if self.distance is not None:
-            diststr = ', Distance={0:.2g} {1!s}'.format(self.distance._value, 
+            diststr = ', Distance={0:.2g} {1!s}'.format(self.distance._value,
                                                         self.distance._unit)
         else:
             diststr = ''
@@ -67,9 +66,9 @@ class SgrCoordinatesGC(coord.SphericalCoordinatesBase):
         return self.Beta
 
 class SgrCoordinates(coord.SphericalCoordinatesBase):
-    """ A Heliocentric spherical coordinate system defined by the orbit 
-        of the Sagittarius dwarf galaxy, as described in 
-            http://adsabs.harvard.edu/abs/2003ApJ...599.1082M 
+    """ A Heliocentric spherical coordinate system defined by the orbit
+        of the Sagittarius dwarf galaxy, as described in
+            http://adsabs.harvard.edu/abs/2003ApJ...599.1082M
         and further explained in
             http://www.astro.virginia.edu/~srm4n/Sgr/.
 
@@ -83,19 +82,18 @@ class SgrCoordinates(coord.SphericalCoordinatesBase):
 
         if len(args) == 1 and len(kwargs) == 0 and \
             isinstance(args[0], coord.SphericalCoordinatesBase):
-            
+
             newcoord = args[0].transform_to(self.__class__)
             self.Lambda = newcoord.Lambda
             self.Beta = newcoord.Beta
             self._distance = newcoord._distance
         else:
             super(SgrCoordinates, self).\
-                _initialize_latlon('Lambda', 'Beta', False, args, kwargs, 
-                                   anglebounds=((0, 360), (-90,90)))
+                _initialize_latlon('Lambda', 'Beta', args, kwargs)
 
     def __repr__(self):
         if self.distance is not None:
-            diststr = ', Distance={0:.2g} {1!s}'.format(self.distance._value, 
+            diststr = ', Distance={0:.2g} {1!s}'.format(self.distance._value,
                                                         self.distance._unit)
         else:
             diststr = ''
@@ -126,8 +124,8 @@ sgr_matrix = np.array(B.dot(C).dot(D))
 # Galactic to Sgr coordinates
 @transformations.transform_function(coord.GalacticCoordinates, SgrCoordinates)
 def galactic_to_sgr(galactic_coord):
-    """ Compute the transformation from Galactic spherical to 
-        heliocentric Sgr coordinates. 
+    """ Compute the transformation from Galactic spherical to
+        heliocentric Sgr coordinates.
     """
 
     l = galactic_coord.l.radian
@@ -136,26 +134,24 @@ def galactic_to_sgr(galactic_coord):
     X = cos(b)*cos(l)
     Y = cos(b)*sin(l)
     Z = sin(b)
-    
+
     # Calculate X,Y,Z,distance in the Sgr system
     Xs, Ys, Zs = sgr_matrix.dot(np.array([X, Y, Z]))
-    
+
     Zs = -Zs
 
     # Calculate the angular coordinates lambda,beta
     Lambda = degrees(np.arctan2(Ys,Xs))
-    if Lambda<0:
-        Lambda += 360
-
+    Lambda[Lambda < 0] = Lambda[Lambda < 0] + 360
     Beta = degrees(np.arcsin(Zs/np.sqrt(Xs*Xs+Ys*Ys+Zs*Zs)))
 
-    return SgrCoordinates(Lambda, Beta, distance=galactic_coord.distance, 
+    return SgrCoordinates(Lambda, Beta, distance=galactic_coord.distance,
                           unit=(u.degree, u.degree))
 
 @transformations.transform_function(SgrCoordinates, coord.GalacticCoordinates)
 def sgr_to_galactic(sgr_coord):
-    """ Compute the transformation from heliocentric Sgr coordinates to 
-        spherical Galactic. 
+    """ Compute the transformation from heliocentric Sgr coordinates to
+        spherical Galactic.
     """
     L = sgr_coord.Lambda.radian
     B = sgr_coord.Beta.radian
@@ -173,12 +169,12 @@ def sgr_to_galactic(sgr_coord):
     if l<0:
         l += 360
 
-    return coord.GalacticCoordinates(l, b, distance=sgr_coord.distance, 
+    return coord.GalacticCoordinates(l, b, distance=sgr_coord.distance,
                                      unit=(u.degree, u.degree))
 
 @transformations.transform_function(coord.GalacticCoordinates, SgrCoordinatesGC)
 def galactic_to_sgr_gc(galactic_coord):
-    """ Compute the transformation from Galactic spherical to Sgr coordinates. 
+    """ Compute the transformation from Galactic spherical to Sgr coordinates.
     """
 
     l = galactic_coord.l.radian
@@ -200,12 +196,12 @@ def galactic_to_sgr_gc(galactic_coord):
 
     Beta = degrees(np.arcsin(Zs/np.sqrt(Xs*Xs+Ys*Ys+Zs*Zs)))
 
-    return SgrCoordinates(Lambda, Beta, distance=galactic_coord.distance, 
+    return SgrCoordinates(Lambda, Beta, distance=galactic_coord.distance,
                           unit=(u.degree, u.degree))
 
 @transformations.transform_function(SgrCoordinatesGC, coord.GalacticCoordinates)
 def sgr_gc_to_galactic(sgr_coord):
-    """ Compute the transformation from Sgr coordinates to spherical Galactic. 
+    """ Compute the transformation from Sgr coordinates to spherical Galactic.
     """
     L = sgr_coord.Lambda.radian
     B = sgr_coord.Beta.radian
@@ -223,7 +219,7 @@ def sgr_gc_to_galactic(sgr_coord):
     if l<0:
         l += 360
 
-    return coord.GalacticCoordinates(l, b, distance=sgr_coord.distance, 
+    return coord.GalacticCoordinates(l, b, distance=sgr_coord.distance,
                                      unit=(u.degree, u.degree))
 
 def distance_to_sgr_plane(ra, dec, heliocentric_distance):
