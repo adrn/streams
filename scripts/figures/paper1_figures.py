@@ -334,7 +334,7 @@ def sgr(**kwargs):
         ax.plot(pdata['x'], pdata['z'], marker='.', alpha=0.85, ms=9)
         
         # add solar symbol
-        ax.text(-8.-4., 0., s=r"$\odot$", fontsize=32)
+        ax.text(-8.-5.75, -3., s=r"$\odot$", fontsize=32)
 
         ax.set_xlabel("$X_{GC}$ [kpc]")
         ax.set_xlabel("$X_{GC}$ [kpc]")
