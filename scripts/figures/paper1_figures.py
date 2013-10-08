@@ -16,6 +16,7 @@ from astropy.io.misc import fnpickle, fnunpickle
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 from matplotlib import rc_context, rcParams, cm
 from matplotlib.patches import Rectangle, Ellipse
 import scipy.optimize as so
@@ -212,10 +213,12 @@ def phase_space_d_vs_time(**kwargs):
     
     N = int(kwargs.get("N", 10))
     seed = int(kwargs.get("seed", 112358))
+    N_integrate = 1000
 
     # Read in the LM10 data
     np.random.seed(seed)
-    particles = particles_today(N=N, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+    particles = particles_today(N=N_integrate, 
+                                expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
     satellite = satellite_today()
     t1,t2 = time()
     t2 = -6000.
@@ -264,7 +267,12 @@ def phase_space_d_vs_time(**kwargs):
                 'axes.labelweight' : 100}
     
     with rc_context(rc=rcparams):  
-        fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(8,12))
+        #fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(8,12))
+        fig = plt.figure(figsize=(10,12))
+        gs = GridSpec(2,4)
+
+        axes = [plt.subplot(gs[0,:3]), plt.subplot(gs[1,:3]),
+                plt.subplot(gs[0,3]), plt.subplot(gs[1,3])]
         axes[0].axhline(2, linestyle='--', color='#444444')
         axes[1].axhline(2, linestyle='--', color='#444444')
         
@@ -273,21 +281,37 @@ def phase_space_d_vs_time(**kwargs):
                 d = D_pses[jj][:,ii]
                 sR = sat_R[jj]
                 axes[jj].semilogy(ts[jj]/1000, d, alpha=0.25, color=rcparams['lines.color'])
-                #axes[jj].semilogy(ts[jj]/1000, 0.3*0.9*(sR-sR.min())/(sR.max()-sR.min()) + 0.45, 
-                #                  alpha=0.75, color='#CA0020')
-                #axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='o',
-                #                  alpha=0.9, color=rcparams['lines.color'], 
-                #                  markersize=8)
                 axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='+',
                                   markeredgewidth=2, markeredgecolor='k',
                                   alpha=0.9, color=rcparams['lines.color'], 
                                   markersize=10)
-        
-        axes[1].set_ylim(0.6,20)
-        axes[1].set_xlim(-6.1, 0.1)
+
+        axes[0].set_ylim(0.6,20)
+        axes[0].set_xlim(-6.1, 0.1)
+        axes[1].set_ylim(axes[0].get_ylim())
+        axes[1].set_xlim(axes[0].get_xlim())
+
+        # vertical histograms of D_ps values
+        ylim = axes[0].get_ylim()
+        bins = np.logspace(np.log10(ylim[0]), np.log10(ylim[1]), 50)
+        n,xx,patches = axes[2].hist(np.min(D_pses[0], axis=0), bins=bins,
+                                      orientation='horizontal')
+        n,xx,patches = axes[3].hist(np.min(D_pses[1], axis=0), bins=bins,
+                                      orientation='horizontal')
+        axes[2].set_yscale('log')
+        axes[3].set_yscale('log')
+
+        axes[2].xaxis.set_visible(False)
+        axes[3].xaxis.set_visible(False)
+        axes[2].yaxis.set_visible(False)
+        axes[3].yaxis.set_visible(False)
+
+        axes[2].set_ylim(axes[0].get_ylim())
+        axes[3].set_ylim(axes[1].get_ylim())
         
         axes[0].xaxis.tick_bottom()
         axes[1].xaxis.tick_bottom()
+        axes[0].xaxis.set_visible(False)
     
     axes[1].set_xlabel("Backwards integration time [Gyr]")
     axes[0].set_ylabel(r"$D_{ps}$", rotation='horizontal')
