@@ -13,7 +13,12 @@ import astropy.units as u
 import numpy as np
 import pytest
 
+# Project
 from ..particles import *
+
+plot_path = "plots/tests/dynamics"
+if not os.path.exists(plot_path):
+    os.makedirs(plot_path)
 
 units = (u.kpc, u.Myr, u.M_sun)
 
@@ -98,3 +103,15 @@ def test_getitem():
     
     assert pc2.nparticles == 15
     assert (pc2._r[0] == pc._r[15]).all()
+
+def test_plot():
+    r = np.random.random(size=(100,3))*u.kpc
+    v = np.random.random(size=(100,3))*u.kpc/u.Myr
+    m = np.random.random(100)*u.M_sun
+    p = Particle(r=r, v=v, m=m, units=units)
+
+    fig = p.plot_r()
+    fig.savefig(os.path.join(plot_path, "particle_r.png"))
+
+    fig = p.plot_v()
+    fig.savefig(os.path.join(plot_path, "particle_v.png"))

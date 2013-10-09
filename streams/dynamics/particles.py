@@ -13,9 +13,10 @@ import os, sys
 import numpy as np
 import astropy.units as u
 from astropy.constants import G
+import triangle
 
+# Project
 from .core import _validate_quantity, DynamicalBase
-from ..misc.units import UnitSystem
 
 __all__ = ["Particle"]
     
@@ -150,10 +151,13 @@ class Particle(DynamicalBase):
         labels = [r"{0} [{1}]".format(nm, self.r.unit)
                     for nm in coord_names]
         
-        fig,axes = scatter_plot_matrix(self._r.T, 
-                                       labels=labels,
-                                       **kwargs)
-        return fig, axes
+        kwargs["ms"] = kwargs.get("ms", 2.)
+        kwargs["alpha"] = kwargs.get("alpha", 0.5)
+
+        fig = triangle.corner(self._r, labels=labels, 
+                              plot_contours=False, plot_datapoints=True, 
+                              **kwargs)
+        return fig
     
     def plot_v(self, coord_names=['vx','vy','vz'], **kwargs):
         """ Make a scatter-plot of 3 projections of the velocities of the 
@@ -164,7 +168,7 @@ class Particle(DynamicalBase):
             coord_names : list
                 Name of each axis, e.g. ['Vx','Vy','Vz']
             kwargs (optional)
-                Keyword arguments that get passed to scatter_plot_matrix
+                Keyword arguments that get passed to triangle.corner()
         """   
         from ..plot.data import scatter_plot_matrix
         assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
@@ -172,10 +176,13 @@ class Particle(DynamicalBase):
         labels = [r"{0} [{1}]".format(nm, self.v.unit)
                     for nm in coord_names]
         
-        fig,axes = scatter_plot_matrix(self._v.T, 
-                                       labels=labels,
-                                       **kwargs)
-        return fig, axes
+        kwargs["ms"] = kwargs.get("ms", 2.)
+        kwargs["alpha"] = kwargs.get("alpha", 0.5)
+
+        fig = triangle.corner(self._v, labels=labels, 
+                              plot_contours=False, plot_datapoints=True, 
+                              **kwargs)
+        return fig
     
     def merge(self, other):
         """ Merge two particle collections. Takes unit system from the first
