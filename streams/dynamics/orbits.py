@@ -15,7 +15,7 @@ import astropy.units as u
 from astropy.constants import G
 
 from .core import _validate_quantity, DynamicalBase
-from .particles import ParticleCollection
+#from .particles import ParticleCollection
 from ..misc.units import UnitSystem
 
 __all__ = ["OrbitCollection"]
