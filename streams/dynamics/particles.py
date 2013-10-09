@@ -59,7 +59,7 @@ class Particle(DynamicalBase):
                              "complete the unit system specification.")
         elif units is not None and m is None:
             m = ([0.] * self.nparticles * u.kg).decompose(units)
-            
+
         _validate_quantity(m, unit_like=u.kg)
         
         if units is None:
@@ -68,6 +68,10 @@ class Particle(DynamicalBase):
         else:
             self.units = units
             
+        unq_types = np.unique([x.physical_type for x in self.units])
+        if len(self.units) != len(unq_types):
+            raise ValueError("Multiple units specify the same physical type!")
+
         if r.value.shape != v.value.shape:
             raise ValueError("Position and velocity must have same shape.")
         
@@ -142,7 +146,7 @@ class Particle(DynamicalBase):
             coord_names : list
                 Name of each axis, e.g. ['x','y','z']
             kwargs (optional)
-                Keyword arguments that get passed to scatter_plot_matrix
+                Keyword arguments that get passed to triangle.corner()
         """   
         from ..plot.data import scatter_plot_matrix
         if not len(coord_names) == self.ndim:

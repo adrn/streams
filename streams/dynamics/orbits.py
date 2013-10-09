@@ -13,6 +13,7 @@ import os, sys
 import numpy as np
 import astropy.units as u
 from astropy.constants import G
+import triangle
 
 from .core import _validate_quantity, DynamicalBase
 from .particles import Particle
@@ -70,6 +71,10 @@ class Orbit(DynamicalBase):
         else:
             self.units = units
 
+        unq_types = np.unique([x.physical_type for x in self.units])
+        if len(self.units) != len(unq_types):
+            raise ValueError("Multiple units specify the same physical type!")
+
         if r.value.shape != v.value.shape:
             raise ValueError("Position and velocity must have same shape.")
         
@@ -97,6 +102,57 @@ class Orbit(DynamicalBase):
         """ Return a new Orbit in the specified unit system. """
         return Orbit(t=self.t, r=self.r, v=self.v, m=self.m, units=units)
     
+    def plot_r(self, coord_names=['x','y','z'], **kwargs):
+        """ Make a scatter-plot of 3 projections of the orbit positions. 
+            
+            Parameters
+            ----------
+            coord_names : list
+                Name of each axis, e.g. ['x','y','z']
+            kwargs (optional)
+                Keyword arguments that get passed to triangle.corner()
+        """   
+        from ..plot.data import scatter_plot_matrix
+        if not len(coord_names) == self.ndim:
+            raise ValueError("Must pass a coordinate name for each dimension.")
+        
+        labels = [r"{0} [{1}]".format(nm, self.r.unit)
+                    for nm in coord_names]
+        
+        kwargs["ms"] = kwargs.get("ms", 2.)
+        kwargs["alpha"] = kwargs.get("alpha", 0.5)
+
+        fig = triangle.corner(np.vstack(self._r), labels=labels, 
+                              plot_contours=False, plot_datapoints=True, 
+                              **kwargs)
+
+        return fig
+    
+    def plot_v(self, coord_names=['vx','vy','vz'], **kwargs):
+        """ Make a scatter-plot of 3 projections of the velocities of the 
+            particle coordinates.
+            
+            Parameters
+            ----------
+            coord_names : list
+                Name of each axis, e.g. ['Vx','Vy','Vz']
+            kwargs (optional)
+                Keyword arguments that get passed to triangle.corner()
+        """   
+        from ..plot.data import scatter_plot_matrix
+        assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
+        
+        labels = [r"{0} [{1}]".format(nm, self.v.unit)
+                    for nm in coord_names]
+        
+        kwargs["ms"] = kwargs.get("ms", 2.)
+        kwargs["alpha"] = kwargs.get("alpha", 0.5)
+
+        fig = triangle.corner(np.vstack(self._v), labels=labels, 
+                              plot_contours=False, plot_datapoints=True, 
+                              **kwargs)
+        return fig
+
     def __getitem__(self, key):
         """ Slice on time """
         
