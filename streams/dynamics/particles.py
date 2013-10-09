@@ -17,30 +17,33 @@ from astropy.constants import G
 from .core import _validate_quantity, DynamicalBase
 from ..misc.units import UnitSystem
 
-__all__ = ["ParticleCollection"]
+__all__ = ["Particle"]
     
-class ParticleCollection(DynamicalBase):
+class Particle(DynamicalBase):
     
-    def __init__(self, r, v, m=None, dr=None, dv=None, unit_system=None):
-        """ A collection of massive or test particles. 
+    def __init__(self, r, v, m=None, unit_system=None):
+        """ A represents a dynamical particle or collection of particles.
+            Particles can have mass or be massless. 
             
             Parameters
             ---------- 
             r : astropy.units.Quantity
-                Position.
+                Position of the particle(s). Should have shape (nparticles, ndim).
             v : astropy.units.Quantity
-                Velocity.
+                Velocity of the particle(s). Should have shape (nparticles, ndim).
             m : astropy.units.Quantity (optional)
-                Mass.    
+                Mass of the particle(s). Should have shape (nparticles, ).
             dr : astropy.units.Quantity (optional)
                 Uncertainty in position.
             dv : astropy.units.Quantity (optional)
                 Uncertainty in velocity.
             unit_system : UnitSystem (optional)
                 The desired unit system for the particles. If not provided, will
-                use the units of the input Quantities.
+                use the units of the input Quantities to define a system of units.
+                Mainly used for internal representations.
         """
         
+        # Make sure position has
         _validate_quantity(r, unit_like=u.km)
         _validate_quantity(v, unit_like=u.km/u.s)
         
