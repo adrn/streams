@@ -1,5 +1,4 @@
 # coding: utf-8
-""" Test the special fucntions used to compute our scalar objective """
 
 from __future__ import absolute_import, unicode_literals, division, print_function
 
@@ -21,7 +20,6 @@ plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-
 def test_statistical_model():
     """ Test with example from main Emcee docs """
 
@@ -36,6 +34,9 @@ def test_statistical_model():
     sm = StatisticalModel(parameters, 
                           ln_likelihood=lnprob,
                           likelihood_args=(1.7,), 
-                          parameter_bounds={'x':(-10,100)})
+                          parameter_bounds={'x':(-1,100)})
 
     sampler = sm.run(p0, 100, 0)
+
+    plt.hist(sampler.flatchain, bins=100)
+    plt.savefig(os.path.join(plot_path, "emcee_test.png"))
