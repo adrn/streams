@@ -31,7 +31,7 @@ def _nbody_acceleration(G, R, M, e=0.1):
 
 def nbody_integrate(particles, time_steps, 
                     external_acceleration=None, e=0.1):
-    """ Direct N-body integration of the given ParticleCollection over the 
+    """ Direct N-body integration of the given Particle over the 
         specified time steps. Softening length is specified by 'e'. 
         
         Parameters
