@@ -55,12 +55,13 @@ class StatisticalModel(object):
                                  "bounds for parameters '{0}'".format(p))
 
         self.ln_likelihood = ln_likelihood
+        self.likelihood_args = likelihood_args
             
     def ln_prior(self, p):
         """ Evaluate the prior functions """
 
         _sum = 0.
-        for ii,param in enumerate(param_names):
+        for ii,param in enumerate(self.parameters):
             if self._prior_funcs.has_key(param):
                 _sum += self._prior_funcs[param](p[ii])
             else:
@@ -71,7 +72,7 @@ class StatisticalModel(object):
         return _sum
 
     def ln_posterior(self, p):
-        return self.ln_prior(p)+self.ln_likelihood(p, **self.likelihood_args)
+        return self.ln_prior(p)+self.ln_likelihood(p, *self.likelihood_args)
 
     def run(self, p0, nsteps, nburn=None, pool=None):
         """ Use emcee to sample from the posterior.
@@ -92,6 +93,7 @@ class StatisticalModel(object):
         if nburn == None:
             nburn = nsteps // 10
 
+        p0 = np.array(p0)
         nwalkers, ndim = p0.shape
 
         if ndim != len(self.parameters):
