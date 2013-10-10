@@ -75,7 +75,7 @@ def minimum_distance_matrix(potential, satellite_orbit, particle_orbits):
     # Find the index of the time of the minimum D_ps for each particle
     min_time_idx = D_ps.argmin(axis=0)
     min_ps = np.zeros((particle_orbits.nparticles,6))
-    
+
     xx = zip(min_time_idx, range(particle_orbits.nparticles))
     for kk in range(particle_orbits.nparticles):
         jj,ii = xx[kk]
@@ -104,6 +104,11 @@ def generalized_variance(potential, satellite_orbit, particle_orbits):
     sign,logdet = np.linalg.slogdet(cov_matrix)
     return logdet
 
+
+
+
+
+# DEFUNKT??
 def objective(potential, satellite_orbit, particle_orbits, v_disp):
     """ This is a new objective function, motivated by the fact that what 
         I was doing before doesn't really make sense...
@@ -148,9 +153,8 @@ def frac_err(d):
     else:
         return ((8./55)*d - 10./11)/100.
 
-def objective2(potential, satellite_orbit, particle_orbits, v_disp):
-    """ This is a new objective function, motivated by the fact that what 
-        I was doing before doesn't really make sense...
+def objective2(potential, satellite_orbit, particle_orbits):
+    """ 
     """
     
     # get numbers for any relevant loops below
