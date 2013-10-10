@@ -17,8 +17,7 @@ from astropy.constants import G
 
 # Project
 from .core import read_table, table_to_particles, table_to_orbits
-from ..util import project_root
-from ..misc import UnitSystem
+from ..util import project_root, u_galactic
 from ..dynamics import Particle, Orbit
 from ..integrate.leapfrog import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
@@ -76,7 +75,7 @@ def particles_today(N=None, expr=None):
                             position_columns=["x","y","z"],
                             velocity_columns=["vx","vy","vz"])
     
-    return pc.to(UnitSystem.galactic())
+    return pc.to(u_galactic)
 
 def satellite_today():
     """ Read in the position and velocity of the Sgr satellite at the end of
@@ -104,7 +103,7 @@ def satellite_orbit():
                          position_columns=["x","y","z"],
                          velocity_columns=["vx","vy","vz"])
     
-    return oc.to(UnitSystem.galactic())
+    return oc.to(u_galactic)
     
 def time():
     """ Time information for the Law & Majewski 2010 simulation """    

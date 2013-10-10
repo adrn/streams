@@ -134,9 +134,11 @@ def table_to_orbits(table, units,
         r[...,ii] = np.array(table[position_columns[ii]])[...,np.newaxis]
         v[...,ii] = np.array(table[velocity_columns[ii]])[...,np.newaxis]
 
-    r = r*unit_system['length']
-    v = v*unit_system['length'] / unit_system['time']
-    t = np.array(table['t']) * unit_system['time']
+    r_unit = filter(lambda x: x.is_equivalent(u.km), units)[0]
+    t_unit = filter(lambda x: x.is_equivalent(u.s), units)[0]
+    r = r*r_unit
+    v = v*r_unit/t_unit
+    t = np.array(table['t']) * t_unit
     
     particles = Orbit(t=t.to(u.Myr), 
                       r=r.to(u.kpc), 
