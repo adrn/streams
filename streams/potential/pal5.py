@@ -39,6 +39,11 @@ _true_params = dict(v_c=0.2454509,
 param_to_latex = dict(v_c=r"$v_c$",
                       qz=r"$q_z$")
 
+param_ranges = dict(log_m=(26.93787, 29.24046),
+                    qz=(0.707,1.2),
+                    Rs=(10.,45.),
+                    v_c=(0.1840881,0.286359406))
+
 class Palomar5(CompositePotential):
     
     def __init__(self, **parameters):
