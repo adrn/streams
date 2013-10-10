@@ -18,107 +18,37 @@ import astropy.units as u
 from ..dynamics import Orbit
 from .leapfrog import LeapfrogIntegrator
 
-__all__ = ["SatelliteParticleIntegrator"]
+__all__ = ["satellite_particles_integrate"]
 
-def satellite_particles_integrate(satellite, particles, potential):
-    """ """
+def satellite_particles_integrate(satellite, particles, potential, \
+                                  potential_args=(), time_spec=dict()):
+    """ TODO: """   
+
     # Stack positions and velocities from satellite + particle
     r_0 = np.vstack((satellite._r, particles._r))
     v_0 = np.vstack((satellite._v, particles._v))
 
+    integrator = LeapfrogIntegrator(potential._acceleration_at, r_0, v_0,
+                                    args=potential_args)
+    t,r,v = integrator.run(**time_spec)
+        
+    sat_r = np.array(r[:,0][:,np.newaxis,:])
+    sat_v = np.array(v[:,0][:,np.newaxis,:])
     
-    
-class SatelliteParticleIntegrator(LeapfrogIntegrator):
-    
-    def __init__(self, potential, satellite, particles, lm10=True):
-        """ TODO """
-        
-        # Stack positions and velocities from satellite + particle
-        r_0 = np.vstack((satellite._r, particles._r))
-        v_0 = np.vstack((satellite._v, particles._v))
-        
-        self.satellite_mass = satellite.m.value
-        
-        if lm10:
-            self._acc_placeholder = np.zeros((len(r_0), 3))
-            super(SatelliteParticleIntegrator, self).__init__(potential._acceleration_at,
-                                                              r_0, v_0, args=(len(r_0),self._acc_placeholder))
-        else:
-            self._acc_placeholder = np.zeros((len(r_0), 3))
-            super(SatelliteParticleIntegrator, self).__init__(potential._acceleration_at,
-                                                              r_0, v_0, args=())
-    
-    def _adaptive_run(self, timestep_func, timestep_args=(), resolution=1., **time_spec):
-        """ """
-        
-        if not time_spec.has_key("t1") or not time_spec.has_key("t2"):
-            raise ValueError("You must specify t1 and t2 for adaptive "
-                             "timestep integration.")
-        
-        t1 = time_spec['t1']
-        t2 = time_spec['t2']
-        
-        dt_i = dt_im1 = timestep_func(self.r_im1, self.v_im1, *timestep_args) / resolution
-        self._prime(dt_i)
-        
-        if t2 < t1 and dt_i < 0.:
-            f = -1.
-        elif t2 > t1 and dt_i > 0:
-            f = 1.
-        else:
-            raise ValueError("dt must be positive or negative.")
-            
-        times = [t1]
-        
-        Ntimesteps = int(10000.*resolution)
-        rs = np.zeros((Ntimesteps,) + self.r_im1.shape, dtype=float)
-        vs = np.zeros((Ntimesteps,) + self.v_im1.shape, dtype=float)
-        rs[0] = self.r_im1
-        vs[0] = self.v_im1
-        
-        ii = 0
-        while times[-1] > t2:
-            dt = 0.5*(dt_im1 + dt_i)
+    usys = (u.kpc, u.Myr, u.M_sun)
+    satellite_orbit = Orbit(t=t*u.Myr, 
+                            r=sat_r*u.kpc,
+                            v=sat_v*u.kpc/u.Myr,
+                            m=satellite.m,
+                            units=usys)
 
-            r_i, v_i = self.step(dt)
-            rs[ii] = r_i
-            vs[ii] = v_i
-            
-            dt_i = timestep_func(r_i, v_i, *timestep_args) / resolution
-            times.append(times[-1] + dt)
-            dt_im1 = dt_i
-            ii += 1
-        
-        return np.array(times)[:ii], rs[:ii], vs[:ii]
+    nparticles = r.shape[1]-1
+    particle_orbits = Orbit(t=t*u.Myr, 
+                            r=r[:,1:]*u.kpc,
+                            v=v[:,1:]*u.kpc/u.Myr,
+                            m=np.zeros(nparticles)*u.M_sun,
+                            units=usys)
     
-    def run(self, timestep_func=None, timestep_args=(), resolution=5., **time_spec):
-        """ """
-        
-        if timestep_func is None:
-            t,r,v = super(SatelliteParticleIntegrator, self)\
-                        .run(**time_spec)
-        else:
-            t,r,v = self._adaptive_run(timestep_func=timestep_func, 
-                                       timestep_args=timestep_args, 
-                                       resolution=resolution,
-                                       **time_spec)
-        
-        usys = (u.kpc, u.Myr, u.M_sun)
-        
-        sat_r = np.array(r[:,0][:,np.newaxis,:])
-        sat_v = np.array(v[:,0][:,np.newaxis,:])
-        
-        satellite_orbit = Orbit(t=t*u.Myr, 
-                                r=sat_r*u.kpc,
-                                v=sat_v*u.kpc/u.Myr,
-                                m=self.satellite_mass*u.M_sun,
-                                units=usys)
-    
-        nparticles = r.shape[1]-1
-        particle_orbits = Orbit(t=t*u.Myr, 
-                                r=r[:,1:]*u.kpc,
-                                v=v[:,1:]*u.kpc/u.Myr,
-                                m=np.ones(nparticles)*u.M_sun,
-                                units=usys)
-        
-        return satellite_orbit, particle_orbits
+    return satellite_orbit, particle_orbits
+
+# lm10 args: (len(r_0), np.zeros((len(r_0), 3)))
