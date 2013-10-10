@@ -15,7 +15,7 @@ import emcee
 import numpy as np
 import astropy.units as u
 
-__all__ = ["StatisticalModel", "back_integrate_likelihood"]
+__all__ = ["StatisticalModel"]
 
 logger = logging.getLogger(__name__)
 

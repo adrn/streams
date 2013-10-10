@@ -17,7 +17,7 @@ import numpy as np
 from ..inference import generalized_variance
 from ..integrate.satellite_particles import SatelliteParticleIntegrator
 
-__all__ = ["ln_posterior", "ln_likelihood", "objective"]
+__all__ = ["back_integrate_likelihood", "variance_likelihood"]
 
 
 def back_integrate_likelihood(p, param_names, particles, satellite, 
