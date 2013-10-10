@@ -14,7 +14,6 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from ...misc.units import UnitSystem
 from ...potential.lm10 import LawMajewski2010
 from ...io.lm10 import particles_today, satellite_today, time
 from ..satellite_particles import satellite_particles_integrate

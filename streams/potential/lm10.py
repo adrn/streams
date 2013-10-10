@@ -77,25 +77,24 @@ class LawMajewski2010(CompositePotential):
         
         latex = ""
         
-        unit_system = UnitSystem(u.kpc, u.Myr, u.radian, u.M_sun)
-        unit_system = self._validate_unit_system(unit_system)
+        units = (u.kpc, u.Myr, u.radian, u.M_sun)
         
         for p in ["q1", "q2", "qz", "phi", "v_halo", "r_halo"]:
             if p not in parameters.keys():
                 parameters[p] = true_params[p]
         
-        bulge = HernquistPotential(unit_system,
+        bulge = HernquistPotential(units,
                                    m=3.4E10*u.M_sun,
                                    c=0.7*u.kpc)
                                    
-        disk = MiyamotoNagaiPotential(unit_system,
+        disk = MiyamotoNagaiPotential(units,
                                       m=1.E11*u.M_sun, 
                                       a=6.5*u.kpc,
                                       b=0.26*u.kpc)
-        halo = LogarithmicPotentialLJ(unit_system,
+        halo = LogarithmicPotentialLJ(units,
                                       **parameters)
         
-        super(LawMajewski2010, self).__init__(unit_system, 
+        super(LawMajewski2010, self).__init__(units, 
                                               bulge=bulge,
                                               disk=disk,
                                               halo=halo)
@@ -104,7 +103,7 @@ class LawMajewski2010(CompositePotential):
         _params.pop('r_0')
         
         self._acceleration_at = lambda r, n_particles, acc: lm10_acceleration(r, n_particles, acc, **_params)
-        self._G = G.decompose(bases=unit_system).value
+        self._G = G.decompose(bases=units).value
     
     def _enclosed_mass(self, R):
         """ Compute the enclosed mass at the position r. Assumes it's far from
@@ -152,10 +151,10 @@ class LawMajewski2010(CompositePotential):
         if not hasattr(r, "decompose") or not hasattr(m, "decompose"):
             raise TypeError("Position and mass must be Quantity objects.")
         
-        R_tide = self._tidal_radius(r=r.decompose(self.unit_system).value,
-                                    m=m.decompose(self.unit_system).value)
+        R_tide = self._tidal_radius(r=r.decompose(self.units).value,
+                                    m=m.decompose(self.units).value)
         
-        return R_tide * self.unit_system['length']
+        return R_tide * r.unit
 
     def _escape_velocity(self, m, r=None, r_tide=None):
         """ Compute the escape velocity of a satellite in a potential given
@@ -212,7 +211,9 @@ class LawMajewski2010(CompositePotential):
         else:
             raise ValueError("Must specify just r or r_tide.")
         
-        v_esc = self._escape_velocity(m=m.decompose(self.unit_system).value,
-                                      r_tide=r_tide.decompose(self.unit_system).value)
+        v_esc = self._escape_velocity(m=m.decompose(self.units).value,
+                                      r_tide=r_tide.decompose(self.units).value)
         
-        return v_esc * self.unit_system['length'] / self.unit_system['time']
+        r_unit = filter(lambda x: x.is_equivalent(u.km), units)[0]
+        t_unit = filter(lambda x: x.is_equivalent(u.s), units)[0]
+        return v_esc * r_unit/t_unit

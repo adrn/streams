@@ -57,7 +57,7 @@ class DynamicalBase(object):
         return self._m * m_unit
     
     @abstractmethod
-    def to(self, unit_system):
+    def to(self, units):
         pass
         
     def __repr__(self):

@@ -21,24 +21,11 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import astropy.units as u
 
-from ..misc.units import UnitSystem
-
 __all__ = ["CartesianPotential", "CompositePotential"]
-
-class Potential(object):
-
-    def _validate_unit_system(self, unit_system):
-        """ Make sure the provided unit_system is a UnitSystem object. """
-        
-        if not hasattr(unit_system, "bases"):
-            raise TypeError("unit_system must be a value UnitSystem object, "
-                            "or an astropy.units system.")
-        
-        return unit_system
 
 class CartesianPotential(Potential):
 
-    def __init__(self, unit_system, f, f_prime, latex=None, parameters=None):
+    def __init__(self, units, f, f_prime, latex=None, parameters=None):
         """ A baseclass for representing gravitational potentials in Cartesian
             coordinates. You must specify the functional form of the potential
             component. You may also optionally add derivatives using the 
@@ -46,7 +33,7 @@ class CartesianPotential(Potential):
 
             Parameters
             ----------
-            unit_system : UnitSystem
+            units : list
                 Defines a system of physical base units for the potential.
             f : function
                 The functional form of the potential component. This must be a
@@ -61,9 +48,9 @@ class CartesianPotential(Potential):
             
         """
             
-        self.unit_system = self._validate_unit_system(unit_system)
+        self.units = units
         
-        # Convert parameters to the given unit_system
+        # Convert parameters to the given units
         self.parameters = parameters
         self._parameters = self._rescale_parameters(parameters)
         
@@ -101,7 +88,7 @@ class CartesianPotential(Potential):
         _params = dict()
         for param_name, val in parameters.items():
             try:
-                _params[param_name] = val.decompose(bases=self.unit_system.bases).value
+                _params[param_name] = val.decompose(bases=self.units).value
             except AttributeError: # not Quantity-like
                 _params[param_name] = val
         
@@ -126,8 +113,8 @@ class CartesianPotential(Potential):
             r : astropy.units.Quantity
                 Position to compute the value at.
         """
-        _r = r.decompose(bases=self.unit_system).value
-        c = (u.J/u.kg).decompose(bases=self.unit_system)
+        _r = r.decompose(bases=self.units).value
+        c = (u.J/u.kg).decompose(bases=self.units)
         return self._value_at(_r) * u.CompositeUnit(1., c.bases, c.powers)
     
     def _acceleration_at(self, r):
@@ -152,8 +139,8 @@ class CartesianPotential(Potential):
                 Position to compute the acceleration at.
         """
         
-        _r = r.decompose(bases=self.unit_system).value
-        c = (u.m/u.s**2).decompose(bases=self.unit_system)
+        _r = r.decompose(bases=self.units).value
+        c = (u.m/u.s**2).decompose(bases=self.units)
         return self._acceleration_at(_r) * u.CompositeUnit(1., c.bases, 
                                                            c.powers)
     
@@ -315,17 +302,17 @@ class CartesianPotential(Potential):
         
 class CompositePotential(dict, CartesianPotential):
     
-    def __init__(self, unit_system, *args, **kwargs):
+    def __init__(self, units, *args, **kwargs):
         """ Represents a potential composed of several sub-potentials. For 
             example, two point masses or a galactic disk + halo. The origins 
             of the components are *relative to the origin of the composite*.
             
             Parameters
             ----------
-            unit_system : UnitSystem
+            units : list
                 Defines a system of physical base units for the potential.
         """
-        self.unit_system = self._validate_unit_system(unit_system)
+        self.units = units
         
         for v in kwargs.values():
             if not isinstance(v, Potential):
@@ -341,9 +328,6 @@ class CompositePotential(dict, CartesianPotential):
         if not isinstance(value, Potential):
             raise TypeError("Values may only be Potential objects, not "
                             "{0}.".format(type(value)))
-        
-        if self.unit_system != value.unit_system:
-            raise TypeError("Potential has a different unit system!")
             
         super(CompositePotential, self).__setitem__(key, value)
     

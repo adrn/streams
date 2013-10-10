@@ -64,25 +64,24 @@ class Palomar5(CompositePotential):
         
         latex = ""
         
-        unit_system = UnitSystem(u.kpc, u.Myr, u.radian, u.M_sun)
-        unit_system = self._validate_unit_system(unit_system)
+        units = (u.kpc, u.Myr, u.radian, u.M_sun)
         
         for p in ["log_m", "qz", "Rs"]:
             if p not in parameters.keys():
                 parameters[p] = true_params[p]
         
-        bulge = HernquistPotential(unit_system,
+        bulge = HernquistPotential(units,
                                    m=3.4E10*u.M_sun,
                                    c=0.7*u.kpc)
                                    
-        disk = MiyamotoNagaiPotential(unit_system,
+        disk = MiyamotoNagaiPotential(units,
                                       m=1.E11*u.M_sun, 
                                       a=6.5*u.kpc,
                                       b=0.26*u.kpc)
-        halo = AxisymmetricNFWPotential(unit_system,
+        halo = AxisymmetricNFWPotential(units,
                                         **parameters)
         
-        super(Palomar5, self).__init__(unit_system, 
+        super(Palomar5, self).__init__(units, 
                                        bulge=bulge,
                                        disk=disk,
                                        halo=halo)
@@ -91,7 +90,7 @@ class Palomar5(CompositePotential):
         _params.pop('r_0')
         
         self._acceleration_at = lambda r, n_particles, acc: pal5_acceleration(r, n_particles, acc, **_params)
-        self._G = G.decompose(bases=unit_system).value
+        self._G = G.decompose(bases=units).value
         
     def _tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified 
@@ -131,10 +130,10 @@ class Palomar5(CompositePotential):
         if not hasattr(r, "decompose") or not hasattr(m, "decompose"):
             raise TypeError("Position and mass must be Quantity objects.")
         
-        R_tide = self._tidal_radius(r=r.decompose(self.unit_system).value,
-                                    m=m.decompose(self.unit_system).value)
+        R_tide = self._tidal_radius(r=r.decompose(self.units).value,
+                                    m=m.decompose(self.units).value)
         
-        return R_tide * self.unit_system['length']
+        return R_tide * r.unit
 
     def _escape_velocity(self, m, r=None, r_tide=None):
         """ Compute the escape velocity of a satellite in a potential given
@@ -191,10 +190,12 @@ class Palomar5(CompositePotential):
         else:
             raise ValueError("Must specify just r or r_tide.")
         
-        v_esc = self._escape_velocity(m=m.decompose(self.unit_system).value,
-                                      r_tide=r_tide.decompose(self.unit_system).value)
+        v_esc = self._escape_velocity(m=m.decompose(self.units).value,
+                                      r_tide=r_tide.decompose(self.units).value)
         
-        return v_esc * self.unit_system['length'] / self.unit_system['time']
+        r_unit = filter(lambda x: x.is_equivalent(u.km), units)[0]
+        t_unit = filter(lambda x: x.is_equivalent(u.s), units)[0]
+        return v_esc * r_unit/t_unit
 
 class Palomar5Logarithmic(CompositePotential):
     
@@ -216,24 +217,23 @@ class Palomar5Logarithmic(CompositePotential):
         
         latex = ""
         
-        unit_system = UnitSystem(u.kpc, u.Myr, u.radian, u.M_sun)
-        unit_system = self._validate_unit_system(unit_system)
+        units = (u.kpc, u.Myr, u.radian, u.M_sun)
         
         for p in ["v_c", "qz"]:
             if p not in parameters.keys():
                 parameters[p] = true_params[p]
         
-        halo = AxisymmetricLogarithmicPotential(unit_system,
+        halo = AxisymmetricLogarithmicPotential(units,
                                                 **parameters)
         
-        super(Palomar5Logarithmic, self).__init__(unit_system, 
+        super(Palomar5Logarithmic, self).__init__(units, 
                                                   halo=halo)
         
         _params = halo._parameters.copy()
         _params.pop('r_0')
         
         #self._acceleration_at = lambda r, n_particles, acc: pal5_acceleration(r, n_particles, acc, **_params)
-        self._G = G.decompose(bases=unit_system).value
+        self._G = G.decompose(bases=units).value
         
     def _tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified 
@@ -271,10 +271,10 @@ class Palomar5Logarithmic(CompositePotential):
         if not hasattr(r, "decompose") or not hasattr(m, "decompose"):
             raise TypeError("Position and mass must be Quantity objects.")
         
-        R_tide = self._tidal_radius(r=r.decompose(self.unit_system).value,
-                                    m=m.decompose(self.unit_system).value)
+        R_tide = self._tidal_radius(r=r.decompose(self.units).value,
+                                    m=m.decompose(self.units).value)
         
-        return R_tide * self.unit_system['length']
+        return R_tide * r.unit
 
     def _escape_velocity(self, m, r=None, r_tide=None):
         """ Compute the escape velocity of a satellite in a potential given
@@ -331,7 +331,9 @@ class Palomar5Logarithmic(CompositePotential):
         else:
             raise ValueError("Must specify just r or r_tide.")
         
-        v_esc = self._escape_velocity(m=m.decompose(self.unit_system).value,
-                                      r_tide=r_tide.decompose(self.unit_system).value)
+        v_esc = self._escape_velocity(m=m.decompose(self.units).value,
+                                      r_tide=r_tide.decompose(self.units).value)
         
-        return v_esc * self.unit_system['length'] / self.unit_system['time']
+        r_unit = filter(lambda x: x.is_equivalent(u.km), units)[0]
+        t_unit = filter(lambda x: x.is_equivalent(u.s), units)[0]
+        return v_esc * r_unit/t_unit
