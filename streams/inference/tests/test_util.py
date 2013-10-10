@@ -16,7 +16,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from ...potential.lm10 import LawMajewski2010, true_params
-from ...integrate import SatelliteParticleIntegrator
+from ...integrate import satellite_particles_integrate
 from ..core import *
 from ...io.lm10 import time, particles_today, satellite_today
 
@@ -29,8 +29,12 @@ particles = particles_today(N=100, expr="Pcol > 0")
 satellite = satellite_today()
 
 potential = LawMajewski2010()
-integrator = SatelliteParticleIntegrator(potential, satellite, particles)
-satellite_orbit,particle_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+Nparticles = len(particles)
+acc = np.zeros((Nparticles+1,3)) # placeholder
+satellite_orbit,particle_orbits = satellite_particles_integrate(satellite, particles,
+                                                 potential,
+                                                 potential_args=(Nparticles+1, acc), \
+                                                 time_spec=dict(t1=t1, t2=t2, dt=-1.))
 
 def test_relative_normalized_coordinates():
     a = pytime.time()

@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from ...misc.units import UnitSystem
 from ...potential.lm10 import LawMajewski2010
 from ...io.lm10 import particles_today, satellite_today, time
-from ..satellite_particles import SatelliteParticleIntegrator
+from ..satellite_particles import satellite_particles_integrate
 
 plot_path = "plots/tests/energy_conservation"
 if not os.path.exists(plot_path):
@@ -41,24 +41,19 @@ def timestep(r, v, potential):
     return -dt / 10.
 
 def test_lm10():
-    adaptive = True
     N = 100
-    resolution = 2.
     
     lm10 = LawMajewski2010()    
     particles = particles_today(N=N)
     satellite = satellite_today()
     t1, t2 = time()
     
-    integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
-    
-    if adaptive:
-        s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-                                  timestep_args=(lm10,),
-                                  resolution=resolution,
-                                  t1=t1, t2=t2)
-    else:
-        s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+    Nparticles = len(particles)
+    acc = np.zeros((Nparticles+1,3)) # placeholder
+    s_orbit,p_orbits = satellite_particles_integrate(satellite, particles,
+                                                     potential,
+                                                     potential_args=(Nparticles+1, acc), \
+                                                     time_spec=dict(t1=t1, t2=t2, dt=-1.))
     
     print("{0} timesteps".format(len(s_orbit._t)))
     
@@ -86,7 +81,4 @@ def test_lm10():
     axes[2].set_ylabel(r"$\Delta E/E$")
     axes[2].set_ylim(-1., 1.)
     
-    if adaptive:
-        fig.savefig(os.path.join(plot_path, "lm10_adaptive_res{0}.png".format(resolution)))
-    else:
-        fig.savefig(os.path.join(plot_path, "lm10.png"))
+    fig.savefig(os.path.join(plot_path, "lm10.png"))
