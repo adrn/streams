@@ -19,67 +19,10 @@ scipy.seterr(all="ignore")
 import astropy.units as u
 import emcee
 
-__all__ = ["infer_potential", "max_likelihood_parameters"]
+__all__ = ["max_likelihood_parameters"]
 
 logger = logging.getLogger(__name__)
 
-def infer_potential(ln_posterior, p0, steps=100, 
-                    burn_in=None, pool=None, args=()):
-    
-    """ Given a set of particles and the orbit of the progenitor system, 
-        infer the model halo parameters by using MCMC to optimize the 
-        generalized variance of the reduced, relative phase-space 
-        coordinate distribution.
-        
-        Parameters
-        ----------
-        ln_posterior : func
-            Log-posterior function.
-        p0 : array
-            2D array of starting positions for all walkers.
-        steps : int (optional)
-            Number of steps for each walker to take through parameter space.
-        burn_in : int (optional)
-            Defaults to 1/10 the number of steps. 
-        pool : multiprocessing.Pool, emcee.MPIPool
-            A multiprocessing or MPI pool to pass to emcee for wicked awesome
-            parallelization!
-        args : (optional)
-            Positional arguments to be passed to the posterior function.
-    """
-    
-    if burn_in == None:
-        burn_in = steps // 10
-    
-    assert p0.ndim == 2
-    walkers = len(p0)
-   
-    # If no pool is specified, just create a single-processor pool
-    if pool == None:
-        pool = None
-    
-    # Construct an ensemble sampler to walk through dat model parameter space
-    sampler = emcee.EnsembleSampler(nwalkers=walkers, 
-                                    dim=p0.shape[1], 
-                                    lnpostfn=ln_posterior, 
-                                    pool=pool, 
-                                    args=args)
-    
-    logger.debug("About to start simulation...")
-    
-    # If a burn-in period requested, run the sampler for 'burn_in' steps then
-    #   reset the walkers and use the end positions as new initial conditions
-    if burn_in > 0:
-        pos, prob, state = sampler.run_mcmc(p0, burn_in)
-        sampler.reset()
-    else:
-        pos = p0
-    
-    # Run the MCMC sampler and draw 'steps' samplers per walker
-    pos, prob, state = sampler.run_mcmc(pos, steps)
-    
-    return sampler
-    
 def max_likelihood_parameters(sampler):
     """ Given an emcee Sampler object, find the maximum likelihood parameters
     

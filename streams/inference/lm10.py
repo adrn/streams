@@ -53,7 +53,6 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
 StatisticalModel()
 
 # TODO:
-# - merge infer_potential stuff in to StatisticalModel.run()
 # - update all tests
 # - Make likelihood a general "back integration likelihood"
 # - likelihood should accept a potential, so it's generic. maybe specify in config file?
