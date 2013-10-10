@@ -14,9 +14,14 @@ import astropy.units as u
 from astropy.constants import G
 import matplotlib.pyplot as plt
 
-from ..integrate import *
+from .. import *
+from ..nbody import *
 from ...potential.lm10 import LawMajewski2010, true_params
-from ...potential import *
+from ...dynamics import Particle, Orbit
+
+plot_path = "plots/tests/integrate/nbody"
+if not os.path.exists(plot_path):
+    os.makedirs(plot_path)
 
 def test_acceleration():
     r = np.array([[1.,0.],
@@ -38,63 +43,41 @@ def test_api():
     earth = Particle(r=np.array([1., 0., 0.])*u.au,
                      v=np.array([0., 2.*np.pi, 0.])*u.au/u.yr,
                      m=1.E-6*u.M_sun)
-    particles.append(earth)
     
     sun = Particle(r=np.array([0.,0.,0.])*u.au,
                    v=np.array([0.,0.,0.])*u.au/u.yr,
                      m=1.*u.M_sun)
-    particles.append(sun)
-    
-    pc = ParticleCollection(particles=particles, units=[u.au, u.yr, u.M_sun])
+    pc = sun.merge(earth)
     
     # Create time grid to integrate on
-    t = np.arange(0., 10., 0.02) * u.yr
+    t = np.arange(0., 100., 0.02) * u.yr
     r,v = nbody_integrate(pc, time_steps=t, e=0.1)
     
     plt.figure(figsize=(8,8))
     plt.plot(r[:,0,0], r[:,0,1], 'b-')
     plt.plot(r[:,1,0], r[:,1,1], 'b-')
-    plt.show()
+    plt.savefig(os.path.join(plot_path, "earth_sun.png"))
 
 def test_collection():
     ffmpeg_cmd = "ffmpeg -i {0} -r 12 -b 5000 -vcodec libx264 -vpre medium -b 3000k {1}"
-    this_path = "plots/tests/nbody/disk"
-    if not os.path.exists(this_path):
-        os.makedirs(this_path)
         
     N = 10000
-    usys = UnitSystem(u.kpc, u.Myr, u.M_sun, u.radian)
-    
-    #potential = LawMajewski2010()
-    bulge = HernquistPotential(usys,
-                               m=3.4E10*u.M_sun,
-                               c=0.7*u.kpc)
-                               
-    disk = MiyamotoNagaiPotential(usys,
-                                  m=1.E11*u.M_sun, 
-                                  a=6.5*u.kpc,
-                                  b=0.26*u.kpc)
-    halo = LogarithmicPotentialLJ(usys,
-                                  **true_params)
-    potential = CompositePotential(usys, bulge=bulge, disk=disk, halo=halo)
+    usys = (u.kpc, u.Myr, u.M_sun, u.radian)
     
     # Create particles
-    particles = []
+    r = np.zeros((N,3))
+    v = np.zeros((N,3))
     for ii in range(N):
         R = np.sqrt(np.random.uniform())*9. + 1.
         theta = np.random.uniform(0., 2*np.pi)
-        r = R*np.array([np.cos(theta), np.sin(theta), 0.])*u.kpc
+        r[ii] = R*np.array([np.cos(theta), np.sin(theta), 0.])
         
         V = 220.
-        v = V * np.array([-np.sin(theta), np.cos(theta), 0.])*u.km/u.s
-        v = v * np.array([-np.sin(theta), np.cos(theta), 0.]) # add dispersion
-        
-        p = Particle(r=r,
-                     v=v,
-                     m=np.random.uniform(0.05, 10.)*u.M_sun)
-        particles.append(p)
+        v[ii] = V * np.array([-np.sin(theta), np.cos(theta), 0.])
     
-    pc = ParticleCollection(particles=particles, units=usys.bases)
+    pc = Particle(r=r*u.kpc, v=v*u.km/u.s, 
+                  m=1E5*np.random.uniform(0.05, 10.)*u.M_sun,
+                  units=usys)
     
     # Create time grid to integrate on
     t = np.arange(0., 1000., 1.) * u.Myr
@@ -102,7 +85,7 @@ def test_collection():
     import time
     a = time.time()
     r,v = nbody_integrate(pc, time_steps=t, e=0.01, 
-                          external_acceleration=potential._acceleration_at)
+                          external_acceleration=None)
     print("Took {0} seconds for integration".format(time.time()-a))
     
     plt.figure(figsize=(10,10))
@@ -114,7 +97,5 @@ def test_collection():
         plt.ylim(-15, 15)
         plt.savefig(os.path.join(this_path,"{0:04d}.png".format(jj)))
  
-    os.system(ffmpeg_cmd
-              .format(os.path.join(this_path, "%4d.png"), 
-                      os.path.join(this_path, "anim.mp4")))
-    
+    print(ffmpeg_cmd.format(os.path.join(this_path, "%4d.png"), 
+                            os.path.join(this_path, "anim.mp4")))

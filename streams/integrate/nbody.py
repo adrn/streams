@@ -14,7 +14,7 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import G
 
-__all__ = ["nbody_integrate"]
+__all__ = ["nbody_integrate", "_nbody_acceleration"]
 
 def _nbody_acceleration(G, R, M, e=0.1):
     a = np.zeros_like(R)
