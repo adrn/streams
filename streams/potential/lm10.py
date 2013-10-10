@@ -19,6 +19,15 @@ from .core import CartesianPotential, CompositePotential, UnitSystem
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
 from ._lm10_acceleration import lm10_acceleration
 
+# v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
+param_ranges = dict(v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr).value,
+                            (330.*u.km/u.s).to(u.kpc/u.Myr).value),
+                    q1=(1.,2.),
+                    q2=(0.5,2.),
+                    qz=(1.0,2.),
+                    phi=(np.pi/4, 3*np.pi/4),
+                    r_halo=(8,20)) # kpc
+
 true_params = dict(v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
                    q1=1.38,
                    q2=1.0,
