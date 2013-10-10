@@ -29,7 +29,7 @@ def _nbody_acceleration(G, R, M, e=0.1):
     
     return a
 
-def nbody_integrate(particle_collection, time_steps, 
+def nbody_integrate(particles, time_steps, 
                     external_acceleration=None, e=0.1):
     """ Direct N-body integration of the given ParticleCollection over the 
         specified time steps. Softening length is specified by 'e'. 
@@ -39,13 +39,13 @@ def nbody_integrate(particle_collection, time_steps,
     """
     
     dt = (time_steps[1]-time_steps[0])\
-            .decompose(bases=particle_collection._units.values()).value
+            .decompose(bases=particles.units).value
     Nsteps = len(time_steps)
     
-    r_i = particle_collection._r
-    v_i = particle_collection._v
-    m = particle_collection._m
-    _G = G.decompose(bases=particle_collection._units.values()).value
+    r_i = particles._r
+    v_i = particles._v
+    m = particles._m
+    _G = G.decompose(bases=particles.units).value
     
     # Shape of final object should be (Ntimesteps, Nparticles, Ndim)
     rs = np.zeros((Nsteps,) + r_i.shape, dtype=np.float64)
