@@ -149,7 +149,7 @@ class LeapfrogIntegrator(object):
         dts = times[1:]-times[:-1]
         Ntimesteps = len(times)
         
-        self._prime(dts[0]/10.)
+        self._prime(dts[0])
         
         rs = np.zeros((Ntimesteps,) + self.r_im1.shape, dtype=float)
         vs = np.zeros((Ntimesteps,) + self.v_im1.shape, dtype=float)
