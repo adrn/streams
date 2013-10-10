@@ -43,11 +43,11 @@ def timestep(r, v, potential):
 def test_lm10():
     N = 100
     
-    lm10 = LawMajewski2010()    
+    potential = LawMajewski2010()    
     particles = particles_today(N=N)
     satellite = satellite_today()
     t1, t2 = time()
-    
+
     Nparticles = len(particles)
     acc = np.zeros((Nparticles+1,3)) # placeholder
     s_orbit,p_orbits = satellite_particles_integrate(satellite, particles,
@@ -57,8 +57,8 @@ def test_lm10():
     
     print("{0} timesteps".format(len(s_orbit._t)))
     
-    Ts,Vs = energies(lm10, s_orbit)    
-    Tp,Vp = energies(lm10, p_orbits)
+    Ts,Vs = energies(potential, s_orbit)    
+    Tp,Vp = energies(potential, p_orbits)
     
     fig, axes = plt.subplots(3,1,sharex=True,figsize=(12,8))
     
