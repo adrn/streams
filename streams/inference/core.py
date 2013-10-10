@@ -53,8 +53,9 @@ class StatisticalModel(object):
                not self.parameter_bounds.has_key(p):
                 raise ValueError("Either specify prior function or parameter"
                                  "bounds for parameters '{0}'".format(p))
-        # TODO: validate prior funcs / param bounds
 
+        self.ln_likelihood = ln_likelihood
+            
     def ln_prior(self, p):
         """ Evaluate the prior functions """
 
