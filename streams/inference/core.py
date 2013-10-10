@@ -121,18 +121,3 @@ class StatisticalModel(object):
         pos, prob, state = sampler.run_mcmc(pos, nsteps)
 
         return sampler
-
-def back_integrate_likelihood(p, param_names, particles, satellite, 
-                              Potential, t1, t2):
-    """ Evaluate the TODO """
-
-    model_params = dict(zip(param_names, p))
-    potential = Potential(**model_params)
-
-    integrator = SatelliteParticleIntegrator(potential, satellite, particles)
-    
-    # not adaptive:
-    s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
-    
-    # TODO: old one used generalized_variance, new one uses??
-    return #objective2(lm10, s_orbit, p_orbits, v_disp=0.0133)
