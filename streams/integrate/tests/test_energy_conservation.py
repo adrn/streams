@@ -19,7 +19,7 @@ from ...potential.lm10 import LawMajewski2010
 from ...io.lm10 import particles_today, satellite_today, time
 from ..satellite_particles import satellite_particles_integrate
 
-plot_path = "plots/tests/energy_conservation"
+plot_path = "plots/tests/integrate/energy_conservation"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
