@@ -47,6 +47,10 @@ class Particle(DynamicalBase):
         _validate_quantity(r, unit_like=u.km)
         _validate_quantity(v, unit_like=u.km/u.s)
         
+        if r.value.ndim == 1:
+            r = r.reshape((1, len(r)))
+            v = v.reshape((1, len(v)))
+
         try:
             self.nparticles, self.ndim = r.value.shape
         except ValueError:
