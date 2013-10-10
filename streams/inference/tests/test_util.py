@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 from ...potential.lm10 import LawMajewski2010, true_params
 from ...integrate import satellite_particles_integrate
-from ..core import *
+from .. import *
 from ...io.lm10 import time, particles_today, satellite_today
 
 plot_path = "plots/tests/inference"
@@ -38,18 +38,16 @@ satellite_orbit,particle_orbits = satellite_particles_integrate(satellite, parti
 
 def test_relative_normalized_coordinates():
     a = pytime.time()
-    R,V = relative_normalized_coordinates(potential, 
-                                          particle_orbits, 
-                                          satellite_orbit)
+    R,V = relative_normalized_coordinates(potential, satellite_orbit, particle_orbits)
     print("R,V: {0:.3f} ms".format(1000.*(pytime.time()-a)))
 
 def test_minimum_distance_matrix():
     #a = pytime.time()
-    minimum_distance_matrix(potential, particle_orbits, satellite_orbit)
+    minimum_distance_matrix(potential, satellite_orbit, particle_orbits)
     #print("min. dist. matrix: {0:.3f} ms".format(1000.*(pytime.time()-a)))
 
 def test_generalized_variance():
     a = pytime.time()
-    v = generalized_variance(potential, particle_orbits, satellite_orbit)
+    v = generalized_variance(potential, satellite_orbit, particle_orbits)
     print(v)
     print("gen. variance: {0:.3f} ms".format(1000.*(pytime.time()-a)))
