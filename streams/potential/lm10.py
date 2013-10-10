@@ -214,6 +214,6 @@ class LawMajewski2010(CompositePotential):
         v_esc = self._escape_velocity(m=m.decompose(self.units).value,
                                       r_tide=r_tide.decompose(self.units).value)
         
-        r_unit = filter(lambda x: x.is_equivalent(u.km), units)[0]
-        t_unit = filter(lambda x: x.is_equivalent(u.s), units)[0]
+        r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
+        t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
         return v_esc * r_unit/t_unit

@@ -23,6 +23,9 @@ import astropy.units as u
 
 __all__ = ["CartesianPotential", "CompositePotential"]
 
+class Potential(object):
+    pass
+
 class CartesianPotential(Potential):
 
     def __init__(self, units, f, f_prime, latex=None, parameters=None):

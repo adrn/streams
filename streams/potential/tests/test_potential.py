@@ -98,13 +98,6 @@ class TestComposite(object):
                                               m=1.*u.M_sun, 
                                               r_0=[0.,0.,0.]*u.au)
         
-        # Try to add another with different units
-        usys2 = (u.au, u.kg, u.s)
-        with pytest.raises(TypeError):
-            potential["two"] = PointMassPotential(units=usys2,
-                                                  m=1.*u.M_sun, 
-                                                  r_0=[0.,0.,0.]*u.au)
-        
         with pytest.raises(TypeError): 
             potential["two"] = "derp"
 
