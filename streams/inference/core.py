@@ -45,9 +45,14 @@ class StatisticalModel(object):
         """
 
         self.parameters = parameters
+        self.parameter_bounds = parameter_bounds
         self._prior_funcs = prior_funcs
 
         for p in self.parameters:
+            if not self._prior_funcs.has_key(p) and \
+               not self.parameter_bounds.has_key(p):
+                raise ValueError("Either specify prior function or parameter"
+                                 "bounds for parameters '{0}'".format(p))
         # TODO: validate prior funcs / param bounds
 
     def ln_prior(self, p):
