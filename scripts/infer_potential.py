@@ -193,13 +193,13 @@ def main(config_file, job_name=None):
             largs = (config["model_parameters"], satellite, b_particles, 
                      Potential, t1, t2)
             stat_model = StatisticalModel(config["model_parameters"], 
-                                          back_integrate_likelihood),
+                                          back_integrate_likelihood,
                                           likelihood_args=largs,
                                           parameter_bounds=parameter_bounds)
 
             try:
                 sampler = stat_model.run(p0, nsteps=config["steps"], 
-                                         nburn=config["burn_in"]),
+                                         nburn=config["burn_in"],
                                          pool=pool)
             except:
                 if config["mpi"]: pool.close()
