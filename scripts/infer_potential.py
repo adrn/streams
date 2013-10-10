@@ -50,19 +50,23 @@ def main(config_file, job_name=None):
     config = read(config_file)
     
     # Read particles and posterior from whatever simulation
-    # TODO: this could be much better...need to import each Potential
+    # TODO: this could be much cleaner...
     if config['particle_source'] == 'lm10':
         from streams.io.lm10 import particles_today, satellite_today, time
         from streams.potential.lm10 import true_params, _true_params, param_to_latex
+        from streams.potential.lm10 import LawMajewski2010 as Potential
+
     elif config['particle_source'] == 'pal5':
         from streams.io.pal5 import particles_today, satellite_today, time
         from streams.potential.pal5 import true_params, _true_params, param_to_latex
+        from streams.potential.pal5 import Palomar5 as Potential
     elif 'sgr' in config['particle_source']:
         # one of Kathryn's Sgr simulations, in the form of Sgr2.5e8
         m = config['particle_source'][3:]
         from streams.io.sgr import mass_selector
         particles_today, satellite_today, time = mass_selector(m)
         from streams.potential.lm10 import true_params, _true_params, param_to_latex
+        from streams.potential.lm10 import LawMajewski2010 as Potential
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
@@ -186,9 +190,8 @@ def main(config_file, job_name=None):
             else:
                 b_particles = particles
             
-            # TODO: Potential
-            largs = (config["model_parameters"], b_particles, 
-                     satellite, Potential, t1, t2)
+            largs = (config["model_parameters"], satellite, b_particles, 
+                     Potential, t1, t2)
             stat_model = StatisticalModel(config["model_parameters"], 
                                           back_integrate_likelihood),
                                           likelihood_args=largs,
@@ -203,7 +206,8 @@ def main(config_file, job_name=None):
                 raise
             
             # TODO: re-write this...
-            best_parameters = max_likelihood_parameters(sampler)
+            #best_parameters = max_likelihood_parameters(sampler)
+            best_parameters = []
             
             if len(best_parameters) == 0:
                 best_parameters = np.array([0.]*len(config['model_parameters']))
