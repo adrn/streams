@@ -19,7 +19,7 @@ from astropy.constants import G
 from .core import read_table, table_to_particles, table_to_orbits
 from ..util import project_root
 from ..misc import UnitSystem
-from ..dynamics import ParticleCollection, OrbitCollection
+from ..dynamics import Particle, Orbit
 from ..integrate.leapfrog import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
 
@@ -34,7 +34,7 @@ mass_unit = u.Unit("6.4E8 M_sun")
 time_unit = u.Unit("{:08f} Myr".format(X))
 
 # This is used for the SgrTriax*.dat files
-lm10_usys = UnitSystem(u.kpc, u.M_sun, u.Gyr)
+lm10_usys = (u.kpc, u.M_sun, u.Gyr)
 
 def particle_table(N=None, expr=None):
     """ Read in particles from Law & Majewski 2010.
@@ -89,9 +89,9 @@ def satellite_today():
     r0 = np.array([[2.3279727753E+01,2.8190329987,-6.8798148785]])*length_unit
     v0 = np.array([[3.9481694047,-6.1942673069E-01,3.4555581435]])*length_unit/time_unit
     
-    satellite = ParticleCollection(r=r0.to(u.kpc), 
-                                   v=v0.to(u.kpc/u.Myr), 
-                                   m=[6E8]*u.M_sun)
+    satellite = Particle(r=r0.to(u.kpc), 
+                         v=v0.to(u.kpc/u.Myr), 
+                         m=[6E8]*u.M_sun)
     
     return satellite
 
@@ -109,6 +109,6 @@ def satellite_orbit():
 def time():
     """ Time information for the Law & Majewski 2010 simulation """    
     t1 = 0.
-    t2 = -9000.
+    t2 = -8000.
     
     return t1, t2
