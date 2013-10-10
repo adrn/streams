@@ -22,7 +22,8 @@ __all__ = ["minimum_distance_matrix",
            "generalized_variance"]
     
 def relative_normalized_coordinates(potential, 
-                                    satellite_orbit, particle_orbits):
+                                    satellite_orbit, 
+                                    particle_orbits):
     """ Compute the coordinates of particles relative to the satellite, 
         with positions normalized by the tidal radius and velocities
         normalized by the escape velocity. 
@@ -34,8 +35,8 @@ def relative_normalized_coordinates(potential,
         Parameters
         ----------
         potential : streams.CartesianPotential
-        satellite_orbit : OrbitCollection
-        particle_orbits : OrbitCollection
+        satellite_orbit : Orbit
+        particle_orbits : Orbit
     """
     
     # need to add a new axis to normalize each coordinate component
@@ -55,8 +56,8 @@ def phase_space_distance(potential, satellite_orbit, particle_orbits):
         Parameters
         ----------
         potential : streams.CartesianPotential
-        satellite_orbit : OrbitCollection
-        particle_orbits : OrbitCollection
+        satellite_orbit : Orbit
+        particle_orbits : Orbit
     """
     return np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
 
@@ -66,8 +67,8 @@ def minimum_distance_matrix(potential, satellite_orbit, particle_orbits):
         Parameters
         ----------
         potential : Potential
-        satellite_orbit : OrbitCollection
-        particle_orbits : OrbitCollection
+        satellite_orbit : Orbit
+        particle_orbits : Orbit
     """
     
     R,V = relative_normalized_coordinates(potential, 
@@ -93,10 +94,10 @@ def generalized_variance(potential, satellite_orbit, particle_orbits):
         ----------
         potential : Potential
             The full Milky Way potential object.
-        particle_orbits : OrbitCollection
+        particle_orbits : Orbit
             An object containing orbit information for a collection of 
             particles.
-        satellite_orbit : OrbitCollection
+        satellite_orbit : Orbit
             Data for the Sgr satellite center, interpolated onto the
             time grid for our particles.
     """
