@@ -534,63 +534,59 @@ def when_particles_recombine(**kwargs):
     tub = (data['tub']*usys['time']).to(u.Myr).value
     R_orbit = np.sqrt(np.sum(xs**2, axis=-1))
     
-    tub_file = os.path.join(_full_path, "tub_back{0}_{1}.pickle".format(N,D_ps_limit))
-    if overwrite and os.path.exists(tub_file):
-        os.remove(tub_file)
-
-    if not os.path.exists(tub_file):
-        # read full orbits of particles from running on hotfoot
-        p_x = np.load(os.path.join(project_root, "data", "{0}particles_p.npy".format(N)))
-        s_x = np.load(os.path.join(project_root, "data", "{0}particles_s.npy".format(N)))
-
-        r_tide = potential._tidal_radius(m=satellite._m,
-                                         r=s_x[...,:3])[:,:,np.newaxis]
-
-        v_esc = potential._escape_velocity(m=satellite._m,
-                                           r_tide=r_tide)
-    
-        R,V = (p_x[...,:3] - s_x[...,:3]) / r_tide, (p_x[...,3:] - s_x[...,3:]) / v_esc
-        D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
-        tub_back = []
-        for ii in range(D_ps.shape[1]):
-            idx = D_ps[:,ii] < D_ps_limit
-            if np.any(ts[idx] == ts[0]):
-                tub_back.append(ts[0])
-            elif np.any(idx):
-                tub_back.append(np.median(ts[idx]))
-                #tub_back.append(ts[idx][-1])
-            else:
-                #print("min Dps:",np.min(D_ps[:,ii]))
-                #print(ts[D_ps[:,ii].argmin()])
-                tub_back.append(np.nan)
-        tub_back = np.array(tub_back)
-        fnpickle(tub_back, tub_file)
-
-    tub_back = fnunpickle(tub_file)
-    bound_stars_back = [np.sum(tub_back > t) for t in ts]
-
     from scipy.signal import argrelextrema
     apos,xxx = argrelextrema(R_orbit, np.greater)
     peris,xxx = argrelextrema(R_orbit, np.less)    
 
     fig,axes = plt.subplots(2,1,sharex=True,figsize=(18,12))
     fig.suptitle("Capture condition: $D_{{ps}}$<{0}".format(D_ps_limit), fontsize=32)
-        
-    # bins = np.linspace(0., max(tub), 100)
-    # N_bootstrap = 25
-    # for ii in range(N_bootstrap):
-    #     tub_b = tub[np.random.randint(len(tub), size=N)]
-    #     bound_stars = [np.sum(tub_b > t) for t in ts]
-    #     if ii != 0:
-    #         axes[0].semilogy(ts, bound_stars/max(bound_stars), color='#666666', lw=1., alpha=0.1)
-    #     else:
-    #         axes[0].semilogy(ts, bound_stars/max(bound_stars), color='#666666', lw=1., alpha=0.1, label="true mass-loss")
-    #     #n,bins,patches = axes[1].hist(tub_b[tub_b!=0], normed=True, bins=bins, color='k', histtype="step", alpha=0.25)
+    
+    #for D_ps_limit,c in zip([1.5, 2., 2.5, 3.],["#1A9641", "#0571B0","#CA0020","#7B3294"]):
+    for D_ps_limit,c in zip([2.],["#1A9641"]):
+        tub_file = os.path.join(_full_path, "tub_back{0}_{1}.pickle".format(N,D_ps_limit))
+        if overwrite and os.path.exists(tub_file):
+            os.remove(tub_file)
+
+        if not os.path.exists(tub_file):
+            # read full orbits of particles from running on hotfoot
+            p_x = np.load(os.path.join(project_root, "data", "{0}particles_p.npy".format(N)))
+            s_x = np.load(os.path.join(project_root, "data", "{0}particles_s.npy".format(N)))
+
+            r_tide = potential._tidal_radius(m=satellite._m,
+                                             r=s_x[...,:3])[:,:,np.newaxis]
+
+            v_esc = potential._escape_velocity(m=satellite._m,
+                                               r_tide=r_tide)
+
+            R,V = (p_x[...,:3] - s_x[...,:3]) / r_tide, (p_x[...,3:] - s_x[...,3:]) / v_esc
+            D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
+            tub_back = []
+            for ii in range(D_ps.shape[1]):
+                idx = D_ps[:,ii] < D_ps_limit
+                if np.any(ts[idx] == ts[0]):
+                    tub_back.append(ts[0])
+                elif np.any(idx):
+                    #tub_back.append(np.median(ts[idx]))
+                    tub_back.append(np.mean(ts[idx]))
+                else:
+                    #print("min Dps:",np.min(D_ps[:,ii]))
+                    #print(ts[D_ps[:,ii].argmin()])
+                    tub_back.append(np.nan)
+            tub_back = np.array(tub_back)
+            fnpickle(tub_back, tub_file)
+
+        tub_back = fnunpickle(tub_file)
+        bound_stars_back = np.array([np.sum(tub_back > t) for t in ts])
+        #axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color=c, 
+        axes[0].semilogy(ts, bound_stars_back/float(p_x.shape[1]), color=c, 
+                         lw=1.5, label="recovered mass-loss",
+                         alpha=0.75)
+
+    #n,bins,patches = axes[1].hist(tub, normed=True, bins=bins, color='k', histtype="step", alpha=0.25)
     
     bound_stars = [np.sum(tub > t) for t in ts]
-    axes[0].semilogy(ts, bound_stars/max(bound_stars), color='#666666', lw=1., alpha=0.75, label="true mass-loss")
+    axes[0].semilogy(ts, bound_stars/max(bound_stars), color='#333333', lw=1.5, alpha=0.75, label="true mass-loss")
     axes[0].set_ylabel("Frac. bound stars")
-    axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color='#1A9641', lw=2., label="recovered mass-loss")
     axes[0].set_ylim(1E-2, 1.1)
 
     #axes[1].hist(tub_back, normed=True, bins=bins, color='#1A9641', histtype="step", lw=.)
