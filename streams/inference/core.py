@@ -14,9 +14,8 @@ import logging
 import emcee
 import numpy as np
 import astropy.units as u
-from astropy.constants import G
 
-__all__ = ["StatisticalModel"]
+__all__ = ["StatisticalModel", "back_integrate_likelihood"]
 
 logger = logging.getLogger(__name__)
 
@@ -115,13 +114,16 @@ class StatisticalModel(object):
 
         return sampler
 
+def back_integrate_likelihood(p, param_names, particles, satellite, 
+                              Potential, t1, t2):
+    """ Evaluate the TODO """
 
-""" API:
+    model_params = dict(zip(param_names, p))
+    potential = Potential(**model_params)
 
-    lm10_model = StatisticalModel(['q1', 'v_halo'], 
-                                  lm10_likelihood, 
-                                  likelihood_args=(...))
+    integrator = SatelliteParticleIntegrator(potential, satellite, particles)
     
-    lm10_model.run(p0, steps, burn_in, pool)
-
-"""
+    # not adaptive:
+    s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+    
+    return #objective2(lm10, s_orbit, p_orbits, v_disp=0.0133)
