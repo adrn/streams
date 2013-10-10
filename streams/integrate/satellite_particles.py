@@ -15,12 +15,19 @@ import os, sys
 import numpy as np
 import astropy.units as u
 
-from ..misc.units import UnitSystem
-from ..dynamics import ParticleCollection, OrbitCollection
+from ..dynamics import Orbit
 from .leapfrog import LeapfrogIntegrator
 
 __all__ = ["SatelliteParticleIntegrator"]
 
+def satellite_particles_integrate(satellite, particles, potential):
+    """ """
+    # Stack positions and velocities from satellite + particle
+    r_0 = np.vstack((satellite._r, particles._r))
+    v_0 = np.vstack((satellite._v, particles._v))
+
+    
+    
 class SatelliteParticleIntegrator(LeapfrogIntegrator):
     
     def __init__(self, potential, satellite, particles, lm10=True):
@@ -96,22 +103,22 @@ class SatelliteParticleIntegrator(LeapfrogIntegrator):
                                        resolution=resolution,
                                        **time_spec)
         
-        usys = UnitSystem(u.kpc, u.Myr, u.M_sun)
+        usys = (u.kpc, u.Myr, u.M_sun)
         
         sat_r = np.array(r[:,0][:,np.newaxis,:])
         sat_v = np.array(v[:,0][:,np.newaxis,:])
         
-        satellite_orbit = OrbitCollection(t=t*u.Myr, 
-                                          r=sat_r*u.kpc,
-                                          v=sat_v*u.kpc/u.Myr,
-                                          m=self.satellite_mass*u.M_sun,
-                                          unit_system=usys)
+        satellite_orbit = Orbit(t=t*u.Myr, 
+                                r=sat_r*u.kpc,
+                                v=sat_v*u.kpc/u.Myr,
+                                m=self.satellite_mass*u.M_sun,
+                                units=usys)
     
         nparticles = r.shape[1]-1
-        particle_orbits = OrbitCollection(t=t*u.Myr, 
-                                          r=r[:,1:]*u.kpc,
-                                          v=v[:,1:]*u.kpc/u.Myr,
-                                          m=np.ones(nparticles)*u.M_sun,
-                                          unit_system=usys)
+        particle_orbits = Orbit(t=t*u.Myr, 
+                                r=r[:,1:]*u.kpc,
+                                v=v[:,1:]*u.kpc/u.Myr,
+                                m=np.ones(nparticles)*u.M_sun,
+                                units=usys)
         
         return satellite_orbit, particle_orbits
