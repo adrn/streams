@@ -34,80 +34,6 @@ param_ranges = dict(v_halo=((100.*u.km/u.s).to(u.kpc/u.Myr).value,
                     phi=(np.pi/4, 3*np.pi/4),
                     r_halo=(8,20)) # kpc
 
-def ln_p_qz(qz):
-    """ Flat prior on vertical (z) axis flattening parameter. """
-    lo,hi = param_ranges["qz"]
-    
-    if qz <= lo or qz >= hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_q1(q1):
-    """ Flat prior on x-axis flattening parameter. """
-    lo,hi = param_ranges["q1"]
-    
-    if q1 <= lo or q1 >= hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_q2(q2):
-    """ Flat prior on y-axis flattening parameter. """
-    lo,hi = param_ranges["q2"]
-    
-    if q2 <= lo or q2 >= hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_v_halo(v):
-    """ Flat prior on mass of the halo (v_halo). The range imposed is 
-        roughly a halo mass between 10^10 and 10^12 M_sun at 200 kpc.
-    """
-    lo,hi = param_ranges["v_halo"]
-    
-    if v <= lo or v >= hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_phi(phi):
-    """ Flat prior on orientation angle between DM halo and disk. """
-    lo,hi = param_ranges["phi"]
-    
-    if phi < lo or phi > hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_p_r_halo(r_halo):
-    """ Flat prior on halo concentration parameter. """
-    lo,hi = param_ranges["r_halo"]
-    
-    if r_halo < lo or r_halo > hi:
-        return -np.inf
-    else:
-        return 0.
-
-def ln_prior(p, param_names):
-    """ Joint prior over all parameters. """
-    
-    sum = 0.
-    for ii,param in enumerate(param_names):
-        f = globals()["ln_p_{0}".format(param)]
-        sum += f(p[ii])
-    
-    return sum
-
-def timestep(r, v, potential):
-    """ From Dehnen & Read 2011 """
-    r_i = np.sqrt(np.sum(r**2, axis=-1))
-    m_encs = potential._enclosed_mass(r_i)
-    dt = np.min(np.sqrt(r_i**3 / (potential._G * m_encs)))
-    
-    return -dt / 10.
-
 def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     """ Evaluate the likelihood function for a given set of halo 
         parameters.
@@ -121,14 +47,15 @@ def ln_likelihood(p, param_names, particles, satellite, t1, t2, resolution):
     # not adaptive: s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
     
-    # s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-    #                                   timestep_args=(lm10,),
-    #                                   resolution=resolution,
-    #                                   t1=t1, t2=t2)
-    
     # v_disp measured from still-bound LM10 particles
     return objective2(lm10, s_orbit, p_orbits, v_disp=0.0133)
 
-def ln_posterior(p, *args):
-    param_names, particles, satellite, t1, t2, resolution = args
-    return ln_prior(p, param_names) + ln_likelihood(p, *args)
+StatisticalModel()
+
+# TODO:
+# - merge infer_potential stuff in to StatisticalModel.run()
+# - update all tests
+# - Make likelihood a general "back integration likelihood"
+# - likelihood should accept a potential, so it's generic. maybe specify in config file?
+# - SatelliteParticleIntegrator is dumb and should be something else. maybe function?
+# - adapative timestep stuff?
