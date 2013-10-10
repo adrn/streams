@@ -16,7 +16,6 @@ from astropy.constants.si import G
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from ...misc.units import UnitSystem
 from ..core import *
 from ..common import *
 from ..lm10 import LawMajewski2010
@@ -25,7 +24,7 @@ from ..pal5 import Palomar5
 Ntrials = 100
 Nparticles = 1000
 
-usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+usys = (u.kpc, u.M_sun, u.Myr, u.radian)
 
 def time_potential(potential, *args):
     _r = np.random.uniform(1, 50, size=(Nparticles, 3))
@@ -41,7 +40,7 @@ def time_potential(potential, *args):
 
 def test_time_miyamoto():
            
-    potential = MiyamotoNagaiPotential(unit_system=usys,
+    potential = MiyamotoNagaiPotential(units=usys,
                                        m=1.E11*u.M_sun, 
                                        a=6.5*u.kpc,
                                        b=0.26*u.kpc,
@@ -50,14 +49,14 @@ def test_time_miyamoto():
 
 def test_time_hernquist():
            
-    potential = HernquistPotential(unit_system=usys,
+    potential = HernquistPotential(units=usys,
                                    m=1.E11*u.M_sun, 
                                    c=0.7*u.kpc)
     time_potential(potential)
 
 def test_time_log():
            
-    potential = LogarithmicPotentialLJ(unit_system=usys,
+    potential = LogarithmicPotentialLJ(units=usys,
                                            q1=1.4,
                                            q2=1.,
                                            qz=1.5,
@@ -68,18 +67,18 @@ def test_time_log():
     time_potential(potential)
 
 def test_time_composite():
-    potential = CompositePotential(unit_system=usys)
-    potential["disk"] = MiyamotoNagaiPotential(unit_system=usys,
+    potential = CompositePotential(units=usys)
+    potential["disk"] = MiyamotoNagaiPotential(units=usys,
                                        m=1.E11*u.M_sun, 
                                        a=6.5*u.kpc,
                                        b=0.26*u.kpc,
                                        r_0=[0.,0.,0.]*u.kpc)
     
-    potential["bulge"] = HernquistPotential(unit_system=usys,
+    potential["bulge"] = HernquistPotential(units=usys,
                                    m=1.E11*u.M_sun, 
                                    c=0.7*u.kpc)
     
-    potential["halo"] = LogarithmicPotentialLJ(unit_system=usys,
+    potential["halo"] = LogarithmicPotentialLJ(units=usys,
                                        q1=1.4,
                                        q2=1.,
                                        qz=1.5,

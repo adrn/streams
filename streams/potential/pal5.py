@@ -15,7 +15,7 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import G
 
-from .core import CartesianPotential, CompositePotential, UnitSystem
+from .core import CartesianPotential, CompositePotential
 from .common import MiyamotoNagaiPotential, HernquistPotential, \
                     AxisymmetricNFWPotential, AxisymmetricLogarithmicPotential
 from ._pal5_acceleration import pal5_acceleration, pal5_logarithmic
