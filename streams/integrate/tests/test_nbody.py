@@ -60,27 +60,44 @@ def test_api():
 
 def test_collection():
     ffmpeg_cmd = "ffmpeg -i {0} -r 12 -b 5000 -vcodec libx264 -vpre medium -b 3000k {1}"
-        
+    
+    this_path = os.path.join(plot_path, "disk")
+    if not os.path.exists(this_path):
+        os.mkdir(this_path)
+
     N = 10000
+    mass_norm = 1E11/N
     usys = (u.kpc, u.Myr, u.M_sun, u.radian)
     
     # Create particles
-    r = np.zeros((N,3))
     v = np.zeros((N,3))
+    
+    #R = np.sqrt(np.random.uniform(size=N))*9. + 1.
+    R = (2.71/np.exp(np.random.uniform(size=N)) - 1.)*9. + 1
+    thetas = np.random.uniform(0., 2*np.pi, size=N)
+
+    r = np.zeros((N,3))
+    r[:,0] = R*np.cos(thetas)
+    r[:,1] = R*np.sin(thetas)
+    
+    #RR = np.repeat(R[:,np.newaxis], len(R), axis=1) <
+    V = np.zeros_like(R)
     for ii in range(N):
-        R = np.sqrt(np.random.uniform())*9. + 1.
-        theta = np.random.uniform(0., 2*np.pi)
-        r[ii] = R*np.array([np.cos(theta), np.sin(theta), 0.])
-        
-        V = 220.
-        v[ii] = V * np.array([-np.sin(theta), np.cos(theta), 0.])
+        M = np.sum(R < R[ii])*mass_norm
+        a = np.sqrt(G*M*u.M_sun/(R[ii]*u.kpc)).to(u.km/u.s).value * 0.9
+        V[ii] = a
+
+    v = np.zeros_like(r)
+    v[:,0] = V * -np.sin(thetas)
+    v[:,1] = V * np.cos(thetas)
     
     pc = Particle(r=r*u.kpc, v=v*u.km/u.s, 
-                  m=1E5*np.random.uniform(0.05, 10.)*u.M_sun,
+                  m=mass_norm*np.random.uniform(0.05, 10.)*u.M_sun,
                   units=usys)
-    
+
     # Create time grid to integrate on
     t = np.arange(0., 1000., 1.) * u.Myr
+    #t = np.arange(0., 100., 1.) * u.Myr
 
     import time
     a = time.time()
@@ -92,7 +109,7 @@ def test_collection():
     for jj in range(r.shape[0]):
         plt.clf()
         plt.scatter(r[jj,:,0], r[jj,:,1], c='k', edgecolor='none', 
-                    s=pc.m.M_sun+5., alpha=0.4)
+                    s=(pc.m.M_sun/mass_norm)+5., alpha=0.4)
         plt.xlim(-15, 15)
         plt.ylim(-15, 15)
         plt.savefig(os.path.join(this_path,"{0:04d}.png".format(jj)))
