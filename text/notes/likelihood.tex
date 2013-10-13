@@ -1,0 +1,28 @@
+\documentclass[letterpaper,12pt,preprint]{aastex}
+
+% packages
+\usepackage{amssymb,amsmath}
+
+% commands
+\newcommand{\given}{\,|\,}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\transpose}[1]{{#1}^{\mathsf{T}}}
+\newcommand{\inverse}[1]{{#1}^{-1}}
+
+\begin{document}
+
+\title{Back-integration likelihood}
+\author{Adrian M. Price-Whelan}
+
+Starting with notation, take ${\bf x}_i$ to be the true 6D ($x$, $y$, and $z$ positions along with velocity components in the same coordinate system) of the star $i$. Take ${\bf D}_i$ to be the observed 6D vector -- that is, sky coordinates, distance, proper motion, and radial velocity. For now, we assume the star was drawn at some time $t_i$ from a spherical Gaussian (progenitor) described by a single spatial scale (the tidal radius, $r_{\mathrm{tide}}$) and a single velocity scale (the velocity dispersion, $\sigma_\mathrm{v}$). These scales are specified in the covariance matrix ${\bf \Sigma}_p$, where the subscript $p$ refers to the progenitor.
+
+\begin{align}
+	p({\bf D}_i, {\bf x}_i^{(0)} \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi, t_i) &= 
+	p({\bf D}_i | {\bf x}_i^{(0)}) \mathcal{N}({\bf x}_i(t_i\given {\bf x}_i^{(0)}, \Phi ) \given {\bf x}_p(t_i\given {\bf x}_p^{(0)}, \Phi ), {\bf \Sigma}_p)\\
+	p({\bf D}_i \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi, t_i) &= \int p({\bf D}_i, {\bf x}_i^{(0)} \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi, t_i) \dd {\bf x}_i^{(0)}
+\end{align}
+
+\section{Tests}
+Try for a single star, relative to a perfectly known progenitor. Increase the observational errors on the star, make sure the likelihood gets broader.  
+
+\end{document}
