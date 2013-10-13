@@ -19,6 +19,8 @@ from ..integrate.satellite_particles import satellite_particles_integrate
 
 __all__ = ["back_integrate_likelihood", "variance_likelihood"]
 
+def objective():
+    pass
 
 def back_integrate_likelihood(p, param_names, satellite, particles, 
                               Potential, t1, t2):
