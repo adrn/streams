@@ -96,6 +96,8 @@ def proper_motion_error(V, V_minus_I):
 
     return dmu.to(u.radian/u.yr)
 
+# TODO: split out a function to compute the errors 
+
 def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     """ Given 3D galactocentric position and velocity, transform to heliocentric
         coordinates, apply observational uncertainty estimates, then transform
