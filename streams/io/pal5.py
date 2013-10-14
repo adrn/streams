@@ -18,9 +18,8 @@ from astropy.io import ascii
 
 # Project
 from .core import read_table, table_to_particles, table_to_orbits
-from ..util import project_root
-from ..misc import UnitSystem
-from ..dynamics import ParticleCollection, OrbitCollection
+from ..util import project_root, u_galactic
+from ..dynamics import Particle, Orbit
 from ..integrate.leapfrog import LeapfrogIntegrator
 
 __all__ = ["particle_table", "particles_today", "satellite_today", "time", "satellite_orbit"]
@@ -30,7 +29,7 @@ _data_path = os.path.join(project_root, "data", "simulation",
 _particle_file = "pal5.all_particles.txt"
 
 # This is used for the SgrTriax*.dat files
-usys = UnitSystem(u.kpc, u.M_sun, u.Myr)
+usys = (u.kpc, u.M_sun, u.Myr)
 
 def particle_table(N=None, expr=None):
     """ Read in particles from a specified satellite.
@@ -78,7 +77,7 @@ def particles_today(N=None, expr=None):
                             position_columns=["x","y","z"],
                             velocity_columns=["vx","vy","vz"])
     
-    return pc.to(UnitSystem.galactic())
+    return pc.to(u_galactic)
 
 def satellite_today():
     """ From Andreas """
@@ -87,9 +86,9 @@ def satellite_today():
     r0 = np.array([[7.816082584,.240023507,16.640055966]])*u.kpc
     v0 = np.array([[-37.456858,-151.794112,-21.609662]])*u.km/u.s
     
-    satellite = ParticleCollection(r=r0.to(u.kpc), 
-                                   v=v0.to(u.kpc/u.Myr), 
-                                   m=[6.5E4]*u.M_sun)
+    satellite = Particle(r=r0.to(u.kpc), 
+                         v=v0.to(u.kpc/u.Myr), 
+                         m=[6.5E4]*u.M_sun)
     
     return satellite
 

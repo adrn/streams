@@ -14,7 +14,6 @@ from astropy.constants.si import G
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from ...misc.units import UnitSystem
 from ..core import *
 from ..common import *
 
@@ -26,26 +25,26 @@ if not os.path.exists(plot_path):
 #        os.remove(os.path.join(plot_path,plot))
 
 class TestPointMass(object):
-    usys = UnitSystem(u.au, u.M_sun, u.yr)
+    usys = (u.au, u.M_sun, u.yr)
     
     def test_pointmass_creation(self):
-        potential = PointMassPotential(unit_system=self.usys,
+        potential = PointMassPotential(units=self.usys,
                                        m=1.*u.M_sun, 
                                        r_0=[0.,0.,0.]*u.au)
         
         # no mass provided
         with pytest.raises(AssertionError):
-            potential = PointMassPotential(unit_system=self.usys, 
+            potential = PointMassPotential(units=self.usys, 
                                            r_0=[0.,0.,0.]*u.au)
         
         # no r_0 provided
         with pytest.raises(AssertionError):
-            potential = PointMassPotential(unit_system=self.usys, 
+            potential = PointMassPotential(units=self.usys, 
                                            m=1.*u.M_sun)
     
     
     def test_pointmass_eval(self):
-        potential = PointMassPotential(unit_system=self.usys,
+        potential = PointMassPotential(units=self.usys,
                                        m=1.*u.M_sun, 
                                        r_0=[0.,0.,0.]*u.au)
                                        
@@ -67,7 +66,7 @@ class TestPointMass(object):
     def test_pointmass_plot(self):
         
         # 2-d case
-        potential = PointMassPotential(unit_system=self.usys,
+        potential = PointMassPotential(units=self.usys,
                                        m=1.*u.M_sun, 
                                        r_0=[0.,0.]*u.au)
         grid = np.linspace(-5.,5)*u.au
@@ -78,7 +77,7 @@ class TestPointMass(object):
         fig.savefig(os.path.join(plot_path, "point_mass_2d_acceleration.png"))
         
         # 3-d case
-        potential = PointMassPotential(unit_system=self.usys,
+        potential = PointMassPotential(units=self.usys,
                                        m=1.*u.M_sun, 
                                        r_0=[0.,0.,0.]*u.au)
         grid = np.linspace(-5.,5)*u.au
@@ -89,34 +88,27 @@ class TestPointMass(object):
         fig.savefig(os.path.join(plot_path, "point_mass_3d_acceleration.png"))
 
 class TestComposite(object):
-    usys = UnitSystem(u.au, u.M_sun, u.yr)
+    usys = (u.au, u.M_sun, u.yr)
     
     def test_composite_create(self):
-        potential = CompositePotential(unit_system=self.usys)
+        potential = CompositePotential(units=self.usys)
         
         # Add a point mass with same unit system
-        potential["one"] = PointMassPotential(unit_system=self.usys,
+        potential["one"] = PointMassPotential(units=self.usys,
                                               m=1.*u.M_sun, 
                                               r_0=[0.,0.,0.]*u.au)
-        
-        # Try to add another with different units
-        usys2 = UnitSystem(u.au, u.kg, u.s)
-        with pytest.raises(TypeError):
-            potential["two"] = PointMassPotential(unit_system=usys2,
-                                                  m=1.*u.M_sun, 
-                                                  r_0=[0.,0.,0.]*u.au)
         
         with pytest.raises(TypeError): 
             potential["two"] = "derp"
 
     def test_plot_composite(self):
-        potential = CompositePotential(unit_system=self.usys)
+        potential = CompositePotential(units=self.usys)
         
         # Add a point mass with same unit system
-        potential["one"] = PointMassPotential(unit_system=self.usys,
+        potential["one"] = PointMassPotential(units=self.usys,
                                               m=1.*u.M_sun, 
                                               r_0=[-1.,-1.,0.]*u.au)
-        potential["two"] = PointMassPotential(unit_system=self.usys,
+        potential["two"] = PointMassPotential(units=self.usys,
                                               m=1.*u.M_sun, 
                                               r_0=[1.,1.,0.]*u.au)      
         
@@ -133,13 +125,13 @@ class TestComposite(object):
         fig.savefig(os.path.join(plot_path, "two_equal_point_masses_acceleration.png"))
     
     def test_plot_composite2(self):
-        potential = CompositePotential(unit_system=self.usys)
+        potential = CompositePotential(units=self.usys)
         
         # Add a point mass with same unit system
-        potential["one"] = PointMassPotential(unit_system=self.usys,
+        potential["one"] = PointMassPotential(units=self.usys,
                                               m=1.*u.M_sun, 
                                               r_0=[-1.,-1.,0.]*u.au)
-        potential["two"] = PointMassPotential(unit_system=self.usys,
+        potential["two"] = PointMassPotential(units=self.usys,
                                               m=5.*u.M_sun, 
                                               r_0=[1.,1.,0.]*u.au)
         
@@ -151,12 +143,12 @@ class TestComposite(object):
         fig.savefig(os.path.join(plot_path, "two_different_point_masses_acceleration.png"))
 
     def test_many_point_masses(self, N=20):
-        potential = CompositePotential(unit_system=self.usys)
+        potential = CompositePotential(units=self.usys)
         
         for ii in range(N):
             r0 = np.random.uniform(-1., 1., size=3)
             r0[2] = 0. # x-y plane
-            potential[str(ii)] = PointMassPotential(unit_system=self.usys,
+            potential[str(ii)] = PointMassPotential(units=self.usys,
                                                     m=np.random.uniform()*u.M_sun, 
                                                     r_0=r0*u.au)
         
@@ -168,10 +160,10 @@ class TestComposite(object):
         fig.savefig(os.path.join(plot_path, "many_point_mass_acceleration.png"))
 
 class TestMiyamotoNagai(object):
-    usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+    usys = (u.kpc, u.M_sun, u.Myr, u.radian)
     def test_miyamoto_creation(self):
         
-        potential = MiyamotoNagaiPotential(unit_system=self.usys,
+        potential = MiyamotoNagaiPotential(units=self.usys,
                                            m=1.E11*u.M_sun, 
                                            a=6.5*u.kpc,
                                            b=0.26*u.kpc,
@@ -189,13 +181,13 @@ class TestMiyamotoNagai(object):
         fig.savefig(os.path.join(plot_path, "miyamoto_nagai_acceleration.png"))
     
     def test_composite(self):
-        potential = CompositePotential(unit_system=self.usys)
-        potential["disk"] = MiyamotoNagaiPotential(unit_system=self.usys,
+        potential = CompositePotential(units=self.usys)
+        potential["disk"] = MiyamotoNagaiPotential(units=self.usys,
                                            m=1.E11*u.M_sun, 
                                            a=6.5*u.kpc,
                                            b=0.26*u.kpc,
                                            r_0=[0.,0.,0.]*u.kpc)
-        potential["imbh"] = PointMassPotential(unit_system=self.usys,
+        potential["imbh"] = PointMassPotential(units=self.usys,
                                               m=2E9*u.M_sun, 
                                               r_0=[5.,5.,0.]*u.kpc)
 
@@ -207,10 +199,10 @@ class TestMiyamotoNagai(object):
         fig.savefig(os.path.join(plot_path, "miyamoto_nagai_imbh_acceleration.png"))
 
 class TestHernquist(object):
-    usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+    usys = (u.kpc, u.M_sun, u.Myr, u.radian)
     def test_create_plot(self):
         
-        potential = HernquistPotential(unit_system=self.usys,
+        potential = HernquistPotential(units=self.usys,
                                        m=1.E11*u.M_sun, 
                                        c=10.*u.kpc)
         
@@ -226,10 +218,10 @@ class TestHernquist(object):
         fig.savefig(os.path.join(plot_path, "hernquist_acceleration.png"))
         
 class TestLogarithmicPotentialLJ(object):
-    usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+    usys = (u.kpc, u.M_sun, u.Myr, u.radian)
     def test_create_plot(self):
         
-        potential = LogarithmicPotentialLJ(unit_system=self.usys,
+        potential = LogarithmicPotentialLJ(units=self.usys,
                                            q1=1.4,
                                            q2=1.,
                                            qz=1.5,
@@ -249,20 +241,20 @@ class TestLogarithmicPotentialLJ(object):
         fig.savefig(os.path.join(plot_path, "log_halo_lj_acceleration.png"))
 
 class TestCompositeGalaxy(object):
-    usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+    usys = (u.kpc, u.M_sun, u.Myr, u.radian)
     def test_creation(self):
-        potential = CompositePotential(unit_system=self.usys)
-        potential["disk"] = MiyamotoNagaiPotential(unit_system=self.usys,
+        potential = CompositePotential(units=self.usys)
+        potential["disk"] = MiyamotoNagaiPotential(units=self.usys,
                                            m=1.E11*u.M_sun, 
                                            a=6.5*u.kpc,
                                            b=0.26*u.kpc,
                                            r_0=[0.,0.,0.]*u.kpc)
         
-        potential["bulge"] = HernquistPotential(unit_system=self.usys,
+        potential["bulge"] = HernquistPotential(units=self.usys,
                                        m=1.E11*u.M_sun, 
                                        c=0.7*u.kpc)
         
-        potential["halo"] = LogarithmicPotentialLJ(unit_system=self.usys,
+        potential["halo"] = LogarithmicPotentialLJ(units=self.usys,
                                            q1=1.4,
                                            q2=1.,
                                            qz=1.5,
@@ -282,10 +274,10 @@ class TestCompositeGalaxy(object):
         fig.savefig(os.path.join(plot_path, "composite_galaxy_acceleration.png"))
 
 class TestIsochrone(object):
-    usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+    usys = (u.kpc, u.M_sun, u.Myr, u.radian)
     def test_create_plot(self):
         
-        potential = IsochronePotential(unit_system=self.usys,
+        potential = IsochronePotential(units=self.usys,
                                        m=1.E11*u.M_sun, 
                                        b=5.*u.kpc)
         
@@ -301,10 +293,10 @@ class TestIsochrone(object):
         fig.savefig(os.path.join(plot_path, "isochrone_acceleration.png"))
 
 class TestAxisymmetricNFWPotential(object):
-    usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+    usys = (u.kpc, u.M_sun, u.Myr, u.radian)
     def test_create_plot(self):
         
-        potential = AxisymmetricNFWPotential(unit_system=self.usys,
+        potential = AxisymmetricNFWPotential(units=self.usys,
                                            log_m=28., 
                                            qz=0.71,
                                            Rs=5.*u.kpc)
@@ -321,10 +313,10 @@ class TestAxisymmetricNFWPotential(object):
         fig.savefig(os.path.join(plot_path, "nfw_acceleration.png"))
 
 class TestAxisymmetricLogarithmicPotential(object):
-    usys = UnitSystem(u.kpc, u.M_sun, u.Myr, u.radian)
+    usys = (u.kpc, u.M_sun, u.Myr, u.radian)
     def test_create_plot(self):
         
-        potential = AxisymmetricLogarithmicPotential(unit_system=self.usys,
+        potential = AxisymmetricLogarithmicPotential(units=self.usys,
                                            v_c=10.*u.km/u.s, 
                                            qz=0.71)
         

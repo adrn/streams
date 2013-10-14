@@ -88,8 +88,7 @@ class LeapfrogIntegrator(object):
         """ The 'kick' part of the leapfrog integration. Update the velocities
             given a velocity.
         """
-        half_dt = 0.5*dt
-        return v + a*half_dt
+        return v + a*self._half_dt
         
     def step(self, dt):
         """ Step forward the positions and velocities by the given timestep """
@@ -119,6 +118,7 @@ class LeapfrogIntegrator(object):
         """
             
         self._dt = dt
+        self._half_dt = dt/2.
         
         # If the integrator has not been manually primed or run previously,
         #   here is where we scoot the velocity at time=0 to v(t+1/2)

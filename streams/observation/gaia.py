@@ -15,7 +15,7 @@ import numpy as np
 import astropy.units as u
 from astropy.utils.misc import isiterable
 
-from ..dynamics import ParticleCollection
+from ..dynamics import Particle
 from .rrlyrae import rrl_M_V, rrl_V_minus_I
 from .core import apparent_magnitude
 from ..coordinates import gc_to_hel, hel_to_gc
@@ -95,6 +95,8 @@ def proper_motion_error(V, V_minus_I):
     dmu = 0.526*dmu
 
     return dmu.to(u.radian/u.yr)
+
+# TODO: split out a function to compute the errors 
 
 def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     """ Given 3D galactocentric position and velocity, transform to heliocentric
@@ -181,8 +183,8 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
             vx2.to(u.kpc/u.Myr), vy2.to(u.kpc/u.Myr), vz2.to(u.kpc/u.Myr))
 
 def add_uncertainties_to_particles(particles, **kwargs):
-    """ Given a ParticleCollection object, add RR Lyrae-like uncertainties 
-        and return a new ParticleCollection with the errors.
+    """ Given a Particle object, add RR Lyrae-like uncertainties 
+        and return a new Particle with the errors.
     """
     
     x,y,z,vx,vy,vz = rr_lyrae_add_observational_uncertainties(particles.r[:,0],
@@ -203,7 +205,7 @@ def add_uncertainties_to_particles(particles, **kwargs):
     new_v[:,1] = vy.value
     new_v[:,2] = vz.value
     
-    return ParticleCollection(r=new_r*particles.r.unit, 
-                              v=new_v*particles.v.unit,
-                              m=particles.m,
-                              unit_system=particles.unit_system)
+    return Particle(r=new_r*particles.r.unit, 
+                    v=new_v*particles.v.unit,
+                    m=particles.m,
+                    units=particles.units)

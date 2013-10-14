@@ -13,12 +13,16 @@ import astropy.units as u
 import numpy as np
 import pytest
 
-from ...misc.units import UnitSystem
+# Project
 from ..particles import *
 
-usys = UnitSystem(u.kpc, u.Myr, u.M_sun)
+plot_path = "plots/tests/dynamics"
+if not os.path.exists(plot_path):
+    os.makedirs(plot_path)
 
-def test_particlecollection_init():
+units = (u.kpc, u.Myr, u.M_sun)
+
+def test_Particle_init():
 
     # Init with individual arrays of ndim=1
     r = np.random.random(3)*u.kpc
@@ -26,13 +30,13 @@ def test_particlecollection_init():
     m = np.random.random()*u.M_sun
     
     with pytest.raises(ValueError):
-        pc = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+        pc = Particle(r=r, v=v, m=m, units=units)
     
     r = np.random.random(size=(10,3))*u.kpc
     v = np.random.random(size=(10,3))*u.kpc/u.Myr
     m = np.random.random(10)*u.M_sun
     
-    pc = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+    pc = Particle(r=r, v=v, m=m, units=units)
     
     assert np.all(pc.r.value == r.value)
     assert np.all(pc.v.value == v.value)
@@ -50,12 +54,11 @@ def test_acceleration():
     v = np.zeros_like(r.value)*u.km/u.s
     m = np.random.random()*u.M_sun
     
-    pc = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+    pc = Particle(r=r, v=v, m=m, units=units)
 
-    pc.acceleration_at(np.array([0.,0.])*u.kpc, m=1.*u.M_sun)
+    pc.acceleration_at(np.array([0.,0.])*u.kpc)
     
-    a = pc.acceleration_at(np.array([[0.5,0.5], [0.0,0.0], [-0.5, -0.5]])*u.kpc,
-                           m=[1.,1.,1.]*u.M_sun)
+    a = pc.acceleration_at(np.array([[0.5,0.5], [0.0,0.0], [-0.5, -0.5]])*u.kpc)
 
 def test_merge():
     # test merging two particle collections
@@ -64,13 +67,13 @@ def test_merge():
     v = np.random.random(size=(10,3))*u.km/u.s
     m = np.random.random(10)*u.M_sun
     
-    pc1 = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+    pc1 = Particle(r=r, v=v, m=m, units=units)
     
     r = np.random.random(size=(10,3))*u.kpc
     v = np.random.random(size=(10,3))*u.km/u.s
     m = np.random.random(10)*u.M_sun
     
-    pc2 = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+    pc2 = Particle(r=r, v=v, m=m, units=units)
     
     pc_merged = pc1.merge(pc2)
     
@@ -81,9 +84,9 @@ def test_to():
     v = np.random.random(size=(10,3))*u.kpc/u.Myr
     m = np.random.random(10)*u.M_sun
     
-    pc = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+    pc = Particle(r=r, v=v, m=m, units=units)
     
-    usys2 = UnitSystem(u.km, u.s, u.kg)    
+    usys2 = (u.km, u.s, u.kg)    
     pc2 = pc.to(usys2)
     
     assert np.allclose(pc2._r, r.to(u.km).value)
@@ -95,8 +98,20 @@ def test_getitem():
     v = np.random.random(size=(100,3))*u.kpc/u.Myr
     m = np.random.random(100)*u.M_sun
     
-    pc = ParticleCollection(r=r, v=v, m=m, unit_system=usys)
+    pc = Particle(r=r, v=v, m=m, units=units)
     pc2 = pc[15:30]
     
     assert pc2.nparticles == 15
     assert (pc2._r[0] == pc._r[15]).all()
+
+def test_plot():
+    r = np.random.random(size=(100,3))*u.kpc
+    v = np.random.random(size=(100,3))*u.kpc/u.Myr
+    m = np.random.random(100)*u.M_sun
+    p = Particle(r=r, v=v, m=m, units=units)
+
+    fig = p.plot_r()
+    fig.savefig(os.path.join(plot_path, "particle_r.png"))
+
+    fig = p.plot_v()
+    fig.savefig(os.path.join(plot_path, "particle_v.png"))
