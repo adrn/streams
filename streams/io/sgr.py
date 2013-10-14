@@ -67,8 +67,11 @@ def mass_selector(m):
         pc = table_to_particles(data, usys,
                                 position_columns=["x","y","z"],
                                 velocity_columns=["vx","vy","vz"])
-        
-        return pc.to(u_galactic)
+        pc = pc.to(u_galactic)
+
+        t_unit = filter(lambda x: x.is_equivalent(u.s), usys)[0]
+        pc.tub = (np.array(data["tub"])*t_unit).to(u.Myr).value
+        return pc
     
     def satellite_orbit():
         """ Read in the position and velocity of the Orphan satellite center 
