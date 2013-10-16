@@ -29,10 +29,8 @@ from streams.observation.gaia import parallax_error, proper_motion_error, \
 from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
 
 from streams.inference import relative_normalized_coordinates, generalized_variance, minimum_distance_matrix
-from streams.inference.lm10 import timestep
-from streams.potential import LawMajewski2010
-from streams.potential.lm10 import true_params, _true_params, param_to_latex
-from streams.integrate.satellite_particles import SatelliteParticleIntegrator
+from streams.potential.lm10 import LawMajewski2010, true_params, _true_params, param_to_latex
+from streams.integrate.satellite_particles import satellite_particles_integrate
 from streams.io.lm10 import particle_table, particles_today, satellite_today, time
 from streams.io import read_table
 from streams.plot import *
@@ -54,7 +52,8 @@ def normed_objective_plot(**kwargs):
     
     # Read in the LM10 data
     np.random.seed(142)
-    particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+    Nparticles = 100
+    particles = particles_today(N=Nparticles, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
     satellite = satellite_today()
     t1,t2 = time()
 
@@ -72,6 +71,7 @@ def normed_objective_plot(**kwargs):
     
     if not os.path.exists(data_file):
         variances = dict()
+        acc = np.zeros((Nparticles+1,3)) # placeholder
         for param in ['q1','qz','v_halo','phi']:
             if not variances.has_key(param):
                 variances[param] = []
@@ -84,8 +84,10 @@ def normed_objective_plot(**kwargs):
                 params = true_params.copy()
                 params[param] = stat
                 lm10 = LawMajewski2010(**params)
-                integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
-                s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+                s_orbit,p_orbits = satellite_particles_integrate(satellite, particles,
+                                                     potential,
+                                                     potential_args=(Nparticles+1, acc), \
+                                                     time_spec=dict(t1=t1, t2=t2, dt=-1.))
                 variances[param].append(generalized_variance(lm10, s_orbit, p_orbits))
         
         # pickle the data to a file
@@ -107,9 +109,9 @@ def normed_objective_plot(**kwargs):
     ax.yaxis.tick_left()
     ax.legend(loc='upper right', fancybox=True)
     
-    ax.set_yticks([])
+    #ax.set_yticks([])
     ax.set_xlabel('Normalized parameter value', labelpad=15)
-    ax.set_ylabel('Generalized variance', labelpad=15)
+    ax.set_ylabel('$\log$ (Generalized variance)', labelpad=15)
     
     fig.savefig(os.path.join(plot_path, "objective_function.pdf"))
 
@@ -362,7 +364,7 @@ def sgr(**kwargs):
         ax.text(-8.-5.75, -3., s=r"$\odot$", fontsize=32)
 
         ax.set_xlabel("$X_{GC}$ [kpc]")
-        ax.set_xlabel("$X_{GC}$ [kpc]")
+        ax.set_ylabel("$Z_{GC}$ [kpc]")
     
     ax.set_xlim(extent['x'])
     ax.set_ylim(extent['y'])
