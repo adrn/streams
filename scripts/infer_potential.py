@@ -34,8 +34,8 @@ except ImportError:
 
 # Project
 from streams.simulation.config import read
-from streams.observation.gaia import add_uncertainties_to_particles,\
-
+from streams.observation.gaia import add_uncertainties_to_particles, \
+                                     rr_lyrae_observational_errors
 from streams.inference import StatisticalModel, back_integrate_likelihood
 from streams.plot import emcee_plot, bootstrap_scatter_plot
 
@@ -202,10 +202,7 @@ def main(config_file, job_name=None):
             else:
                 b_particles = particles
             
-            potential_params, satellite, 
-                          data, data_errors, 
-                          LawMajewski2010, t1, t2)
-            largs = (config["model_parameters"], satellite, 
+            largs = (config["model_parameters"], satellite, \
                      data, data_errors, Potential, t1, t2)
             stat_model = StatisticalModel(config["model_parameters"], 
                                           back_integrate_likelihood,
