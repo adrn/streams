@@ -110,7 +110,7 @@ def __radial_velocity(r, v):
     return np.squeeze(v_hel)
     
 def gc_to_hel(x,y,z,vx,vy,vz,
-              Rsun=8.*u.kpc,Vcirc=220.*u.km/u.s):
+              Rsun=8.*u.kpc, Vcirc=220.*u.km/u.s):
     # transform to heliocentric cartesian
     x = x + Rsun
     vy = vy - Vcirc # don't use -= or +=!!!
