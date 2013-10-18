@@ -98,26 +98,30 @@ def proper_motion_error(V, V_minus_I):
     return dmu.to(u.radian/u.yr)
 
 # TODO: split out a function to compute the errors 
-
 def rr_lyrae_observational_errors(l, b, D, mul, mub, vr):
     """ Compute observational uncertainties in heliocentric coordinates
         for an RR Lyrae, assuming Gaia velocity errors, 2% distance 
         measurements, and 10 km/s radial velocities.
     """
+
     # assuming [Fe/H] = -0.5 for Sgr
     M_V, dM_V = rrl_M_V(-0.5)
-    V = apparent_magnitude(M_V, d)
+    V = apparent_magnitude(M_V, D)
 
     # proper motion error, from Gaia:
     dmu = proper_motion_error(V, rrl_V_minus_I)
-    mul_err = dmu.to(u.rad/u.s)
-    mub_err = dmu.to(u.rad/u.s)
+    mul_err = dmu.to(u.rad/u.s)*np.ones(len(l))
+    mub_err = dmu.to(u.rad/u.s)*np.ones(len(l))
 
     # flat distance error:
-    D_err = 0.02*D.value
+    D_err = 0.02*D
 
     # fixed radial velocity error:
-    vr_err = 10.*u.km/u.s
+    vr_err = 10.*u.km/u.s*np.ones(len(l))
+
+    # negligible..
+    l_err = 10.*u.microarcsecond*np.ones(len(l))
+    b_err = 10.*u.microarcsecond*np.ones(len(l))
 
     return (l_err, b_err, D_err, mul_err, mub_err, vr_err)
 
@@ -162,7 +166,7 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     if kwargs.has_key("distance_error_percent") and \
         kwargs["distance_error_percent"] is not None:
         D_err = kwargs["distance_error_percent"] / 100. * D.value
-    D += np.random.normal(0., D_err)*D.unit
+    D += np.random.normal(0., D_err.value)*D.unit
     
     # RADIAL VELOCITY ERROR -- 10 km/s
     if kwargs.has_key("radial_velocity_error") and \
@@ -187,15 +191,10 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     mul_err = mul_err.to(u.rad/u.s)
     mub_err = mub_err.to(u.rad/u.s)
     
-    try:
-        size = len(dmu)
-    except TypeError:
-        size = len(vr)
+    mul = mul + np.random.normal(0., mul_err.value, size=len(x))*mul_err.unit
+    mub = mub + np.random.normal(0., mub_err.value, size=len(x))*mub_err.unit
     
-    mul = mul + np.random.normal(0., mul_err.value, size=size)*mul_err.unit
-    mub = mub + np.random.normal(0., mub_err.value, size=size)*mub_err.unit
-    
-    x2,y2,z2,vx2,vy2,vz2 = hel_to_gc(l,b,d,mul,mub,vr)
+    x2,y2,z2,vx2,vy2,vz2 = hel_to_gc(l,b,D,mul,mub,vr)
     return (x2.to(u.kpc), y2.to(u.kpc), z2.to(u.kpc), \
             vx2.to(u.kpc/u.Myr), vy2.to(u.kpc/u.Myr), vz2.to(u.kpc/u.Myr))
 

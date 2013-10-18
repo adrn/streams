@@ -13,14 +13,17 @@ import os, sys
 
 # Third-party
 import numpy as np
+import astropy.units as u
 
+from ..dynamics import Particle
 from ..inference import generalized_variance
 from ..integrate.satellite_particles import satellite_particles_integrate
+from ..coordinates import gc_to_hel
 
 __all__ = ["back_integrate_likelihood", "variance_likelihood"]
 
 def back_integrate_likelihood(p, potential_params, satellite, 
-                              data_particles, data_errors, 
+                              data, data_errors, 
                               Potential, t1, t2):
     """ This is a simplified version of the likelihood laid out by D. Hogg in 
         Bread and Butter (https://github.com/davidwhogg/BreadAndButter/). The
@@ -31,20 +34,26 @@ def back_integrate_likelihood(p, potential_params, satellite,
     # First need to pull apart the parameters p -- first few are the 
     #   potential parameters, then the true position of the stars, then
     #   the time the stars came unbound from their progenitor.
-    Nparticles = len(data_particles)
-    Nparams = len(potential_param_names)
+    Ndim = len(data)
+    Nparticles = len(data[0]) # in observed coordinates!
+    Nparams = len(potential_params)
 
     # Use the specified Potential class and parameters 
-    potential_params = dict(zip(potential_param_names, p[:Nparams]))
+    potential_params = dict(zip(potential_params, p[:Nparams]))
     potential = Potential(**potential_params)
     
     # These are the true positions/velocities of the particles, which we 
     #   add as parameters in the model
     x = np.array(p[Nparams:Nparams+(Nparticles*6)]).reshape(Nparticles,6)
-    log_p_D_given_x = -0.5 * (np.prod(data_errors**2) + np.sum((x-data_particles._x)**2 / data_errors**2, axis=-1))
+    _r = x[:,:3].T*u.kpc
+    _v = x[:,3:].T*u.kpc/u.Myr
+    hel = gc_to_hel(_r[0],_r[1],_r[2],_v[0],_v[1],_v[2])
+
+    #log_p_D_given_x = -0.5 * (np.prod(data_errors**2) + np.sum((x-data)**2 / data_errors**2, axis=-1))
+    # TODO: this comparison should be done in data space!
 
     # These are the unbinding times for each particle
-    t_idx = p[Nparams+(N*6):]
+    t_idx = [int(pp) for pp in p[Nparams+(Nparticles*6):]]
     
     # A Particle object for the true positions of the particles -- not great...
     particles = Particle(x[:,:3]*u.kpc, x[:,3:]*u.kpc/u.Myr, 0.*u.M_sun)
@@ -58,14 +67,24 @@ def back_integrate_likelihood(p, potential_params, satellite,
     
     sat_var = np.zeros((Ntimesteps,6))
     sat_var[:,:3] = potential._tidal_radius(satellite._m, s._r) * 1.26
-    sat_var[:,3:] += v_disp # kpc/Myr
+    sat_var[:,3:] += 0.0083972030362941957 #v_disp # kpc/Myr
     cov = sat_var**2
     
-    l = np.zeros((N,))
-    for ii in range(N):
+    l = np.zeros((Nparticles,))
+    for ii in range(Nparticles):
         pref = (0.004031441804149937 * (np.prod(cov[t_idx[ii]])**-0.5))
         yy = -0.5*np.sum((p._x[t_idx[ii],ii] - s._x[t_idx[ii],0])**2 / cov[t_idx[ii]])
-        l[ii] = np.log(pref) + yy + log_p_D_given_x[ii]
+        #l[ii] = np.log(pref) + yy + log_p_D_given_x[ii]
+
+        log_p_D_given_x = -0.5
+        for jj in range(Ndim):
+            log_p_D_given_x *= data_errors[jj][ii]**2
+        
+        log_p_D_given_x = log_p_D_given_x.value
+        for jj in range(Ndim):
+            log_p_D_given_x += -0.5 * ((hel[jj][ii]-data[jj][ii])**2 / data_errors[jj][ii]**2).decompose()
+
+        l[ii] = np.log(pref) + yy + log_p_D_given_x
     
     return np.sum(l)
 
