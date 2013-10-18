@@ -36,7 +36,8 @@ except ImportError:
 from streams.simulation.config import read
 from streams.observation.gaia import add_uncertainties_to_particles, \
                                      rr_lyrae_observational_errors
-from streams.inference import StatisticalModel, back_integrate_likelihood
+from streams.inference import StatisticalModel
+from streams.inference.back_integrate import back_integrate_likelihood
 from streams.plot import emcee_plot, bootstrap_scatter_plot
 
 global pool
