@@ -34,7 +34,8 @@ except ImportError:
 
 # Project
 from streams.simulation.config import read
-from streams.observation.gaia import add_uncertainties_to_particles
+from streams.observation.gaia import add_uncertainties_to_particles,\
+
 from streams.inference import StatisticalModel, back_integrate_likelihood
 from streams.plot import emcee_plot, bootstrap_scatter_plot
 
@@ -43,6 +44,13 @@ pool = None
 
 # Create logger
 logger = logging.getLogger(__name__)
+
+# TODO: this is A HACK
+from streams.coordinates import gc_to_hel
+def particles_to_heliocentric(particles):
+    # Transform to heliocentric coordinates
+    return gc_to_hel(particles.r[:,0], particles.r[:,1], particles.r[:,2],
+                     particles.v[:,0], particles.v[:,1], particles.v[:,2])
 
 def main(config_file, job_name=None):
     
@@ -135,10 +143,12 @@ def main(config_file, job_name=None):
         logger.debug("Adding observational errors...")
         
         pre_error_particles = copy.copy(particles)
-        particles = add_uncertainties_to_particles(particles, 
+        data_particles = add_uncertainties_to_particles(particles, 
                                             radial_velocity_error=rv_error,
                                             distance_error_percent=d_error,
                                             proper_motion_error=mu_error)
+        data = particles_to_heliocentric(data_particles)
+        data_errors = rr_lyrae_observational_errors(*data)
     
     # Create initial position array for walkers
     for p_name in config["model_parameters"]:
@@ -184,14 +194,19 @@ def main(config_file, job_name=None):
         all_best_parameters = []
         for bb in range(B):
             # bootstrap resample particles
+            # TODO: broken with B > 1
+            # TODO: remove bootstrap?!
             if B > 1:
                 p_idx = np.random.randint(Nparticles*B, size=Nparticles)
                 b_particles = particles[p_idx]
             else:
                 b_particles = particles
             
-            largs = (config["model_parameters"], satellite, b_particles, 
-                     Potential, t1, t2)
+            potential_params, satellite, 
+                          data, data_errors, 
+                          LawMajewski2010, t1, t2)
+            largs = (config["model_parameters"], satellite, 
+                     data, data_errors, Potential, t1, t2)
             stat_model = StatisticalModel(config["model_parameters"], 
                                           back_integrate_likelihood,
                                           likelihood_args=largs,
