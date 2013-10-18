@@ -158,10 +158,15 @@ def plot_xz_animation(potential, s, p, filename=""):
     ax.set_ylabel("$Z_{GC}$", color='w', fontsize=28, rotation='horizontal')
     fig.subplots_adjust(left=0.08, right=0.98, top=0.98, bottom=0.06)
     
+    D_ps_limit = 2.2
+    
+    _diff = sum(all_D_ps[0] < D_ps_limit)
+    _N = p.nparticles - _diff
+
     jj = 0
     for ii in range(0,len(t),10):
         D_ps = all_D_ps[ii]
-        idx = idx & (D_ps > 2.2)
+        idx = idx & (D_ps > D_ps_limit)
         
         offsets = p._r[ii]
         offsets[np.logical_not(idx)] = np.ones_like(offsets[np.logical_not(idx)])*len(p._r)
@@ -170,29 +175,36 @@ def plot_xz_animation(potential, s, p, filename=""):
         try:
             scatter_map[(1,0)].set_offsets(np.vstack((offsets[:,0],offsets[:,2])).T)
             scatter_map_sat[(1,0)].center = (sat_r[0], sat_r[2])
-            scatter_map_sat[(1,0)].set_radius(r_tide[ii,0,0].value)
+            scatter_map_sat[(1,0)].set_radius(r_tide[ii,0,0].value*2.)
         except NameError:
             scatter_map = dict()
             scatter_map_sat = dict()
             
-            c = Circle((sat_r[0], sat_r[2]), radius=r_tide[ii,0,0].value*1.4, 
+            c = Circle((sat_r[0], sat_r[2]), radius=r_tide[ii,0,0].value*2., 
                        facecolor='#CA0020', alpha=0.3, edgecolor='none')
             ax.add_patch(c)
             scatter_map_sat[(1,0)] = c
             
             scatter_map[(1,0)] = ax.scatter(offsets[:,0], offsets[:,2], 
-                                            marker='.', color='#ABD9E9', 
-                                            alpha=0.4, s=8)
+                                            marker='.', color='#7FCDBB', 
+                                            alpha=0.15, s=10)
             
         ax.set_xlim(-81,81)
         ax.set_ylim(-81,81)
         ax.set_xticklabels([])
         ax.set_yticklabels([])
+        xx = "{0:.2f}% recaptured".format((sum(~idx)-_diff) / _N * 100)
+        try:
+            recap_text.set_text(xx)
+        except NameError:
+            recap_text = fig.text(0.05, 0.95, xx, fontsize=32, color='w')
+
         fig.savefig(os.path.join(plot_path,"{0}{1:04d}.png".format(filename,jj)),
                     facecolor=(21/255.,21/255.,21/255.))
         jj += 1
     
     print("Fraction bound at end of run: {0}".format(sum(~idx)/p.nparticles))
+    print("or: {0}".format((sum(~idx)-_diff) / _N))
 
 if __name__ == "__main__":
     N = 10000
