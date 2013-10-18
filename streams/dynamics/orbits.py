@@ -13,38 +13,38 @@ import os, sys
 import numpy as np
 import astropy.units as u
 from astropy.constants import G
+import triangle
 
 from .core import _validate_quantity, DynamicalBase
-from .particles import ParticleCollection
-from ..misc.units import UnitSystem
+from .particles import Particle
 
-__all__ = ["OrbitCollection"]
+__all__ = ["Orbit"]
 
-class OrbitCollection(DynamicalBase):
+class Orbit(DynamicalBase):
         
-    def __init__(self, t, r, v, m=None, dr=None, dv=None, unit_system=None):
+    def __init__(self, t, r, v, m=None, units=None):
         """ Represents a collection of orbits, e.g. positions and velocities 
             over time for a set of particles.
             
-            Input r and v should be shape (len(t), Nparticles, Ndim).
+            Input r and v should be shape (ntimesteps, nparticles, ndim).
             
             Parameters
             ---------- 
             t : astropy.units.Quantity
                 Time.
             r : astropy.units.Quantity
-                Position.
+                Position of the particle(s). Should have shape 
+                (ntimesteps, nparticles, ndim).
             v : astropy.units.Quantity
-                Velocity.
-            dr : astropy.units.Quantity (optional)
-                Uncertainty in position.
-            dv : astropy.units.Quantity (optional)
-                Uncertainty in velocity.
+                Velocity of the particle(s). Should have shape 
+                (ntimesteps, nparticles, ndim).
             m : astropy.units.Quantity (optional)
                 Mass.
-            unit_system : UnitSystem (optional)
-                The desired unit system for the particles. If not provided, will
-                use the units of the input Quantities.
+            units : list (optional)
+                A list of units defining the desired unit system for 
+                the particles. If not provided, will use the units of 
+                the input Quantities to define a system of units. Mainly 
+                used for internal representations.
         """
         
         _validate_quantity(t, unit_like=u.s)
@@ -57,17 +57,23 @@ class OrbitCollection(DynamicalBase):
             raise ValueError("Position and velocity should have shape "
                              "(ntimesteps, nparticles, ndim)")
         
-        if unit_system is None and m is None:
-            raise ValueError("If not specifying a unit_system, you must "
+        if units is None and m is None:
+            raise ValueError("If not specifying list of units, you must "
                              "specify a mass Quantity for the particles.")
-        elif unit_system is not None and m is None:
-            m = [0.] * self.nparticles * unit_system['mass']
+        elif units is not None and m is None:
+            m = ([0.] * self.nparticles * u.kg).decompose(units)
 
         _validate_quantity(m, unit_like=u.kg)
         
-        if unit_system is None:
-            _units = [r.unit, m.unit, t.unit] + v.unit.bases
-            unit_system = UnitSystem(*set(_units))
+        if units is None:
+            _units = [r.unit, m.unit] + v.unit.bases + [u.radian]
+            self.units = set(_units)
+        else:
+            self.units = units
+
+        unq_types = np.unique([x.physical_type for x in self.units])
+        if len(self.units) != len(unq_types):
+            raise ValueError("Multiple units specify the same physical type!")
 
         if r.value.shape != v.value.shape:
             raise ValueError("Position and velocity must have same shape.")
@@ -76,62 +82,89 @@ class OrbitCollection(DynamicalBase):
             raise ValueError("Length of time array must match number of "
                              "timesteps in position and velocity.")
         
-        _r = r.decompose(unit_system).value
-        _v = v.decompose(unit_system).value
-        self._m = m.decompose(unit_system).value
-        self._t = t.decompose(unit_system).value
-        
-        if dr is not None:
-            _validate_quantity(dr, unit_like=u.km)
-            assert dr.value.shape == r.value.shape
-            _dr = dr.decompose(unit_system).value
-        else:
-            _dr = np.zeros_like(_r)
-        
-        if dv is not None:
-            _validate_quantity(dv, unit_like=u.km/u.s)
-            assert dv.value.shape == v.value.shape
-            _dv = dv.decompose(unit_system).value
-        else:
-            _dv = np.zeros_like(_v)
+        # decompose each input into the specified unit system
+        _r = r.decompose(self.units).value
+        _v = v.decompose(self.units).value
         
         # create container for all 6 phasespace 
         self._x = np.zeros((self.ntimesteps, self.nparticles, self.ndim*2))
         self._x[..., :self.ndim] = _r
         self._x[..., self.ndim:] = _v
-        
-        self._dx = np.zeros((self.ntimesteps, self.nparticles, self.ndim*2))
-        self._dx[..., :self.ndim] = _dr
-        self._dx[..., self.ndim:] = _dv
-        
-        self.unit_system = unit_system
+        self._m = m.decompose(self.units).value
+        self._t = t.decompose(self.units).value
     
     @property
     def t(self):
-        return self._t * self.unit_system['time']
+        t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
+        return self._t * t_unit
     
-    def to(self, unit_system):
-        """ Return a new ParticleCollection in the specified unit system. """
-        new_r = self.r.decompose(unit_system)
-        new_v = self.v.decompose(unit_system)
-        new_m = self.m.decompose(unit_system)
-        new_t = self.t.decompose(unit_system)
+    def to(self, units):
+        """ Return a new Orbit in the specified unit system. """
+        return Orbit(t=self.t, r=self.r, v=self.v, m=self.m, units=units)
+    
+    def plot_r(self, coord_names=['x','y','z'], **kwargs):
+        """ Make a scatter-plot of 3 projections of the orbit positions. 
+            
+            Parameters
+            ----------
+            coord_names : list
+                Name of each axis, e.g. ['x','y','z']
+            kwargs (optional)
+                Keyword arguments that get passed to triangle.corner()
+        """   
+        from ..plot.data import scatter_plot_matrix
+        if not len(coord_names) == self.ndim:
+            raise ValueError("Must pass a coordinate name for each dimension.")
         
-        return OrbitCollection(t=new_t, r=new_r, v=new_v, m=new_m, 
-                               unit_system=unit_system)
+        labels = [r"{0} [{1}]".format(nm, self.r.unit)
+                    for nm in coord_names]
+        
+        kwargs["ms"] = kwargs.get("ms", 2.)
+        kwargs["alpha"] = kwargs.get("alpha", 0.5)
+
+        fig = triangle.corner(np.vstack(self._r), labels=labels, 
+                              plot_contours=False, plot_datapoints=True, 
+                              **kwargs)
+
+        return fig
     
+    def plot_v(self, coord_names=['vx','vy','vz'], **kwargs):
+        """ Make a scatter-plot of 3 projections of the velocities of the 
+            particle coordinates.
+            
+            Parameters
+            ----------
+            coord_names : list
+                Name of each axis, e.g. ['Vx','Vy','Vz']
+            kwargs (optional)
+                Keyword arguments that get passed to triangle.corner()
+        """   
+        from ..plot.data import scatter_plot_matrix
+        assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
+        
+        labels = [r"{0} [{1}]".format(nm, self.v.unit)
+                    for nm in coord_names]
+        
+        kwargs["ms"] = kwargs.get("ms", 2.)
+        kwargs["alpha"] = kwargs.get("alpha", 0.5)
+
+        fig = triangle.corner(np.vstack(self._v), labels=labels, 
+                              plot_contours=False, plot_datapoints=True, 
+                              **kwargs)
+        return fig
+
     def __getitem__(self, key):
         """ Slice on time """
         
         if isinstance(key, slice) :
             #Get the start, stop, and step from the slice
-            return OrbitCollection(t=self.t[key], r=self.r[key], 
-                                   v=self.v[key], m=self.m[key])
+            return Orbit(t=self.t[key], r=self.r[key], 
+                         v=self.v[key], m=self.m[key], units=self.units)
             
         elif isinstance(key, int) :
-            return ParticleCollection(r=self.r[key], v=self.v[key], 
-                                      m=self.m[key])
+            return Particle(r=self.r[key], v=self.v[key], m=self.m[key], 
+                            units=self.units)
         
         else:
-            raise TypeError, "Invalid argument type."
+            raise TypeError("Invalid argument type.")
     

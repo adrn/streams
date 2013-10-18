@@ -1,6 +1,6 @@
 # coding: utf-8
 """
-    Test the core simulation code, e.g. Particle and ParticleCollection
+    Test the core simulation code, e.g. Particle
 """
 
 from __future__ import absolute_import, unicode_literals, division, print_function

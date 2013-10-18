@@ -15,7 +15,7 @@ from astropy.utils.misc import isiterable
 import astropy.units as u
 import numpy as np
 
-__all__ = ["_validate_coord", "project_root"]
+__all__ = ["_validate_coord", "project_root", "u_galactic"]
 
 # This code will find the root directory of the project
 _pattr = re.compile("(.*)\/streams")
@@ -35,3 +35,5 @@ def _validate_coord(x):
         return np.array(x, copy=True)
     else:
         return np.array([x])
+
+u_galactic = [u.kpc, u.Myr, u.M_sun, u.radian]

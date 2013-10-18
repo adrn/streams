@@ -19,8 +19,7 @@ import astropy.coordinates as coord
 
 # Project
 from ..coordinates import SgrCoordinates, distance_to_sgr_plane
-from ..dynamics import ParticleCollection, OrbitCollection
-from ..misc import UnitSystem
+from ..dynamics import Particle, Orbit
 
 __all__ = ["read_table", "add_sgr_coordinates", "table_to_particles", \
            "table_to_orbits"]
@@ -75,16 +74,16 @@ def read_table(filename, column_names=None, column_map=dict(),
     
     return data
 
-def table_to_particles(table, unit_system, 
+def table_to_particles(table, units, 
                        position_columns=["x","y","z"],
                        velocity_columns=["vx","vy","vz"]):
     """ Convert a astropy.table.Table-like object into a 
-        ParticleCollection.
+        Particle.
         
         Parameters
         ----------
         table : astropy.table.Table-like
-        unit_system : streams.misc.UnitSystem
+        units : list
         position_columns : list
         velocity_columns_columns : list
     """
@@ -99,26 +98,27 @@ def table_to_particles(table, unit_system,
         r[:,ii] = np.array(table[position_columns[ii]])
         v[:,ii] = np.array(table[velocity_columns[ii]])
 
-    r = r*unit_system['length']
-    v = v*unit_system['length'] / unit_system['time']
+    r_unit = filter(lambda x: x.is_equivalent(u.km), units)[0]
+    t_unit = filter(lambda x: x.is_equivalent(u.s), units)[0]
+    r = r*r_unit
+    v = v*r_unit/t_unit
     
-    particles = ParticleCollection(r=r.to(u.kpc), 
-                                   v=v.to(u.kpc/u.Myr), 
-                                   m=np.zeros(len(r))*u.M_sun,
-                                   unit_system=UnitSystem.galactic())
+    particles = Particle(r=r.to(u.kpc), 
+                         v=v.to(u.kpc/u.Myr), 
+                         m=np.zeros(len(r))*u.M_sun)
     
     return particles
 
-def table_to_orbits(table, unit_system, 
+def table_to_orbits(table, units, 
                     position_columns=["x","y","z"],
                     velocity_columns=["vx","vy","vz"]):
     """ Convert a astropy.table.Table-like object into an 
-        OrbitCollection. Assumes one particle.
+        Orbit. Assumes one particle.
         
         Parameters
         ----------
         table : astropy.table.Table-like
-        unit_system : streams.misc.UnitSystem
+        units : list
         position_columns : list
         velocity_columns_columns : list
     """
@@ -134,15 +134,16 @@ def table_to_orbits(table, unit_system,
         r[...,ii] = np.array(table[position_columns[ii]])[...,np.newaxis]
         v[...,ii] = np.array(table[velocity_columns[ii]])[...,np.newaxis]
 
-    r = r*unit_system['length']
-    v = v*unit_system['length'] / unit_system['time']
-    t = np.array(table['t']) * unit_system['time']
+    r_unit = filter(lambda x: x.is_equivalent(u.km), units)[0]
+    t_unit = filter(lambda x: x.is_equivalent(u.s), units)[0]
+    r = r*r_unit
+    v = v*r_unit/t_unit
+    t = np.array(table['t']) * t_unit
     
-    particles = OrbitCollection(t=t.to(u.Myr), 
-                                r=r.to(u.kpc), 
-                                v=v.to(u.kpc/u.Myr), 
-                                m=np.zeros(len(r))*u.M_sun,
-                                unit_system=UnitSystem.galactic())
+    particles = Orbit(t=t.to(u.Myr), 
+                      r=r.to(u.kpc), 
+                      v=v.to(u.kpc/u.Myr), 
+                      m=np.zeros(len(r))*u.M_sun)
     
     return particles
 

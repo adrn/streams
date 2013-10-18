@@ -55,7 +55,7 @@ def _cartesian_point_mass_model(bases):
 
 class PointMassPotential(CartesianPotential):
 
-    def __init__(self, unit_system, **parameters):
+    def __init__(self, units, **parameters):
         """ Represents a point-mass potential at the given origin.
 
             $\Phi = -\frac{GM}{r-r_0}$
@@ -66,7 +66,7 @@ class PointMassPotential(CartesianPotential):
             
             Parameters
             ----------
-            unit_system : UnitSystem
+            units : list
                 Defines a system of physical base units for the potential.
             parameters : dict
                 A dictionary of parameters for the potential definition.
@@ -78,11 +78,9 @@ class PointMassPotential(CartesianPotential):
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "r_0" in parameters.keys(), "You must specify a location for the mass."
         
-        unit_system = self._validate_unit_system(unit_system)
-        
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_point_mass_model(unit_system.bases)
-        super(PointMassPotential, self).__init__(unit_system, 
+        f,df = _cartesian_point_mass_model(units)
+        super(PointMassPotential, self).__init__(units, 
                                                  f=f, f_prime=df, 
                                                  latex=latex, 
                                                  parameters=parameters)
@@ -137,7 +135,7 @@ def _cartesian_miyamoto_nagai_model(bases):
 
 class MiyamotoNagaiPotential(CartesianPotential):
 
-    def __init__(self, unit_system, **parameters):
+    def __init__(self, units, **parameters):
         """ Represents the Miyamoto-Nagai potential (1975) for a disk-like
             potential.
 
@@ -151,7 +149,7 @@ class MiyamotoNagaiPotential(CartesianPotential):
             
             Parameters
             ----------
-            unit_system : UnitSystem
+            units : list
                 Defines a system of physical base units for the potential.
             parameters : dict
                 A dictionary of parameters for the potential definition.
@@ -160,18 +158,16 @@ class MiyamotoNagaiPotential(CartesianPotential):
         
         latex = "$\\Phi_{disk} = -\\frac{GM_{disk}}{\\sqrt{R^2 + (a + \\sqrt{z^2 + b^2})^2}}$"
         
-        unit_system = self._validate_unit_system(unit_system)
-        
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+            parameters["r_0"] = [0.,0.,0.]*u.kpc
             
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "a" in parameters.keys(), "You must specify the parameter 'a'."
         assert "b" in parameters.keys(), "You must specify the parameter 'b'."
         
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_miyamoto_nagai_model(unit_system.bases)
-        super(MiyamotoNagaiPotential, self).__init__(unit_system, 
+        f,df = _cartesian_miyamoto_nagai_model(units)
+        super(MiyamotoNagaiPotential, self).__init__(units, 
                                                      f=f, f_prime=df, 
                                                      latex=latex, 
                                                      parameters=parameters)
@@ -214,7 +210,7 @@ def _cartesian_hernquist_model(bases):
     
 class HernquistPotential(CartesianPotential):
     
-    def __init__(self, unit_system, **parameters):
+    def __init__(self, units, **parameters):
         """ Represents the Hernquist potential (1990) for a spheroid (bulge).
 
             $\Phi_{spher} = -\frac{GM_{spher}}{r + c}$
@@ -226,7 +222,7 @@ class HernquistPotential(CartesianPotential):
             
             Parameters
             ----------
-            unit_system : UnitSystem
+            units : list
                 Defines a system of physical base units for the potential.
             parameters : dict
                 A dictionary of parameters for the potential definition.
@@ -236,17 +232,15 @@ class HernquistPotential(CartesianPotential):
         
         latex = "$\\Phi_{spher} = -\\frac{GM_{spher}}{r + c}$"
         
-        unit_system = self._validate_unit_system(unit_system)
-        
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+            parameters["r_0"] = [0.,0.,0.]*u.kpc
         
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "c" in parameters.keys(), "You must specify the parameter 'c'."
         
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_hernquist_model(unit_system.bases)
-        super(HernquistPotential, self).__init__(unit_system, 
+        f,df = _cartesian_hernquist_model(units)
+        super(HernquistPotential, self).__init__(units, 
                                                  f=f, f_prime=df, 
                                                  latex=latex, 
                                                  parameters=parameters)
@@ -288,7 +282,7 @@ def _cartesian_isochrone_model(bases):
     
 class IsochronePotential(CartesianPotential):
     
-    def __init__(self, unit_system, **parameters):
+    def __init__(self, units, **parameters):
         """ Represents the Isochrone potential.
 
             $\Phi_{spher} = -\frac{GM}{\sqrt{r^2+b^2} + b}$
@@ -300,7 +294,7 @@ class IsochronePotential(CartesianPotential):
             
             Parameters
             ----------
-            unit_system : UnitSystem
+            units : list
                 Defines a system of physical base units for the potential.
             parameters : dict
                 A dictionary of parameters for the potential definition.
@@ -310,17 +304,15 @@ class IsochronePotential(CartesianPotential):
         
         latex = "$\\Phi = -\\frac{GM}{\sqrt{r^2+b^2} + b}$"
         
-        unit_system = self._validate_unit_system(unit_system)
-        
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+            parameters["r_0"] = [0.,0.,0.]*u.kpc
         
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "b" in parameters.keys(), "You must specify the parameter 'b'."
         
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_isochrone_model(unit_system.bases)
-        super(IsochronePotential, self).__init__(unit_system, 
+        f,df = _cartesian_isochrone_model(units)
+        super(IsochronePotential, self).__init__(units, 
                                                  f=f, f_prime=df, 
                                                  latex=latex, 
                                                  parameters=parameters)
@@ -362,7 +354,7 @@ def _cartesian_plummer_model(bases):
     
 class PlummerPotential(CartesianPotential):
     
-    def __init__(self, unit_system, **parameters):
+    def __init__(self, units, **parameters):
         """ Represents the Plummer potential
 
             $\Phi = -\frac{GM}{\sqrt{r^2 + a^2}}$
@@ -374,7 +366,7 @@ class PlummerPotential(CartesianPotential):
             
             Parameters
             ----------
-            unit_system : UnitSystem
+            units : list
                 Defines a system of physical base units for the potential.
             parameters : dict
                 A dictionary of parameters for the potential definition.
@@ -383,17 +375,15 @@ class PlummerPotential(CartesianPotential):
         
         latex = r"$\Phi = -\frac{GM}{\sqrt{r^2 + a^2}}$"
         
-        unit_system = self._validate_unit_system(unit_system)
-        
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+            parameters["r_0"] = [0.,0.,0.]*u.kpc
         
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "a" in parameters.keys(), "You must specify the parameter 'a'."
         
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_plummer_model(unit_system.bases)
-        super(PlummerPotential, self).__init__(unit_system, 
+        f,df = _cartesian_plummer_model(units)
+        super(PlummerPotential, self).__init__(units, 
                                                  f=f, f_prime=df, 
                                                  latex=latex, 
                                                  parameters=parameters)
@@ -452,7 +442,7 @@ def _cartesian_logarithmic_lj_model(bases):
 
 class LogarithmicPotentialLJ(CartesianPotential):
 
-    def __init__(self, unit_system, **parameters):
+    def __init__(self, units, **parameters):
         """ Represents a triaxial Logarithmic potential (e.g. triaxial halo).
             
             $\Phi_{halo} = v_{halo}^2\ln(C1x^2 + C2y^2 + C3xy + z^2/q_z^2 + r_halo^2)$
@@ -461,7 +451,7 @@ class LogarithmicPotentialLJ(CartesianPotential):
             
             Parameters
             ----------
-            unit_system : UnitSystem
+            units : list
                 Defines a system of physical base units for the potential.
             parameters : dict
                 A dictionary of parameters for the potential definition.
@@ -469,18 +459,16 @@ class LogarithmicPotentialLJ(CartesianPotential):
         
         latex = "$\\Phi_{halo} = v_{halo}^2\\ln(C_1x^2 + C_2y^2 + C_3xy + z^2/q_z^2 + r_halo^2)$"
         
-        unit_system = self._validate_unit_system(unit_system)
-        
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+            parameters["r_0"] = [0.,0.,0.]*u.kpc
         
         for p in ["q1", "q2", "qz", "phi", "v_halo", "r_halo"]:
             assert p in parameters.keys(), \
                     "You must specify the parameter '{0}'.".format(p)
         
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_logarithmic_lj_model(unit_system.bases)
-        super(LogarithmicPotentialLJ, self).__init__(unit_system, 
+        f,df = _cartesian_logarithmic_lj_model(units)
+        super(LogarithmicPotentialLJ, self).__init__(units, 
                                                      f=f, f_prime=df, 
                                                      latex=latex, 
                                                      parameters=parameters)
@@ -540,22 +528,20 @@ def _cartesian_axisymmetric_nfw_model(bases):
     
 class AxisymmetricNFWPotential(CartesianPotential):
     
-    def __init__(self, unit_system, **parameters):
+    def __init__(self, units, **parameters):
         
         latex = "$\sigma$"
         
-        unit_system = self._validate_unit_system(unit_system)
-        
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+            parameters["r_0"] = [0.,0.,0.]*u.kpc
         
         assert "log_m" in parameters.keys(), "You must specify a log-mass."
         assert "qz" in parameters.keys(), "You must specify the parameter 'qz'."
         assert "Rs" in parameters.keys(), "You must specify the parameter 'Rs'."
         
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_axisymmetric_nfw_model(unit_system.bases)
-        super(AxisymmetricNFWPotential, self).__init__(unit_system, 
+        f,df = _cartesian_axisymmetric_nfw_model(units)
+        super(AxisymmetricNFWPotential, self).__init__(units, 
                                                  f=f, f_prime=df, 
                                                  latex=latex, 
                                                  parameters=parameters)
@@ -600,7 +586,7 @@ def _cartesian_axisymmetric_logarithmic_model(bases):
 
 class AxisymmetricLogarithmicPotential(CartesianPotential):
 
-    def __init__(self, unit_system, **parameters):
+    def __init__(self, units, **parameters):
         """ Represents an axisymmetric Logarithmic potential
             
             $\Phi_{halo} = v_{c}^2/2\ln(x^2 + y^2 + z^2/q_z^2)$
@@ -609,7 +595,7 @@ class AxisymmetricLogarithmicPotential(CartesianPotential):
             
             Parameters
             ----------
-            unit_system : UnitSystem
+            units : list
                 Defines a system of physical base units for the potential.
             parameters : dict
                 A dictionary of parameters for the potential definition.
@@ -617,18 +603,16 @@ class AxisymmetricLogarithmicPotential(CartesianPotential):
         
         latex = "$\\Phi_{halo} = v_{halo}^2\\ln(C_1x^2 + C_2y^2 + C_3xy + z^2/q_z^2 + r_halo^2)$"
         
-        unit_system = self._validate_unit_system(unit_system)
-        
         if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*unit_system["length"]
+            parameters["r_0"] = [0.,0.,0.]*u.kpc
         
         for p in ["qz", "v_c"]:
             assert p in parameters.keys(), \
                     "You must specify the parameter '{0}'.".format(p)
         
         # get functions for evaluating potential and derivatives
-        f,df = _cartesian_axisymmetric_logarithmic_model(unit_system.bases)
-        super(AxisymmetricLogarithmicPotential, self).__init__(unit_system, 
+        f,df = _cartesian_axisymmetric_logarithmic_model(units)
+        super(AxisymmetricLogarithmicPotential, self).__init__(units, 
                                                      f=f, f_prime=df, 
                                                      latex=latex, 
                                                      parameters=parameters)

@@ -207,6 +207,12 @@ def plot_xz_animation(potential, s, p, filename=""):
     print("or: {0}".format((sum(~idx)-_diff) / _N))
 
 if __name__ == "__main__":
+    print(ffmpeg_cmd.format(os.path.join(plot_path, "correct_%4d.png"),
+                                os.path.join(plot_path, "correct.mp4")))
+    print(ffmpeg_cmd.format(os.path.join(plot_path, "wrong_%4d.png"),
+                                os.path.join(plot_path, "wrong.mp4")))
+    sys.exit(0)
+
     N = 10000
     
     # read in lm10 stuffs

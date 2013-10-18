@@ -13,7 +13,6 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from ...misc.units import UnitSystem
 from ..leapfrog import LeapfrogIntegrator
 from ...potential import *
 from ...potential.pal5 import Palomar5
@@ -24,7 +23,7 @@ animation_path = os.path.join(plot_path, "animation")
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-gal_units = UnitSystem(u.M_sun, u.kpc, u.Myr, u.radian)
+gal_units = (u.M_sun, u.kpc, u.Myr, u.radian)
 
 def plot_energies(potential, ts, xs, vs, axes1=None):
     E_kin = 0.5*np.sum(vs**2, axis=-1)
@@ -82,7 +81,7 @@ class TestIntegrate(object):
 
     @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ])   
     def test_point_mass_energy(self, name, Integrator):
-        potential = PointMassPotential(unit_system=UnitSystem(u.M_sun, u.au, u.yr),
+        potential = PointMassPotential(units=(u.M_sun, u.au, u.yr),
                                        m=1*u.M_sun,
                                        r_0=[0.,0.,0.]*u.au)
 
@@ -99,7 +98,7 @@ class TestIntegrate(object):
         
     @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ]) 
     def test_hernquist_energy(self, name, Integrator):
-        potential = HernquistPotential(unit_system=gal_units,
+        potential = HernquistPotential(units=gal_units,
                                            m=1E10*u.M_sun, 
                                            c=0.7*u.kpc)
 
@@ -116,7 +115,7 @@ class TestIntegrate(object):
     
     @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ]) 
     def test_miyamoto_energy(self, name, Integrator):
-        potential = MiyamotoNagaiPotential(unit_system=gal_units,
+        potential = MiyamotoNagaiPotential(units=gal_units,
                                                m=1E11*u.M_sun, 
                                                a=6.5*u.kpc, 
                                                b=0.26*u.kpc)
@@ -134,7 +133,7 @@ class TestIntegrate(object):
     
     @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ]) 
     def test_log_potential(self, name, Integrator):
-        potential = LogarithmicPotentialLJ(unit_system=gal_units,
+        potential = LogarithmicPotentialLJ(units=gal_units,
                                                v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
                                                q1=1.38,
                                                q2=1.0,
@@ -156,7 +155,7 @@ class TestIntegrate(object):
     
     @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ]) 
     def test_log_potential_adaptive(self, name, Integrator):
-        potential = LogarithmicPotentialLJ(unit_system=gal_units,
+        potential = LogarithmicPotentialLJ(units=gal_units,
                                                v_halo=(121.858*u.km/u.s).to(u.kpc/u.Myr),
                                                q1=1.38,
                                                q2=1.0,

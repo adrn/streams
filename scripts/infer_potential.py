@@ -34,8 +34,9 @@ except ImportError:
 
 # Project
 from streams.simulation.config import read
-from streams.observation.gaia import add_uncertainties_to_particles
-from streams.inference import infer_potential, max_likelihood_parameters
+from streams.observation.gaia import add_uncertainties_to_particles,\
+
+from streams.inference import StatisticalModel, back_integrate_likelihood
 from streams.plot import emcee_plot, bootstrap_scatter_plot
 
 global pool
@@ -44,27 +45,36 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
+# TODO: this is A HACK
+from streams.coordinates import gc_to_hel
+def particles_to_heliocentric(particles):
+    # Transform to heliocentric coordinates
+    return gc_to_hel(particles.r[:,0], particles.r[:,1], particles.r[:,2],
+                     particles.v[:,0], particles.v[:,1], particles.v[:,2])
+
 def main(config_file, job_name=None):
     
     # Read in simulation parameters from config file
     config = read(config_file)
     
     # Read particles and posterior from whatever simulation
+    # TODO: this could be much cleaner...
     if config['particle_source'] == 'lm10':
         from streams.io.lm10 import particles_today, satellite_today, time
-        from streams.inference.lm10 import ln_posterior, param_ranges
         from streams.potential.lm10 import true_params, _true_params, param_to_latex
+        from streams.potential.lm10 import LawMajewski2010 as Potential
+
     elif config['particle_source'] == 'pal5':
         from streams.io.pal5 import particles_today, satellite_today, time
-        from streams.inference.pal5 import ln_likelihood, ln_posterior, param_ranges
         from streams.potential.pal5 import true_params, _true_params, param_to_latex
+        from streams.potential.pal5 import Palomar5 as Potential
     elif 'sgr' in config['particle_source']:
         # one of Kathryn's Sgr simulations, in the form of Sgr2.5e8
         m = config['particle_source'][3:]
         from streams.io.sgr import mass_selector
         particles_today, satellite_today, time = mass_selector(m)
-        from streams.inference.old_likelihood import ln_likelihood, ln_posterior, param_ranges
         from streams.potential.lm10 import true_params, _true_params, param_to_latex
+        from streams.potential.lm10 import LawMajewski2010 as Potential
     else:
         raise ValueError("Invalid particle source {0}"
                          .format(config["particle_source"]))
@@ -133,10 +143,12 @@ def main(config_file, job_name=None):
         logger.debug("Adding observational errors...")
         
         pre_error_particles = copy.copy(particles)
-        particles = add_uncertainties_to_particles(particles, 
-                                                radial_velocity_error=rv_error,
-                                                distance_error_percent=d_error,
-                                                proper_motion_error=mu_error)
+        data_particles = add_uncertainties_to_particles(particles, 
+                                            radial_velocity_error=rv_error,
+                                            distance_error_percent=d_error,
+                                            proper_motion_error=mu_error)
+        data = particles_to_heliocentric(data_particles)
+        data_errors = rr_lyrae_observational_errors(*data)
     
     # Create initial position array for walkers
     for p_name in config["model_parameters"]:
@@ -182,24 +194,35 @@ def main(config_file, job_name=None):
         all_best_parameters = []
         for bb in range(B):
             # bootstrap resample particles
+            # TODO: broken with B > 1
+            # TODO: remove bootstrap?!
             if B > 1:
                 p_idx = np.random.randint(Nparticles*B, size=Nparticles)
                 b_particles = particles[p_idx]
             else:
                 b_particles = particles
             
+            potential_params, satellite, 
+                          data, data_errors, 
+                          LawMajewski2010, t1, t2)
+            largs = (config["model_parameters"], satellite, 
+                     data, data_errors, Potential, t1, t2)
+            stat_model = StatisticalModel(config["model_parameters"], 
+                                          back_integrate_likelihood,
+                                          likelihood_args=largs,
+                                          parameter_bounds=parameter_bounds)
+
             try:
-                sampler = infer_potential(ln_posterior, p0, steps=config["steps"],
-                                          burn_in=config["burn_in"], pool=pool,
-                                          args=(config["model_parameters"], 
-                                                b_particles, 
-                                                satellite, 
-                                                t1, t2, resolution))
+                sampler = stat_model.run(p0, nsteps=config["steps"], 
+                                         nburn=config["burn_in"],
+                                         pool=pool)
             except:
                 if config["mpi"]: pool.close()
                 raise
             
-            best_parameters = max_likelihood_parameters(sampler)
+            # TODO: re-write this...
+            #best_parameters = max_likelihood_parameters(sampler)
+            best_parameters = []
             
             if len(best_parameters) == 0:
                 best_parameters = np.array([0.]*len(config['model_parameters']))

@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import cPickle as pickle
+import inspect
 
 # Third-party
 import astropy.units as u
@@ -16,6 +17,7 @@ from astropy.io.misc import fnpickle, fnunpickle
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 from matplotlib import rc_context, rcParams, cm
 from matplotlib.patches import Rectangle, Ellipse
 import scipy.optimize as so
@@ -27,10 +29,8 @@ from streams.observation.gaia import parallax_error, proper_motion_error, \
 from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
 
 from streams.inference import relative_normalized_coordinates, generalized_variance, minimum_distance_matrix
-from streams.inference.lm10 import timestep
-from streams.potential import LawMajewski2010
-from streams.potential.lm10 import true_params, _true_params, param_to_latex
-from streams.integrate.satellite_particles import SatelliteParticleIntegrator
+from streams.potential.lm10 import LawMajewski2010, true_params, _true_params, param_to_latex
+from streams.integrate.satellite_particles import satellite_particles_integrate
 from streams.io.lm10 import particle_table, particles_today, satellite_today, time
 from streams.io import read_table
 from streams.plot import *
@@ -52,7 +52,8 @@ def normed_objective_plot(**kwargs):
     
     # Read in the LM10 data
     np.random.seed(142)
-    particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+    Nparticles = 100
+    particles = particles_today(N=Nparticles, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
     satellite = satellite_today()
     t1,t2 = time()
 
@@ -70,6 +71,7 @@ def normed_objective_plot(**kwargs):
     
     if not os.path.exists(data_file):
         variances = dict()
+        acc = np.zeros((Nparticles+1,3)) # placeholder
         for param in ['q1','qz','v_halo','phi']:
             if not variances.has_key(param):
                 variances[param] = []
@@ -82,8 +84,10 @@ def normed_objective_plot(**kwargs):
                 params = true_params.copy()
                 params[param] = stat
                 lm10 = LawMajewski2010(**params)
-                integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
-                s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
+                s_orbit,p_orbits = satellite_particles_integrate(satellite, particles,
+                                                     potential,
+                                                     potential_args=(Nparticles+1, acc), \
+                                                     time_spec=dict(t1=t1, t2=t2, dt=-1.))
                 variances[param].append(generalized_variance(lm10, s_orbit, p_orbits))
         
         # pickle the data to a file
@@ -105,9 +109,9 @@ def normed_objective_plot(**kwargs):
     ax.yaxis.tick_left()
     ax.legend(loc='upper right', fancybox=True)
     
-    ax.set_yticks([])
+    #ax.set_yticks([])
     ax.set_xlabel('Normalized parameter value', labelpad=15)
-    ax.set_ylabel('Generalized variance', labelpad=15)
+    ax.set_ylabel('$\log$ (Generalized variance)', labelpad=15)
     
     fig.savefig(os.path.join(plot_path, "objective_function.pdf"))
 
@@ -210,21 +214,18 @@ def gaia_spitzer_errors(**kwargs):
 def phase_space_d_vs_time(**kwargs):
     """ Plot the PSD for 10 stars vs. back-integration time. """
     
+    N = int(kwargs.get("N", 10))
+    seed = int(kwargs.get("seed", 112358))
+    N_integrate = 1000
+
     # Read in the LM10 data
-    np.random.seed(142)
-    particles = particles_today(N=100, expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
+    np.random.seed(seed)
+    particles = particles_today(N=N_integrate, 
+                                expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
     satellite = satellite_today()
     t1,t2 = time()
+    t2 = -6000.
 
-    N = int(kwargs.get("N", 10))
-    seed = int(kwargs.get("seed", 41))
-
-    #np.random.seed(112)
-    np.random.seed(seed)
-    randidx = np.random.randint(100, size=N)
-    selected_star_idx = np.zeros(100).astype(bool)
-    selected_star_idx[randidx] = True
-    
     wrong_params = true_params.copy()
     wrong_params['qz'] = 1.25*wrong_params['qz']
     #wrong_params['v_halo'] = wrong_params['v_halo']
@@ -243,8 +244,7 @@ def phase_space_d_vs_time(**kwargs):
         s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
         
         R,V = relative_normalized_coordinates(potential, s_orbit, p_orbits) 
-        #D_ps = np.sqrt(np.sum(R**2, axis=-1)/2 + np.sum(V**2, axis=-1))
-        D_ps = np.sqrt(np.sum(R**2, axis=-1)/2)
+        D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
         D_pses.append(D_ps)
         sat_R.append(np.sqrt(np.sum(s_orbit._r**2, axis=-1)))
         ts.append(s_orbit._t)
@@ -270,30 +270,51 @@ def phase_space_d_vs_time(**kwargs):
                 'axes.labelweight' : 100}
     
     with rc_context(rc=rcparams):  
-        fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(8,12))
-        axes[0].axhline(np.sqrt(2), linestyle='--', color='#444444')
-        axes[1].axhline(np.sqrt(2), linestyle='--', color='#444444')
+        #fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(8,12))
+        fig = plt.figure(figsize=(10,12))
+        gs = GridSpec(2,4)
+
+        axes = [plt.subplot(gs[0,:3]), plt.subplot(gs[1,:3]),
+                plt.subplot(gs[0,3]), plt.subplot(gs[1,3])]
+        axes[0].axhline(2, linestyle='--', color='#444444')
+        axes[1].axhline(2, linestyle='--', color='#444444')
         
-        for ii in randidx:
+        for ii in range(N):
             for jj in range(2):
                 d = D_pses[jj][:,ii]
                 sR = sat_R[jj]
                 axes[jj].semilogy(ts[jj]/1000, d, alpha=0.25, color=rcparams['lines.color'])
-                axes[jj].semilogy(ts[jj]/1000, 0.3*0.9*(sR-sR.min())/(sR.max()-sR.min()) + 0.45, 
-                                  alpha=0.75, color='#CA0020')
-                #axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='o',
-                #                  alpha=0.9, color=rcparams['lines.color'], 
-                #                  markersize=8)
                 axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='+',
                                   markeredgewidth=2, markeredgecolor='k',
                                   alpha=0.9, color=rcparams['lines.color'], 
                                   markersize=10)
-        
-        axes[1].set_ylim(0.4,20)
-        axes[1].set_xlim(-6, 0)
+
+        axes[0].set_ylim(0.6,20)
+        axes[0].set_xlim(-6.1, 0.1)
+        axes[1].set_ylim(axes[0].get_ylim())
+        axes[1].set_xlim(axes[0].get_xlim())
+
+        # vertical histograms of D_ps values
+        ylim = axes[0].get_ylim()
+        bins = np.logspace(np.log10(ylim[0]), np.log10(ylim[1]), 50)
+        n,xx,patches = axes[2].hist(np.min(D_pses[0], axis=0), bins=bins,
+                                      orientation='horizontal')
+        n,xx,patches = axes[3].hist(np.min(D_pses[1], axis=0), bins=bins,
+                                      orientation='horizontal')
+        axes[2].set_yscale('log')
+        axes[3].set_yscale('log')
+
+        axes[2].xaxis.set_visible(False)
+        axes[3].xaxis.set_visible(False)
+        axes[2].yaxis.set_visible(False)
+        axes[3].yaxis.set_visible(False)
+
+        axes[2].set_ylim(axes[0].get_ylim())
+        axes[3].set_ylim(axes[1].get_ylim())
         
         axes[0].xaxis.tick_bottom()
         axes[1].xaxis.tick_bottom()
+        axes[0].xaxis.set_visible(False)
     
     axes[1].set_xlabel("Backwards integration time [Gyr]")
     axes[0].set_ylabel(r"$D_{ps}$", rotation='horizontal')
@@ -340,10 +361,10 @@ def sgr(**kwargs):
         ax.plot(pdata['x'], pdata['z'], marker='.', alpha=0.85, ms=9)
         
         # add solar symbol
-        ax.text(-8., 0., s=r"$\odot$", fontsize=32)
+        ax.text(-8.-5.75, -3., s=r"$\odot$", fontsize=32)
 
         ax.set_xlabel("$X_{GC}$ [kpc]")
-        ax.set_xlabel("$X_{GC}$ [kpc]")
+        ax.set_ylabel("$Z_{GC}$ [kpc]")
     
     ax.set_xlim(extent['x'])
     ax.set_ylim(extent['y'])
@@ -510,7 +531,8 @@ def when_particles_recombine(**kwargs):
     """
 
     N = int(kwargs.get("N",10000))
-    D_ps_limit = float(kwargs.get("D_ps_limit", 2.1))
+    D_ps_limit = float(kwargs.get("D_ps_limit", 2.))
+    overwrite = kwargs.get("overwrite", False)
 
     from streams.io.sgr import mass_selector, usys_from_file
     from streams.integrate import LeapfrogIntegrator
@@ -532,66 +554,68 @@ def when_particles_recombine(**kwargs):
     tub = (data['tub']*usys['time']).to(u.Myr).value
     R_orbit = np.sqrt(np.sum(xs**2, axis=-1))
     
-    tub_file = os.path.join(_full_path, "tub_back{0}_{1}.pickle".format(N,D_ps_limit))
-    if overwrite and os.path.exists(tub_file):
-        os.remove(tub_file)
-
-    if not os.path.exists(tub_file):
-        # read full orbits of particles from running on hotfoot
-        p_x = np.load(os.path.join(project_root, "data", "{0}particles_p.npy".format(N)))
-        s_x = np.load(os.path.join(project_root, "data", "{0}particles_s.npy".format(N)))
-
-        r_tide = potential._tidal_radius(m=satellite._m,
-                                         r=s_x[...,:3])[:,:,np.newaxis]
-
-        v_esc = potential._escape_velocity(m=satellite._m,
-                                           r_tide=r_tide)
-    
-        R,V = (p_x[...,:3] - s_x[...,:3]) / r_tide, (p_x[...,3:] - s_x[...,3:]) / v_esc
-        D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
-        tub_back = []
-        for ii in range(D_ps.shape[1]):
-            idx = D_ps[:,ii] < D_ps_limit
-            
-            if np.any(idx):
-                tub_back.append(np.median(ts[idx]))
-                #tub_back.append(ts[idx][-1])
-            else:
-                #print("min Dps:",np.min(D_ps[:,ii]))
-                #print(ts[D_ps[:,ii].argmin()])
-                tub_back.append(np.nan)
-        tub_back = np.array(tub_back)
-        fnpickle(tub_back, tub_file)
-
-    tub_back = fnunpickle(tub_file)
-    bound_stars_back = [np.sum(tub_back > t) for t in ts]
-
     from scipy.signal import argrelextrema
     apos,xxx = argrelextrema(R_orbit, np.greater)
     peris,xxx = argrelextrema(R_orbit, np.less)    
 
-    fig,axes = plt.subplots(3,1,sharex=True,figsize=(18,12))
-    fig.suptitle("Dps boundary: {0}".format(D_ps_limit))
+    fig,axes = plt.subplots(2,1,sharex=True,figsize=(18,12))
+    fig.suptitle("Capture condition: $D_{{ps}}$<{0}".format(D_ps_limit), fontsize=32)
     
-    bins = np.linspace(0., max(tub), 100)
-    N_bootstrap = 10
-    for ii in range(N_bootstrap):
-        tub_b = tub[np.random.randint(len(tub), size=N)]
-        bound_stars = [np.sum(tub_b > t) for t in ts]
-        axes[0].semilogy(ts, bound_stars/max(bound_stars), color='k', lw=1., alpha=0.25)
-        n,bins,patches = axes[1].hist(tub_b[tub_b!=0], normed=True, bins=bins, color='k', histtype="step", alpha=0.25)
+    #for D_ps_limit,c in zip([1.5, 2., 2.5, 3.],["#1A9641", "#0571B0","#CA0020","#7B3294"]):
+    for D_ps_limit,c in zip([2.],["#1A9641"]):
+        tub_file = os.path.join(_full_path, "tub_back{0}_{1}.pickle".format(N,D_ps_limit))
+        if overwrite and os.path.exists(tub_file):
+            os.remove(tub_file)
 
-    axes[0].set_ylabel("Frac. of bound particles")
-    axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color='#1A9641', lw=3.)
+        if not os.path.exists(tub_file):
+            # read full orbits of particles from running on hotfoot
+            p_x = np.load(os.path.join(project_root, "data", "{0}particles_p.npy".format(N)))
+            s_x = np.load(os.path.join(project_root, "data", "{0}particles_s.npy".format(N)))
+
+            r_tide = potential._tidal_radius(m=satellite._m,
+                                             r=s_x[...,:3])[:,:,np.newaxis]
+
+            v_esc = potential._escape_velocity(m=satellite._m,
+                                               r_tide=r_tide)
+
+            R,V = (p_x[...,:3] - s_x[...,:3]) / r_tide, (p_x[...,3:] - s_x[...,3:]) / v_esc
+            D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
+            tub_back = []
+            for ii in range(D_ps.shape[1]):
+                idx = D_ps[:,ii] < D_ps_limit
+                if np.any(ts[idx] == ts[0]):
+                    tub_back.append(ts[0])
+                elif np.any(idx):
+                    #tub_back.append(np.median(ts[idx]))
+                    tub_back.append(np.mean(ts[idx]))
+                else:
+                    #print("min Dps:",np.min(D_ps[:,ii]))
+                    #print(ts[D_ps[:,ii].argmin()])
+                    tub_back.append(np.nan)
+            tub_back = np.array(tub_back)
+            fnpickle(tub_back, tub_file)
+
+        tub_back = fnunpickle(tub_file)
+        bound_stars_back = np.array([np.sum(tub_back > t) for t in ts])
+        #axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color=c, 
+        axes[0].semilogy(ts, bound_stars_back/float(p_x.shape[1]), color=c, 
+                         lw=1.5, label="recovered mass-loss",
+                         alpha=0.75)
+
+    #n,bins,patches = axes[1].hist(tub, normed=True, bins=bins, color='k', histtype="step", alpha=0.25)
+    
+    bound_stars = [np.sum(tub > t) for t in ts]
+    axes[0].semilogy(ts, bound_stars/max(bound_stars), color='#333333', lw=1.5, alpha=0.75, label="true mass-loss")
+    axes[0].set_ylabel("Frac. bound stars")
     axes[0].set_ylim(1E-2, 1.1)
 
-    axes[1].hist(tub_back, normed=True, bins=bins, color='#1A9641', histtype="step", lw=3.)
-    axes[1].yaxis.set_ticks([])
+    #axes[1].hist(tub_back, normed=True, bins=bins, color='#1A9641', histtype="step", lw=.)
+    #axes[1].yaxis.set_ticks([])
     
-    axes[-1].plot(ts, R_orbit)
+    axes[-1].plot(ts, R_orbit, lw=2.)
     axes[-1].plot(t1, np.sqrt(np.sum(satellite._r**2, axis=-1)), marker='o', color='r')
     axes[-1].set_xlabel("Time [Myr]")
-    axes[-1].set_ylabel("$R_{GC}$ of sat.")
+    axes[-1].set_ylabel("Satellite $R_{GC}$ [kpc]")
     axes[-1].set_xlim(min(ts), max(ts))
     
     for ii,peri in enumerate(peris):
@@ -632,18 +656,22 @@ if __name__ == '__main__':
                         default=False, help="Be chatty! (default = False)")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", 
                         default=False, help="Be quiet! (default = False)")
+    parser.add_argument("-l", "--list", action="store_true", dest="list", 
+                        default=False, help="List all functions")
     parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite", 
                         default=False, help="Overwrite existing files.")
     parser.add_argument("-f", "--function", dest="function", type=str,
-                        required=True, help="The name of the function to execute.")
+                        help="The name of the function to execute.")
     parser.add_argument("--kwargs", dest="kwargs", nargs="+", type=str,
                         help="kwargs passed in to whatever function you call.")
-
+    
     args = parser.parse_args()
     try:
         kwargs = dict([tuple(k.split("=")) for k in args.kwargs])
     except TypeError:
         kwargs = dict()
+    
+    kwargs["overwrite"] = args.overwrite
 
     # Set logger level based on verbose flags
     if args.verbose:
@@ -653,6 +681,17 @@ if __name__ == '__main__':
     else:
         logger.setLevel(logging.INFO)
     
+    def _print_funcs():
+        fs = inspect.getmembers(sys.modules[__name__], 
+                                lambda member: inspect.isfunction(member) and member.__module__ == __name__ and not member.__name__.startswith("_"))
+        print("\n".join([f[0] for f in fs]))
+
+    if args.list:
+        print("="*79)
+        _print_funcs()
+        print("="*79)
+        sys.exit(0)
+
     func = getattr(sys.modules[__name__], args.__dict__.get("function"))
     func(**kwargs)
 

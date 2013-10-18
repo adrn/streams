@@ -19,9 +19,7 @@ from astropy.constants import G
 
 # Project
 from .core import read_table, table_to_particles
-from ..util import project_root
-from ..dynamics import ParticleCollection, OrbitCollection
-from ..misc import UnitSystem
+from ..util import project_root, u_galactic
 
 __all__ = ["particles", "satellite", "time", "orphan_usys"]
 
@@ -31,7 +29,7 @@ X = (G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value / 0.15**3 * 1E7)**-0.5
 length_unit = u.Unit("0.15 kpc")
 mass_unit = u.Unit("1E7 M_sun")
 time_unit = u.Unit("{:08f} Myr".format(X))
-orphan_usys = UnitSystem(length_unit, mass_unit, time_unit)
+orphan_usys = (length_unit, mass_unit, time_unit)
 
 def particles(N=None, expr=None):
     """ Read in particles from Kathryn's run of a satellite similar to 
@@ -54,7 +52,7 @@ def particles(N=None, expr=None):
                             position_columns=["x","y","z"],
                             velocity_columns=["vx","vy","vz"])
     
-    return pc.to(UnitSystem.galactic())
+    return pc.to(u_galactic)
 
 def satellite_orbit():
     """ Read in the position and velocity of the Orphan satellite center 

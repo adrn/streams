@@ -21,9 +21,7 @@ from astropy.constants import G
 
 # Project
 from .core import read_table, table_to_particles, table_to_orbits
-from ..util import project_root
-from ..dynamics import ParticleCollection, OrbitCollection
-from ..misc import UnitSystem
+from ..util import project_root, u_galactic
 
 __all__ = ["mass_selector", "usys_from_file"]
 
@@ -41,7 +39,7 @@ def usys_from_file(scfpar):
     length_unit = u.Unit("{0} kpc".format(length))
     mass_unit = u.Unit("{0} M_sun".format(mass))
     time_unit = u.Unit("{:08f} Myr".format(X))
-    usys = UnitSystem(length_unit, mass_unit, time_unit)
+    usys = (length_unit, mass_unit, time_unit)
     
     return usys
 
@@ -69,8 +67,11 @@ def mass_selector(m):
         pc = table_to_particles(data, usys,
                                 position_columns=["x","y","z"],
                                 velocity_columns=["vx","vy","vz"])
-        
-        return pc.to(UnitSystem.galactic())
+        pc = pc.to(u_galactic)
+
+        t_unit = filter(lambda x: x.is_equivalent(u.s), usys)[0]
+        pc.tub = (np.array(data["tub"])*t_unit).to(u.Myr).value
+        return pc
     
     def satellite_orbit():
         """ Read in the position and velocity of the Orphan satellite center 

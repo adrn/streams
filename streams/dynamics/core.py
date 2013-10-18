@@ -39,37 +39,25 @@ class DynamicalBase(object):
     @property
     def _v(self):
         return self._x[...,self.ndim:]
-        
-    @property
-    def _dr(self):
-        return self._dx[...,:self.ndim]
-    
-    @property
-    def _dv(self):
-        return self._dx[...,self.ndim:]
     
     @property
     def r(self):
-        return self._r * self.unit_system['length']
-        
-    @property
-    def dr(self):
-        return self._dr * self.unit_system['length']
+        r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
+        return self._r * r_unit
     
     @property
     def v(self):
-        return self._v * self.unit_system['length'] / self.unit_system['time']
-    
-    @property
-    def dv(self):
-        return self._dv * self.unit_system['length'] / self.unit_system['time']
+        r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
+        t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
+        return self._v * r_unit / t_unit
     
     @property
     def m(self):
-        return self._m * self.unit_system['mass']
+        m_unit = filter(lambda x: x.is_equivalent(u.kg), self.units)[0]
+        return self._m * m_unit
     
     @abstractmethod
-    def to(self, unit_system):
+    def to(self, units):
         pass
         
     def __repr__(self):
