@@ -165,13 +165,13 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     # DISTANCE ERROR -- assuming 2% distances from RR Lyrae mid-IR
     if kwargs.has_key("distance_error_percent") and \
         kwargs["distance_error_percent"] is not None:
-        D_err = kwargs["distance_error_percent"] / 100. * D.value
+        D_err = kwargs["distance_error_percent"] / 100. * D
     D += np.random.normal(0., D_err.value)*D.unit
     
     # RADIAL VELOCITY ERROR -- 10 km/s
     if kwargs.has_key("radial_velocity_error") and \
         kwargs["radial_velocity_error"] is not None:
-        vr_err = kwargs["radial_velocity_error"]
+        vr_err = kwargs["radial_velocity_error"]*np.ones(len(x))
     
     vr_err = vr_err.to(u.km/u.s)
     vr += np.random.normal(0., vr_err.value, size=len(vr))*vr_err.unit
@@ -180,13 +180,13 @@ def rr_lyrae_add_observational_uncertainties(x,y,z,vx,vy,vz,**kwargs):
     if kwargs.has_key("proper_motion_error") and \
         kwargs["proper_motion_error"] is not None:
         dmu = kwargs["proper_motion_error"]
-        mul_err = mub_err = dmu
+        mul_err = mub_err = dmu*np.ones(len(x))
     
     if kwargs.has_key("proper_motion_error_frac") and \
         kwargs["proper_motion_error_frac"] is not None:
         prc = kwargs["proper_motion_error_frac"]
         dmu = proper_motion_error(V, rrl_V_minus_I)*prc
-        mul_err = mub_err = dmu
+        mul_err = mub_err = dmu*np.ones(len(x))
     
     mul_err = mul_err.to(u.rad/u.s)
     mub_err = mub_err.to(u.rad/u.s)
