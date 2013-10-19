@@ -34,8 +34,7 @@ def back_integrate_likelihood(p, potential_params, satellite,
     # First need to pull apart the parameters p -- first few are the 
     #   potential parameters, then the true position of the stars, then
     #   the time the stars came unbound from their progenitor.
-    Ndim = len(data)
-    Nparticles = len(data[0]) # in observed coordinates!
+    Nparticles,Ndim = data.shape
     Nparams = len(potential_params)
 
     # Use the specified Potential class and parameters 
@@ -78,11 +77,11 @@ def back_integrate_likelihood(p, potential_params, satellite,
 
         log_p_D_given_x = -0.5
         for jj in range(Ndim):
-            log_p_D_given_x *= data_errors[jj][ii]**2
+            log_p_D_given_x *= data_errors[ii,jj]**2
         
-        log_p_D_given_x = log_p_D_given_x.value
         for jj in range(Ndim):
-            log_p_D_given_x += -0.5 * ((hel[jj][ii]-data[jj][ii])**2 / data_errors[jj][ii]**2).decompose()
+            h = hel[jj][ii].decompose([u.kpc, u.Myr, u.radian, u.M_sun]).value
+            log_p_D_given_x += -0.5 * ((h-data[ii,jj])**2 / data_errors[ii,jj]**2)
 
         l[ii] = np.log(pref) + yy + log_p_D_given_x
     
