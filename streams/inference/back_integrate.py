@@ -18,9 +18,74 @@ import astropy.units as u
 from ..dynamics import Particle
 from ..inference import generalized_variance
 from ..integrate.satellite_particles import satellite_particles_integrate
-from ..coordinates import gc_to_hel
 
 __all__ = ["back_integrate_likelihood", "variance_likelihood"]
+
+def _gc_to_hel(gc):
+    """ Convert galactocentric to heliocentric, assuming galactic
+        units: kpc, Myr, M_sun, radian
+
+        gc should be Nparticles, Ndim
+    """
+    Rsun = 8. # kpc
+    Vcirc = 0.224996676312 # kpc / Myr
+    
+    x,y,z,vx,vy,vz = gc.T
+
+    # transform to heliocentric cartesian
+    x += Rsun
+    vy -= Vcirc
+    
+    # transform from cartesian to spherical
+    d = np.sqrt(x**2 + y**2 + z**2)
+    l = np.arctan2(y, x)
+    b = np.pi/2. - np.arccos(z/d)
+    
+    # transform cartesian velocity to spherical
+    d_xy = np.sqrt(x**2 + y**2)
+    vr = (x*vx + y*vy + z*vz) / d # velocity 
+
+    mu_l = -(vx*y - x*vy) / d_xy**2 # rad/Myr
+    mu_b = -(z*(x*vx + y*vy) - d_xy**2*vz) / (d**2 * d_xy) # rad/Myr
+    
+    hel = np.zeros_like(gc).T
+    for ii,col in enumerate([l,b,d,mu_l,mu_b,vr]):
+        hel[ii] = col
+
+    return hel.T
+
+def _hel_to_gc(hel):
+    """ Convert heliocentric to galactocentric, assuming galactic
+        units: kpc, Myr, M_sun, radian
+
+        gc should be Nparticles, Ndim
+    """
+    Rsun = 8. # kpc
+    Vcirc = 0.224996676312 # kpc / Myr
+
+    l,b,d,mul,mub,vr = hel.T
+
+    # transform from spherical to cartesian
+    x = d*np.cos(b)*np.cos(l)
+    y = d*np.cos(b)*np.sin(l)
+    z = d*np.sin(b)
+    
+    # transform spherical velocity to cartesian
+    omega_l = -mul
+    omega_b = -mub
+    
+    vx = x/d*vr + y*omega_l + z*np.cos(l)*omega_b
+    vy = y/d*vr - x*omega_l + z*np.sin(l)*omega_b
+    vz = z/d*vr - d*np.cos(b)*omega_b
+    
+    x -= Rsun
+    vy += Vcirc
+    
+    gc = np.zeros_like(hel).T
+    for ii,col in enumerate([x,y,z,vx,vy,vz]):
+        gc[ii] = col
+
+    return gc.T
 
 def back_integrate_likelihood(p, potential_params, satellite, 
                               data, data_errors, 
@@ -44,12 +109,7 @@ def back_integrate_likelihood(p, potential_params, satellite,
     # These are the true positions/velocities of the particles, which we 
     #   add as parameters in the model
     x = np.array(p[Nparams:Nparams+(Nparticles*6)]).reshape(Nparticles,6)
-    _r = x[:,:3].T*u.kpc
-    _v = x[:,3:].T*u.kpc/u.Myr
-    hel = gc_to_hel(_r[0],_r[1],_r[2],_v[0],_v[1],_v[2])
-
-    #log_p_D_given_x = -0.5 * (np.prod(data_errors**2) + np.sum((x-data)**2 / data_errors**2, axis=-1))
-    # TODO: this comparison should be done in data space!
+    hel = _gc_to_hel(x)
 
     # These are the unbinding times for each particle
     t_idx = [int(pp) for pp in p[Nparams+(Nparticles*6):]]
@@ -68,22 +128,15 @@ def back_integrate_likelihood(p, potential_params, satellite,
     sat_var[:,:3] = potential._tidal_radius(satellite._m, s._r) * 1.26
     sat_var[:,3:] += 0.0083972030362941957 #v_disp # kpc/Myr
     cov = sat_var**2
-    
+
+    log_p_D_given_x = -0.5*np.sum(-2.*np.log(data_errors) + \
+                                  (hel-data)**2/data_errors**2, axis=1)
+
     l = np.zeros((Nparticles,))
     for ii in range(Nparticles):
         pref = (0.004031441804149937 * (np.prod(cov[t_idx[ii]])**-0.5))
         yy = -0.5*np.sum((p._x[t_idx[ii],ii] - s._x[t_idx[ii],0])**2 / cov[t_idx[ii]])
-        #l[ii] = np.log(pref) + yy + log_p_D_given_x[ii]
-
-        log_p_D_given_x = -0.5
-        for jj in range(Ndim):
-            log_p_D_given_x *= data_errors[ii,jj]**2
-        
-        for jj in range(Ndim):
-            h = hel[jj][ii].decompose([u.kpc, u.Myr, u.radian, u.M_sun]).value
-            log_p_D_given_x += -0.5 * ((h-data[ii,jj])**2 / data_errors[ii,jj]**2)
-
-        l[ii] = np.log(pref) + yy + log_p_D_given_x
+        l[ii] = np.log(pref) + yy + log_p_D_given_x[ii]
     
     return np.sum(l)
 
