@@ -55,7 +55,9 @@ potential_params = ["q1"]
 Nparams = len(potential_params)
 mpi = False
 #path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
-path = "/Users/adrian/projects/streams/plots/new_likelihood"
+#path = "/Users/adrian/projects/streams/plots/new_likelihood"
+path = "/home/adrian/projects/streams/plots/new_likelihood"
+Nthreads = 4
 
 ##########################
 
@@ -83,6 +85,8 @@ if mpi:
     if not pool.is_master():
         pool.wait()
         sys.exit(0)
+elif Nthreads > 1:
+    pool = multiprocessing.Pool(Nthreads)
 else:
     pool = None
 
@@ -160,6 +164,13 @@ else:
     pos = p0
 
 pos, prob, state = sampler.run_mcmc(pos, Nsteps)
+
+# write the sampler to a pickle file
+data_file = os.path.join(path, "sampler_data.pickle")
+sampler.lnprobfn = None
+sampler.pool = None
+fnpickle(sampler, data_file)
+
 sys.exit(0)
 
 # Plot the positions of the particles in galactic XYZ coordinates
