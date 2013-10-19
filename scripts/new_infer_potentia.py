@@ -50,14 +50,14 @@ m = "2.5e7"
 Nwalkers = 64
 Nparticles = 3
 Nburn_in = 0
-Nsteps = 10
+Nsteps = 100
 potential_params = ["q1"]
 Nparams = len(potential_params)
 mpi = False
 #path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
 #path = "/Users/adrian/projects/streams/plots/new_likelihood"
 path = "/home/adrian/projects/streams/plots/new_likelihood"
-Nthreads = 4
+Nthreads = 1
 
 ##########################
 
