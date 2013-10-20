@@ -27,7 +27,7 @@ class LogUniformPrior(object):
         return 0.0
 
     def __init__(self, a, b):
-        """ Return 0 if value is outside of the range 
+        """ Return 0 if value is outside of the range
             defined by a < value < b.
         """
         self.a = a
@@ -42,8 +42,7 @@ class Parameter(object):
 
 class StreamModel(object):
 
-    def __init__(self, Potential, satellite, particles, 
-                 particle_data=None, satellite_data=None):
+    def __init__(self, Potential, satellite, particles):
         """ ...
 
             Parameters
@@ -58,7 +57,7 @@ class StreamModel(object):
                 parameters.append(p)
 
         self.parameters = parameters
-    
+
     def __call__(self, p):
         self.vector = p
         return self.ln_posterior()
@@ -112,18 +111,18 @@ class StreamModel(object):
 
     def run(self, p0, nsteps, nburn=None, pool=None):
         """ Use emcee to sample from the posterior.
-            
+
             Parameters
             ----------
             p0 : array
                 2D array of starting positions for all walkers.
             nsteps : int (optional)
-                Number of steps for each walker to take through 
+                Number of steps for each walker to take through
                 parameter space.
             burn_in : int (optional)
-                Defaults to 1/10 the number of steps. 
+                Defaults to 1/10 the number of steps.
             pool : multiprocessing.Pool, emcee.MPIPool
-                A multiprocessing or MPI pool to pass to emcee for 
+                A multiprocessing or MPI pool to pass to emcee for
                 wicked awesome parallelization!
         """
         if nburn == None:
@@ -138,14 +137,14 @@ class StreamModel(object):
                                 len(self.parameters)))
 
         # make the ensemble sampler
-        sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, 
-                                        lnpostfn=self.ln_posterior, 
+        sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim,
+                                        lnpostfn=self.ln_posterior,
                                         pool=pool)
 
         logger.debug("About to start walkers...")
 
-        # If a burn-in period requested, run the sampler for 'burn_in' 
-        #   steps then reset the walkers and use the end positions as 
+        # If a burn-in period requested, run the sampler for 'burn_in'
+        #   steps then reset the walkers and use the end positions as
         #   new initial conditions
         if nburn > 0:
             pos, prob, state = sampler.run_mcmc(p0, nburn)
