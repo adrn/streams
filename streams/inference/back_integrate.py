@@ -101,6 +101,7 @@ def back_integrate_likelihood(p, potential_params, satellite,
     #   the time the stars came unbound from their progenitor.
     Nparticles,Ndim = data.shape
     Nparams = len(potential_params)
+    dt = -1. 
 
     # Use the specified Potential class and parameters 
     potential_params = dict(zip(potential_params, p[:Nparams]))
@@ -120,25 +121,25 @@ def back_integrate_likelihood(p, potential_params, satellite,
     acc = np.zeros((Nparticles+1,3))
     s,p = satellite_particles_integrate(satellite, particles, potential, 
                                         potential_args=(Nparticles+1, acc), 
-                                        time_spec=dict(t1=t1, t2=t2, dt=-1.))
+                                        time_spec=dict(t1=t1, t2=t2, dt=dt))
     
     Ntimesteps  = p._x.shape[0]
     
     sat_var = np.zeros((Ntimesteps,6))
     sat_var[:,:3] = potential._tidal_radius(satellite._m, s._r) * 1.26
-    sat_var[:,3:] += 0.0083972030362941957 #v_disp # kpc/Myr
+    sat_var[:,3:] += 0.0083972030362941957 #v_disp # kpc/Myr for 2.5E7
     cov = sat_var**2
+
+    Sigma = np.array([cov[jj] for ii,jj in enumerate(t_idx)])
+    p_x = np.array([p._x[jj,ii] for ii,jj in enumerate(t_idx)])
+    s_x = np.array([s._x[jj,0] for ii,jj in enumerate(t_idx)])
+    log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) + 
+                        (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
 
     log_p_D_given_x = -0.5*np.sum(-2.*np.log(data_errors) + \
                                   (hel-data)**2/data_errors**2, axis=1)
 
-    l = np.zeros((Nparticles,))
-    for ii in range(Nparticles):
-        pref = (0.004031441804149937 * (np.prod(cov[t_idx[ii]])**-0.5))
-        yy = -0.5*np.sum((p._x[t_idx[ii],ii] - s._x[t_idx[ii],0])**2 / cov[t_idx[ii]])
-        l[ii] = np.log(pref) + yy + log_p_D_given_x[ii]
-    
-    return np.sum(l)
+    return np.sum(log_p_D_given_x + log_p_x_given_phi)
 
 def variance_likelihood(p, param_names, satellite, particles, 
                         Potential, t1, t2):
