@@ -14,12 +14,13 @@ import pytest
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from ..core import *
+from ..core import StreamModel
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
+"""
 def test_statistical_model():
     """ Test with example from main Emcee docs """
 
@@ -31,12 +32,28 @@ def test_statistical_model():
     ivar = 1. / np.random.rand(ndim)
     p0 = [np.random.rand(ndim) for i in range(nwalkers)]
 
-    sm = StatisticalModel(parameters, 
+    sm = StatisticalModel(parameters,
                           ln_likelihood=lnprob,
-                          likelihood_args=(1.7,), 
+                          likelihood_args=(1.7,),
                           parameter_bounds={'x':(-1,100)})
 
     sampler = sm.run(p0, 100, 0)
 
     plt.hist(sampler.flatchain, bins=100)
     plt.savefig(os.path.join(plot_path, "emcee_test.png"))
+"""
+
+from streams.potential.lm10 import LawMajewski2010
+from streams.io.sgr import mass_selector
+
+particles_today, satellite_today, time = mass_selector("2.5e7")
+Nparticles = 100
+
+np.random.seed(552)
+satellite = satellite_today()
+true_particles = particles_today(N=Nparticles, expr="(tub!=0)")
+t1,t2 = time()
+
+def test_statistical_model():
+
+    StreamModel()
