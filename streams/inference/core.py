@@ -15,48 +15,84 @@ import emcee
 import numpy as np
 import astropy.units as u
 
-__all__ = ["StatisticalModel"]
+__all__ = []
 
 logger = logging.getLogger(__name__)
 
-class StatisticalModel(object):
+class LogUniformPrior(object):
 
-    def __init__(self, parameters, ln_likelihood, likelihood_args=(),
-                 parameter_bounds=dict(), prior_funcs=dict()):
-        """ Right now this is tailored to my specific use case. If no specific
-            prior function is specified, it creates a uniform prior around the
-            specified bounds -- you have to specify either parameter bounds or
-            prior functions.
+    def __call__(self, value):
+        if np.any((value < self.a) | (value > self.b)):
+            return -np.inf
+        return 0.0
+
+    def __init__(self, a, b):
+        """ Return 0 if value is outside of the range 
+            defined by a < value < b.
+        """
+        self.a = a
+        self.b = b
+
+class Parameter(object):
+
+    def __init__(self, ln_prior=None, range=(None, None)):
+        self.ln_prior = ln_prior
+        if self.ln_prior is None:
+            self.ln_prior = LogUniformPrior(*range)
+
+class StreamModel(object):
+
+    def __init__(self, Potential, satellite, particles, 
+                 particle_data=None, satellite_data=None):
+        """ ...
 
             Parameters
             ----------
-            parameters : list
-                List of model parameters.
-            ln_likelihood : func
-                The likelihood function.
-            likelihood_args : tuple
-                Arguments to be passed in to the likelihood function.
-            parameter_bounds : dict 
-                Dictionary of tuples specifying min/max bounds for 
-                each parameter.
-            prior_funcs : dict (optional)
-                Specify a custom prior here if you don't want to use
-                a uniform prior between parameter bounds.
+            ...
         """
+        parameters = []
+        for p in Potential.parameters + \
+                 satellite.parameters + \
+                 particles.parameters:
+            if not p.fixed:
+                parameters.append(p)
 
         self.parameters = parameters
-        self.parameter_bounds = parameter_bounds
-        self._prior_funcs = prior_funcs
+    
+    def __call__(self, p):
+        self.vector = p
+        return self.ln_posterior()
 
+    def ln_prior(self):
+        lp = self.planetary_system.lnprior()
+        if not np.isfinite(lp):
+            return -np.inf
+        pp = [l() for l in self.lnpriors]
+        if not np.all(np.isfinite(pp)):
+            return -np.inf
+        ppar = [p.lnprior() for p in self.parameters]
+        if not np.all(np.isfinite(ppar)):
+            return -np.inf
+        return lp + np.sum(pp) + np.sum(ppar)
+
+    @property
+    def vector(self):
+        return np.concatenate(map(np.atleast_1d,
+                                  [p.get() for p in self.parameters]))
+
+    @vector.setter
+    def vector(self, values):
+        ind = 0
         for p in self.parameters:
-            if not self._prior_funcs.has_key(p) and \
-               not self.parameter_bounds.has_key(p):
-                raise ValueError("Either specify prior function or parameter"
-                                 "bounds for parameters '{0}'".format(p))
+            if len(p):
+                p.set(values[ind:ind+len(p)])
+                ind += len(p)
+            else:
+                p.set(values[ind])
+                ind += 1
 
-        self.ln_likelihood = ln_likelihood
-        self.likelihood_args = likelihood_args
-            
+    # ---
+
     def ln_prior(self, p):
         """ Evaluate the prior functions """
 
