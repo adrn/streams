@@ -20,7 +20,7 @@ plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-"""
+'''
 def test_statistical_model():
     """ Test with example from main Emcee docs """
 
@@ -41,19 +41,21 @@ def test_statistical_model():
 
     plt.hist(sampler.flatchain, bins=100)
     plt.savefig(os.path.join(plot_path, "emcee_test.png"))
-"""
+'''
 
 from streams.potential.lm10 import LawMajewski2010
 from streams.io.sgr import mass_selector
-
-particles_today, satellite_today, time = mass_selector("2.5e7")
-Nparticles = 100
+from streams.observation.gaia import GaiaErrorModel
 
 np.random.seed(552)
+Nparticles = 100
+
+particles_today, satellite_today, time = mass_selector("2.5e7")
 satellite = satellite_today()
 true_particles = particles_today(N=Nparticles, expr="(tub!=0)")
 t1,t2 = time()
 
-def test_statistical_model():
+data_particles = true_particles.observe(GaiaErrorModel)
 
-    StreamModel()
+def test_statistical_model():
+    stream = StreamModel(LawMajewski2010, satellite, data_particles)
