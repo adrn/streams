@@ -45,7 +45,7 @@ def test_statistical_model():
 
 from streams.potential.lm10 import LawMajewski2010
 from streams.io.sgr import mass_selector
-from streams.observation.gaia import GaiaErrorModel
+from streams.observation.gaia import RRLyraeErrorModel
 
 np.random.seed(552)
 Nparticles = 100
