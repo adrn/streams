@@ -15,7 +15,7 @@ import emcee
 import numpy as np
 import astropy.units as u
 
-__all__ = []
+__all__ = ["LogUniformPrior", "Parameter"]
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +33,33 @@ class LogUniformPrior(object):
         self.a = a
         self.b = b
 
+    def sample(self, size=1):
+        return np.random.uniform(self.a, self.b, size=size)
+
 class Parameter(object):
 
-    def __init__(self, ln_prior=None, range=(None, None)):
-        self.ln_prior = ln_prior
-        if self.ln_prior is None:
-            self.ln_prior = LogUniformPrior(*range)
+    def __init__(self, value, name="", ln_prior=None,
+                 range=(None, None), latex=None):
+
+        self.value = value
+        self.name = name
+        self._ln_prior = ln_prior
+        self._range = range
+
+        if self._ln_prior is None:
+            self._ln_prior = LogUniformPrior(*self._range)
+
+    def ln_prior(self):
+        return self._ln_prior(self.value)
+
+    def sample(self, size=1):
+        return self._ln_prior.sample(size=size)
+
+    def __repr__(self):
+        return "<Parameter {0}={1}>".format(self.name, self.value)
+
+    def _repr_latex_(self):
+        return self.latex if self.latex else self.__repr__()
 
 class StreamModel(object):
 
@@ -50,7 +71,7 @@ class StreamModel(object):
             ...
         """
         parameters = []
-        for p in Potential.parameters + \
+        for p in Potential.parameters.values() + \
                  satellite.parameters + \
                  particles.parameters:
             if not p.fixed:
