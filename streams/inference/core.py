@@ -15,7 +15,7 @@ import emcee
 import numpy as np
 import astropy.units as u
 
-__all__ = ["LogUniformPrior", "Parameter"]
+__all__ = ["LogUniformPrior", "Parameter", "StreamModel"]
 
 logger = logging.getLogger(__name__)
 
@@ -64,25 +64,83 @@ class Parameter(object):
 
 class StreamModel(object):
 
-    def __init__(self, Potential, satellite, particles):
+    def __init__(self, potential, satellite, particles):
         """ ...
 
             Parameters
             ----------
             ...
         """
-        parameters = []
-        for p in Potential.parameters.values() + \
-                 satellite.parameters + \
-                 particles.parameters:
-            if not p.fixed:
-                parameters.append(p)
 
-        self.parameters = parameters
+        # ARGH -- no, cause when p updates self.vector, has to feed back
+        #   in to the satellite object...
+        # - the likelihood function will be defined in here...so what do I need?
+        #satellite_6d = Parameter(satellite._X, range=(-300., 300.))
+        #satellite_shape = Parameter(, range=(-300., 300.))
+
+        self.satellite = satellite
+
+
+        self.parameters = []
+        for p in potential.parameters.values():
+            if not p.fixed:
+                self.parameters.append(p)
 
     def __call__(self, p):
         self.vector = p
         return self.ln_posterior()
+
+    def ln_likelihood(self, t1, t2, dt):
+        """ This is a simplified version of the likelihood laid out by D. Hogg in
+            Bread and Butter (https://github.com/davidwhogg/BreadAndButter/). The
+            stars are assumed to come from a Gaussian progenitor, described by
+            just two scales -- the tidal radius and velocity dispersion.
+        """
+
+        # First need to pull apart the parameters p -- first few are the
+        #   potential parameters, then the true position of the stars, then
+        #   the time the stars came unbound from their progenitor.
+        Nparticles,Ndim = data.shape
+        Nparams = len(potential_params)
+        dt = -1.
+
+        # Use the specified Potential class and parameters
+        potential_params = dict(zip(potential_params, p[:Nparams]))
+        potential = Potential(**potential_params)
+
+        # These are the true positions/velocities of the particles, which we
+        #   add as parameters in the model
+        x = np.array(p[Nparams:Nparams+(Nparticles*6)]).reshape(Nparticles,6)
+        hel = _gc_to_hel(x)
+
+        # These are the unbinding times for each particle
+        t_idx = [int(pp) for pp in p[Nparams+(Nparticles*6):]]
+
+        # A Particle object for the true positions of the particles -- not great...
+        particles = Particle(x[:,:3]*u.kpc, x[:,3:]*u.kpc/u.Myr, 0.*u.M_sun)
+
+        acc = np.zeros((Nparticles+1,3))
+        s,p = satellite_particles_integrate(satellite, particles, potential,
+                                            potential_args=(Nparticles+1, acc),
+                                            time_spec=dict(t1=t1, t2=t2, dt=dt))
+
+        Ntimesteps  = p._X.shape[0]
+
+        sat_var = np.zeros((Ntimesteps,6))
+        sat_var[:,:3] = potential._tidal_radius(satellite._m, s._r) * 1.26
+        sat_var[:,3:] += 0.0083972030362941957 #v_disp # kpc/Myr for 2.5E7
+        cov = sat_var**2
+
+        Sigma = np.array([cov[jj] for ii,jj in enumerate(t_idx)])
+        p_x = np.array([p._X[jj,ii] for ii,jj in enumerate(t_idx)])
+        s_x = np.array([s._X[jj,0] for ii,jj in enumerate(t_idx)])
+        log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) +
+                            (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
+
+        log_p_D_given_x = -0.5*np.sum(-2.*np.log(data_errors) + \
+                                      (hel-data)**2/data_errors**2, axis=1)
+
+        return np.sum(log_p_D_given_x + log_p_x_given_phi)
 
     def ln_prior(self):
         lp = self.planetary_system.lnprior()

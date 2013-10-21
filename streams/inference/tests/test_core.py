@@ -96,5 +96,6 @@ t1,t2 = time()
 error_model = RRLyraeErrorModel(units=usys)
 data_particles = true_particles.observe(error_model)
 
-def test_statistical_model():
-    stream = StreamModel(LawMajewski2010, satellite, data_particles)
+def test_stream_model():
+    lm10 = LawMajewski2010()
+    stream = StreamModel(lm10, satellite, data_particles)
