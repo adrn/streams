@@ -19,7 +19,12 @@ __all__ = ["LogUniformPrior", "Parameter", "StreamModel"]
 
 logger = logging.getLogger(__name__)
 
-class LogUniformPrior(object):
+class LogPrior(object)
+
+    def __call__(self, value):
+        return 0.
+
+class LogUniformPrior(LogPrior):
 
     def __call__(self, value):
         if np.any((value < self.a) | (value > self.b)):
@@ -38,29 +43,38 @@ class LogUniformPrior(object):
 
 class Parameter(object):
 
-    def __init__(self, value, name="", ln_prior=None,
-                 range=(None, None), latex=None):
-
-        self.value = value
+    def __init__(self, target, name, ln_prior=None):
+        self.target = target
         self.name = name
+
+        if ln_prior is None:
+            ln_prior = LogPrior()
         self._ln_prior = ln_prior
-        self._range = range
-        self.fixed = False
 
-        if self._ln_prior is None:
-            self._ln_prior = LogUniformPrior(*self._range)
+    def __str__(self):
+        return "{0}".format(self.name)
 
-    def ln_prior(self):
-        return self._ln_prior(self.value)
-
-    def sample(self, size=1):
-        return self._ln_prior.sample(size=size)
+    def __unicode__(self):
+        return self.__str__()
 
     def __repr__(self):
-        return "<Parameter {0}={1}>".format(self.name, self.value)
+        return "<{0} {1}>".format(self.__class__.__name__,
+                                  str(self))
 
-    def _repr_latex_(self):
-        return self.latex if self.latex else self.__repr__()
+    def get(self):
+        return self.getter()
+
+    def set(self, value):
+        self.setter(value)
+
+    def getter(self):
+        return getattr(self.target, self.name)
+
+    def setter(self, value):
+        setattr(self.target, self.name, value)
+
+    def ln_prior(self):
+        return self._ln_prior(self.get())
 
 class StreamModel(object):
 
@@ -72,19 +86,6 @@ class StreamModel(object):
             ...
         """
 
-        # ARGH -- no, cause when p updates self.vector, has to feed back
-        #   in to the satellite object...
-        # - the likelihood function will be defined in here...so what do I need?
-        #satellite_6d = Parameter(satellite._X, range=(-300., 300.))
-        #satellite_shape = Parameter(, range=(-300., 300.))
-
-        self.satellite = satellite
-
-
-        self.parameters = []
-        for p in potential.parameters.values():
-            if not p.fixed:
-                self.parameters.append(p)
 
     def __call__(self, p):
         self.vector = p
