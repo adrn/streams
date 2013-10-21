@@ -45,6 +45,7 @@ class Parameter(object):
         self.name = name
         self._ln_prior = ln_prior
         self._range = range
+        self.fixed = False
 
         if self._ln_prior is None:
             self._ln_prior = LogUniformPrior(*self._range)

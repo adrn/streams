@@ -63,8 +63,12 @@ class LawMajewski2010(CompositePotential):
         self.parameters = dict(q1=q1, q2=q2, qz=qz,
                                v_halo=v_halo, R_halo=R_halo, phi=phi)
 
-        for p_name in parameters.keys():
-            self.parameters[p_name].value = parameters[p_name]
+        for p_name in self.parameters.keys():
+            if parameters.has_key(p_name):
+                self.parameters[p_name].value = parameters[p_name]
+            # TODO: is this a sensible default?
+            #else:
+            #    self.parameters[p_name].fixed = True
 
         bulge = HernquistPotential(usys,
                                    m=3.4E10*u.M_sun,
