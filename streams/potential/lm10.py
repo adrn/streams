@@ -21,6 +21,81 @@ from ._lm10_acceleration import lm10_acceleration
 from ..inference import Parameter
 from .. import usys
 
+class PotentialParameter(object):
+
+    def __init__(self, value=None, truth=None, range=(),
+                 latex="", units=usys):
+
+        if value is None and truth is None:
+            raise ValueError("If value not specified, must specify truth.")
+
+        elif value is None:
+            value = truth
+
+        if hasattr(value, "unit"):
+            q = value.decompose(units)
+            self._value = q.value
+            self._unit = q.unit
+
+            t = truth.decompose(units)
+            self._truth = t.value
+
+            lo,hi = range
+            self._range = (lo.decompose(units).value,
+                           hi.decompose(units).value)
+
+        else:
+            self._value = value
+            self._truth = truth
+            self._unit = u.dimensionless_unscaled
+            self._range = range
+
+        self.latex = latex
+
+    @property
+    def value(self):
+        return self._value*self._unit
+
+    @value.setter
+    def value(self, v):
+        self._value = v.to(self._unit).value
+
+    @property
+    def truth(self):
+        return self._truth*self._unit
+
+    @truth.setter
+    def truth(self, v):
+        self._truth = v.to(self._unit).value
+
+    @property
+    def range(self):
+        return (self._range[0]*self._unit, self._range[1]*self._unit)
+
+    def __float__(self):
+        return self._value
+
+# v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
+lm10_parameters = { 'q1' : PotentialParameter(truth=1.38,
+                                              range=(0.8, 2.),
+                                              latex=r"$q_1$")),
+                    'q2' : PotentialParameter(truth=1.,
+                                              range=(0.8, 2.),
+                                              latex=r"$q_2$")),
+                    'qz' : PotentialParameter(truth=1.36,
+                                              range=(0.8, 2.),
+                                              latex=r"$q_z$")),
+                    'phi' : PotentialParameter(truth=97.*u.deg,
+                                               range=(45.*u.deg,180.*u.deg),
+                                               latex=r"$\phi$"),
+                    'v_halo' : PotentialParameter(truth=121.858*u.km/u.s,
+                                                  range=(100.*u.km/u.s,
+                                                         300.*u.km/u.s),
+                                                  latex=r"$v_{\rm halo}$"),
+                    'R_halo' : PotentialParameter(truth=12.*u.kpc,
+                                                  range=(8.*u.kpc, 20*u.kpc),
+                                                  latex=r"$R_{\rm halo}$")}
+
 class LawMajewski2010(CompositePotential):
 
     def __init__(self, **parameters):
@@ -39,36 +114,13 @@ class LawMajewski2010(CompositePotential):
                 A dictionary of parameters for the potential definition.
         """
 
-        q1 = Parameter(value=1.38, range=(0.8, 2.), latex=r"$q_1$")
-        q2 = Parameter(value=1., range=(0.8, 2.), latex=r"$q_2$")
-        qz = Parameter(value=1.36, range=(0.8, 2.), latex=r"$q_z$")
+        self.parameters = dict(lm10_parameters)
 
-        phi = Parameter(value=(97.*u.degree).decompose(usys).value,
-                        range=((45.*u.degree).decompose(usys).value,
-                               (180.*u.degree).decompose(usys).value),
-                        latex=r"$\phi$")
-
-        # v_halo range comes from 5E11 < M < 5E12, current range of
-        #   MW mass @ 200 kpc
-        v_halo = Parameter(value=(121.858*u.km/u.s).decompose(usys).value,
-                           range=((100.*u.km/u.s).decompose(usys).value,
-                                  (300.*u.km/u.s).decompose(usys).value),
-                           latex=r"$v_{\rm halo}$")
-
-        R_halo = Parameter(value=(12.*u.kpc).decompose(usys).value,
-                           range=((8.*u.kpc).decompose(usys).value,
-                                  (20.*u.kpc).decompose(usys).value),
-                           latex=r"$R_{\rm halo}$")
-
-        self.parameters = dict(q1=q1, q2=q2, qz=qz,
-                               v_halo=v_halo, R_halo=R_halo, phi=phi)
-
-        for p_name in self.parameters.keys():
-            if parameters.has_key(p_name):
+        for p_name in parameters.keys():
+            if hasattr(parameters[p_name], "unit"):
                 self.parameters[p_name].value = parameters[p_name]
-            # TODO: is this a sensible default?
-            #else:
-            #    self.parameters[p_name].fixed = True
+            else:
+                self.parameters[p_name]._value = parameters[p_name]
 
         bulge = HernquistPotential(usys,
                                    m=3.4E10*u.M_sun,
@@ -79,7 +131,7 @@ class LawMajewski2010(CompositePotential):
                                       a=6.5*u.kpc,
                                       b=0.26*u.kpc)
 
-        p_dict = dict([(k,v.value) for k,v in self.parameters.items()])
+        p_dict = dict([(k,v._value) for k,v in self.parameters.items()])
         halo = LogarithmicPotentialLJ(usys, **p_dict)
 
         super(LawMajewski2010, self).__init__(usys,
