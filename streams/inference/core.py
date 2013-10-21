@@ -19,7 +19,7 @@ __all__ = ["LogUniformPrior", "Parameter", "StreamModel"]
 
 logger = logging.getLogger(__name__)
 
-class LogPrior(object)
+class LogPrior(object):
 
     def __call__(self, value):
         return 0.
