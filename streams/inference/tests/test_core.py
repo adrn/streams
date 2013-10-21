@@ -14,7 +14,8 @@ import pytest
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-from ..core import StreamModel
+from ... import usys
+from ..core import *
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
@@ -43,6 +44,43 @@ def test_statistical_model():
     plt.savefig(os.path.join(plot_path, "emcee_test.png"))
 '''
 
+
+class TestParameter(object):
+
+    def test_repr(self):
+        q1 = Parameter(1.38, name="q1", range=(0.8,2.))
+        repr(q1) == "<Parameter q1=1.38>"
+
+    def test_prior(self):
+        q1 = Parameter(1.38, range=(0.8,2.))
+        assert q1.ln_prior() == 0.
+
+        q1 = Parameter(2.5, range=(0.8,2.))
+        assert np.isinf(q1.ln_prior())
+
+        test_ln_prior = lambda v: 0. if 5.<v<10. else -np.inf
+        q1 = Parameter(2.5, ln_prior=test_ln_prior)
+        assert np.isinf(q1.ln_prior())
+
+        q1 = Parameter(8.5, ln_prior=test_ln_prior)
+        assert q1.ln_prior() == 0.
+
+        q1 = Parameter(1.38, range=(0.8,2.))
+        assert q1.ln_prior() == 0.
+        q1.value = 99.
+        assert np.isinf(q1.ln_prior())
+
+    def test_sample(self):
+        q1 = Parameter(1.38, range=(0.8,2.))
+        assert 0.8 < q1.sample() < 2.
+
+        s = q1.sample(size=1000)
+        assert np.all((0.8 < s) & (s < 2))
+
+        s = q1.sample(size=(1000,4))
+        assert np.all((0.8 < s) & (s < 2))
+        assert s.shape == (1000,4)
+
 from streams.potential.lm10 import LawMajewski2010
 from streams.io.sgr import mass_selector
 from streams.observation.gaia import RRLyraeErrorModel
@@ -55,7 +93,8 @@ satellite = satellite_today()
 true_particles = particles_today(N=Nparticles, expr="(tub!=0)")
 t1,t2 = time()
 
-data_particles = true_particles.observe(GaiaErrorModel)
+error_model = RRLyraeErrorModel(units=usys)
+data_particles = true_particles.observe(error_model)
 
 def test_statistical_model():
     stream = StreamModel(LawMajewski2010, satellite, data_particles)
