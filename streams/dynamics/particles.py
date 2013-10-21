@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import copy
 
 # Third-party
 import numpy as np
@@ -17,6 +18,7 @@ import triangle
 
 # Project
 from .core import _validate_quantity, DynamicalBase
+from ..coordinates import _gc_to_hel, _hel_to_gc
 
 __all__ = ["Particle"]
 
@@ -93,16 +95,29 @@ class Particle(DynamicalBase):
         #   computation
         self._G = G.decompose(self.units).value
 
-    def observe(self, ErrorModel):
+    def observe(self, error_model):
         """ Given an error model, transform to heliocentric coordinates,
             apply errors models, transform back and return a new Particle
             object.
         """
+        _X = self._X[:]
+        hel = _gc_to_hel(_X)
+        hel_err = error_model(hel)
+
+        O = np.random.normal(hel, hel_err) # observed
+        observed_X = _hel_to_gc(O)
+
+        new_p = self.copy()
+        new_p._X = observed_X
+        return new_p
 
     def to(self, units):
         """ Return a new Particle in the specified unit system. """
 
         return Particle(r=self.r, v=self.v, m=self.m, units=units)
+
+    def copy(self):
+        return copy.deepcopy(self)
 
     def acceleration_at(self, r):
         """ Compute the acceleration at a given position due to the
