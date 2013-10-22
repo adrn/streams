@@ -105,11 +105,7 @@ class Particle(DynamicalBase):
         hel_err = error_model(hel)
 
         O = np.random.normal(hel, hel_err) # observed
-        observed_X = _hel_to_gc(O)
-
-        new_p = self.copy()
-        new_p._X = observed_X
-        return new_p
+        return O, hel_err
 
     def to(self, units):
         """ Return a new Particle in the specified unit system. """
