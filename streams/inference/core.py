@@ -70,27 +70,38 @@ class Parameter(object):
     def ln_prior(self):
         return self._ln_prior(self.get())
 
+    def __len__(self):
+        try:
+            return len(self.get())
+        except:
+            return 0
+
 # TODO: would be nice if I could pass in one object that knows:
 #   - star 6d positions in heliocentric
 #   - errors on heliocentric data
 #   - frame (heliocentric)
 class StreamModel(object):
 
-    def __init__(self, potential, satellite, observed_particles, \
-                 parameters=[]):
+    def __init__(self, potential, satellite, true_particles,
+                 obs_data, obs_error, parameters=[]):
         """ ...
 
             Parameters
             ----------
             ...
         """
+        if obs_data.shape != obs_error.shape:
+            raise ValueError("obs_data shape must match obs_errors shape")
+
         self.potential = potential
         self.satellite = satellite
         self.parameters = parameters
+        self.obs_data = obs_data
+        self.obs_error = obs_error
 
     def __call__(self, p):
         self.vector = p
-        return self.ln_posterior()
+        #return self.ln_posterior()
 
     @property
     def vector(self):

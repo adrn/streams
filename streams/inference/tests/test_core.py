@@ -81,21 +81,37 @@ class TestParameter(object):
         assert np.all((0.8 < s) & (s < 2))
         assert s.shape == (1000,4)
 
-from streams.potential.lm10 import LawMajewski2010
-from streams.io.sgr import mass_selector
-from streams.observation.gaia import RRLyraeErrorModel
+class TestStreamModel(object):
 
-np.random.seed(552)
-Nparticles = 100
+    def setup(self):
+        from streams.potential.lm10 import LawMajewski2010
+        from streams.io.sgr import mass_selector
+        from streams.observation.gaia import RRLyraeErrorModel
 
-particles_today, satellite_today, time = mass_selector("2.5e7")
-satellite = satellite_today()
-true_particles = particles_today(N=Nparticles, expr="(tub!=0)")
-t1,t2 = time()
+        np.random.seed(552)
+        Nparticles = 100
 
-error_model = RRLyraeErrorModel(units=usys)
-data_particles = true_particles.observe(error_model)
+        particles_today, satellite_today, time = mass_selector("2.5e7")
+        satellite = satellite_today()
+        true_particles = particles_today(N=Nparticles, expr="(tub!=0)")
+        t1,t2 = time()
 
-def test_stream_model():
-    lm10 = LawMajewski2010()
-    stream = StreamModel(lm10, satellite, data_particles)
+        self._particles = particles_today(N=Nparticles, expr="tub!=0")
+        error_model = RRLyraeErrorModel(units=usys)
+        self.obs_data, self.obs_error = self._particles.observe(error_model)
+
+        self.potential = LawMajewski2010()
+        self.satellite = satellite_today()
+
+    def test_call(self):
+
+        params = []
+        params.append(Parameter(target=self.potential.q1,
+                                attr="_value",
+                                ln_prior=LogUniformPrior(*self.potential.q1._range)))
+
+        model = StreamModel(self.potential, self.satellite, self._particles,
+                            self.obs_data, self.obs_error, parameters=params)
+
+        model([1.4])
+        assert model.vector[0] == self.potential.q1.value
