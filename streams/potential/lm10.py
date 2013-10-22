@@ -115,6 +115,8 @@ class LawMajewski2010(CompositePotential):
         """
 
         self.parameters = dict(lm10_parameters)
+        for k,v in self.parameters.items():
+            self.__dict__[k] = v
 
         for p_name in parameters.keys():
             if hasattr(parameters[p_name], "unit"):
