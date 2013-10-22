@@ -227,6 +227,15 @@ class Particle(DynamicalBase):
 
         return Particle(r=r, v=v, m=m, units=self.units)
 
+    @property
+    def flat_X(self):
+        return self._X.flat
+
+    @flat_X.setter
+    def flat_X(self, val):
+        val = np.array(val)
+        self._x = val.reshape(self.nparticles, 6)
+
     def __getitem__(self, key):
         r = self.r[key]
         v = self.v[key]

@@ -73,7 +73,7 @@ class Parameter(object):
     def __len__(self):
         try:
             return len(self.get())
-        except:
+        except TypeError:
             return 0
 
 # TODO: would be nice if I could pass in one object that knows:

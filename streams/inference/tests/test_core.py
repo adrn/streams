@@ -89,14 +89,13 @@ class TestStreamModel(object):
         from streams.observation.gaia import RRLyraeErrorModel
 
         np.random.seed(552)
-        Nparticles = 100
+        self.Nparticles = 3
 
         particles_today, satellite_today, time = mass_selector("2.5e7")
         satellite = satellite_today()
-        true_particles = particles_today(N=Nparticles, expr="(tub!=0)")
         t1,t2 = time()
 
-        self._particles = particles_today(N=Nparticles, expr="tub!=0")
+        self._particles = particles_today(N=self.Nparticles, expr="tub!=0")
         error_model = RRLyraeErrorModel(units=usys)
         self.obs_data, self.obs_error = self._particles.observe(error_model)
 
@@ -114,4 +113,18 @@ class TestStreamModel(object):
                             self.obs_data, self.obs_error, parameters=params)
 
         model([1.4])
+        assert model.vector[0] == self.potential.q1.value
+
+    def test_vector(self):
+
+        params = []
+        params.append(Parameter(target=self.potential.q1,
+                                attr="_value",
+                                ln_prior=LogUniformPrior(*self.potential.q1._range)))
+        params.append(Parameter(target=self._particles,
+                                attr="flat_X"))
+        model = StreamModel(self.potential, self.satellite, self._particles,
+                            self.obs_data, self.obs_error, parameters=params)
+
+        model([1.4] + list(np.random.random(size=self.Nparticles*6)))
         assert model.vector[0] == self.potential.q1.value
