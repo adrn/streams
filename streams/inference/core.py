@@ -43,16 +43,16 @@ class LogUniformPrior(LogPrior):
 
 class Parameter(object):
 
-    def __init__(self, target, name, ln_prior=None):
+    def __init__(self, target, attr, ln_prior=None):
         self.target = target
-        self.name = name
+        self.attr = attr
 
         if ln_prior is None:
             ln_prior = LogPrior()
         self._ln_prior = ln_prior
 
     def __str__(self):
-        return "{0}".format(self.name)
+        return "{0}".format(self.attr)
 
     def __unicode__(self):
         return self.__str__()
@@ -62,34 +62,53 @@ class Parameter(object):
                                   str(self))
 
     def get(self):
-        return self.getter()
+        return getattr(self.target, self.attr)
 
     def set(self, value):
-        self.setter(value)
-
-    def getter(self):
-        return getattr(self.target, self.name)
-
-    def setter(self, value):
-        setattr(self.target, self.name, value)
+        setattr(self.target, self.attr, value)
 
     def ln_prior(self):
         return self._ln_prior(self.get())
 
+# TODO: would be nice if I could pass in one object that knows:
+#   - star 6d positions in heliocentric
+#   - errors on heliocentric data
+#   - frame (heliocentric)
 class StreamModel(object):
 
-    def __init__(self, potential, satellite, particles):
+    def __init__(self, potential, satellite, observed_particles, \
+                 parameters=[]):
         """ ...
 
             Parameters
             ----------
             ...
         """
-
+        self.potential = potential
+        self.satellite = satellite
+        self.parameters = parameters
 
     def __call__(self, p):
         self.vector = p
         return self.ln_posterior()
+
+    @property
+    def vector(self):
+        return np.concatenate(map(np.atleast_1d,
+                                  [p.get() for p in self.parameters]))
+
+    @vector.setter
+    def vector(self, values):
+        ind = 0
+        for p in self.parameters:
+            if len(p):
+                p.set(values[ind:ind+len(p)])
+                ind += len(p)
+            else:
+                p.set(values[ind])
+                ind += 1
+
+    # ---
 
     def ln_likelihood(self, t1, t2, dt):
         """ This is a simplified version of the likelihood laid out by D. Hogg in
@@ -155,23 +174,6 @@ class StreamModel(object):
             return -np.inf
         return lp + np.sum(pp) + np.sum(ppar)
 
-    @property
-    def vector(self):
-        return np.concatenate(map(np.atleast_1d,
-                                  [p.get() for p in self.parameters]))
-
-    @vector.setter
-    def vector(self, values):
-        ind = 0
-        for p in self.parameters:
-            if len(p):
-                p.set(values[ind:ind+len(p)])
-                ind += len(p)
-            else:
-                p.set(values[ind])
-                ind += 1
-
-    # ---
 
     def ln_prior(self, p):
         """ Evaluate the prior functions """
