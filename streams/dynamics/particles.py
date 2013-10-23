@@ -234,7 +234,7 @@ class Particle(DynamicalBase):
     @flat_X.setter
     def flat_X(self, val):
         val = np.array(val)
-        self._x = val.reshape(self.nparticles, 6)
+        self._X = val.reshape(self.nparticles, 6)
 
     def __getitem__(self, key):
         r = self.r[key]
