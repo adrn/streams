@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 from ... import usys
 from ..core import *
+from ...coordinates import _gc_to_hel
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
@@ -125,6 +126,7 @@ class TestStreamModel(object):
                                 attr="flat_X"))
         params.append(Parameter(target=self._particles,
                                 attr="tub"))
+
         model = StreamModel(self.potential, self.satellite, self._particles,
                             self.obs_data, self.obs_error, parameters=params)
 
