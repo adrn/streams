@@ -141,11 +141,11 @@ class StreamModel(object):
 
         # The true positions/velocities of the particles are parameters
         Nparticles = len(self.true_particles)
-        x = self.true_particles._x
+        x = self.true_particles._X
         hel = _gc_to_hel(x)
 
         # These are the unbinding times for each particle
-        t_idx = self.true_particles.tub
+        t_idx = -self.true_particles.tub
 
         acc = np.zeros((Nparticles+1,3))
         s,p = satellite_particles_integrate(self.satellite,
