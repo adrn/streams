@@ -49,10 +49,10 @@ pool = None
 m = "2.5e7"
 Nwalkers = 64
 Nparticles = 3
-Nburn_in = 50
-Nsteps = 100
+Nburn_in = 0
+Nsteps = 200
 mpi = True
-error_factor = 1.
+error_factor = 0.01
 #path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
 #path = "/Users/adrian/projects/streams/plots/new_likelihood"
 path = "/home/adrian/projects/streams/plots/new_likelihood"
@@ -120,7 +120,13 @@ sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
                                 args=(t1, t2, -1.),
                                 pool=pool)
 
-pos, prob, state = sampler.run_mcmc(pos, 200)
+if Nburn_in > 0:
+    pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
+    sampler.reset()
+else:
+    pos = p0
+
+pos, prob, state = sampler.run_mcmc(pos, Nsteps)
 
 # write the sampler to a pickle file
 data_file = os.path.join(path, "sampler_data.pickle")
