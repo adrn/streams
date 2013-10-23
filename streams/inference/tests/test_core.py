@@ -123,8 +123,8 @@ class TestStreamModel(object):
                                 ln_prior=LogUniformPrior(*self.potential.q1._range)))
         params.append(Parameter(target=self._particles,
                                 attr="flat_X"))
-        #params.append(Parameter(target=self._particles,
-        #                        attr="tub"))
+        params.append(Parameter(target=self._particles,
+                                attr="tub"))
         model = StreamModel(self.potential, self.satellite, self._particles,
                             self.obs_data, self.obs_error, parameters=params)
 
