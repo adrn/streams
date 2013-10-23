@@ -93,7 +93,7 @@ class TestStreamModel(object):
 
         particles_today, satellite_today, time = mass_selector("2.5e7")
         satellite = satellite_today()
-        t1,t2 = time()
+        self.t1,self.t2 = time()
 
         self._particles = particles_today(N=self.Nparticles, expr="tub!=0")
         error_model = RRLyraeErrorModel(units=usys)
@@ -123,8 +123,14 @@ class TestStreamModel(object):
                                 ln_prior=LogUniformPrior(*self.potential.q1._range)))
         params.append(Parameter(target=self._particles,
                                 attr="flat_X"))
+        #params.append(Parameter(target=self._particles,
+        #                        attr="tub"))
         model = StreamModel(self.potential, self.satellite, self._particles,
                             self.obs_data, self.obs_error, parameters=params)
 
-        model([1.4] + list(np.random.random(size=self.Nparticles*6)))
+        model([1.4] + list(np.random.random(size=self.Nparticles*6)) + \
+              list(np.random.randint(6266, size=self.Nparticles)),
+              self.t1, self.t2, -1.)
+
         assert model.vector[0] == self.potential.q1.value
+        assert self.potential.q1.value == self.potential.parameters["q1"].value

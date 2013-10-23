@@ -15,6 +15,9 @@ import emcee
 import numpy as np
 import astropy.units as u
 
+from ..coordinates import _gc_to_hel
+from ..integrate.satellite_particles import satellite_particles_integrate
+
 __all__ = ["LogUniformPrior", "Parameter", "StreamModel"]
 
 logger = logging.getLogger(__name__)
@@ -95,13 +98,14 @@ class StreamModel(object):
 
         self.potential = potential
         self.satellite = satellite
+        self.true_particles = true_particles
         self.parameters = parameters
         self.obs_data = obs_data
         self.obs_error = obs_error
 
-    def __call__(self, p):
+    def __call__(self, p, *args):
         self.vector = p
-        #return self.ln_posterior()
+        return self.ln_posterior(*args)
 
     @property
     def vector(self):
@@ -119,46 +123,41 @@ class StreamModel(object):
                 p.set(values[ind])
                 ind += 1
 
-    # ---
+    def ln_prior(self):
+        ppar = [p.ln_prior() for p in self.parameters]
+        if not np.all(np.isfinite(ppar)):
+            return -np.inf
 
-    def ln_likelihood(self, t1, t2, dt):
+        return 0.
+
+    def ln_likelihood(self, *args):
         """ This is a simplified version of the likelihood laid out by D. Hogg in
             Bread and Butter (https://github.com/davidwhogg/BreadAndButter/). The
             stars are assumed to come from a Gaussian progenitor, described by
             just two scales -- the tidal radius and velocity dispersion.
         """
 
-        # First need to pull apart the parameters p -- first few are the
-        #   potential parameters, then the true position of the stars, then
-        #   the time the stars came unbound from their progenitor.
-        Nparticles,Ndim = data.shape
-        Nparams = len(potential_params)
-        dt = -1.
+        t1, t2, dt = args
 
-        # Use the specified Potential class and parameters
-        potential_params = dict(zip(potential_params, p[:Nparams]))
-        potential = Potential(**potential_params)
-
-        # These are the true positions/velocities of the particles, which we
-        #   add as parameters in the model
-        x = np.array(p[Nparams:Nparams+(Nparticles*6)]).reshape(Nparticles,6)
+        # The true positions/velocities of the particles are parameters
+        Nparticles = len(self.true_particles)
+        x = self.true_particles._x
         hel = _gc_to_hel(x)
 
         # These are the unbinding times for each particle
-        t_idx = [int(pp) for pp in p[Nparams+(Nparticles*6):]]
-
-        # A Particle object for the true positions of the particles -- not great...
-        particles = Particle(x[:,:3]*u.kpc, x[:,3:]*u.kpc/u.Myr, 0.*u.M_sun)
+        t_idx = self.true_particles.tub
 
         acc = np.zeros((Nparticles+1,3))
-        s,p = satellite_particles_integrate(satellite, particles, potential,
-                                            potential_args=(Nparticles+1, acc),
-                                            time_spec=dict(t1=t1, t2=t2, dt=dt))
+        s,p = satellite_particles_integrate(self.satellite,
+                                        self.true_particles,
+                                        self.potential,
+                                        potential_args=(Nparticles+1, acc),
+                                        time_spec=dict(t1=t1, t2=t2, dt=dt))
 
         Ntimesteps  = p._X.shape[0]
 
         sat_var = np.zeros((Ntimesteps,6))
-        sat_var[:,:3] = potential._tidal_radius(satellite._m, s._r) * 1.26
+        sat_var[:,:3] = self.potential._tidal_radius(self.satellite._m, s._r)*1.26
         sat_var[:,3:] += 0.0083972030362941957 #v_disp # kpc/Myr for 2.5E7
         cov = sat_var**2
 
@@ -168,41 +167,23 @@ class StreamModel(object):
         log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) +
                             (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
 
-        log_p_D_given_x = -0.5*np.sum(-2.*np.log(data_errors) + \
-                                      (hel-data)**2/data_errors**2, axis=1)
+        log_p_D_given_x = -0.5*np.sum(-2.*np.log(self.obs_error) + \
+                                      (hel-self.obs_data)**2/self.obs_error**2, axis=1)
 
         return np.sum(log_p_D_given_x + log_p_x_given_phi)
 
-    def ln_prior(self):
-        lp = self.planetary_system.lnprior()
+    def ln_posterior(self, *args):
+        lp = self.ln_prior()
         if not np.isfinite(lp):
             return -np.inf
-        pp = [l() for l in self.lnpriors]
-        if not np.all(np.isfinite(pp)):
+
+        ll = self.ln_likelihood(*args)
+        if not np.isfinite(ll):
             return -np.inf
-        ppar = [p.lnprior() for p in self.parameters]
-        if not np.all(np.isfinite(ppar)):
-            return -np.inf
-        return lp + np.sum(pp) + np.sum(ppar)
+        return lp + ll
 
 
-    def ln_prior(self, p):
-        """ Evaluate the prior functions """
-
-        _sum = 0.
-        for ii,param in enumerate(self.parameters):
-            if self._prior_funcs.has_key(param):
-                _sum += self._prior_funcs[param](p[ii])
-            else:
-                lo,hi = self.parameter_bounds[param]
-                if p[ii] < lo or p[ii] > hi:
-                    return -np.inf
-
-        return _sum
-
-    def ln_posterior(self, p):
-        return self.ln_prior(p)+self.ln_likelihood(p, *self.likelihood_args)
-
+    # ---
     def run(self, p0, nsteps, nburn=None, pool=None):
         """ Use emcee to sample from the posterior.
 
