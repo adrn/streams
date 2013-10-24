@@ -52,7 +52,7 @@ Nparticles = 10
 Nburn_in = 0
 Nsteps = 500
 mpi = True
-error_factor = 1.
+error_factor = 0.001
 path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
 #path = "/Users/adrian/projects/streams/plots/new_likelihood"
 #path = "/home/adrian/projects/streams/plots/new_likelihood"
@@ -90,25 +90,28 @@ potential = LawMajewski2010()
 satellite = satellite_today()
 
 params = []
-params.append(Parameter(target=potential.q1,
-                        attr="_value",
-                        ln_prior=LogUniformPrior(*potential.q1._range)))
-params.append(Parameter(target=potential.qz,
-                        attr="_value",
-                        ln_prior=LogUniformPrior(*potential.qz._range)))
+# Potential params:
+# params.append(Parameter(target=potential.q1,
+#                         attr="_value",
+#                         ln_prior=LogUniformPrior(*potential.q1._range)))
+# params.append(Parameter(target=potential.qz,
+#                         attr="_value",
+#                         ln_prior=LogUniformPrior(*potential.qz._range)))
 params.append(Parameter(target=potential.v_halo,
                         attr="_value",
                         ln_prior=LogUniformPrior(*potential.v_halo._range)))
 params.append(Parameter(target=potential.phi,
                         attr="_value",
                         ln_prior=LogUniformPrior(*potential.phi._range)))
+Npotentialparams = len(params)
+
+# Other parameters
 params.append(Parameter(target=_particles,
                         attr="flat_X"))
 
 model = StreamModel(potential, satellite, _particles,
                     obs_data, obs_error, parameters=params)
 
-Npotentialparams = 4
 ndim = sum([len(pp) for pp in params]) + Npotentialparams
 p0 = np.zeros((Nwalkers, ndim))
 for ii in range(Npotentialparams):
@@ -136,13 +139,13 @@ fnpickle(sampler, data_file)
 
 pool.close()
 
-fig = triangle.corner(sampler.flatchain[:,:4],
-                      truths=[1.38, 1.36, 0.125, 1.69])
+fig = triangle.corner(sampler.flatchain[:,:Npotentialparams],
+                      truths=[p._truth for p in params[:Npotentialparams]])
 fig.savefig(os.path.join(path, "corner.png"))
 
 fig = plt.figure(figsize=(6,4))
 ax = fig.add_subplot(111)
-for jj in [0,1,2,3,10]:
+for jj in range(Npotentialparams) + [10]:
     ax.cla()
     for ii in range(Nwalkers):
         ax.plot(sampler.chain[ii,:,jj], drawstyle='step')
