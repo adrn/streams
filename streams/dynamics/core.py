@@ -21,7 +21,7 @@ def _validate_quantity(q, unit_like=None):
     if not isinstance(q, u.Quantity):
         msg = "Input must be a Quantity object, not {0}.".format(type(q))
         raise TypeError(msg)
-        
+
     elif not q.unit.is_equivalent(unit_like):
         if unit_like.physical_type != "unknown":
             msg = "Quantity must have a unit equivalent to '{0}'".format(unit_like)
@@ -31,35 +31,35 @@ def _validate_quantity(q, unit_like=None):
 
 class DynamicalBase(object):
     __metaclass__ = ABCMeta
-    
+
     @property
     def _r(self):
-        return self._x[...,:self.ndim]
-    
+        return self._X[...,:self.ndim]
+
     @property
     def _v(self):
-        return self._x[...,self.ndim:]
-    
+        return self._X[...,self.ndim:]
+
     @property
     def r(self):
         r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
         return self._r * r_unit
-    
+
     @property
     def v(self):
         r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
         t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
         return self._v * r_unit / t_unit
-    
+
     @property
     def m(self):
         m_unit = filter(lambda x: x.is_equivalent(u.kg), self.units)[0]
         return self._m * m_unit
-    
+
     @abstractmethod
     def to(self, units):
         pass
-        
+
     def __repr__(self):
-        return "<{0} N={1}>".format(self.__class__.__name__, 
+        return "<{0} N={1}>".format(self.__class__.__name__,
                                     self.nparticles)

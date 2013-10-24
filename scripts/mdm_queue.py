@@ -141,6 +141,9 @@ for star in all_stars:
         jd1 = t1.jd
         jd2 = t2.jd
 
+    if jd1 > jd2:
+        jd2 += 1.
+
     obs_window = Time([jd1, jd2], format='jd', scale='utc')
     period = star['period']*u.day
     t0 = Time(star['rhjd0'], scale='utc', format='mjd')
@@ -154,21 +157,23 @@ for star in all_stars:
 
     # Here instead we'll look at the possible times we can observe
     step = 1.*u.minute
-    jds = Time(np.arange(jd1, jd2+step.day, step.day),
-               format='jd', scale='utc')
+    jds = Time(np.arange(jd1, jd2, step.day), format='jd', scale='utc')
+
     ut_hours = np.array([sex_to_dec((jd.datetime.hour,jd.datetime.minute,jd.datetime.second)) for jd in jds])
     phases = time_to_phase(jds, period=period, t0=t0)
 
     fig,ax = plt.subplots(1,1,figsize=(4,4))
-    ax.plot(ut_hours, phases)
-    ax.set_xlim(2., 12.)
+    ax.plot(ut_hours, phases, marker='o', linestyle='none')
+    ax.set_xlim(1.5, 13.)
     ax.set_ylim(0., 1.)
+    ax.set_xlabel("UT time")
     ax.text(5., 0.9, star['name'])
     fig.savefig(os.path.join(phase_plot_path, "{0}.png".format(star['name'])))
 
     idx1 = (phases > 0.1) & (phases < 0.4) & \
            (ut_hours < 13.) & (ut_hours > 2.)
-    idx2 = (phases >= 0.5) & (phases < 0.7) & \
+
+    idx2 = (phases >= 0.5) & (phases < 0.9) & \
            (ut_hours < 13.) & (ut_hours > 2.)
 
     if not np.any(idx1) and not np.any(idx2):
@@ -180,7 +185,7 @@ for star in all_stars:
         first_obs_time = jds[idx1][0]
         phase_at_first = phases[idx1][0]
         queue.append({'name' : str(star['name']),
-                      'time' : first_obs_time.datetime.time().strftime("%Hh %Mm %Ss"),
+                      'time' : first_obs_time.datetime.time().strftime("'%H:%M:%S'"),
                       'phase' : phase_at_first,
                       'info' : "pre-mean",
                       'vmag' : star['magAvg']})
@@ -189,7 +194,7 @@ for star in all_stars:
         first_obs_time = jds[idx2][0]
         phase_at_first = phases[idx2][0]
         queue.append({'name' : str(star['name']),
-                      'time' : first_obs_time.datetime.time().strftime("%Hh %Mm %Ss"),
+                      'time' : first_obs_time.datetime.time().strftime("'%H:%M:%S'"),
                       'phase' : phase_at_first,
                       'info' : "post-mean",
                       'vmag' : star['magAvg']})
