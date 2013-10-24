@@ -46,13 +46,13 @@ pool = None
 
 ######### CONFIG #########
 
-m = "2.5e8"
-Nwalkers = 128
+m = "2.5e7"
+Nwalkers = 512
 Nparticles = 10
-Nburn_in = 0
-Nsteps = 500
+Nburn_in = 50
+Nsteps = 200
 mpi = True
-error_factor = 0.001
+error_factor = 1.
 path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
 #path = "/Users/adrian/projects/streams/plots/new_likelihood"
 #path = "/home/adrian/projects/streams/plots/new_likelihood"
@@ -91,18 +91,18 @@ satellite = satellite_today()
 
 params = []
 # Potential params:
-# params.append(Parameter(target=potential.q1,
-#                         attr="_value",
-#                         ln_prior=LogUniformPrior(*potential.q1._range)))
-# params.append(Parameter(target=potential.qz,
-#                         attr="_value",
-#                         ln_prior=LogUniformPrior(*potential.qz._range)))
-params.append(Parameter(target=potential.v_halo,
-                        attr="_value",
-                        ln_prior=LogUniformPrior(*potential.v_halo._range)))
-params.append(Parameter(target=potential.phi,
-                        attr="_value",
-                        ln_prior=LogUniformPrior(*potential.phi._range)))
+params.append(Parameter(target=potential.q1,
+                         attr="_value",
+                         ln_prior=LogUniformPrior(*potential.q1._range)))
+params.append(Parameter(target=potential.qz,
+                         attr="_value",
+                         ln_prior=LogUniformPrior(*potential.qz._range)))
+#params.append(Parameter(target=potential.v_halo,
+#                        attr="_value",
+#                        ln_prior=LogUniformPrior(*potential.v_halo._range)))
+#params.append(Parameter(target=potential.phi,
+#                        attr="_value",
+#                        ln_prior=LogUniformPrior(*potential.phi._range)))
 Npotentialparams = len(params)
 
 # Other parameters
@@ -150,6 +150,6 @@ for jj in range(Npotentialparams) + [10]:
     for ii in range(Nwalkers):
         ax.plot(sampler.chain[ii,:,jj], drawstyle='step')
 
-    fig.savefig("{0}.png".format(jj))
+    fig.savefig(os.path.join(path, "{0}.png".format(jj)))
 
 sys.exit(0)
