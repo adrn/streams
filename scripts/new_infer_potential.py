@@ -108,6 +108,9 @@ params.append(Parameter(target=_particles,
 model = StreamModel(potential, satellite, _particles,
                     obs_data, obs_error, parameters=params)
 
+fnpickle(potential, "/tmp/potential")
+sys.exit(0)
+
 Npotentialparams = 4
 nwalkers = 44
 ndim = sum([len(pp) for pp in params]) + Npotentialparams

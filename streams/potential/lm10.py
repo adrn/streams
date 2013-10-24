@@ -124,22 +124,22 @@ class LawMajewski2010(CompositePotential):
             else:
                 self.parameters[p_name]._value = parameters[p_name]
 
-        bulge = HernquistPotential(usys,
-                                   m=3.4E10*u.M_sun,
-                                   c=0.7*u.kpc)
+        # bulge = HernquistPotential(usys,
+        #                            m=3.4E10*u.M_sun,
+        #                            c=0.7*u.kpc)
 
-        disk = MiyamotoNagaiPotential(usys,
-                                      m=1.E11*u.M_sun,
-                                      a=6.5*u.kpc,
-                                      b=0.26*u.kpc)
+        # disk = MiyamotoNagaiPotential(usys,
+        #                               m=1.E11*u.M_sun,
+        #                               a=6.5*u.kpc,
+        #                               b=0.26*u.kpc)
 
-        p_dict = dict([(k,v._value) for k,v in self.parameters.items()])
-        halo = LogarithmicPotentialLJ(usys, **p_dict)
+        # p_dict = dict([(k,v._value) for k,v in self.parameters.items()])
+        # halo = LogarithmicPotentialLJ(usys, **p_dict)
 
-        super(LawMajewski2010, self).__init__(usys,
-                                              bulge=bulge,
-                                              disk=disk,
-                                              halo=halo)
+        # super(LawMajewski2010, self).__init__(usys,
+        #                                       bulge=bulge,
+        #                                       disk=disk,
+        #                                       halo=halo)
 
         self._G = G.decompose(bases=usys).value
 
@@ -152,10 +152,14 @@ class LawMajewski2010(CompositePotential):
             the disk and bulge.
         """
 
-        m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R/self._G
-        m_enc = self["disk"]._parameters["m"] + \
-                self["bulge"]._parameters["m"] + \
-                m_halo_enc
+        #m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R/self._G
+        #m_enc = self["disk"]._parameters["m"] + \
+        #        self["bulge"]._parameters["m"] + \
+        #        m_halo_enc
+
+        # TODO: HACK!!!
+        m_halo_enc = self.parameters['v_halo']._value**2 * R/self._G
+        m_enc = 1.E11 + 3.4E10 + m_halo_enc
 
         return m_enc
 
