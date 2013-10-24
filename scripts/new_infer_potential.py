@@ -51,7 +51,7 @@ Nwalkers = 64
 Nparticles = 3
 Nburn_in = 50
 Nsteps = 100
-mpi = False
+mpi = True
 error_factor = 1.
 #path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
 #path = "/Users/adrian/projects/streams/plots/new_likelihood"
@@ -108,19 +108,15 @@ params.append(Parameter(target=_particles,
 model = StreamModel(potential, satellite, _particles,
                     obs_data, obs_error, parameters=params)
 
-fnpickle(potential, "/tmp/potential")
-sys.exit(0)
-
 Npotentialparams = 4
-nwalkers = 44
 ndim = sum([len(pp) for pp in params]) + Npotentialparams
-p0 = np.zeros((nwalkers, ndim))
+p0 = np.zeros((Nwalkers, ndim))
 for ii in range(Npotentialparams):
-    p0[:,ii] = params[ii]._ln_prior.sample(nwalkers)
+    p0[:,ii] = params[ii]._ln_prior.sample(Nwalkers)
 
 p0[:,Npotentialparams:] = _particles.flat_X * np.random.normal(1., 0.1, size=p0[:,Npotentialparams:].shape)
 
-sampler = emcee.EnsembleSampler(nwalkers, ndim, model,
+sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
                                 args=(t1, t2, -1.),
                                 pool=pool)
 
