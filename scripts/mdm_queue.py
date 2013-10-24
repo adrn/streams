@@ -191,7 +191,7 @@ for star in all_stars:
 
     idx1 = (phases > 0.1) & (phases < 0.4) & \
            (ut_hours < 13.) & (ut_hours > 2.)
-    idx2 = (phases >= 0.5) & (phases < 0.7) & \
+    idx2 = (phases >= 0.5) & (phases < 0.9) & \
            (ut_hours < 13.) & (ut_hours > 2.)
 
     if not np.any(idx1) and not np.any(idx2):
