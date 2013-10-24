@@ -136,132 +136,17 @@ fnpickle(sampler, data_file)
 
 pool.close()
 
+fig = triangle.corner(sampler.flatchain[:,:4],
+                      truths=[1.38, 1.36, 0.125, 1.69])
+fig.savefig(os.path.join(path, "corner.png"))
+
+fig = plt.figure(figsize=(6,4))
+ax = fig.add_subplot(111)
+for jj in [0,1,2,3,10]:
+    ax.cla()
+    for ii in range(Nwalkers):
+        ax.plot(sampler.chain[ii,:,jj], drawstyle='step')
+
+    fig.savefig("{0}.png".format(jj))
+
 sys.exit(0)
-
-# Plot the positions of the particles in galactic XYZ coordinates
-fig,axes = true_particles.plot_r("xyz",
-                        subplots_kwargs=dict(figsize=(12,12)),
-                        scatter_kwargs={"alpha":0.5,"c":"k"})
-data_particles.plot_r("xyz", axes=axes,
-                      scatter_kwargs={"alpha":1., "c":"#CA0020"})
-fig.savefig(os.path.join(path, "positions_{0}.png".format(bb)))
-
-fig,axes = true_particles.plot_v(['vx','vy','vz'],
-                        subplots_kwargs=dict(figsize=(12,12)),
-                        scatter_kwargs={"alpha":0.5,"c":"k"})
-data_particles.plot_v(['vx','vy','vz'], axes=axes,
-                 scatter_kwargs={"alpha":1., "c":"#CA0020"})
-fig.savefig(os.path.join(path, "velocities_{0}.png".format(bb)))
-
-# write the sampler to a pickle file
-data_file = os.path.join(path, "sampler_data.pickle")
-sampler.lnprobfn = None
-sampler.pool = None
-fnpickle(sampler, data_file)
-
-logger.debug("Making emcee trace plot...")
-
-# make sexy plots from the sampler data
-truths = [_true_params[p] for p in config["model_parameters"]]
-labels = [param_to_latex[p] for p in config["model_parameters"]]
-fig = emcee_plot(sampler.chain,
-                 labels=labels,
-                 truths=truths)
-
-fig.savefig(os.path.join(path, "emcee_trace_{0}.png".format(bb)))
-
-# print MAP values
-idx = sampler.flatlnprobability.argmax()
-best_p = sampler.flatchain[idx]
-logger.info("MAP values: {0}".format(best_p))
-
-logger.debug("Making triangle plot...")
-
-# make triangle plot with 5-sigma ranges
-extents = []
-truths = []
-for ii,param in enumerate(config["model_parameters"]):
-    mu = np.median(sampler.flatchain[:,ii])
-    sigma = np.std(sampler.flatchain[:,ii])
-    extents.append((mu-5*sigma,mu+5*sigma))
-    truths.append(_true_params[param])
-
-fig = triangle.corner(sampler.flatchain,
-                      labels=config["model_parameters"],
-                      extents=extents,
-                      truths=truths,
-                      quantiles=[0.16,0.5,0.84])
-fig.savefig(os.path.join(path, "triangle_{0}.png".format(bb)))
-
-# if we're running with MPI, we have to close the processor pool, otherwise
-#   the script will never finish running until the end of timmmmeeeee (echo)
-if mpi: pool.close()
-
-best_p = dict()
-for ii,name in enumerate(config["model_parameters"]):
-    best_p[name] = [x[ii] for x in all_best_parameters]
-
-# finally, make plots showing the bootstrap resamples
-if B > 1 and config["make_plots"]:
-    fnpickle(best_p, os.path.join(path, "all_best_parameters.pickle"))
-
-    fig,axes = plt.subplots(4,1,figsize=(14,12))
-    fig.subplots_adjust(left=0.075, right=0.95)
-    for ii,name in enumerate(config["model_parameters"]):
-        try:
-            p = true_params[name].value
-        except AttributeError:
-            p = true_params[name]
-
-        axes[ii].hist(best_p[name], bins=25, histtype="step", color="k", linewidth=2)
-        axes[ii].axvline(p, linestyle="--", color="#EF8A62", linewidth=3)
-        axes[ii].set_ylabel(name)
-        axes[ii].set_ylim(0,20)
-
-    fig.savefig(os.path.join(path,"bootstrap_1d.png"))
-
-    # Now make 2D plots of the bootstrap results
-    if config["observational_errors"]:
-        subtitle = r"$\sigma_{{RV}}={0}$ km/s; $\sigma_D={1}\%D$; {2} particles"
-        subtitle = subtitle.format(rv_error, d_error, Nparticles)
-    else:
-        subtitle = "{0} particles".format(Nparticles)
-    fig = bootstrap_scatter_plot(best_p, subtitle=subtitle)
-    fig.savefig(os.path.join(path,"bootstrap_2d.png"))
-
-if config["make_plots"]:
-    with open(config_file) as f:
-        g = open(os.path.join(path,"config.txt"), "w")
-        g.write(f.read())
-        g.close()
-
-if __name__ == "__main__":
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser(description="")
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
-                    default=False, help="Be chatty! (default = False)")
-    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
-                    default=False, help="Be quiet! (default = False)")
-    parser.add_argument("-f", "--file", dest="file", default="streams.cfg",
-                    help="Path to the configuration file to run with.")
-    parser.add_argument("-n", "--name", dest="job_name", default=None,
-                    help="Name of the output.")
-
-    args = parser.parse_args()
-
-    if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
-    elif args.quiet:
-        logging.basicConfig(level=logging.ERROR)
-    else:
-        logging.basicConfig(level=logging.INFO)
-
-    try:
-        main(args.file, args.job_name)
-
-    except:
-        raise
-        sys.exit(1)
-
-    sys.exit(0)
