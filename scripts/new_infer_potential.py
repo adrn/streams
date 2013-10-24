@@ -117,7 +117,9 @@ p0 = np.zeros((Nwalkers, ndim))
 for ii in range(Npotentialparams):
     p0[:,ii] = params[ii]._ln_prior.sample(Nwalkers)
 
-p0[:,Npotentialparams:] = _particles.flat_X * np.random.normal(1., 0.1, size=p0[:,Npotentialparams:].shape)
+for ii in range(Nwalkers):
+    _x = _hel_to_gc(np.random.normal(obs_data, obs_error))
+    p0[ii,Npotentialparams:] = _x
 
 sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
                                 args=(t1, t2, -1.),
