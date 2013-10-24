@@ -140,7 +140,7 @@ fnpickle(sampler, data_file)
 pool.close()
 
 fig = triangle.corner(sampler.flatchain[:,:Npotentialparams],
-                      truths=[p._truth for p in params[:Npotentialparams]])
+                      truths=[p.target._truth for p in params[:Npotentialparams]])
 fig.savefig(os.path.join(path, "corner.png"))
 
 fig = plt.figure(figsize=(6,4))
