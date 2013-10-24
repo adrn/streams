@@ -46,16 +46,16 @@ pool = None
 
 ######### CONFIG #########
 
-m = "2.5e7"
-Nwalkers = 64
-Nparticles = 3
-Nburn_in = 50
-Nsteps = 100
+m = "2.5e8"
+Nwalkers = 128
+Nparticles = 10
+Nburn_in = 0
+Nsteps = 500
 mpi = True
 error_factor = 1.
-#path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
+path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
 #path = "/Users/adrian/projects/streams/plots/new_likelihood"
-path = "/home/adrian/projects/streams/plots/new_likelihood"
+#path = "/home/adrian/projects/streams/plots/new_likelihood"
 Nthreads = 1
 
 ##########################
@@ -78,7 +78,7 @@ else:
 
 # Actually get simulation data
 np.random.seed(552)
-particles_today, satellite_today, time = mass_selector("2.5e7")
+particles_today, satellite_today, time = mass_selector(m)
 satellite = satellite_today()
 t1,t2 = time()
 
@@ -120,15 +120,21 @@ sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
                                 args=(t1, t2, -1.),
                                 pool=pool)
 
-pos, xx, yy = sampler.run_mcmc(p0, 50)
-sampler.reset()
-pos, prob, state = sampler.run_mcmc(pos, 100)
+if Nburn_in > 0:
+    pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
+    sampler.reset()
+else:
+    pos = p0
+
+pos, prob, state = sampler.run_mcmc(pos, Nsteps)
 
 # write the sampler to a pickle file
 data_file = os.path.join(path, "sampler_data.pickle")
 sampler.lnprobfn = None
 sampler.pool = None
 fnpickle(sampler, data_file)
+
+pool.close()
 
 sys.exit(0)
 
