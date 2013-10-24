@@ -39,18 +39,18 @@ from streams.potential.lm10 import LawMajewski2010
 from streams.io.sgr import mass_selector
 from streams.observation.gaia import RRLyraeErrorModel
 from streams.inference import Parameter, StreamModel, LogUniformPrior
-from streams.coordinates import _gc_to_hel
+from streams.coordinates import _gc_to_hel, _hel_to_gc
 
 global pool
 pool = None
 
 ######### CONFIG #########
 
-m = "2.5e7"
-Nwalkers = 512
+m = "2.5e8"
+Nwalkers = 128
 Nparticles = 10
-Nburn_in = 50
-Nsteps = 200
+Nburn_in = 200
+Nsteps = 300
 mpi = True
 error_factor = 1.
 path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
@@ -97,12 +97,12 @@ params.append(Parameter(target=potential.q1,
 params.append(Parameter(target=potential.qz,
                          attr="_value",
                          ln_prior=LogUniformPrior(*potential.qz._range)))
-#params.append(Parameter(target=potential.v_halo,
-#                        attr="_value",
-#                        ln_prior=LogUniformPrior(*potential.v_halo._range)))
-#params.append(Parameter(target=potential.phi,
-#                        attr="_value",
-#                        ln_prior=LogUniformPrior(*potential.phi._range)))
+params.append(Parameter(target=potential.v_halo,
+                        attr="_value",
+                        ln_prior=LogUniformPrior(*potential.v_halo._range)))
+params.append(Parameter(target=potential.phi,
+                        attr="_value",
+                        ln_prior=LogUniformPrior(*potential.phi._range)))
 Npotentialparams = len(params)
 
 # Other parameters
@@ -119,7 +119,7 @@ for ii in range(Npotentialparams):
 
 for ii in range(Nwalkers):
     _x = _hel_to_gc(np.random.normal(obs_data, obs_error))
-    p0[ii,Npotentialparams:] = _x
+    p0[ii,Npotentialparams:] = np.ravel(_x)
 
 sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
                                 args=(t1, t2, -1.),
