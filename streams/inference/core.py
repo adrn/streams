@@ -158,7 +158,7 @@ class StreamModel(object):
 
         sat_var = np.zeros((Ntimesteps,6))
         sat_var[:,:3] = self.potential._tidal_radius(self.satellite._m, s._r)*1.26
-        sat_var[:,3:] += 0.0083972030362941957 #v_disp # kpc/Myr for 2.5E7
+        sat_var[:,3:] += 0.017198632324  # 0.0083972030362941957 #v_disp # kpc/Myr for 2.5E7
         cov = sat_var**2
 
         Sigma = np.array([cov[jj] for ii,jj in enumerate(t_idx)])
