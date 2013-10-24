@@ -51,7 +51,7 @@ Nwalkers = 64
 Nparticles = 3
 Nburn_in = 0
 Nsteps = 200
-mpi = True
+mpi = False
 error_factor = 0.01
 #path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
 #path = "/Users/adrian/projects/streams/plots/new_likelihood"
@@ -62,6 +62,10 @@ Nthreads = 1
 
 # Create logger
 logger = logging.getLogger(__name__)
+
+def func(p, *args, **kw):
+    model = args[0]
+    return model.__call__(p, *args[1:], **kw)
 
 if mpi:
     # Initialize the MPI pool
@@ -78,7 +82,7 @@ else:
 
 # Actually get simulation data
 np.random.seed(552)
-particles_today, satellite_today, time = mass_selector("2.5e7")
+particles_today, satellite_today, time = mass_selector(m)
 satellite = satellite_today()
 t1,t2 = time()
 
@@ -108,6 +112,10 @@ params.append(Parameter(target=_particles,
 model = StreamModel(potential, satellite, _particles,
                     obs_data, obs_error, parameters=params)
 
+# TODO:
+#fnpickle(model, "/tmp/model")
+#sys.exit(0)
+
 Npotentialparams = 4
 ndim = sum([len(pp) for pp in params]) + Npotentialparams
 p0 = np.zeros((Nwalkers, ndim))
@@ -116,8 +124,9 @@ for ii in range(Npotentialparams):
 
 p0[:,Npotentialparams:] = _particles.flat_X * np.random.normal(1., 0.1, size=p0[:,Npotentialparams:].shape)
 
-sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
-                                args=(t1, t2, -1.),
+#sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
+sampler = emcee.EnsembleSampler(Nwalkers, ndim, func,
+                                args=(model, t1, t2, -1.),
                                 pool=pool)
 
 if Nburn_in > 0:
