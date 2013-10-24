@@ -67,7 +67,7 @@ def run_stats(data_path):
 
 def main(overwrite=False):
     observing_path = "/Users/adrian/Documents/GraduateSchool/Observing/"
-    run_path = os.path.join(observing_path, "2013-08_MDM")
+    run_path = os.path.join(observing_path, "2013-10_MDM")
     data_path = os.path.join(run_path, "data")
 
     cache_name = os.path.join(data_path, "stats.tbl")
