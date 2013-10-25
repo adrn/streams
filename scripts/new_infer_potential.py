@@ -47,12 +47,12 @@ pool = None
 ######### CONFIG #########
 
 m = "2.5e8"
-Nwalkers = 128
+Nwalkers = 256
 Nparticles = 10
 Nburn_in = 200
 Nsteps = 300
 mpi = True
-error_factor = 1.
+error_factor = 0.1
 path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
 #path = "/Users/adrian/projects/streams/plots/new_likelihood"
 #path = "/home/adrian/projects/streams/plots/new_likelihood"
@@ -108,7 +108,7 @@ Npotentialparams = len(params)
 # Other parameters
 params.append(Parameter(target=_particles,
                         attr="flat_X"))
-params.append(Parameter(target=self._particles,
+params.append(Parameter(target=_particles,
                         attr="tub"))
 
 model = StreamModel(potential, satellite, _particles,
@@ -121,8 +121,8 @@ for ii in range(Npotentialparams):
 
 for ii in range(Nwalkers):
     _x = _hel_to_gc(np.random.normal(obs_data, obs_error))
-    p0[ii,Npotentialparams:Nparticles+Npotentialparams] = np.ravel(_x)
-    p0[ii,Nparticles+Npotentialparams:] = np.random.randint(6266, \
+    p0[ii,Npotentialparams:Nparticles*6+Npotentialparams] = np.ravel(_x)
+    p0[ii,Nparticles*6+Npotentialparams:] = np.random.randint(6266, \
                                                             size=Nparticles)
 
 sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
