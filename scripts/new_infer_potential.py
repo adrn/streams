@@ -109,7 +109,8 @@ Npotentialparams = len(params)
 params.append(Parameter(target=_particles,
                         attr="flat_X"))
 params.append(Parameter(target=_particles,
-                        attr="tub"))
+                        attr="tub",
+                        ln_prior=LogUniformPrior(0,6247)))
 
 model = StreamModel(potential, satellite, _particles,
                     obs_data, obs_error, parameters=params)
