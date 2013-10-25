@@ -8,7 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, date
 
 # Third-party
 import astropy.coordinates as coord
@@ -41,21 +41,27 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="")
     parser.add_argument("--object", dest="obj_name", default=None,
                         required=True, type=str, help="e.g., RR Lyr")
-    parser.add_argument("--utc", dest="ut_time", default=None,
+    parser.add_argument("--date", dest="ut_date", default=None,
+                        type=str, help="e.g., 2013-10-23")
+    parser.add_argument("--time", dest="ut_time", default=None,
                         type=str, help="e.g., 01:53")
-    parser.add_argument("--now", dest="now", action="store_true",
-                        default=False, help="Use current time")
 
     args = parser.parse_args()
 
-    if args.now:
-        t = Time(datetime.utcnow(), scale='utc')
-    elif args.ut_time:
-        tup = map(int, map(float, args.ut_time.split(":")))
-        #tt = datetime.combine(datetime.utcnow().date(), time(*tup))
-        tt = datetime.combine(datetime(2013, 10, 23), time(*tup))
-        t = Time(tt, scale='utc')
+    if args.ut_time:
+        _time = time(*map(int, map(float, args.ut_time.split(":"))))
     else:
+        _time = datetime.utcnow().time()
+
+    if args.ut_date:
+        _date = date(*map(int, map(float, args.ut_date.split("-"))))
+    else:
+        _date = datetime.utcnow().date()
+
+    tt = datetime.combine(_date, _time)
+    t = Time(tt, scale='utc')
+
+    if t is None:
         raise ValueError("Must specify now or utc")
 
     object_name = args.obj_name.strip().replace(" ", "_")
@@ -68,6 +74,10 @@ if __name__ == "__main__":
     jds = Time(np.arange(t.jd, t.jd+(4/72.), step.day),
                format='jd', scale='utc')
 
+    day_str = "UTC Day: {0}".format(_date)
+    print("-"*len(day_str))
+    print(day_str)
+    print("-"*len(day_str))
     print("Time Phase")
     for jd in jds:
         print(jd.datetime.time().strftime("%H:%M"), \
