@@ -17,7 +17,7 @@ import astropy.coordinates as coord
 import astropy.units as u
 from astropy.io import ascii, fits
 from astropy.time import Time
-from astropy.table import Table, Column, join
+from astropy.table import Table, Column, join, vstack
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -67,19 +67,24 @@ def run_stats(data_path):
 
 def main(overwrite=False):
     observing_path = "/Users/adrian/Documents/GraduateSchool/Observing/"
-    run_path = os.path.join(observing_path, "2013-10_MDM")
-    data_path = os.path.join(run_path, "data")
 
-    cache_name = os.path.join(data_path, "stats.tbl")
+    for run in ["2013-08_MDM", "2013-10_MDM"]:
+        run_path = os.path.join(observing_path, run)
+        data_path = os.path.join(run_path, "data")
 
-    if os.path.exists(cache_name) and overwrite:
-        os.remove(cache_name)
+        cache_name = os.path.join(data_path, "stats.tbl")
 
-    if not os.path.exists(cache_name):
-        t = run_stats(data_path)
-        ascii.write(t, cache_name, Writer=ascii.Basic)
+        if os.path.exists(cache_name) and overwrite:
+            os.remove(cache_name)
 
-    t = ascii.read(cache_name)
+        if not os.path.exists(cache_name):
+            t = run_stats(data_path)
+            ascii.write(t, cache_name, Writer=ascii.Basic)
+
+        try:
+            t = vstack((t,ascii.read(cache_name)))
+        except NameError:
+            t = ascii.read(cache_name)
 
     fig = plt.figure(figsize=(8,5))
     ax = fig.add_subplot(111)
@@ -93,7 +98,8 @@ def main(overwrite=False):
         ax.set_xlabel("Phase")
         ax.set_xlim(0., 1.)
         ax.set_ylim(0., 1.)
-        fig.savefig(os.path.join(run_path, "phase_{0}.png".format(name)))
+        fig.savefig(os.path.join(observing_path, "Phase Curves", \
+                                 "phase_{0}.png".format(name)))
 
 if __name__ == "__main__":
     main()
