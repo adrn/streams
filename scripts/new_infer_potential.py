@@ -108,6 +108,8 @@ Npotentialparams = len(params)
 # Other parameters
 params.append(Parameter(target=_particles,
                         attr="flat_X"))
+params.append(Parameter(target=self._particles,
+                        attr="tub"))
 
 model = StreamModel(potential, satellite, _particles,
                     obs_data, obs_error, parameters=params)
@@ -119,7 +121,9 @@ for ii in range(Npotentialparams):
 
 for ii in range(Nwalkers):
     _x = _hel_to_gc(np.random.normal(obs_data, obs_error))
-    p0[ii,Npotentialparams:] = np.ravel(_x)
+    p0[ii,Npotentialparams:Nparticles+Npotentialparams] = np.ravel(_x)
+    p0[ii,Nparticles+Npotentialparams:] = np.random.randint(6266, \
+                                                            size=Nparticles)
 
 sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
                                 args=(t1, t2, -1.),
