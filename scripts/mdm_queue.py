@@ -31,7 +31,8 @@ matplotlib.rc('xtick', labelsize=12, direction='in')
 matplotlib.rc('ytick', labelsize=12, direction='in')
 
 # CHANGE THIS
-output_path = "/Users/adrian/Documents/GraduateSchool/Observing/2013-10_MDM"
+observing_path = "/Users/adrian/Documents/GraduateSchool/Observing"
+output_path = os.path.join(observing_path, "2013-10_MDM")
 kitt_peak_longitude = (111. + 35/60. + 40.9/3600)*u.deg
 
 def tcs_list(decimal=False):
@@ -120,6 +121,9 @@ tcs = tcs_list(True)
 fn = "iobserve_list.txt"
 ascii.write(tcs, os.path.join(output_path, fn), Writer=ascii.Basic)
 
+# read the stars that are done
+done_stars = ascii.read(os.path.join(observing_path, "done_rrlyrae.txt"))
+
 # Create a queue for the given day
 queue = []
 
@@ -131,6 +135,11 @@ if not os.path.exists(phase_plot_path):
     os.mkdir(phase_plot_path)
 
 for star in all_stars:
+
+    if star["name"] in done_stars["name"]:
+        print("Star {0} already done!".format(star["name"]))
+        continue
+
     # For each star, figure out its observability window, e.g., the times
     #   that it is at -2 hr from meridian and +2 hr from meridian
     t1,t2 = source_meridian_window(star['ra']*u.deg, day)
@@ -170,10 +179,10 @@ for star in all_stars:
     ax.text(5., 0.9, star['name'])
     fig.savefig(os.path.join(phase_plot_path, "{0}.png".format(star['name'])))
 
-    idx1 = (phases > 0.1) & (phases < 0.4) & \
+    idx1 = (phases > 0.2) & (phases < 0.5) & \
            (ut_hours < 13.) & (ut_hours > 2.)
 
-    idx2 = (phases >= 0.5) & (phases < 0.9) & \
+    idx2 = (phases >= 0.5) & (phases < 0.8) & \
            (ut_hours < 13.) & (ut_hours > 2.)
 
     if not np.any(idx1) and not np.any(idx2):
