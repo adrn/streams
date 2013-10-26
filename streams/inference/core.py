@@ -144,15 +144,17 @@ class StreamModel(object):
         x = self.true_particles._X
         hel = _gc_to_hel(x)
 
-        # These are the unbinding times for each particle
-        t_idx = -self.true_particles.tub
-
         acc = np.zeros((Nparticles+1,3))
         s,p = satellite_particles_integrate(self.satellite,
                                         self.true_particles,
                                         self.potential,
                                         potential_args=(Nparticles+1, acc),
                                         time_spec=dict(t1=t1, t2=t2, dt=dt))
+
+        # These are the unbinding times for each particle
+        t_idx = [np.argmin(np.fabs(s._t - tub)) \
+                    for tub in self.true_particles.tub]
+        #t_idx = -self.true_particles.tub
 
         Ntimesteps  = p._X.shape[0]
 

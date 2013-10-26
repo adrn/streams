@@ -110,7 +110,7 @@ params.append(Parameter(target=_particles,
                         attr="flat_X"))
 params.append(Parameter(target=_particles,
                         attr="tub",
-                        ln_prior=LogUniformPrior(0,6247)))
+                        ln_prior=LogUniformPrior(t2, t1)))
 
 model = StreamModel(potential, satellite, _particles,
                     obs_data, obs_error, parameters=params)
