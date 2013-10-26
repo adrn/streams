@@ -57,7 +57,7 @@ def run_stats(data_path):
             t = Time(dt, scale='utc')
             phase = time_to_phase(t, period=period, t0=t0)
 
-            tbl_dict["name"].append(object_name)
+            tbl_dict["name"].append(str(object_name))
             tbl_dict["date"].append(ut_date)
             tbl_dict["start time"].append(ut_time)
             tbl_dict["phase"].append(phase)
@@ -68,6 +68,7 @@ def run_stats(data_path):
 def main(overwrite=False):
     observing_path = "/Users/adrian/Documents/GraduateSchool/Observing/"
 
+    all_tbls = []
     for run in ["2013-08_MDM", "2013-10_MDM"]:
         run_path = os.path.join(observing_path, run)
         data_path = os.path.join(run_path, "data")
@@ -79,27 +80,37 @@ def main(overwrite=False):
 
         if not os.path.exists(cache_name):
             t = run_stats(data_path)
-            ascii.write(t, cache_name, Writer=ascii.Basic)
+            ascii.write(t, cache_name, Writer=ascii.Basic, delimiter=",")
 
-        try:
-            t = vstack((t,ascii.read(cache_name)))
-        except NameError:
-            t = ascii.read(cache_name)
+        all_tbls.append(ascii.read(cache_name))
 
-    fig = plt.figure(figsize=(8,5))
-    ax = fig.add_subplot(111)
-    for name in np.unique(t["name"]):
-        star_data = t[t["name"] == name]
+    tbl = vstack(all_tbls)
 
-        ax.cla()
-        ax.plot(star_data["phase"], star_data["phase"],
-                marker='o', linestyle='none', alpha=0.75)
-        ax.set_title(name)
-        ax.set_xlabel("Phase")
-        ax.set_xlim(0., 1.)
-        ax.set_ylim(0., 1.)
-        fig.savefig(os.path.join(observing_path, "Phase Curves", \
+    plt.figure(figsize=(8,5))
+    for name in np.unique(np.array(tbl["name"])):
+        star_data = tbl[tbl["name"] == name]
+        #if name == "TriAndRRL32":
+        #    print(len(star_data))
+
+        plt.clf()
+        plt.plot(star_data["phase"], star_data["phase"],
+                 marker='o', linestyle='none', alpha=0.75)
+        plt.title(name)
+        plt.xlabel("Phase")
+        plt.xlim(0., 1.)
+        plt.ylim(0., 1.)
+        plt.savefig(os.path.join(observing_path, "Phase Curves", \
                                  "phase_{0}.png".format(name)))
 
 if __name__ == "__main__":
-    main()
+    from argparse import ArgumentParser
+
+    # Define parser object
+    parser = ArgumentParser(description="")
+    parser.add_argument("-o", "--overwrite", action="store_true", \
+                        dest="overwrite", default=False, \
+                        help="Overwrite cache files")
+
+    args = parser.parse_args()
+
+    main(overwrite=args.overwrite)
