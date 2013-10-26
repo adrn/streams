@@ -75,8 +75,26 @@ class PotentialParameter(object):
     def __float__(self):
         return self._value
 
-# v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
-lm10_parameters = { 'q1' : PotentialParameter(truth=1.38,
+class LawMajewski2010(CompositePotential):
+
+    def __init__(self, **parameters):
+        """ Represents the functional form of the Galaxy potential used by
+            Law and Majewski 2010.
+
+            Miyamoto-Nagai disk
+            Hernquist bulge
+            Logarithmic halo
+
+            Model parameters: q1, qz, phi, v_halo
+
+            Parameters
+            ----------
+            parameters : dict
+                A dictionary of parameters for the potential definition.
+        """
+
+        # v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
+        lm10_parameters = { 'q1' : PotentialParameter(truth=1.38,
                                               range=(1.1, 1.5),
                                               latex=r"$q_1$"),
                     'q2' : PotentialParameter(truth=1.,
@@ -95,24 +113,6 @@ lm10_parameters = { 'q1' : PotentialParameter(truth=1.38,
                     'R_halo' : PotentialParameter(truth=12.*u.kpc,
                                                   range=(8.*u.kpc, 20*u.kpc),
                                                   latex=r"$R_{\rm halo}$")}
-
-class LawMajewski2010(CompositePotential):
-
-    def __init__(self, **parameters):
-        """ Represents the functional form of the Galaxy potential used by
-            Law and Majewski 2010.
-
-            Miyamoto-Nagai disk
-            Hernquist bulge
-            Logarithmic halo
-
-            Model parameters: q1, qz, phi, v_halo
-
-            Parameters
-            ----------
-            parameters : dict
-                A dictionary of parameters for the potential definition.
-        """
 
         self.parameters = dict(lm10_parameters)
         for k,v in self.parameters.items():
