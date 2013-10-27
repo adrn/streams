@@ -8,14 +8,16 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import logging
+#import logging
 
 # Third-party
 import numpy as np
 import astropy.units as u
 
 # Create logger
-logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
+
+__all__ = ["spectral_line_model", "spectral_line_erf", "parse_wavelength"]
 
 def spectral_line_model(p, x):
     c, log_amplitude, stddev, mean = p
