@@ -30,20 +30,20 @@ from .util import *
 
 _line_colors = ["red", "green", "blue", "yellow", "magenta", "cyan"]
 
-def median_arc(path):
+def median_arc(data_path):
     """ Given a path to a night's data, generate a 1D median
         arc spectrum for a rough wavelength solution.
 
         Parameters
         ----------
-        path : str
+        data_path : str
             Path to a directory full of FITS files for a night.
     """
 
     # within this path, find all files with IMAGETYP = comp or
     #   OBJECT = Hg Ne
     comp_files = []
-    for filename in glob.glob(os.path.join(path, "*.fit*")):
+    for filename in glob.glob(os.path.join(data_path, "*.fit*")):
         hdr = fits.getheader(filename)
         if hdr["IMAGETYP"].lower().strip() != "comp" and \
            hdr["OBJECT"].lower().strip() != "hg ne":
@@ -57,7 +57,7 @@ def median_arc(path):
 
     if len(comp_files) == 0:
         raise ValueError("Didn't find any COMP or Hg Ne files!"
-                         "Are you sure {0} is a valid path?".format(path))
+                        "Are you sure {0} is a valid path?".format(data_path))
 
     # get the shape of CCD from the first file
     d = fits.getdata(comp_files[0], 0)
@@ -87,7 +87,8 @@ def median_arc(path):
 
     return pix, arc_1d
 
-def hand_id(path, Nlines=4, redux_path=os.path.join(obs_path, 'reduction')):
+def hand_id(data_path, Nlines=4,
+            redux_path=os.path.join(obs_path, 'reduction')):
     """ Given a path to a night's data,
 
     """
@@ -101,7 +102,7 @@ def hand_id(path, Nlines=4, redux_path=os.path.join(obs_path, 'reduction')):
         raise ValueError("Use a max of {0} lines.".format(len(_line_colors)))
 
     # get pixel array and a medianed, 1D arc spectrum
-    pix, arc_1d = median_arc(path)
+    pix, arc_1d = median_arc(data_path)
 
     # used to split the spectrum into Nlines sections, finds the brightest
     #   line in each section and asks the user to identify it
@@ -173,59 +174,3 @@ def hand_id(path, Nlines=4, redux_path=os.path.join(obs_path, 'reduction')):
         line_wavelengths.append(wvln.to(u.angstrom).value)
 
     return line_centers, line_wavelengths
-
-########
-    # cache the hand identified line list
-    with open(os.path.join(night_path, "hand_id_lines.json"), 'w') as f:
-        s = dict()
-        s['wavelength'] = line_wavelengths
-        s['pixel'] = line_centers
-        f.write(json.dumps(s))
-
-    return
-
-    p = models.Polynomial1DModel(3)
-    fit = fitting.LinearLSQFitter(p)
-    fit(line_wavelengths, line_centers)
-
-    print(p)
-
-    # store the plot
-    # TODO: maybe save after line ID?
-    # fig,ax = plt.subplots(1,1,figsize=(11,8))
-    # ax.plot(arc_1d, drawstyle="steps")
-    # ax.set_xlim(0,1023)
-    # ax.set_xlabel("Pixel")
-    # ax.set_ylabel("Raw counts")
-    # fig.savefig(os.path.join(plot_path, "{0}_median_comp.png".format(night))
-
-if __name__ == "__main__":
-    from argparse import ArgumentParser
-    import logging
-
-    # Create logger
-    logger = logging.getLogger(__name__)
-    ch = logging.StreamHandler()
-    formatter = logging.Formatter("%(name)s / %(levelname)s / %(message)s")
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
-    # Define parser object
-    parser = ArgumentParser(description="")
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        dest="verbose", default=False,
-                        help="Be chatty! (default = False)")
-    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
-                        default=False, help="Be quiet! (default = False)")
-
-    args = parser.parse_args()
-
-    # Set logger level based on verbose flags
-    if args.verbose:
-        logger.setLevel(logging.DEBUG)
-    elif args.quiet:
-        logger.setLevel(logging.ERROR)
-    else:
-        logger.setLevel(logging.INFO)
-
-    main()
