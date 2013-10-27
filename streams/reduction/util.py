@@ -54,6 +54,6 @@ def polynomial_fit(x, y, order=3):
 
     p = models.Polynomial1DModel(order)
     fit = fitting.LinearLSQFitter(p)
-    fit(line_wavelengths, line_centers)
+    fit(x, y)
 
     return p

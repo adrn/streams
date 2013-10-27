@@ -9,15 +9,11 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import glob
-import json
 import logging
 
 # Third-party
 from astropy.io import fits
-from astropy.modeling import models, fitting
 import astropy.units as u
-import matplotlib
-matplotlib.use("agg")
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.gridspec import GridSpec
@@ -137,7 +133,7 @@ def hand_id(data_path, Nlines=4,
         p0 = [min(line_data), np.log10(max(line_data)), 0.5, c_idx]
 
         # fit a spectral line model to the line data
-        p_opt, ier = leastsq(spetral_line_erf, x0=p0, \
+        p_opt, ier = leastsq(spectral_line_erf, x0=p0, \
                              args=(line_pix, line_data))
         model_line = spectral_line_model(p_opt, line_pix)
         c, log_amplitude, stddev, line_center = p_opt
