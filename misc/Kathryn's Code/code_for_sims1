@@ -1,0 +1,57 @@
+rsun=8.
+nstars=50
+
+; units
+mu=2.5e8
+ru=0.63
+gee=6.67e-8
+msun=1.989e33
+cmpkpc=3.085678e21
+secperyr=3.1536d7 
+tu=((cmpkpc*ru)^1.5)/sqrt(msun)/sqrt(mu*gee)
+vu=(ru*cmpkpc*1.e-5)/tu
+tu=tu/secperyr/1.e9
+
+; center
+READCOL,'../try1/SCFCEN',t,dt,x,y,z,vx,vy,vz
+ncen=N_ELEMENTS(x)
+xcen=ru*x[ncen-1]
+ycen=ru*y[ncen-1]
+zcen=ru*z[ncen-1]
+vxcen=vu*vx[ncen-1]
+vycen=vu*vy[ncen-1]
+vzcen=vu*vz[ncen-1]
+tnow=tu*t[ncen-1]
+
+; RR Lyraes
+READCOL,'../try1/SNAP010',m,x,y,z,vx,vy,vz,s,s,tub,NUMLINE=10000,SKIPLINE=1
+
+; Transform so today is t=0
+; tub=time unbound
+tub=tu*tub-tnow
+
+iopt=3
+; option 1: pick a random sample
+IF(iopt EQ 1) THEN p=WHERE(tub LT 0.,count)
+
+; option 2: recent and close debris
+IF(iopt EQ 2) THEN BEGIN
+   d=ru*SQRT((x+rsun/ru)*(x+rsun/ru)+y*y+z*z)
+   p=WHERE((tub LT -0.5) AND (tub GT -3.) AND (d LT 60.),count)
+ENDIF
+
+; option 3: even closer debris
+IF(iopt EQ 3) THEN BEGIN
+   d=ru*SQRT((x+rsun/ru)*(x+rsun/ru)+y*y+z*z)
+   p=WHERE(d LT 35.,count)
+ENDIF
+
+ipick=FIX(RANDOMU(iseed,nstars)*FLOAT(count))
+p=p[ipick]
+
+x=x[p]*ru
+y=y[p]*ru
+z=z[p]*ru
+vx=vx[p]*vu
+vy=vy[p]*vu
+vz=vz[p]*vu

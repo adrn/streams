@@ -1,0 +1,112 @@
+C***********************************************************************
+C
+C
+      SUBROUTINE accel(j)
+C
+C
+C***********************************************************************
+      INCLUDE 'frog.h'
+        
+
+        INTEGER i,j
+        REAL*8 r2,z2,thrad,rad,tsrad,sqz2b2,tdr,
+     &         tdz,phim,phis,phih,
+     &         a,b,rs,vcirc2,GMs,GM,
+     &         xx,yy,zz,dpdx,dpdy,dpdz,fac,ru,vu,re2,c,gee
+
+        LOGICAL firstc
+        DATA firstc/.TRUE./
+        SAVE firstc,a,b,GM,GMs,rs,vh2,c
+
+        IF(firstc)THEN
+           firstc=.FALSE.
+
+           ru=1.0d0
+           vu=1.0d0
+C
+           a=6.5d0/ru
+           b=.26d0/ru
+           rs=.7d0/ru
+           vcirc2=220.**2/vu/vu
+           GM = 8.887d0*vcirc2/ru
+           GMs = 3.0d0*vcirc2/ru
+C sperical halo
+	   c=12.d0/ru
+           vh2 = 121.858d0*121.858d0/vu/vu
+C           vh2 = 120.d0*120.d0/vu/vu
+C           WRITE(6,*)q1,q2,qz,c1,c2,c3
+        END IF
+
+        DO 10 i=1,nbods
+C
+C     compute acceleration due to spheroid
+C
+           r2=x(i)*x(i)+y(i)*y(i)
+           z2 = z(i)*z(i)
+           rad = sqrt(r2+z2)
+           tsrad = GMs/(rad+rs)**2/rad
+           phis = -GMs/(rad+rs)
+C     
+           ax(i) = -tsrad*x(i)
+           ay(i) = -tsrad*y(i)
+           az(i) = -tsrad*z(i)
+C
+C           WRITE(6,*)ax(i),ay(i),az(i)
+C
+           pot(i)= phis
+C
+C      compute acceleration due to disk
+C
+           sqz2b2 = sqrt(z2 + b*b)
+           tdr = GM/(r2 + (a + sqz2b2)**2)**1.5
+           tdz = tdr*(a/sqz2b2 + 1.)
+           phim = -GM/sqrt(r2+(a+sqz2b2)**2)
+C
+           ax(i)=ax(i)-tdr*x(i)
+           ay(i)=ay(i)-tdr*y(i)
+           az(i)=az(i)-tdz*z(i)
+           pot(i)=pot(i)+phim
+
+C           WRITE(6,*)ax(i),ay(i),az(i)
+
+C      compute acceleration due to halo
+
+	   IF((q1.EQ.1.).AND.(qz.EQ.1))THEN
+              thrad = 2.*vh2/(r2 + z2 + c*c)
+              phih = vh2*DLOG(r2+z2+c*c)
+              ax(i) = ax(i) -thrad*x(i)
+              ay(i) = ay(i) -thrad*y(i)
+              az(i) = az(i) -thrad*z(i)
+	   ELSE
+	      xx=x(i)
+	      yy=y(i)
+	      zz=z(i)
+
+	      re2=C1*xx*xx+C2*yy*yy+C3*xx*yy+zz*zz/(qz*qz)
+	      phih=vh2*DLOG(re2+c*c)
+C
+	      fac=vh2/(re2+c*c)
+C mass estimate
+              IF(i.EQ.0)THEN 
+                 mhalo=fac*SQRT(re2)*re2/G
+C                         WRITE(6,*)mhalo,fac,re2,G
+               ENDIF
+
+	      dpdx=fac*(2.*C1*xx+C3*yy)
+	      dpdy=fac*(2.*C2*yy+C3*xx)
+	      dpdz=fac*(2.*zz/qz/qz)
+
+              ax(i) = ax(i) -dpdx
+              ay(i) = ay(i) -dpdy
+              az(i) = az(i) -dpdz
+	   ENDIF
+C
+C
+           pot(i)= pot(i)+phih
+C
+C           WRITE(6,*)ax(i),ay(i),az(i)
+C           WRITE(6,*)phis,phim,phih
+ 10     CONTINUE
+
+      RETURN
+      END
