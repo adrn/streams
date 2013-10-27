@@ -13,11 +13,13 @@ import os, sys
 # Third-party
 import numpy as np
 import astropy.units as u
+from astropy.modeling import models, fitting
 
 # Create logger
 #logger = logging.getLogger(__name__)
 
-__all__ = ["spectral_line_model", "spectral_line_erf", "parse_wavelength"]
+__all__ = ["spectral_line_model", "spectral_line_erf", "parse_wavelength",
+           "polynomial_fit"]
 
 def spectral_line_model(p, x):
     c, log_amplitude, stddev, mean = p
@@ -40,3 +42,18 @@ def parse_wavelength(wvln, default_unit=u.angstrom):
         wvln_unit = default_unit
 
     return float(wvln_value) * u.Unit(wvln_unit)
+
+def polynomial_fit(x, y, order=3):
+    """ Fit a polynomial of the specified order to the given
+        x and y data, return an astropy.modeling.Model fit to
+        the data.
+    """
+
+    if len(x) != len(y):
+        raise ValueError("x and y must have the sample shape!")
+
+    p = models.Polynomial1DModel(order)
+    fit = fitting.LinearLSQFitter(p)
+    fit(line_wavelengths, line_centers)
+
+    return p
