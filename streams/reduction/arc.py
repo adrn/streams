@@ -21,8 +21,9 @@ import numpy as np
 from scipy.optimize import leastsq
 
 # Project
-from . import obs_path
 from .util import *
+
+__all__ = ["hand_id_lines", "median_arc"]
 
 _line_colors = ["red", "green", "blue", "yellow", "magenta", "cyan"]
 
@@ -83,15 +84,13 @@ def median_arc(data_path):
 
     return pix, arc_1d
 
-def hand_id(data_path, Nlines=4,
-            redux_path=os.path.join(obs_path, 'reduction')):
+def hand_id_lines(data_path, Nlines=4, plot_path=None):
     """ Given a path to a night's data,
 
     """
 
-    plot_path = os.path.join(redux_path, "plots")
-    if not os.path.exists(plot_path):
-        os.makedirs(plot_path)
+    if plot_path is None:
+        plot_path = data_path
 
     # TODO: could use a matplotlib color scaler...
     if Nlines > len(_line_colors):
@@ -102,7 +101,7 @@ def hand_id(data_path, Nlines=4,
 
     # used to split the spectrum into Nlines sections, finds the brightest
     #   line in each section and asks the user to identify it
-    sub_div = h // Nlines
+    sub_div = len(arc_1d) // Nlines
 
     # TODO: When matplotlib has a TextBox widget, or a dropdown, let the
     #   user (me) identify the line on the plot
@@ -120,7 +119,7 @@ def hand_id(data_path, Nlines=4,
         color = _line_colors[ii]
 
         # max pixel index to be center of gaussian fit
-        c_idx = np.argmax(plot_comp[ii*sub_div:(ii+1)*sub_div])
+        c_idx = np.argmax(arc_1d[ii*sub_div:(ii+1)*sub_div])
         c_idx += sub_div*ii
 
         try:
@@ -130,11 +129,7 @@ def hand_id(data_path, Nlines=4,
             logger.debug("max value near edge of ccd...weird.")
             continue
 
-        p0 = [min(line_data), np.log10(max(line_data)), 0.5, c_idx]
-
-        # fit a spectral line model to the line data
-        p_opt, ier = leastsq(spectral_line_erf, x0=p0, \
-                             args=(line_pix, line_data))
+        p_opt = gaussian_fit(line_pix, line_data)
         model_line = spectral_line_model(p_opt, line_pix)
         c, log_amplitude, stddev, line_center = p_opt
         line_centers.append(line_center)
@@ -153,7 +148,7 @@ def hand_id(data_path, Nlines=4,
         else:
             bottom_ax.yaxis.set_visible(False)
 
-    line_id_file = os.path.join(plot_path, "{0}_line_id.png".format(night))
+    line_id_file = os.path.join(plot_path, "line_id.png")
     fig.savefig(line_id_file)
 
     print("")
@@ -163,7 +158,7 @@ def hand_id(data_path, Nlines=4,
     print("")
 
     line_wavelengths = []
-    for ii,color in enumerate(line_colors):
+    for ii,color in enumerate(_line_colors[:Nlines]):
         wvln = raw_input("\t Line {0} ({1} line) wavelength: ".format(ii,
                                                                       color))
         wvln = parse_wavelength(wvln)

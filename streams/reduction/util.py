@@ -19,15 +19,29 @@ from astropy.modeling import models, fitting
 #logger = logging.getLogger(__name__)
 
 __all__ = ["spectral_line_model", "spectral_line_erf", "parse_wavelength",
-           "polynomial_fit"]
+           "polynomial_fit", "line_list", "gaussian_fit"]
 
 def spectral_line_model(p, x):
     c, log_amplitude, stddev, mean = p
     return c + 10**log_amplitude / np.sqrt(2*np.pi*stddev**2.) * \
                 np.exp(-0.5*(x-mean)**2/stddev**2)
 
-def spetral_line_erf(p, x, y):
+def spectral_line_erf(p, x, y):
     return y - spectral_line_model(p, x)
+
+def gaussian_fit(x, y, p0=None):
+    """ TODO: betterize, should return an astropy model """
+
+    if p0 is None:
+        p0 = [min(y), np.log10(max(y)), 0.5, np.mean(x)]
+
+    # fit a spectral line model to the line data
+    p_opt, ier = leastsq(spectral_line_erf, x0=p0, \
+                         args=(x, y))
+
+    if ier > 4:
+        raise ValueError("Gaussian fit failed!")
+    return p_opt
 
 def parse_wavelength(wvln, default_unit=u.angstrom):
     """ Parse a wavelength string from raw_input and return
@@ -57,3 +71,20 @@ def polynomial_fit(x, y, order=3):
     fit(x, y)
 
     return p
+
+def line_list(name):
+    """ Read in a list of wavelengths for a given arc lamp.
+
+        TODO: this could be so much better. Need some kind of registry?
+        TODO: is there a full list for Hg Ne somewhere?
+    """
+
+    from . import obs_path
+
+    if name.replace(" ", "").lower() == "hgne":
+        fn = os.path.join(obs_path, "MDM 2.4m", "line lists", "Hg_Ne.txt")
+        lines = np.loadtxt(fn)
+    else:
+        raise ValueError("No list for {0}".format(name))
+
+    return lines
