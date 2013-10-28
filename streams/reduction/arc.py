@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.gridspec import GridSpec
 import numpy as np
-from scipy.optimize import leastsq
 
 # Project
 from .util import *
@@ -84,20 +83,14 @@ def median_arc(data_path):
 
     return pix, arc_1d
 
-def hand_id_lines(data_path, Nlines=4, plot_path=None):
+def hand_id_lines(pix, arc_1d, plot_path, Nlines=4):
     """ Given a path to a night's data,
 
     """
 
-    if plot_path is None:
-        plot_path = data_path
-
     # TODO: could use a matplotlib color scaler...
     if Nlines > len(_line_colors):
         raise ValueError("Use a max of {0} lines.".format(len(_line_colors)))
-
-    # get pixel array and a medianed, 1D arc spectrum
-    pix, arc_1d = median_arc(data_path)
 
     # used to split the spectrum into Nlines sections, finds the brightest
     #   line in each section and asks the user to identify it

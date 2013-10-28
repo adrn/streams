@@ -14,6 +14,7 @@ import os, sys
 import numpy as np
 import astropy.units as u
 from astropy.modeling import models, fitting
+from scipy.optimize import leastsq
 
 # Create logger
 #logger = logging.getLogger(__name__)
