@@ -30,6 +30,24 @@ __all__ = ["hand_id_lines", "median_arc", "solve_arc_1d"]
 
 _line_colors = ["red", "green", "blue", "yellow", "magenta", "cyan"]
 
+def find_comp_files(path, object="Hg Ne"):
+    """ Find all files with IMAGETYP=COMP in a given directory. """
+
+    # within this path, find all files with IMAGETYP = comp or
+    #   OBJECT = <specified>
+    comp_files = []
+    for filename in glob.glob(os.path.join(path, "*.fit*")):
+        hdr = fits.getheader(filename)
+        if hdr["IMAGETYP"].lower().strip() == "comp" or \
+           hdr["OBJECT"].strip() == object:
+            comp_files.append(filename)
+
+        # only need 10 files -- more than that is overkill
+        if len(comp_files) >= 10:
+            break
+
+    return comp_files
+
 def median_arc(data_path):
     """ Given a path to a night's data, generate a 1D median
         arc spectrum for a rough wavelength solution.
@@ -40,24 +58,12 @@ def median_arc(data_path):
             Path to a directory full of FITS files for a night.
     """
 
-    # within this path, find all files with IMAGETYP = comp or
-    #   OBJECT = Hg Ne
-    comp_files = []
-    for filename in glob.glob(os.path.join(data_path, "*.fit*")):
-        hdr = fits.getheader(filename)
-        if hdr["IMAGETYP"].lower().strip() != "comp" and \
-           hdr["OBJECT"].lower().strip() != "hg ne":
-            continue
-
-        comp_files.append(filename)
-
-        # only need 10 files -- more than that is overkill
-        if len(comp_files) >= 10:
-            break
-
+    comp_files = find_comp_files(data_path)
     if len(comp_files) == 0:
         raise ValueError("Didn't find any COMP or Hg Ne files!"
                         "Are you sure {0} is a valid path?".format(data_path))
+
+    comp_files = comp_files[:min(10,len(comp_files)-1)]
 
     # get the shape of CCD from the first file
     d = fits.getdata(comp_files[0], 0)
