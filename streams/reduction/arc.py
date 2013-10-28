@@ -10,6 +10,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 import glob
 import logging
+import json
 
 # Third-party
 from astropy.io import fits
@@ -22,7 +23,10 @@ import numpy as np
 # Project
 from .util import *
 
-__all__ = ["hand_id_lines", "median_arc"]
+# Create logger
+logger = logging.getLogger(__name__)
+
+__all__ = ["hand_id_lines", "median_arc", "solve_arc_1d"]
 
 _line_colors = ["red", "green", "blue", "yellow", "magenta", "cyan"]
 
@@ -158,3 +162,104 @@ def hand_id_lines(pix, arc_1d, plot_path, Nlines=4):
         line_wavelengths.append(wvln.to(u.angstrom).value)
 
     return line_centers, line_wavelengths
+
+def solve_arc_1d(pix, arc_1d, redux_path):
+    """ TODO: """
+    plot_path = os.path.join(redux_path, "plots")
+    if not os.path.exists(plot_path):
+        os.makedirs(plot_path)
+
+    hg_ne_lines = line_list("HgNe")
+
+    hand_id_file = os.path.join(redux_path, "arc", "hand_id.json")
+    all_id_file = os.path.join(redux_path, "arc", "all_id.json")
+
+    if not os.path.exists(hand_id_file):
+        line_pixels, line_wavelengths = hand_id_lines(pix, arc_1d, \
+                                                      plot_path=plot_path)
+
+        with open(hand_id_file, 'w') as f:
+            s = dict()
+            s["wavelength"] = line_wavelengths
+            s["pixel"] = line_pixels
+            f.write(json.dumps(s))
+
+    with open(hand_id_file) as f:
+        s = json.loads(f.read())
+        line_pixels = s["pixel"]
+        line_wavelengths = s["wavelength"]
+
+    p = polynomial_fit(line_wavelengths, line_pixels)
+
+    plt.plot(line_wavelengths, line_pixels, marker='o', linestyle='none')
+    grid = np.linspace(np.min(line_wavelengths),
+                       np.max(line_wavelengths), 100)
+    plt.plot(grid, p(grid), linestyle='--', alpha=0.5, color='b')
+    plt.savefig(os.path.join(plot_path, "rough_polynomial_fit.png"))
+
+    predicted_pix = p(hg_ne_lines)
+
+    # only get ones within our pixel range
+    idx = (predicted_pix>0) & (predicted_pix<1024)
+    arc_lines = hg_ne_lines[idx]
+    predicted_pix = predicted_pix[idx]
+
+    # sort by increasing pixel values
+    sort_idx = np.argsort(predicted_pix)
+    arc_lines = arc_lines[sort_idx]
+    predicted_pix = predicted_pix[sort_idx]
+
+    # label the lines, IRAF style
+    fig,ax = plt.subplots(1,1,figsize=(11,8))
+    ax.plot(pix, arc_1d, drawstyle="steps", c='k')
+
+    # fit a gaussian to each line, determine center
+    fit_pix = []
+    fit_lines = []
+    ylim_max = 0.
+    for c_pix,wvln in zip(predicted_pix, arc_lines):
+        c_idx = int(c_pix)
+
+        line_pix = pix[c_idx-5:c_idx+5]
+        line_data = arc_1d[c_idx-5:c_idx+5]
+        p_opt = gaussian_fit(line_pix, line_data)
+        c, log_amplitude, stddev, line_center = p_opt
+
+        if abs(line_center - c_pix) > 1.:
+            logger.info("Line {0} fit failed.".format(wvln))
+            continue
+
+        fit_pix.append(line_center)
+        fit_lines.append(wvln)
+
+        y = max(spectral_line_model(p_opt, line_pix)) + 3000.
+        ylim_max = max(ylim_max, y)
+        ax.text(line_center-6, y, "{0:.3f}".format(wvln),
+                rotation=90, fontsize=10)
+
+        # TODO: if plot, make each individual line plot?
+        # l_fig, l_ax = plt.subplots(1,1,figsize=(4,4))
+        # l_ax.plot(line_pix, line_data, \
+        #           alpha=0.5, color='b', drawstyle="steps", lw=2.)
+        # l_ax.plot(line_pix, spectral_line_model(p_opt, line_pix), \
+        #           alpha=0.5, color='r', drawstyle="steps", lw=2.)
+        # l_fig.savefig(os.path.join(plot_path,
+        #               "fit_line_{0}.png".format(int(wvln))))
+        # plt.close()
+
+    # TODO: pull plotting out of this function so I can add night label below
+    ax.set_xlim(0,1023)
+    ax.set_ylim(0, ylim_max + 1000)
+    ax.set_xlabel("Pixel")
+    ax.set_ylabel("Raw counts")
+    #ax.set_title("Night: {0}".format(night))
+    fig.savefig(os.path.join(plot_path, "labeled_arc.pdf"))
+
+    # write this out as initial conditions for 2D fit
+    with open(all_id_file, "w") as f:
+        s = dict()
+        s["wavelength"] = fit_lines
+        s["pixel"] = fit_pix
+        f.write(json.dumps(s))
+
+    return fit_pix, fit_lines
