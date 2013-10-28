@@ -46,17 +46,76 @@ import numpy as np
 # Project
 from streams.reduction import *
 
-def solve_arc_image(data):
+def solve_arc_image(data, L_idx, R_idx, fit_pix, fit_lines):
     """ Given 2D CCD data of an arc lamp and a rough wavelength
         solution from a 1D trace, solve for a 2D wavelength array
         -- that is, wavelength value at each pixel of the image.
+
+        L_idx and R_idx are to specify a sub-section of the data
+        to actually solve.
+
+        TODO: do smart things with indices...
     """
 
-    # determine wavelength solution for each column on the CCD
-    nrows, ncols = data.shape
-    pix = np.arange(nrows)
+    # average over this many columns
+    avg_len = 10
 
-    print(pix)
+    # determine wavelength solution for each column on the CCD
+    nrows = len(data)
+    pix = np.arange(nrows)
+    ncols = R_idx - L_idx
+
+    wavelength_2d = np.zeros((nrows, ncols))
+    for i in range(ncols):
+        col_fit_pix = []
+        col_fit_lines = []
+
+        ii = i + L_idx
+        col_data = data[:,ii-avg_len//2:ii+avg_len//2]
+        avg_col = np.mean(col_data, axis=1)
+
+        for c_pix,wvln in zip(fit_pix, fit_lines):
+            c_idx = int(c_pix)
+
+            line_pix = pix[c_idx-5:c_idx+5]
+            line_data = avg_col[c_idx-5:c_idx+5]
+            try:
+                p_opt = gaussian_fit(line_pix, line_data)
+            except ValueError:
+                logger.info("Line {0} fit failed.".format(wvln))
+                continue
+
+            c, log_amplitude, stddev, line_center = p_opt
+
+            if abs(line_center - c_pix) > 1.:
+                logger.info("Line {0} fit failed.".format(wvln))
+                continue
+
+            col_fit_pix.append(line_center)
+            col_fit_lines.append(wvln)
+
+        col_fit_pix = np.array(col_fit_pix)
+        col_fit_lines = np.array(col_fit_lines)
+
+        p = polynomial_fit(col_fit_pix, col_fit_lines, order=5)
+        residual = np.fabs(col_fit_lines - p(col_fit_pix))
+
+        # reject where residual >= 0.1 A
+        ix = residual < 0.1
+        p = polynomial_fit(col_fit_pix[ix], col_fit_lines[ix], order=5)
+        wavelength_2d[:,i] = p(pix)
+
+        # fig,axes = plt.subplots(2,1,figsize=(11,8), sharex=True)
+        # axes[0].plot(col_fit_pix, col_fit_lines, marker='o', linestyle='none')
+        # axes[0].plot(pix, p(pix), linestyle='--', alpha=0.5, color='b')
+        # axes[1].plot(col_fit_pix, col_fit_lines-p(col_fit_pix),
+        #              marker="o", linestyle="none", color='r', ms=5)
+        # axes[1].axhline(0., lw=2.)
+        # axes[1].set_xlim(min(pix),max(pix))
+        # fig.subplots_adjust(hspace=0.)
+        # plt.show()
+
+    return wavelength_2d
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -95,3 +154,31 @@ if __name__ == "__main__":
     pix, arc_1d = median_arc(data_path)
 
     fit_pix, fit_lines = solve_arc_1d(pix, arc_1d, redux_path)
+
+    # TODO: need to figure out a way to combine consecutive arcs,
+    #   average or median them, then use those as data below...
+    #   Better yet, write a top-level function given object files,
+    #   arcs, flats, biases, etc., have it only solve the arcs for that
+    #   object?
+    comp_files = find_comp_files(data_path)
+    for fn in comp_files:
+        # filename to save to in reduction/arc
+        xx,just_filename = os.path.split(fn)
+        save_file = os.path.join(redux_path, "arc",
+                                 "arc_{0}".format(just_filename))
+
+        if os.path.exists(save_file):
+            continue
+
+        # get data from comp file
+        arc_data = fits.getdata(fn,0)
+
+        # just the central 100 pix
+        h,w = arc_data.shape
+        L_idx = int(w/2) - 50
+        R_idx = int(w/2) + 50
+
+        wavelength_2d = solve_arc_image(arc_data, L_idx, R_idx,
+                                        fit_pix, fit_lines)
+        hdu = fits.PrimaryHDU(wavelength_2d)
+        hdu.writeto(save_file)

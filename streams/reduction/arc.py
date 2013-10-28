@@ -26,7 +26,7 @@ from .util import *
 # Create logger
 logger = logging.getLogger(__name__)
 
-__all__ = ["hand_id_lines", "median_arc", "solve_arc_1d"]
+__all__ = ["hand_id_lines", "median_arc", "solve_arc_1d", "find_comp_files"]
 
 _line_colors = ["red", "green", "blue", "yellow", "magenta", "cyan"]
 
@@ -41,10 +41,6 @@ def find_comp_files(path, object="Hg Ne"):
         if hdr["IMAGETYP"].lower().strip() == "comp" or \
            hdr["OBJECT"].strip() == object:
             comp_files.append(filename)
-
-        # only need 10 files -- more than that is overkill
-        if len(comp_files) >= 10:
-            break
 
     return comp_files
 
@@ -170,7 +166,7 @@ def hand_id_lines(pix, arc_1d, plot_path, Nlines=4):
     return line_centers, line_wavelengths
 
 def solve_arc_1d(pix, arc_1d, redux_path):
-    """ TODO: """
+    """ TODO: split this function up more so i can cache hand_id.json """
     plot_path = os.path.join(redux_path, "plots")
     if not os.path.exists(plot_path):
         os.makedirs(plot_path)
@@ -202,6 +198,7 @@ def solve_arc_1d(pix, arc_1d, redux_path):
                        np.max(line_wavelengths), 100)
     plt.plot(grid, p(grid), linestyle='--', alpha=0.5, color='b')
     plt.savefig(os.path.join(plot_path, "rough_polynomial_fit.png"))
+    plt.close()
 
     predicted_pix = p(hg_ne_lines)
 
@@ -260,6 +257,7 @@ def solve_arc_1d(pix, arc_1d, redux_path):
     ax.set_ylabel("Raw counts")
     #ax.set_title("Night: {0}".format(night))
     fig.savefig(os.path.join(plot_path, "labeled_arc.pdf"))
+    plt.close()
 
     # write this out as initial conditions for 2D fit
     with open(all_id_file, "w") as f:
