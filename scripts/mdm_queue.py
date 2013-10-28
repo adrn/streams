@@ -179,7 +179,7 @@ for star in all_stars:
     ax.text(5., 0.9, star['name'])
     fig.savefig(os.path.join(phase_plot_path, "{0}.png".format(star['name'])))
 
-    idx1 = (phases > 0.2) & (phases < 0.5) & \
+    idx1 = (phases > 0.1) & (phases < 0.5) & \
            (ut_hours < 13.) & (ut_hours > 2.)
 
     idx2 = (phases >= 0.5) & (phases < 0.8) & \
