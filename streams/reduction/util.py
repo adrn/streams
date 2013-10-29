@@ -101,7 +101,7 @@ def line_list(name):
 
     from . import obs_path
 
-    if name.replace(" ", "").lower() == "hgne":
+    if name.replace(" ", "").lower() == "hg ne":
         fn = os.path.join(obs_path, "MDM 2.4m", "line lists", "Hg_Ne.txt")
         lines = np.loadtxt(fn)
     else:

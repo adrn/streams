@@ -64,16 +64,14 @@ def test_api():
                                                       Nlines=4,
                                                       overwrite=False)
 
-    return
-
     # - now we want to fit all lines to get line wavelengths vs. line pixels.
     #   these values are used as initial conditions for doing 2D
     #   wavelength calibration. again, this is cached so should only be
     #   done once.
-    all_line_pix, all_line_wvln = obs_run.solve_all_lines(hand_id_pix,
-                                                          hand_id_wvln,
-                                                          line_list,
+    all_line_pix, all_line_wvln = obs_run.solve_all_lines(line_list("Hg Ne"),
                                                           overwrite=False)
+
+    return
 
     # polynomial fit to the grid of pixels / wavelengths for the line centers
     pix2wvln, wvln2pix = obs_run.wavelength_solution_1d(all_line_pix,

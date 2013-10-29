@@ -334,6 +334,18 @@ class ObservingRun(object):
 
         return s["pixel"], s["wavelength"]
 
+    def solve_all_lines(self, line_list, overwrite=False):
+        """ Now that we have some lines identified by hand, solve for all
+            line centers.
+
+            Parameters
+            ----------
+            line_list : array_like
+                Array of wavelengths of all lines for this arc.
+            overwrite : bool (optional)
+                Overwrite the cache file or not.
+        """
+
 
 class ObservingNight(object):
 
