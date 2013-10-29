@@ -19,7 +19,7 @@ import astropy.units as u
 from astropy.time import Time
 import matplotlib.pyplot as plt
 
-from ..observing import ObservingRun, ObservingNight, CCD
+from ..observing import *
 
 plot_path = "plots/tests/reduction"
 
@@ -49,7 +49,11 @@ def test_api():
     night = ObservingNight(utc=utc, observing_run=obs_run)
 
     # - median a bunch of arc images, extract a 1D arc spectrum
-    obs_run.make_master_arc(night, narcs=10)
+    pix,arc = obs_run.make_master_arc(night, narcs=10, overwrite=True)
+    fig,ax = plot_spectrum(pix, arc)
+    ax.set_xlabel("Pixels")
+    ax.set_ylabel("Raw counts")
+    plt.show()
 
     return
 

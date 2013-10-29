@@ -17,6 +17,7 @@ import json
 from astropy.io import fits
 import astropy.units as u
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -40,6 +41,30 @@ def find_all_imagetyp(path, imagetyp):
             files.append(filename)
 
     return files
+
+def plot_spectrum(dispersion, flux, fig=None, ax=None, **kwargs):
+    """ Plot a spectrum.
+
+        Parameters
+        ----------
+        dispersion : array_like
+        flux : array_like
+        fig : matplotlib.Figure
+        ax : matplotlib.Axes
+    """
+
+    if fig is None and ax is None:
+        fig,ax = plt.subplots(1,1,figsize=kwargs.pop("figsize",(11,8)))
+
+    if ax is not None and fig is None:
+        fig = ax.figure
+
+    ax.plot(dispersion, flux, drawstyle='steps', **kwargs)
+    ax.set_xlim(min(dispersion), max(dispersion))
+    ax.set_ylim(0, max(flux) + (max(flux)-min(flux))/20)
+
+    return fig,ax
+
 
 class CCD(object):
 
@@ -172,16 +197,16 @@ class ObservingRun(object):
             comp_files = comp_files[:narcs]
 
             # make a 3D data structure to hold data from all comps
-            all_comps = np.zeros((narcs, ) + self.ccd.shape)
+            all_comps = np.zeros(self.ccd.shape + (narcs, ))
 
             for ii,fn in enumerate(comp_files):
-                all_comps[ii] = fits.getdata(fn, 0)
+                all_comps[...,ii] = fits.getdata(fn, 0)
 
             # only select out the part of the read-out CCD to use for science
             all_comps = all_comps[self.ccd.regions["data"]]
 
             # take median over each individual exposure
-            median_comp = np.median(all_comps, axis=0)
+            median_comp = np.median(all_comps, axis=-1)
 
             # now take median over the columns in the sub-image
             median_comp_1d = np.median(median_comp, axis=1)
@@ -191,8 +216,8 @@ class ObservingRun(object):
 
             with open(cache_file, "w") as f:
                 s = dict()
-                s["pixels"] = pix
-                s["arc"] = median_comp_1d
+                s["pixels"] = pix.tolist()
+                s["arc"] = median_comp_1d.tolist()
                 f.write(json.dumps(s))
 
         with open(cache_file) as f:
