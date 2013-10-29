@@ -34,8 +34,10 @@ def test_api():
               shape=(1024,364), dispersion_axis=0) # shape=(nrows, ncols)
 
     # region of the detector read out
-    data_region = ccd[:,100:200]
-    overscan = ccd[:,-64:]
+    ccd.regions["data"] = ccd[:,100:200]
+
+    # overscan area
+    ccd.regions["overscan"] = ccd[:,-64:]
 
     # create an observing run object, which holds paths and some global things
     #   like the ccd object, maybe Site object?

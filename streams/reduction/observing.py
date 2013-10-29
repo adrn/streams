@@ -73,12 +73,13 @@ class CCD(object):
         self.read_noise = float(read_noise)
         self.dispersion_axis = int(dispersion_axis)
 
-        _tmp = np.zeros(self.shape)
+        # can define named sub-regions of the detector
+        self.regions = dict()
 
     def __getitem__(self, *slices):
         return CCDRegion(self, *slices)
 
-class CCDRegion(object):
+class CCDRegion(list):
 
     def __init__(self, ccd, *slices):
         """ Represents a region / subset of a CCD detector
@@ -92,7 +93,7 @@ class CCDRegion(object):
                 slicing along each axis of the CCD.
         """
         self.ccd = CCD
-        self._slices = slices
+        super(CCDRegion, self).__init__(*slices)
 
 class ObservingRun(object):
 
@@ -177,8 +178,7 @@ class ObservingRun(object):
                 all_comps[ii] = fits.getdata(fn, 0)
 
             # only select out the part of the read-out CCD to use for science
-            ax0,ax1 = ccd.data_slice
-            all_comps = all_comps[:,ax0[0]:ax0[1],ax1[0]:ax1[1]]
+            all_comps = all_comps[self.ccd.regions["data"]]
 
             # take median over each individual exposure
             median_comp = np.median(all_comps, axis=0)
