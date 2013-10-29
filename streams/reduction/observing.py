@@ -63,8 +63,6 @@ class ObservingRun(object):
         if not os.path.exists(self.redux_path):
             os.mkdir(self.redux_path)
 
-
-
 def find_all_imagetyp(path, imagetyp):
     """ Find all FITS files in the given path with the IMAGETYP
         header keyword equal to whatever is specified.
@@ -110,13 +108,21 @@ class ObservingNight(object):
 
         self.night_path = None
         if self.night_path is None:
-            night_str = "m{0}".format(utc.datetime.strftime("%d%m%y"))
+            # convention is to use civil date at start of night for data,
+            #   which is utc day - 1
+            day = "{:02d}".format(utc.datetime.day-1)
+            month = utc.datetime.strftime("%m")
+            year = utc.datetime.strftime("%y")
+            night_str = "m{0}{1}{2}".format(month, day, year)
             self.night_path = os.path.join(self.observing_run.data_path,
                                            night_str)
 
         # create a dict with all unique object names as keys, paths to
         #   files as values
         all_object_files = find_all_imagetyp(self.night_path, "OBJECT")
+        if len(all_object_files) == 0:
+            raise ValueError("No object files found in '{0}'"\
+                             .format(self.night_path))
 
         object_dict = defaultdict(list)
         for filename in all_object_files:
