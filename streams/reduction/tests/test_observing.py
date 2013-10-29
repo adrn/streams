@@ -55,12 +55,6 @@ def test_api():
         obs_run.make_master_arc(night, narcs=10, overwrite=True)
         arc = obs_run.master_arc
 
-        # TODO: wait to plot until lines are ID'd
-        fig,ax = arc.plot()
-        fig.savefig(os.path.join(obs_run.redux_path, "plots",
-                                 "master_arc.pdf"))
-        plt.close()
-
         # fit for a rough wavelength solution
         arc.solve_wavelength(obs_run, find_line_list("Hg Ne"))
         # or, more control:
@@ -70,8 +64,9 @@ def test_api():
         fnpickle(arc, arc_file)
 
     obs_run.master_arc = fnunpickle(arc_file)
-    obs_run.master_arc.plot()
-    plt.show()
+    fig,ax = obs_run.master_arc.plot()
+    fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
+    plt.close()
 
     return
 
