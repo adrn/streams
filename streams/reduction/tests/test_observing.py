@@ -20,6 +20,7 @@ from astropy.time import Time
 import matplotlib.pyplot as plt
 
 from ..observing import *
+from ..util import *
 
 plot_path = "plots/tests/reduction"
 
@@ -68,7 +69,8 @@ def test_api():
     #   these values are used as initial conditions for doing 2D
     #   wavelength calibration. again, this is cached so should only be
     #   done once.
-    all_line_pix, all_line_wvln = obs_run.solve_all_lines(line_list("Hg Ne"),
+    all_line_pix, all_line_wvln = obs_run.solve_all_lines(night,
+                                                          line_list("Hg Ne"),
                                                           overwrite=False)
 
     return

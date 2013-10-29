@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 # Project
-from .util import gaussian_fit
+from .util import gaussian_fit, polynomial_fit
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -230,7 +230,7 @@ class ObservingRun(object):
         with open(cache_file) as f:
             s = json.loads(f.read())
 
-        return s["pixel"], s["arc"]
+        return np.array(s["pixel"]), np.array(s["arc"])
 
     def hand_id_lines(self, night, Nlines=4, overwrite=False):
         """ Have the user identify some number of lines by hand.
@@ -332,20 +332,69 @@ class ObservingRun(object):
         with open(cache_file) as f:
             s = json.loads(f.read())
 
-        return s["pixel"], s["wavelength"]
+        return np.array(s["pixel"]), np.array(s["wavelength"])
 
-    def solve_all_lines(self, line_list, overwrite=False):
+    def solve_all_lines(self, night, line_list, overwrite=False):
         """ Now that we have some lines identified by hand, solve for all
             line centers.
 
             Parameters
             ----------
+            night : ObservingNight
             line_list : array_like
                 Array of wavelengths of all lines for this arc.
             overwrite : bool (optional)
                 Overwrite the cache file or not.
         """
 
+        line_list = np.array(line_list)
+        line_list.sort()
+
+        pix, arc = self.make_master_arc(night)
+        hand_id_pix, hand_id_wvln = self.hand_id_lines(night)
+
+        cache_file = os.path.join(self.redux_path, "arc", "all_lines.json")
+
+        if os.path.exists(cache_file) and overwrite:
+            os.remove(cache_file)
+
+        if not os.path.exists(cache_file):
+            # fit a polynomial to the hand identified lines
+            p = polynomial_fit(hand_id_wvln, hand_id_pix, order=3)
+            predicted_pix = p(line_list)
+
+            # only get ones within our pixel range
+            idx = (predicted_pix>0) & (predicted_pix<1024)
+            arc_lines = line_list[idx]
+            arc_pix = predicted_pix[idx]
+
+            # fit a gaussian to each line, determine center
+            fit_pix = []
+            fit_lines = []
+            for c_pix,wvln in zip(arc_pix, arc_lines):
+                c_idx = int(c_pix)
+
+                line_pix = pix[c_idx-5:c_idx+5]
+                line_data = arc[c_idx-5:c_idx+5]
+                p = gaussian_fit(line_pix, line_data)
+
+                if abs(p.mean - c_pix) > 1.:
+                    logger.info("Line {0} fit failed.".format(wvln))
+                    continue
+
+                fit_pix.append(p.mean.value)
+                fit_lines.append(wvln)
+
+            with open(cache_file, "w") as f:
+                s = dict()
+                s["pixel"] = fit_pix
+                s["wavelength"] = fit_lines
+                f.write(json.dumps(s))
+
+        with open(cache_file) as f:
+            s = json.loads(f.read())
+
+        return np.array(s["pixel"]), np.array(s["wavelength"])
 
 class ObservingNight(object):
 
