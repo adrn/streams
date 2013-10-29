@@ -15,13 +15,14 @@ import json
 
 # Third-party
 from astropy.io import fits
+from astropy.io.misc import fnpickle, fnunpickle
 import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 # Project
-from .util import gaussian_fit, polynomial_fit, line_list
+from .util import *
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -201,13 +202,16 @@ class ArcSpectrum(Spectrum):
 
         if self.wavelength is not None:
             x = self.wavelength
+            ax.set_xlabel("Wavelength")
         else:
             x = self.pix
+            ax.set_xlabel("Pixels")
 
         ax.plot(x, self.counts, drawstyle='steps', **kwargs)
         ax.set_xlim(min(x), max(x))
         ax.set_ylim(0,
                     max(self.counts) + (max(self.counts)-min(self.counts))/20)
+        ax.set_ylabel("Raw counts")
 
         return fig,ax
 
@@ -417,6 +421,8 @@ class ObservingRun(object):
 
         if not os.path.exists(self.redux_path):
             os.mkdir(self.redux_path)
+
+        self.master_arc = None
 
     def make_master_arc(self, night, narcs=10, overwrite=False):
         """ Make a 'master' 1D arc for this observing run, cache it to

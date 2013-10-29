@@ -49,22 +49,29 @@ def test_api():
     utc = Time(datetime(2013,10,28), scale="utc")
     night = ObservingNight(utc=utc, observing_run=obs_run)
 
-    # - median a bunch of arc images, extract a 1D arc spectrum
-    obs_run.make_master_arc(night, narcs=10, overwrite=True)
-    arc = obs_run.master_arc
+    arc_file = os.path.join(obs_run.redux_path, "arc", "master_arc.pickle")
+    if not os.path.exists(arc_file):
+        # - median a bunch of arc images, extract a 1D arc spectrum
+        obs_run.make_master_arc(night, narcs=10, overwrite=True)
+        arc = obs_run.master_arc
 
-    # TODO: wait to plot until lines are ID'd
-    fig,ax = arc.plot()
-    ax.set_xlabel("Pixels")
-    ax.set_ylabel("Raw counts")
-    fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
-    plt.close()
+        # TODO: wait to plot until lines are ID'd
+        fig,ax = arc.plot()
+        fig.savefig(os.path.join(obs_run.redux_path, "plots",
+                                 "master_arc.pdf"))
+        plt.close()
 
-    # fit for a rough wavelength solution
-    arc.solve_wavelength(obs_run, line_list)
-    # or, more control:
-    # arc._hand_id_lines(Nlines=4)
-    # arc._solve_all_lines(line_list, dispersion_fit_order=3)
+        # fit for a rough wavelength solution
+        arc.solve_wavelength(obs_run, find_line_list("Hg Ne"))
+        # or, more control:
+        # arc._hand_id_lines(Nlines=4)
+        # arc._solve_all_lines(line_list, dispersion_fit_order=3)
+
+        fnpickle(arc, arc_file)
+
+    obs_run.master_arc = fnunpickle(arc_file)
+    obs_run.master_arc.plot()
+    plt.show()
 
     return
 
