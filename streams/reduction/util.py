@@ -99,9 +99,9 @@ def line_list(name):
         TODO: is there a full list for Hg Ne somewhere?
     """
 
-    from . import obs_path
+    obs_path = "/Users/adrian/Documents/GraduateSchool/Observing"
 
-    if name.replace(" ", "").lower() == "hg ne":
+    if name.replace(" ", "").lower() == "hgne":
         fn = os.path.join(obs_path, "MDM 2.4m", "line lists", "Hg_Ne.txt")
         lines = np.loadtxt(fn)
     else:
