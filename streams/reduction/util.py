@@ -20,7 +20,8 @@ from scipy.optimize import leastsq
 # Create logger
 #logger = logging.getLogger(__name__)
 
-__all__ = ["parse_wavelength", "polynomial_fit", "line_list", "gaussian_fit"]
+__all__ = ["parse_wavelength", "polynomial_fit", \
+           "find_line_list", "gaussian_fit"]
 
 @custom_model_1d
 def GaussianPolynomial(x, c=0., log10_amp=4, stddev=1., mean=0):
@@ -92,7 +93,7 @@ def parse_wavelength(wvln, default_unit=u.angstrom):
 
     return float(wvln_value) * u.Unit(wvln_unit)
 
-def line_list(name):
+def find_line_list(name):
     """ Read in a list of wavelengths for a given arc lamp.
 
         TODO: this could be so much better. Need some kind of registry?
