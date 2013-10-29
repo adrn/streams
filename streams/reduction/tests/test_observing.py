@@ -50,17 +50,20 @@ def test_api():
 
     # - median a bunch of arc images, extract a 1D arc spectrum
     pix,arc = obs_run.make_master_arc(night, narcs=10, overwrite=True)
+
+    # TODO: wait to plot until lines are ID'd
     fig,ax = plot_spectrum(pix, arc)
     ax.set_xlabel("Pixels")
     ax.set_ylabel("Raw counts")
-    plt.show()
-
-    return
+    fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
+    plt.close()
 
     # - have the user hand identify lines on the master arc (if this is
     #   already done, this just reads a cached JSON file)
     hand_id_pix, hand_id_wvln = obs_run.hand_id_lines(Nlines=4,
                                                       overwrite=False)
+
+    return
 
     # - now we want to fit all lines to get line wavelengths vs. line pixels.
     #   these values are used as initial conditions for doing 2D
