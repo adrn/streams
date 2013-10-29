@@ -21,10 +21,12 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 # Project
-from .util import gaussian_fit, polynomial_fit
+from .util import gaussian_fit, polynomial_fit, line_list
 
 # Create logger
 logger = logging.getLogger(__name__)
+
+_line_colors = ["red", "green", "blue", "magenta", "cyan", "yellow"]
 
 def find_all_imagetyp(path, imagetyp):
     """ Find all FITS files in the given path with the IMAGETYP
@@ -69,6 +71,19 @@ def plot_spectrum(dispersion, flux, fig=None, ax=None, **kwargs):
 
     return fig,ax
 
+def plot_wavelength_solution(obs_run, night):
+    """ TODO: """
+
+    # label the lines, IRAF style
+    fig,ax = plt.subplots(1,1,figsize=(11,8))
+    ax.plot(pix, arc_1d, drawstyle="steps", c='k')
+
+    all_pix, all_wvln = obs_run.solve_all_lines(night)
+    for pix,wvln in zip(all_pix, all_wvln):
+        y = max(spectral_line_model(p_opt, line_pix)) + 3000.
+        ylim_max = max(ylim_max, y)
+        ax.text(line_center-6, y, "{0:.3f}".format(wvln),
+                rotation=90, fontsize=10)
 
 class CCD(object):
 
@@ -124,8 +139,237 @@ class CCDRegion(list):
         self.ccd = CCD
         super(CCDRegion, self).__init__(*slices)
 
+class Spectrum(object):
+    pass
 
-_line_colors = ["red", "green", "blue", "magenta", "cyan", "yellow"]
+class ArcSpectrum(Spectrum):
+
+    @classmethod
+    def from_json(cls, filename):
+        """ Create an ArcSpectrum from a JSON file. The JSON file
+            should have at minimum a 'counts' field, but could also
+            have 'wavelength'.
+        """
+
+        with open(filename) as f:
+            s = json.loads(f.read())
+
+        if not s.has_key("counts"):
+            raise ValueError("Invalid JSON file. Must contain counts field.")
+
+        return cls(s["counts"], wavelength=s.get("wavelength", None))
+
+    def __init__(self, counts, wavelength=None):
+        """ Represents the spectrum from an arc lamp.
+
+            Parameters
+            ----------
+            counts : array_like
+                Raw counts from the detector.
+            wavelength : array_like (optional)
+                If the wavelength grid is already solved.
+        """
+
+        self.counts = np.array(counts)
+
+        self.wavelength = wavelength
+        if self.wavelength is not None:
+            self.wavelength = np.array(self.wavelength)
+            assert self.wavelength.shape == self.counts.shape
+
+        self.pix = np.arange(len(self.counts))
+
+    def __len__(self):
+        return len(self.pix)
+
+    def plot(self, fig=None, ax=None, **kwargs):
+        """ Plot the spectrum.
+
+            Parameters
+            ----------
+            dispersion : array_like
+            flux : array_like
+            fig : matplotlib.Figure
+            ax : matplotlib.Axes
+        """
+
+        if fig is None and ax is None:
+            fig,ax = plt.subplots(1,1,figsize=kwargs.pop("figsize",(11,8)))
+
+        if ax is not None and fig is None:
+            fig = ax.figure
+
+        if self.wavelength is not None:
+            x = self.wavelength
+        else:
+            x = self.pix
+
+        ax.plot(x, self.counts, drawstyle='steps', **kwargs)
+        ax.set_xlim(min(x), max(x))
+        ax.set_ylim(0,
+                    max(self.counts) + (max(self.counts)-min(self.counts))/20)
+
+        return fig,ax
+
+    def _hand_id_lines(self, obs_run, Nlines=4):
+        """ Have the user identify some number of lines by hand.
+
+            Parameters
+            ----------
+            obs_run : ObservingRun
+                The observing run object.
+            Nlines : int
+                Number of lines to identify.
+        """
+
+        # TODO: could use a matplotlib color scaler...
+        if Nlines > len(_line_colors):
+            raise ValueError("Use a max of {0} lines."\
+                             .format(len(_line_colors)))
+
+        # used to split the spectrum into Nlines sections, finds the brightest
+        #   line in each section and asks the user to identify it
+        sub_div = len(self) // Nlines
+
+        _bkend = plt.get_backend()
+        plt.switch_backend('agg')
+        # TODO: When matplotlib has a TextBox widget, or a dropdown, let the
+        #   user (me) identify the line on the plot
+        fig = plt.figure(figsize=(16,12))
+        gs = GridSpec(2, Nlines)
+
+        # top plot is just the full
+        top_ax = plt.subplot(gs[0,:])
+        self.plot(ax=top_ax)
+        top_ax.set_ylabel("Raw counts")
+
+        line_centers = []
+        for ii in range(Nlines):
+            color = _line_colors[ii]
+
+            # max pixel index to be center of gaussian fit
+            c_idx = np.argmax(self.counts[ii*sub_div:(ii+1)*sub_div])
+            c_idx += sub_div*ii
+
+            try:
+                line_data = self.counts[c_idx-5:c_idx+5]
+                line_pix = self.pix[c_idx-5:c_idx+5]
+            except IndexError:
+                logger.debug("max value near edge of ccd...weird.")
+                continue
+
+            g = gaussian_fit(line_pix, line_data)
+            line_centers.append(g.mean)
+
+            top_ax.plot(line_pix, g(line_pix), \
+                         drawstyle="steps", color=color, lw=2.)
+
+            bottom_ax = plt.subplot(gs[1,ii])
+            bottom_ax.plot(self.pix, self.counts, drawstyle="steps")
+            bottom_ax.plot(line_pix, g(line_pix), \
+                           drawstyle="steps", color=color, lw=2.)
+            bottom_ax.set_xlim(c_idx-10, c_idx+10)
+            bottom_ax.set_xlabel("Pixel")
+            if ii == 0:
+                bottom_ax.set_ylabel("Raw counts")
+            else:
+                bottom_ax.yaxis.set_visible(False)
+
+        line_id_file = os.path.join(obs_run.redux_path, "plots",
+                                    "line_id.pdf")
+        fig.savefig(line_id_file)
+        plt.close()
+
+        print("")
+        print("Now open: {0}".format(line_id_file))
+        print("Identify the colored lines. Default unit is angstrom, but ")
+        print("you can input values with units, e.g., 162.124 nanometer.")
+        print("")
+
+        line_wavelengths = []
+        for ii,color in enumerate(_line_colors[:Nlines]):
+            wvln = raw_input("\t Line {0} ({1} line) wavelength: "\
+                             .format(ii, color))
+            wvln = parse_wavelength(wvln)
+            line_wavelengths.append(wvln.to(u.angstrom).value)
+
+        plt.switch_backend(_bkend)
+
+        self._hand_id_pix = np.array(line_centers)
+        self._hand_id_wvln = np.array(line_wavelengths)
+
+    def _solve_all_lines(self, line_list, dispersion_fit_order=3):
+        """ Now that we have some lines identified by hand, solve for all
+            line centers.
+
+            Parameters
+            ----------
+            line_list : array_like
+                Array of wavelengths of all lines for this arc.
+            dispersion_fit_order : int
+                Order of the polynomial fit to the hand identified lines.
+        """
+
+        line_list = np.array(line_list)
+        line_list.sort()
+
+        # fit a polynomial to the hand identified lines
+        p = polynomial_fit(self._hand_id_wvln, self._hand_id_pix,
+                           order=dispersion_fit_order)
+        predicted_pix = p(line_list)
+
+        # only get ones within our pixel range
+        idx = (predicted_pix>0) & (predicted_pix<1024)
+        arc_lines = line_list[idx]
+        arc_pix = predicted_pix[idx]
+
+        # fit a gaussian to each line, determine center
+        fit_pix = []
+        fit_wvln = []
+        for c_pix,wvln in zip(arc_pix, arc_lines):
+            c_idx = int(c_pix)
+
+            line_pix = self.pix[c_idx-5:c_idx+5]
+            line_data = self.counts[c_idx-5:c_idx+5]
+            p = gaussian_fit(line_pix, line_data)
+
+            if abs(p.mean - c_pix) > 1.:
+                logger.info("Line {0} fit failed.".format(wvln))
+                continue
+
+            fit_pix.append(p.mean.value)
+            fit_wvln.append(wvln)
+
+        self._all_line_pix = np.array(fit_pix)
+        self._all_line_wvln = np.array(fit_wvln)
+
+    def _fit_solved_lines(self, order=5):
+        """ Fit pixel center vs. wavelength for all solved lines.
+
+            Parameters
+            ----------
+            order : int (optional)
+                Order of the polynomial fit to the lines.
+        """
+        p = polynomial_fit(self._all_line_pix, self._all_line_wvln)
+        self.pix_to_wavelength = p
+
+    def solve_wavelength(self, obs_run, line_list):
+        """ Find the wavelength solution.
+
+            Parameters
+            ----------
+            obs_run : ObservingRun
+            line_list : array_like
+                List of wavelengths for lines in this arc.
+        """
+        self._hand_id_lines(obs_run)
+        self._solve_all_lines(line_list)
+        self._fit_solved_lines()
+
+        self.wavelength = self.pix_to_wavelength(self.pix)
+
+
 class ObservingRun(object):
 
     def __init__(self, path, ccd, data_path=None, redux_path=None):
@@ -224,177 +468,10 @@ class ObservingRun(object):
             with open(cache_file, "w") as f:
                 s = dict()
                 s["pixel"] = pix.tolist()
-                s["arc"] = median_comp_1d.tolist()
+                s["counts"] = median_comp_1d.tolist()
                 f.write(json.dumps(s))
 
-        with open(cache_file) as f:
-            s = json.loads(f.read())
-
-        return np.array(s["pixel"]), np.array(s["arc"])
-
-    def hand_id_lines(self, night, Nlines=4, overwrite=False):
-        """ Have the user identify some number of lines by hand.
-
-            Parameters
-            ----------
-            night : ObservingNight
-            Nlines : int
-                Number of lines to identify.
-            overwrite : bool (optional)
-                Overwrite the cache file or not.
-        """
-        plt.switch_backend("agg")
-
-        # TODO: could use a matplotlib color scaler...
-        if Nlines > len(_line_colors):
-            raise ValueError("Use a max of {0} lines."\
-                             .format(len(_line_colors)))
-
-        # TODO: maybe instead, make_master_arc makes self.pix, self.arc ?
-        pix, arc = self.make_master_arc(night)
-
-        cache_file = os.path.join(self.redux_path, "arc", "hand_id.json")
-
-        if os.path.exists(cache_file) and overwrite:
-            os.remove(cache_file)
-
-        if not os.path.exists(cache_file):
-            # used to split the spectrum into Nlines sections, finds the brightest
-            #   line in each section and asks the user to identify it
-            sub_div = len(arc) // Nlines
-
-            # TODO: When matplotlib has a TextBox widget, or a dropdown, let the
-            #   user (me) identify the line on the plot
-            fig = plt.figure(figsize=(16,12))
-            gs = GridSpec(2, Nlines)
-
-            # top plot is just the full
-            top_ax = plt.subplot(gs[0,:])
-            plot_spectrum(pix, arc, ax=top_ax)
-            top_ax.set_ylabel("Raw counts")
-
-            line_centers = []
-            for ii in range(Nlines):
-                color = _line_colors[ii]
-
-                # max pixel index to be center of gaussian fit
-                c_idx = np.argmax(arc[ii*sub_div:(ii+1)*sub_div])
-                c_idx += sub_div*ii
-
-                try:
-                    line_data = arc[c_idx-5:c_idx+5]
-                    line_pix = pix[c_idx-5:c_idx+5]
-                except IndexError:
-                    logger.debug("max value near edge of ccd...weird.")
-                    continue
-
-                g = gaussian_fit(line_pix, line_data)
-                line_centers.append(g.mean)
-
-                top_ax.plot(line_pix, g(line_pix), \
-                             drawstyle="steps", color=color, lw=2.)
-
-                bottom_ax = plt.subplot(gs[1,ii])
-                bottom_ax.plot(pix, arc, drawstyle="steps")
-                bottom_ax.plot(line_pix, g(line_pix), \
-                               drawstyle="steps", color=color, lw=2.)
-                bottom_ax.set_xlim(c_idx-10, c_idx+10)
-                bottom_ax.set_xlabel("Pixel")
-                if ii == 0:
-                    bottom_ax.set_ylabel("Raw counts")
-                else:
-                    bottom_ax.yaxis.set_visible(False)
-
-            line_id_file = os.path.join(self.redux_path, "plots",
-                                        "line_id.pdf")
-            fig.savefig(line_id_file)
-            plt.close()
-
-            print("")
-            print("Now open: {0}".format(line_id_file))
-            print("Identify the colored lines. Default unit is angstrom, but ")
-            print("you can input values with units, e.g., 162.124 nanometer.")
-            print("")
-
-            line_wavelengths = []
-            for ii,color in enumerate(_line_colors[:Nlines]):
-                wvln = raw_input("\t Line {0} ({1} line) wavelength: "\
-                                 .format(ii, color))
-                wvln = parse_wavelength(wvln)
-                line_wavelengths.append(wvln.to(u.angstrom).value)
-
-            with open(cache_file, "w") as f:
-                s = dict()
-                s["pixel"] = pix.tolist()
-                s["wavelength"] = median_comp_1d.tolist()
-                f.write(json.dumps(s))
-
-        with open(cache_file) as f:
-            s = json.loads(f.read())
-
-        return np.array(s["pixel"]), np.array(s["wavelength"])
-
-    def solve_all_lines(self, night, line_list, overwrite=False):
-        """ Now that we have some lines identified by hand, solve for all
-            line centers.
-
-            Parameters
-            ----------
-            night : ObservingNight
-            line_list : array_like
-                Array of wavelengths of all lines for this arc.
-            overwrite : bool (optional)
-                Overwrite the cache file or not.
-        """
-
-        line_list = np.array(line_list)
-        line_list.sort()
-
-        pix, arc = self.make_master_arc(night)
-        hand_id_pix, hand_id_wvln = self.hand_id_lines(night)
-
-        cache_file = os.path.join(self.redux_path, "arc", "all_lines.json")
-
-        if os.path.exists(cache_file) and overwrite:
-            os.remove(cache_file)
-
-        if not os.path.exists(cache_file):
-            # fit a polynomial to the hand identified lines
-            p = polynomial_fit(hand_id_wvln, hand_id_pix, order=3)
-            predicted_pix = p(line_list)
-
-            # only get ones within our pixel range
-            idx = (predicted_pix>0) & (predicted_pix<1024)
-            arc_lines = line_list[idx]
-            arc_pix = predicted_pix[idx]
-
-            # fit a gaussian to each line, determine center
-            fit_pix = []
-            fit_lines = []
-            for c_pix,wvln in zip(arc_pix, arc_lines):
-                c_idx = int(c_pix)
-
-                line_pix = pix[c_idx-5:c_idx+5]
-                line_data = arc[c_idx-5:c_idx+5]
-                p = gaussian_fit(line_pix, line_data)
-
-                if abs(p.mean - c_pix) > 1.:
-                    logger.info("Line {0} fit failed.".format(wvln))
-                    continue
-
-                fit_pix.append(p.mean.value)
-                fit_lines.append(wvln)
-
-            with open(cache_file, "w") as f:
-                s = dict()
-                s["pixel"] = fit_pix
-                s["wavelength"] = fit_lines
-                f.write(json.dumps(s))
-
-        with open(cache_file) as f:
-            s = json.loads(f.read())
-
-        return np.array(s["pixel"]), np.array(s["wavelength"])
+        self.master_arc = ArcSpectrum.from_json(cache_file)
 
 class ObservingNight(object):
 
@@ -443,4 +520,5 @@ class ObservingNight(object):
             object_dict[hdr["OBJECT"]].append(filename)
 
         self.object_files = object_dict
+
 

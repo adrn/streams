@@ -50,20 +50,23 @@ def test_api():
     night = ObservingNight(utc=utc, observing_run=obs_run)
 
     # - median a bunch of arc images, extract a 1D arc spectrum
-    pix,arc = obs_run.make_master_arc(night, narcs=10, overwrite=True)
+    obs_run.make_master_arc(night, narcs=10, overwrite=True)
+    arc = obs_run.master_arc
 
     # TODO: wait to plot until lines are ID'd
-    fig,ax = plot_spectrum(pix, arc)
+    fig,ax = arc.plot()
     ax.set_xlabel("Pixels")
     ax.set_ylabel("Raw counts")
     fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
     plt.close()
 
-    # - have the user hand identify lines on the master arc (if this is
-    #   already done, this just reads a cached JSON file)
-    hand_id_pix, hand_id_wvln = obs_run.hand_id_lines(night,
-                                                      Nlines=4,
-                                                      overwrite=False)
+    # fit for a rough wavelength solution
+    arc.solve_wavelength(obs_run, line_list)
+    # or, more control:
+    # arc._hand_id_lines(Nlines=4)
+    # arc._solve_all_lines(line_list, dispersion_fit_order=3)
+
+    return
 
     # - now we want to fit all lines to get line wavelengths vs. line pixels.
     #   these values are used as initial conditions for doing 2D
@@ -73,6 +76,7 @@ def test_api():
                                                           line_list("Hg Ne"),
                                                           overwrite=False)
 
+    plot_wavelength_solution(master_arc, )
     return
 
     # polynomial fit to the grid of pixels / wavelengths for the line centers
