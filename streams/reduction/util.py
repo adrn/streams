@@ -14,6 +14,7 @@ import os, sys
 import numpy as np
 import astropy.units as u
 from astropy.modeling import models, fitting
+from astropy.modeling.functional_models import Custom1DModel
 from scipy.optimize import leastsq
 
 # Create logger
@@ -22,41 +23,43 @@ from scipy.optimize import leastsq
 __all__ = ["spectral_line_model", "spectral_line_erf", "parse_wavelength",
            "polynomial_fit", "line_list", "gaussian_fit"]
 
-def spectral_line_model(p, x):
-    c, log_amplitude, stddev, mean = p
-    return c + 10**log_amplitude / np.sqrt(2*np.pi*stddev**2.) * \
-                np.exp(-0.5*(x-mean)**2/stddev**2)
+def _gaussian_constant_model(x, c=0., log10_amp=4, stddev=1., mean=0):
+    return models.Const1DModel.eval(x, amplitude=c) + \
+           models.Gaussian1DModel.eval(amplitude=10**log10_amp, \
+                                       stddev=stddev, mean=mean)
 
-def spectral_line_erf(p, x, y):
-    return y - spectral_line_model(p, x)
+def gaussian_fit(x, y, order=0, **p0):
+    """ Fit a Gaussian + polynomial to the data.
 
-def gaussian_fit(x, y, p0=None):
-    """ TODO: betterize, should return an astropy model """
+        Parameters
+        ----------
+        x : array_like
+        y : array_like
+        order : int (optional)
+            The order of the Polynomial model. Defaults to constant (order=0).
+        **p0
+            Initial conditions for the model fit.
 
-    if p0 is None:
-        p0 = [min(y), np.log10(max(y)), 0.5, np.mean(x)]
-
-    # fit a spectral line model to the line data
-    p_opt, ier = leastsq(spectral_line_erf, x0=p0, \
-                         args=(x, y))
-
-    if ier > 4:
-        raise ValueError("Gaussian fit failed!")
-    return p_opt
-
-def parse_wavelength(wvln, default_unit=u.angstrom):
-    """ Parse a wavelength string from raw_input and return
-        an astropy.units.Quantity object.
     """
+    if len(x) != len(y):
+        raise ValueError("x and y must have the sample shape!")
 
-    try:
-        wvln_value, wvln_unit = wvln.split()
-    except ValueError:
-        # assume angstroms
-        wvln_value = wvln
-        wvln_unit = default_unit
+    # TODO: when astropy.modeling allows combining models, fix this
+    if order > 0:
+        raise NotImplementedError()
 
-    return float(wvln_value) * u.Unit(wvln_unit)
+    g = Custom1DModel(_gaussian_constant_model)
+    default_p0 = dict(c=min(y),
+                      log10_amp=np.log10(max(y)),
+                      stddev=0.5,
+                      mean=float(np.mean(x))]
+    for k,v in default_p0.items():
+        setattr(g,k,p0.get(k,v))
+
+    fit = fitting.NonLinearLSQFitter(g)
+    fit(x, y)
+
+    return g
 
 def polynomial_fit(x, y, order=3):
     """ Fit a polynomial of the specified order to the given
@@ -72,6 +75,20 @@ def polynomial_fit(x, y, order=3):
     fit(x, y)
 
     return p
+
+def parse_wavelength(wvln, default_unit=u.angstrom):
+    """ Parse a wavelength string from raw_input and return
+        an astropy.units.Quantity object.
+    """
+
+    try:
+        wvln_value, wvln_unit = wvln.split()
+    except ValueError:
+        # assume angstroms
+        wvln_value = wvln
+        wvln_unit = default_unit
+
+    return float(wvln_value) * u.Unit(wvln_unit)
 
 def line_list(name):
     """ Read in a list of wavelengths for a given arc lamp.
