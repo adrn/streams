@@ -19,7 +19,7 @@ import astropy.units as u
 from astropy.time import Time
 import matplotlib.pyplot as plt
 
-from ..observing import ObservingRun, ObservingNight
+from ..observing import ObservingRun, ObservingNight, CCD
 
 plot_path = "plots/tests/reduction"
 
@@ -31,18 +31,11 @@ def test_api():
     # define the ccd and geometry
     # TODO: units for gain / read_noise?
     ccd = CCD(gain=3.7, read_noise=5.33,
-              shape=(1024,1088), dispersion_axis=0) # shape=(nrows, ncols)
+              shape=(1024,364), dispersion_axis=0) # shape=(nrows, ncols)
 
-    # TODO: if these are indices, 512 -> 511?
     # region of the detector read out
-    ccd.readout_subarray = dict(center=(512,512),
-                                height=1024, width=300)
-    ccd.overscan = dict(center=(512,1056),
-                        height=1024, width=64)
-
-    # region used for science
-    ccd.data_array = dict(center=(512,512),
-                          height=1024, width=200)
+    data_region = ccd[:,100:200]
+    overscan = ccd[:,-64:]
 
     # create an observing run object, which holds paths and some global things
     #   like the ccd object, maybe Site object?
@@ -54,7 +47,9 @@ def test_api():
     night = ObservingNight(utc=utc, observing_run=obs_run)
 
     # - median a bunch of arc images, extract a 1D arc spectrum
-    obs_run.make_master_arc(narcs=10, center_pixel=..., nrows=, ncols=)
+    obs_run.make_master_arc(night, narcs=10)
+
+    return
 
     # - have the user hand identify lines on the master arc (if this is
     #   already done, this just reads a cached JSON file)
@@ -73,7 +68,7 @@ def test_api():
     # polynomial fit to the grid of pixels / wavelengths for the line centers
     pix2wvln, wvln2pix = obs_run.wavelength_solution_1d(all_line_pix,
                                                         all_line_wvln,
-                                                        order=3,2
+                                                        order=3,
                                                         plot=True)
 
     # - create a master bias frame. each object will get overscan subtracted,
