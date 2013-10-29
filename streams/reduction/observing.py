@@ -183,13 +183,13 @@ class ArcSpectrum(Spectrum):
     def __len__(self):
         return len(self.pix)
 
-    def plot(self, fig=None, ax=None, **kwargs):
+    def plot(self, line_ids=False, fig=None, ax=None, **kwargs):
         """ Plot the spectrum.
 
             Parameters
             ----------
-            dispersion : array_like
-            flux : array_like
+            line_ids : bool
+                Put markers over each line with the wavelength.
             fig : matplotlib.Figure
             ax : matplotlib.Axes
         """
@@ -426,7 +426,7 @@ class ObservingRun(object):
 
     def make_master_arc(self, night, narcs=10, overwrite=False):
         """ Make a 'master' 1D arc for this observing run, cache it to
-            a JSON file in night.night_path.
+            a JSON file in night.data_path.
 
             Parameters
             ----------
@@ -446,7 +446,7 @@ class ObservingRun(object):
 
         if not os.path.exists(cache_file):
             # first find all COMP files in the data path
-            comp_files = find_all_imagetyp(night.night_path, "COMP")
+            comp_files = find_all_imagetyp(night.data_path, "COMP")
             if len(comp_files) < narcs:
                 raise ValueError("Fewer than narcs={0} arcs found in {1}"\
                                  .format(narcs, self.data_path))
@@ -481,7 +481,7 @@ class ObservingRun(object):
 
 class ObservingNight(object):
 
-    def __init__(self, utc, observing_run, night_path=None):
+    def __init__(self, utc, observing_run, data_path=None, redux_path=None):
         """ An object to store various properties of a night of an
             observing run, e.g, all bias frames, flats, objects, etc.
             Also, date of run, etc.
@@ -492,33 +492,47 @@ class ObservingNight(object):
                 The UT date of the night.
             observing_run : ObservingRun
                 The parent ObservingRun object.
-            night_path : str (optional)
+            data_path : str (optional)
                 Path to data from this night. Defaults to
                 <observing_run.data_path>/mMMDDYY where day is *not* the
                 UT day of the run.
+            redux_path : str (optional)
 
         """
 
         self.utc = utc
         self.observing_run = observing_run
 
-        self.night_path = None
-        if self.night_path is None:
-            # convention is to use civil date at start of night for data,
-            #   which is utc day - 1
-            day = "{:02d}".format(utc.datetime.day-1)
-            month = utc.datetime.strftime("%m")
-            year = utc.datetime.strftime("%y")
-            night_str = "m{0}{1}{2}".format(month, day, year)
-            self.night_path = os.path.join(self.observing_run.data_path,
-                                           night_str)
+        # convention is to use civil date at start of night for data,
+        #   which is utc day - 1
+        day = "{:02d}".format(utc.datetime.day-1)
+        month = utc.datetime.strftime("%m")
+        year = utc.datetime.strftime("%y")
+        self._night_str = "m{0}{1}{2}".format(month, day, year)
+
+        if data_path is None:
+            data_path = os.path.join(self.observing_run.data_path,
+                                     str(self))
+        self.data_path = data_path
+
+        if redux_path is None:
+            redux_path = os.path.join(self.observing_run.redux_path,
+                                      str(self))
+        self.redux_path = redux_path
+
+        if not os.path.exists(data_path):
+            raise ValueError("Path to data ({0}) doesn't exist!"\
+                             .format(self.data_path))
+
+        if not os.path.exists(redux_path):
+            os.mkdir(redux_path)
 
         # create a dict with all unique object names as keys, paths to
         #   files as values
-        all_object_files = find_all_imagetyp(self.night_path, "OBJECT")
+        all_object_files = find_all_imagetyp(self.data_path, "OBJECT")
         if len(all_object_files) == 0:
             raise ValueError("No object files found in '{0}'"\
-                             .format(self.night_path))
+                             .format(self.data_path))
 
         object_dict = defaultdict(list)
         for filename in all_object_files:
@@ -527,4 +541,42 @@ class ObservingNight(object):
 
         self.object_files = object_dict
 
+    def __str__(self):
+        return self._night_str
+
+    def make_master_bias(self, overwrite=False):
+        """ Make a master bias frame, store image.
+
+            Parameters
+            ----------
+            overwrite : bool (optional)
+        """
+
+        cache_file = os.path.join(self.redux_path, "master_bias.fits")
+
+        if os.path.exists(cache_file) and overwrite:
+            os.remove(cache_file)
+
+        if not os.path.exists(cache_file):
+            all_bias_files = find_all_imagetyp(self.data_path, "ZERO")
+            Nbias = len(all_bias_files)
+
+            all_bias = np.zeros(self.observing_run.ccd.shape + (Nbias,))
+            for ii,filename in enumerate(all_bias_files):
+                hdu = fits.open(filename)[0]
+
+                if hdu.header["EXPTIME"] > 0:
+                    raise ValueError("Bias frame with EXPTIME > 0! ({0})"\
+                                     .format(filename))
+
+                all_bias[...,ii] = hdu.data
+
+            # TODO: remove overscan from save?
+            master_bias = np.median(all_bias, axis=-1)
+            hdu = fits.PrimaryHDU(master_bias)
+            hdu.writeto(cache_file)
+        else:
+            master_bias = fits.getdata(cache_file)
+
+        return master_bias
 

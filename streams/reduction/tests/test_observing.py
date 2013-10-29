@@ -64,37 +64,20 @@ def test_api():
         fnpickle(arc, arc_file)
 
     obs_run.master_arc = fnunpickle(arc_file)
-    fig,ax = obs_run.master_arc.plot()
+
+    # TODO: line_ids=True identifies all lines
+    fig,ax = obs_run.master_arc.plot(line_ids=True)
     fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
     plt.close()
 
-    return
-
-    # - now we want to fit all lines to get line wavelengths vs. line pixels.
-    #   these values are used as initial conditions for doing 2D
-    #   wavelength calibration. again, this is cached so should only be
-    #   done once.
-    all_line_pix, all_line_wvln = obs_run.solve_all_lines(night,
-                                                          line_list("Hg Ne"),
-                                                          overwrite=False)
-
-    plot_wavelength_solution(master_arc, )
-    return
-
-    # polynomial fit to the grid of pixels / wavelengths for the line centers
-    pix2wvln, wvln2pix = obs_run.wavelength_solution_1d(all_line_pix,
-                                                        all_line_wvln,
-                                                        order=3,
-                                                        plot=True)
-
     # - create a master bias frame. each object will get overscan subtracted,
     #   but this will be used to remove global ccd structure.
-    # TODO: what parameters?
-    obs_run.make_master_bias()
+    bias = night.make_master_bias()
 
     # make master flat
     # TODO: what parameters?
     obs_run.make_master_flat()
+    return
 
     # TODO: need some way to specify arcs for each object...
     # TODO: maybe each frame is bound to an ObservingRun so I don't have to
