@@ -18,6 +18,7 @@ from astropy.io import fits
 import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -120,6 +121,8 @@ class CCDRegion(list):
         self.ccd = CCD
         super(CCDRegion, self).__init__(*slices)
 
+
+_line_colors = ["red", "green", "blue", "yellow", "magenta", "cyan"]
 class ObservingRun(object):
 
     def __init__(self, path, ccd, data_path=None, redux_path=None):
@@ -224,6 +227,91 @@ class ObservingRun(object):
             s = json.loads(f.read())
 
         return s["pixels"], s["arc"]
+
+    def hand_id_lines(self, night, Nlines=4, overwrite=False):
+        """ Have the user identify some number of lines by hand.
+
+            Parameters
+            ----------
+            night : ObservingNight
+            Nlines : int
+                Number of lines to identify.
+            overwrite : bool (optional)
+                Overwrite the cache file or not.
+        """
+        # TODO: could use a matplotlib color scaler...
+        if Nlines > len(_line_colors):
+            raise ValueError("Use a max of {0} lines."\
+                             .format(len(_line_colors)))
+
+        # TODO: maybe instead, make_master_arc makes self.pix, self.arc ?
+        pix, arc = self.make_master_arc(night)
+
+        # used to split the spectrum into Nlines sections, finds the brightest
+        #   line in each section and asks the user to identify it
+        sub_div = len(arc) // Nlines
+
+        # TODO: When matplotlib has a TextBox widget, or a dropdown, let the
+        #   user (me) identify the line on the plot
+        fig = plt.figure(figsize=(16,12))
+        gs = GridSpec(2, Nlines)
+
+        # top plot is just the full
+        top_ax = plt.subplot(gs[0,:])
+        plot_spectrum(pix, arc, ax=top_ax)
+        top_ax.set_ylabel("Raw counts")
+
+        line_centers = []
+        for ii in range(Nlines):
+            color = _line_colors[ii]
+
+            # max pixel index to be center of gaussian fit
+            c_idx = np.argmax(arc[ii*sub_div:(ii+1)*sub_div])
+            c_idx += sub_div*ii
+
+            try:
+                line_data = arc[c_idx-5:c_idx+5]
+                line_pix = pix[c_idx-5:c_idx+5]
+            except IndexError:
+                logger.debug("max value near edge of ccd...weird.")
+                continue
+
+            p_opt = gaussian_fit(line_pix, line_data)
+            model_line = spectral_line_model(p_opt, line_pix)
+            c, log_amplitude, stddev, line_center = p_opt
+            line_centers.append(line_center)
+
+            top_ax.plot(line_pix, model_line, \
+                         drawstyle="steps", color=color, lw=2.)
+
+            bottom_ax = plt.subplot(gs[1,ii])
+            bottom_ax.plot(pix, arc, drawstyle="steps")
+            bottom_ax.plot(line_pix, model_line, \
+                           drawstyle="steps", color=color, lw=2.)
+            bottom_ax.set_xlim(c_idx-10, c_idx+10)
+            bottom_ax.set_xlabel("Pixel")
+            if ii == 0:
+                bottom_ax.set_ylabel("Raw counts")
+            else:
+                bottom_ax.yaxis.set_visible(False)
+
+        line_id_file = os.path.join(self.redux_path, "plots", "line_id.png")
+        fig.savefig(line_id_file)
+
+        print("")
+        print("Now open: {0}".format(line_id_file))
+        print("Identify the colored lines. Default unit is angstrom, but ")
+        print("you can input values with units, e.g., 162.124 nanometer.")
+        print("")
+
+        line_wavelengths = []
+        for ii,color in enumerate(_line_colors[:Nlines]):
+            wvln = raw_input("\t Line {0} ({1} line) wavelength: ".format(ii,
+                                                                          color))
+            wvln = parse_wavelength(wvln)
+            line_wavelengths.append(wvln.to(u.angstrom).value)
+
+        return line_centers, line_wavelengths
 
 
 class ObservingNight(object):

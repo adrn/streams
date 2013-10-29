@@ -60,7 +60,8 @@ def test_api():
 
     # - have the user hand identify lines on the master arc (if this is
     #   already done, this just reads a cached JSON file)
-    hand_id_pix, hand_id_wvln = obs_run.hand_id_lines(Nlines=4,
+    hand_id_pix, hand_id_wvln = obs_run.hand_id_lines(night,
+                                                      Nlines=4,
                                                       overwrite=False)
 
     return
