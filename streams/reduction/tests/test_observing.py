@@ -26,11 +26,89 @@ plot_path = "plots/tests/reduction"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-def test_creation():
+def test_api():
 
+    # define the ccd and geometry
+    # TODO: units for gain / read_noise?
+    ccd = CCD(gain=3.7, read_noise=5.33,
+              shape=(1024,1088), dispersion_axis=0) # shape=(nrows, ncols)
+
+    # TODO: if these are indices, 512 -> 511?
+    # region of the detector read out
+    ccd.readout_subarray = dict(center=(512,512),
+                                height=1024, width=300)
+    ccd.overscan = dict(center=(512,1056),
+                        height=1024, width=64)
+
+    # region used for science
+    ccd.data_array = dict(center=(512,512),
+                          height=1024, width=200)
+
+    # create an observing run object, which holds paths and some global things
+    #   like the ccd object, maybe Site object?
     path = os.path.join("/Users/adrian/Documents/GraduateSchool/Observing/",
                         "2013-10_MDM")
-    obs_run = ObservingRun(path)
+    obs_run = ObservingRun(path, ccd=ccd)
 
-    utc = Time(datetime.utcnow(), scale="utc")
+    utc = Time(datetime(2013,10,28), scale="utc")
     night = ObservingNight(utc=utc, observing_run=obs_run)
+
+    # - median a bunch of arc images, extract a 1D arc spectrum
+    obs_run.make_master_arc(narcs=10, center_pixel=..., nrows=, ncols=)
+
+    # - have the user hand identify lines on the master arc (if this is
+    #   already done, this just reads a cached JSON file)
+    hand_id_pix, hand_id_wvln = obs_run.hand_id_lines(Nlines=4,
+                                                      overwrite=False)
+
+    # - now we want to fit all lines to get line wavelengths vs. line pixels.
+    #   these values are used as initial conditions for doing 2D
+    #   wavelength calibration. again, this is cached so should only be
+    #   done once.
+    all_line_pix, all_line_wvln = obs_run.solve_all_lines(hand_id_pix,
+                                                          hand_id_wvln,
+                                                          line_list,
+                                                          overwrite=False)
+
+    # polynomial fit to the grid of pixels / wavelengths for the line centers
+    pix2wvln, wvln2pix = obs_run.wavelength_solution_1d(all_line_pix,
+                                                        all_line_wvln,
+                                                        order=3,2
+                                                        plot=True)
+
+    # - create a master bias frame. each object will get overscan subtracted,
+    #   but this will be used to remove global ccd structure.
+    # TODO: what parameters?
+    obs_run.make_master_bias()
+
+    # make master flat
+    # TODO: what parameters?
+    obs_run.make_master_flat()
+
+    # TODO: need some way to specify arcs for each object...
+    # TODO: maybe each frame is bound to an ObservingRun so I don't have to
+    #       keep passing in obs_run below?
+    for obj in all_objects:
+        obj.arcs # ??
+
+        for frame in obj.frames:
+            # subtract bias
+            frame.subtract_bias(obs_run)
+
+            # subtract overscan
+            frame.subtract_overscan(obs_run)
+
+            frame.inverse_variance # automatically created from:
+            # variance_image = image_data*gain + read_noise**2
+
+            # divide by master flat
+            frame.divide_flat(obs_run)
+
+            # flag CR's
+            frame.flag_cosmic_rays(obs_run)
+
+            # create 2D wavelength image
+            frame.solve_wavelength_2d(obs_run)
+
+            # sky subtract
+            frame.sky_subtract(obs_run)
