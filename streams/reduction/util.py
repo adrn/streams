@@ -20,8 +20,7 @@ from scipy.optimize import leastsq
 # Create logger
 #logger = logging.getLogger(__name__)
 
-__all__ = ["spectral_line_model", "spectral_line_erf", "parse_wavelength",
-           "polynomial_fit", "line_list", "gaussian_fit"]
+__all__ = ["parse_wavelength", "polynomial_fit", "line_list", "gaussian_fit"]
 
 def _gaussian_constant_model(x, c=0., log10_amp=4, stddev=1., mean=0):
     return models.Const1DModel.eval(x, amplitude=c) + \
