@@ -20,6 +20,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
+# Project
+from .util import gaussian_fit
+
 # Create logger
 logger = logging.getLogger(__name__)
 
@@ -276,10 +279,10 @@ class ObservingRun(object):
                 logger.debug("max value near edge of ccd...weird.")
                 continue
 
-            p_opt = gaussian_fit(line_pix, line_data)
-            model_line = spectral_line_model(p_opt, line_pix)
-            c, log_amplitude, stddev, line_center = p_opt
-            line_centers.append(line_center)
+            g = gaussian_fit(line_pix, line_data)
+            print(g.mean)
+            return
+            line_centers.append(g.mean)
 
             top_ax.plot(line_pix, model_line, \
                          drawstyle="steps", color=color, lw=2.)

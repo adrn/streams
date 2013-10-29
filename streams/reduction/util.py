@@ -14,7 +14,7 @@ import os, sys
 import numpy as np
 import astropy.units as u
 from astropy.modeling import models, fitting
-from astropy.modeling.functional_models import Custom1DModel
+from astropy.modeling.functional_models import custom_model_1d
 from scipy.optimize import leastsq
 
 # Create logger
@@ -22,9 +22,10 @@ from scipy.optimize import leastsq
 
 __all__ = ["parse_wavelength", "polynomial_fit", "line_list", "gaussian_fit"]
 
-def _gaussian_constant_model(x, c=0., log10_amp=4, stddev=1., mean=0):
+@custom_model_1d
+def GaussianPolynomial(x, c=0., log10_amp=4, stddev=1., mean=0):
     return models.Const1DModel.eval(x, amplitude=c) + \
-           models.Gaussian1DModel.eval(amplitude=10**log10_amp, \
+           models.Gaussian1DModel.eval(x, amplitude=10**log10_amp, \
                                        stddev=stddev, mean=mean)
 
 def gaussian_fit(x, y, order=0, **p0):
@@ -47,13 +48,15 @@ def gaussian_fit(x, y, order=0, **p0):
     if order > 0:
         raise NotImplementedError()
 
-    g = Custom1DModel(_gaussian_constant_model)
+    #g = custom_model_1d(_gaussian_constant_model)
+    g = GaussianPolynomial()
     default_p0 = dict(c=min(y),
                       log10_amp=np.log10(max(y)),
                       stddev=0.5,
-                      mean=float(np.mean(x))]
+                      mean=float(np.mean(x)))
+
     for k,v in default_p0.items():
-        setattr(g,k,p0.get(k,v))
+        setattr(g, k, p0.get(k,v))
 
     fit = fitting.NonLinearLSQFitter(g)
     fit(x, y)
