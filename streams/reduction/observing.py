@@ -16,6 +16,7 @@ import json
 # Third-party
 from astropy.io import fits
 from astropy.io.misc import fnpickle, fnunpickle
+from astropy.modeling import models, fitting
 import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
@@ -123,6 +124,17 @@ class CCD(object):
 
     def __getitem__(self, *slices):
         return CCDRegion(self, *slices)
+
+    def bias_correct_frame(self, frame_data, bias):
+        """ Bias subtract and overscan subtract """
+
+        # subtract bias frame
+        data = frame_data - bias
+        overscan = data[self.regions["overscan"]]
+        overscan_col = np.median(overscan, axis=1)
+
+        data -= overscan_col[:,np.newaxis]
+        return data
 
 class CCDRegion(list):
 
@@ -282,7 +294,7 @@ class ArcSpectrum(Spectrum):
         line_id_file = os.path.join(obs_run.redux_path, "plots",
                                     "line_id.pdf")
         fig.savefig(line_id_file)
-        plt.close()
+        plt.clf()
 
         print("")
         print("Now open: {0}".format(line_id_file))
@@ -571,7 +583,6 @@ class ObservingNight(object):
 
                 all_bias[...,ii] = hdu.data
 
-            # TODO: remove overscan from save?
             master_bias = np.median(all_bias, axis=-1)
             hdu = fits.PrimaryHDU(master_bias)
             hdu.writeto(cache_file)
@@ -579,4 +590,58 @@ class ObservingNight(object):
             master_bias = fits.getdata(cache_file)
 
         return master_bias
+
+    def make_master_flat(self, overwrite=False):
+        """ Make a master flat frame, store image.
+
+            Parameters
+            ----------
+            overwrite : bool (optional)
+        """
+
+        bias = self.make_master_bias()
+        cache_file = os.path.join(self.redux_path, "master_flat.fits")
+
+        ccd = self.observing_run.ccd
+
+        if os.path.exists(cache_file) and overwrite:
+            os.remove(cache_file)
+
+        all_flats = None
+        if not os.path.exists(cache_file):
+            all_flat_files = find_all_imagetyp(self.data_path, "FLAT")
+            Nflat = len(all_flat_files)
+
+            for ii,filename in enumerate(all_flat_files):
+                data = fits.getdata(filename,0)
+                corrected = ccd.bias_correct_frame(data, bias)
+
+                if all_flats is None:
+                    all_flats = np.zeros(corrected.shape + (Nflat,))
+
+                all_flats[...,ii] = corrected
+
+            master_flat = np.median(all_flats, axis=-1)
+            hdu = fits.PrimaryHDU(master_flat)
+            hdu.writeto(cache_file)
+        else:
+            master_flat = fits.getdata(cache_file)
+
+        return master_flat
+
+    def _flat_response_function(self, order=9):
+        """ Fit a 2D response function to the master flat """
+
+        flat = self.make_master_flat()
+        shp = flat.shape
+
+        x, y = np.mgrid[:shp[0], :shp[1]]
+        p = models.Polynomial2DModel(order)
+        fit = fitting.LinearLSQFitter(p)
+        fit(x, y, flat)
+
+        plt.imshow(p(x,y))
+        plt.show()
+
+        return p
 

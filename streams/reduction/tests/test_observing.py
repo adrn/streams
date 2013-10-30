@@ -68,7 +68,7 @@ def test_api():
     # TODO: line_ids=True identifies all lines
     fig,ax = obs_run.master_arc.plot(line_ids=True)
     fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
-    plt.close()
+    plt.clf()
 
     # - create a master bias frame. each object will get overscan subtracted,
     #   but this will be used to remove global ccd structure.
@@ -76,7 +76,8 @@ def test_api():
 
     # make master flat
     # TODO: what parameters?
-    obs_run.make_master_flat()
+    night.make_master_flat()
+    p = night._flat_response_function()
     return
 
     # TODO: need some way to specify arcs for each object...
