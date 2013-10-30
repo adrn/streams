@@ -21,6 +21,7 @@ import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from matplotlib import cm
 
 # Project
 from .util import *
@@ -134,7 +135,7 @@ class CCD(object):
         overscan_col = np.median(overscan, axis=1)
 
         data -= overscan_col[:,np.newaxis]
-        return data
+        return data[self.regions["data"]]
 
 class CCDRegion(list):
 
@@ -294,7 +295,7 @@ class ArcSpectrum(Spectrum):
         line_id_file = os.path.join(obs_run.redux_path, "plots",
                                     "line_id.pdf")
         fig.savefig(line_id_file)
-        plt.clf()
+        plt.close()
 
         print("")
         print("Now open: {0}".format(line_id_file))
@@ -628,20 +629,3 @@ class ObservingNight(object):
             master_flat = fits.getdata(cache_file)
 
         return master_flat
-
-    def _flat_response_function(self, order=9):
-        """ Fit a 2D response function to the master flat """
-
-        flat = self.make_master_flat()
-        shp = flat.shape
-
-        x, y = np.mgrid[:shp[0], :shp[1]]
-        p = models.Polynomial2DModel(order)
-        fit = fitting.LinearLSQFitter(p)
-        fit(x, y, flat)
-
-        plt.imshow(p(x,y))
-        plt.show()
-
-        return p
-

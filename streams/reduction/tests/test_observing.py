@@ -35,7 +35,8 @@ def test_api():
               shape=(1024,364), dispersion_axis=0) # shape=(nrows, ncols)
 
     # region of the detector read out
-    ccd.regions["data"] = ccd[:,100:200]
+    ccd.regions["data"] = ccd[:,:-64]
+    ccd.regions["science"] = ccd[:,100:200]
 
     # overscan area
     ccd.regions["overscan"] = ccd[:,-64:]
@@ -68,16 +69,36 @@ def test_api():
     # TODO: line_ids=True identifies all lines
     fig,ax = obs_run.master_arc.plot(line_ids=True)
     fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
-    plt.clf()
+    plt.close()
 
     # - create a master bias frame. each object will get overscan subtracted,
     #   but this will be used to remove global ccd structure.
     bias = night.make_master_bias()
 
     # make master flat
-    # TODO: what parameters?
-    night.make_master_flat()
-    p = night._flat_response_function()
+    flat = night.make_master_flat()
+    shp = flat.shape
+
+    # fit a 2D response function to the flat
+    x, y = np.mgrid[:shp[0], :shp[1]]
+    p = models.Polynomial2DModel(degree=9)
+    fit = fitting.LinearLSQFitter(p)
+    fit(x, y, flat)
+
+    # plot the flat / response function
+    plt.figure()
+    plt.subplot(131)
+    plt.imshow(p(x,y), aspect='equal', cmap=cm.Greys,
+               interpolation='nearest')
+    plt.subplot(132)
+    plt.imshow(flat, aspect='equal', cmap=cm.Greys,
+               interpolation='nearest')
+    plt.subplot(133)
+    plt.imshow(flat/p(x,y), aspect='equal', cmap=cm.Greys,
+               interpolation='nearest')
+    plt.colorbar()
+    plt.show()
+
     return
 
     # TODO: need some way to specify arcs for each object...
