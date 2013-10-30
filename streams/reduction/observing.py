@@ -629,3 +629,119 @@ class ObservingNight(object):
             master_flat = fits.getdata(cache_file)
 
         return master_flat
+
+class CCDFrame(object):
+    pass
+
+class TelescopePointing(object):
+
+    def __init__(self, night, files, arc_files=[]):
+        """ Represents a telescope pointing to an observed astronomical
+            object. This is important because we may observe the same object
+            multiple times in a night, but at different pointings. Each
+            pointing has associated arc/comp lamps so we have to distinguish.
+
+            Parameters
+            ----------
+            night : ObservingNight
+            files : list
+                List of data files for the object at this pointing.
+            arc_files : list
+                List of arc lamp files for this pointing.
+        """
+        self.night = night
+
+        self.file_paths = []
+        for fn in files:
+            path,filename = os.path.split(fn)
+            if len(path.strip()) == 0:
+                fn = os.path.join(self.night.data_path, fn)
+
+            if not os.path.exists(fn):
+                raise IOError("File {0} does not exist!".format(fn))
+
+            self.file_paths.append(fn)
+
+        self.arc_file_paths = []
+        for fn in arc_files:
+            path,filename = os.path.split(fn)
+            if len(path.strip()) == 0:
+                fn = os.path.join(self.night.data_path, fn)
+
+            if not os.path.exists(fn):
+                raise IOError("File {0} does not exist!".format(fn))
+
+            self.arc_file_paths.append(fn)
+
+        #self._read_arcs()
+        #self._read_data()
+
+    def _read_arcs(self):
+        Narcs = len(self.arc_file_paths)
+
+        arcs = None
+        for ii,arcfile in enumerate(self.arc_file_paths):
+            arc_data = fits.getdata(arcfile,0)
+            if arcs is None:
+                arcs = np.zeros(arc_data.shape + (Narcs,))
+
+            arcs[...,ii] = arc_data
+
+        self.arcs = arcs
+
+    def _read_data(self):
+        Ndata = len(self.file_paths)
+
+        all_objects = None
+        for ii,fn in enumerate(self.file_paths):
+            data = fits.getdata(fn,0)
+            if all_objects is None:
+                all_objects = np.zeros(data.shape + (Ndata,))
+
+            all_objects[...,ii] = data
+
+        self.all_objects = all_objects
+
+    def solve_2d_wavelength(self, smooth_length=10):
+        """ TODO: """
+
+        hg_ne = find_line_list("Hg Ne")
+        obs_run = self.night.observing_run
+
+        self._read_arcs()
+        all_arc_data = np.median(self.arcs, axis=-1)
+        sci_arc_data = all_arc_data[obs_run.ccd.regions["science"]]
+        col_idx = (obs_run.ccd.regions["science"][1].start,
+                   obs_run.ccd.regions["science"][1].stop)
+
+        # determine wavelength solution for each column on the CCD
+        pix = np.arange(all_arc_data.shape[0])
+
+        wavelength_2d = np.zeros_like(sci_arc_data)
+        for i in range(sci_arc_data.shape[1]):
+            ii = col_idx[0] + i
+            col_fit_pix = []
+            col_fit_lines = []
+
+            w = smooth_length//2
+            col_data = all_arc_data[:,ii-w:ii+w]
+            avg_col = np.mean(col_data, axis=1) # TODO: or median?
+
+            spec = ArcSpectrum(avg_col)
+            spec._hand_id_pix = obs_run.master_arc._hand_id_pix
+            spec._hand_id_wvln = obs_run.master_arc._hand_id_wvln
+            spec._solve_all_lines(hg_ne, dispersion_fit_order=3)
+            spec._fit_solved_lines(order=5)
+
+            residual = spec.pix_to_wavelength(spec._all_line_pix) - \
+                       spec._all_line_wvln
+            idx = np.fabs(residual) < 0.1
+            spec._all_line_pix = spec._all_line_pix[idx]
+            spec._all_line_wvln = spec._all_line_wvln[idx]
+
+            assert len(spec._all_line_pix) > 20
+            spec._fit_solved_lines(order=5)
+
+            wavelength_2d[:,i] = spec.pix_to_wavelength(spec.pix)
+
+        return wavelength_2d
