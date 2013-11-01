@@ -738,7 +738,11 @@ class TelescopePointing(object):
     def solve_2d_wavelength(self, smooth_length=10, overwrite=False):
         """ TODO: """
 
-        n = min([int(float(os.path.split(f)[1][8:12])) for f in self.file_paths])
+        try:
+            n = min([int(float(os.path.split(f)[1][8:12])) for f in self.file_paths])
+        except ValueError:
+            n = os.path.splitext(os.path.split(f)[1])[0]
+
         cache_file = os.path.join(self.night.redux_path,
                                   "{0}_{1}.fits".format(self.object_name, n))
 
