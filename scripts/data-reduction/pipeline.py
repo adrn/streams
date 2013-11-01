@@ -42,17 +42,26 @@ def main():
 
     utc = Time(datetime(2013,10,25), scale="utc")
     night = ObservingNight(utc=utc, observing_run=obs_run)
+    # this automaticall creates night.master_bias and night.master_flat
 
     # Try first with a standard:
+    # obj = TelescopePointing(night,
+    #                         files=['m102413.0036.fit','m102413.0037.fit',\
+    #                                'm102413.0038.fit'],
+    #                         arc_files=['m102413.0039.fit','m102413.0040.fit'])
+
+    # faint rr lyrae:
     obj = TelescopePointing(night,
-                            files=['m102413.0036.fit','m102413.0037.fit',\
-                                   'm102413.0038.fit'],
-                            arc_files=['m102413.0039.fit','m102413.0040.fit'])
+                            files=['m102413.0050.fit','m102413.0051.fit',\
+                                   'm102413.0052.fit'],
+                            arc_files=['m102413.0048.fit','m102413.0049.fit',
+                                       'm102413.0053.fit','m102413.0054.fit'])
     objects = [obj]
 
     # - median a bunch of arc images, extract a 1D arc spectrum
     obs_run.make_master_arc(night, narcs=10, overwrite=False)
     arc = obs_run.master_arc
+    pix = np.arange(len(arc))
 
     if arc.wavelength is None:
         # fit for a rough wavelength solution
@@ -63,58 +72,23 @@ def main():
         # arc._fit_solved_lines(order=5)
         # arc.wavelength = arc.pix_to_wavelength(arc.pix)
 
-    # TODO: line_ids=True identifies all lines
+    # plot the arc lamp spectrum with lines identified
     fig,ax = obs_run.master_arc.plot(line_ids=True)
-    plt.show()
-    return
     fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
     plt.clf()
 
-    return
-
-    # - create a master bias frame. each object will get overscan subtracted,
-    #   but this will be used to remove global ccd structure.
-    master_bias = night.make_master_bias(overwrite=False)
-
-    # make master flat
-    master_flat = night.make_master_flat(overwrite=False)
-    shp = master_flat.shape
-
-    master_flat = np.median(master_flat, axis=1)
+    # collapse the flat to 1D, fit a polynomial
+    master_flat_1d = np.median(night.master_flat, axis=1)
     p = models.Polynomial1DModel(degree=15)
     fit = fitting.NonLinearLSQFitter(p)
-
-    pix = np.arange(len(master_flat))
-    fit(pix, master_flat)
+    fit(pix, master_flat_1d)
     smooth_flat = p(pix)
-    nflat = master_flat / smooth_flat
-    nflat = nflat[:,np.newaxis]
 
-    # Validate against Ally's flat
-    ally_flat = fits.getdata("/Users/adrian/Downloads/Flat1.fits")
-    ally_nflat = fits.getdata("/Users/adrian/Downloads/nFlat1.fits")
+    # normalize the flat
+    normed_flat = master_flat_1d / smooth_flat
+    normed_flat = normed_flat[:,np.newaxis]
 
-    # plt.figure()
-    # plt.subplot(311)
-    # plt.plot(master_flat)
-    # plt.plot(smooth_flat)
-
-    # plt.subplot(312)
-    # plt.plot(master_flat/smooth_flat)
-    # plt.ylim(0.96, 1.1)
-
-    # plt.subplot(313)
-    # plt.plot(flat_allynflat)
-    # plt.ylim(0.96, 1.1)
-
-    # plt.show()
-
-    # smooth_flat = smooth_flat[:,np.newaxis] / smooth_flat.max()
-
-    # print(np.mean(master_flat/smooth_flat), np.median(master_flat/smooth_flat))
-    # print(np.mean(flat_allynflat), np.median(flat_allynflat))
-
-    # I can't get this to work...
+    # I can't get this 2D fit to work...
     # TODO: fit a 2D response function to the flat to smooth over the fringing
     # x, y = np.mgrid[:shp[0], :shp[1]]
     # p = models.Polynomial2DModel(degree=13)
@@ -133,6 +107,8 @@ def main():
     # plt.plot(ally_nflat[:,col])
     # plt.show()
 
+    # TODO: cache cleaned image, etc.
+
     for obj in [obj]:
         # obj.arc_files should work?
 
@@ -140,47 +116,88 @@ def main():
 
             # subtract bias
             frame_data = fits.getdata(fn)
-            frame_data = ccd.bias_correct_frame(frame_data, master_bias)
+            frame_data = ccd.bias_correct_frame(frame_data, night.master_bias)
 
             #TODO: frame.inverse_variance # automatically created from:
-            # variance_image = image_data*gain + read_noise**2
-
-            frame_data /= ally_nflat[:,:300]
-            #frame_data /= smooth_flat[:,np.newaxis]
+            variance_image = frame_data*ccd.gain + ccd.read_noise**2
+            inv_var = 1./variance_image
 
             # divide by master flat
-            #frame_data /= smooth_flat
+            frame_data /= normed_flat
+            inv_var *= normed_flat**2
 
             # TODO: flag CR's
             #frame.flag_cosmic_rays(obs_run)
+            import cosmics
+            c = cosmics.cosmicsimage(frame_data, gain=ccd.gain,
+                                     readnoise=ccd.read_noise,
+                                     sigclip=8.0, sigfrac=0.5,
+                                     objlim=10.0)
+            c.run(maxiter=4)
+            frame_data = c.cleanarray
+            # TODO: inv_var[c.mask] = ??
+
+            # plt.subplot(121)
+            # plt.imshow(frame_data)
+            # plt.subplot(122)
+            # plt.imshow(c.cleanarray)
+            # plt.show()
+            # return
 
             # create 2D wavelength image
             # TODO: cache this!
             wvln_2d = obj.solve_2d_wavelength(overwrite=False)
             science_data = frame_data[ccd.regions["science"]]
 
+            # first do it the IRAF way:
+            row_pix = np.arange(science_data.shape[1])
+            for row in science_data:
+                g = gaussian_fit(row_pix, row,
+                                 mean=np.argmax(row))
+                L_idx = int(np.floor(g.mean.value - 4*g.stddev.value))
+                R_idx = int(np.ceil(g.mean.value + 4*g.stddev.value))+1
+
+                plt.clf()
+                plt.plot(row_pix, row, marker='o', linestyle='none')
+                plt.axvline(L_idx)
+                plt.axvline(R_idx)
+                plt.show()
+                return
+
             collapsed_spec = np.median(science_data, axis=0)
             row_pix = np.arange(len(collapsed_spec))
             g = gaussian_fit(row_pix, collapsed_spec,
                              mean=np.argmax(collapsed_spec))
 
+            # define rough box-car aperture for spectrum
             L_idx = int(np.floor(g.mean.value - 5*g.stddev.value))
             R_idx = int(np.ceil(g.mean.value + 5*g.stddev.value))+1
 
-            # plt.figure()
-            # plt.imshow(science_data)
-            # plt.show()
 
-            # plt.figure()
-            # plt.plot(collapsed_spec)
-            # plt.plot(row_pix, g(row_pix))
-            # plt.axvline(L_idx)
-            # plt.axvline(R_idx)
-            # plt.show()
+            # grab 2D sky regions around the aperture
+            # sky_l = np.ravel(science_data[:,L_idx-20:L_idx-10])
+            # sky_l_wvln = np.ravel(wvln_2d[:,L_idx-20:L_idx-10])
+            # sky_r = np.ravel(science_data[:,R_idx+10:R_idx+20])
+            # sky_r_wvln = np.ravel(wvln_2d[:,R_idx+10:R_idx+20])
 
-            sky_l = np.median(science_data[:,L_idx-20:L_idx-10], axis=1)
-            sky_r = np.median(science_data[:,R_idx+10:R_idx+20], axis=1)
-            sky = (sky_l + sky_r) / 2.
+            # # make 1D, oversampled sky spectrum
+            # sky_wvln = np.append(sky_l_wvln, sky_r_wvln)
+            # idx = np.argsort(sky_wvln)
+            # sky_wvln = sky_wvln[idx]
+            # sky = np.append(sky_l, sky_r)[idx]
+
+            # from scipy.interpolate import UnivariateSpline
+            # interp = UnivariateSpline(sky_wvln, sky, k=3)
+
+            spec_2d = science_data[:,L_idx:R_idx]
+            spec_wvln = wvln_2d[:,L_idx:R_idx]
+            spec_sky = interp(spec_wvln[:,3])
+
+            plt.plot(spec_wvln[:,3],
+                     (spec_2d[:,3] - spec_sky),
+                     drawstyle="steps")
+            plt.show()
+            return
 
             spec = np.sum(science_data[:,L_idx:R_idx], axis=1)
             spec /= float(R_idx-L_idx)
@@ -216,4 +233,32 @@ def main():
             frame.sky_subtract(obs_run)
 
 if __name__ == "__main__":
+    from argparse import ArgumentParser
+    import logging
+
+    # Create logger
+    logger = logging.getLogger(__name__)
+    ch = logging.StreamHandler()
+    formatter = logging.Formatter("%(name)s / %(levelname)s / %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    # Define parser object
+    parser = ArgumentParser(description="")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        dest="verbose", default=False,
+                        help="Be chatty! (default = False)")
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
+                        default=False, help="Be quiet! (default = False)")
+
+    args = parser.parse_args()
+
+    # Set logger level based on verbose flags
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    elif args.quiet:
+        logger.setLevel(logging.ERROR)
+    else:
+        logger.setLevel(logging.INFO)
+
     main()
