@@ -16,18 +16,18 @@ import astropy.units as u
 from ..sgr import SgrCoordinates
 
 def test_simple():
-    c = coord.ICRSCoordinates(coord.Angle(217.2141, u.degree),
-                              coord.Angle(-11.4351, u.degree))
+    c = coord.ICRS(coord.Angle(217.2141, u.degree),
+                   coord.Angle(-11.4351, u.degree))
     c.transform_to(SgrCoordinates)
 
-    c = coord.GalacticCoordinates(coord.Angle(217.2141, u.degree),
-                                  coord.Angle(-11.4351, u.degree))
+    c = coord.Galactic(coord.Angle(217.2141, u.degree),
+                       coord.Angle(-11.4351, u.degree))
     c.transform_to(SgrCoordinates)
 
     c = SgrCoordinates(coord.Angle(217.2141, u.degree),
                        coord.Angle(-11.4351, u.degree))
-    c.transform_to(coord.ICRSCoordinates)
-    c.transform_to(coord.GalacticCoordinates)
+    c.transform_to(coord.ICRS)
+    c.transform_to(coord.Galactic)
 
 def test_against_David_Law():
     """ Test my code against an output file from using David Law's cpp code. Do:
@@ -38,18 +38,14 @@ def test_against_David_Law():
 
     """
 
-    law_data = np.genfromtxt("streams/coordinates/tests/SgrCoord_data", 
+    law_data = np.genfromtxt("streams/coordinates/tests/SgrCoord_data",
                              names=True, delimiter=",")
 
-    for row in law_data:
-        c = coord.GalacticCoordinates(coord.Angle(row["l"], u.degree),
-                                      coord.Angle(row["b"], u.degree))
-        sgr_coords = c.transform_to(SgrCoordinates)
-        law_sgr_coords = SgrCoordinates(row["lambda"], row["beta"], 
-                                        unit=(u.degree, u.degree))
-        
-        print(sgr_coords, law_sgr_coords)
-        
-        sep = sgr_coords.separation(law_sgr_coords).arcsecs*u.arcsec
-        print(sep)
-        assert sep < 1.*u.arcsec
+    c = coord.Galactic(law_data["l"], law_data["b"], unit=(u.degree,u.degree))
+    sgr_coords = c.transform_to(SgrCoordinates)
+
+    law_sgr_coords = SgrCoordinates(law_data["lambda"], law_data["beta"],
+                                    unit=(u.degree, u.degree))
+
+    sep = sgr_coords.separation(law_sgr_coords).arcsec*u.arcsec
+    assert np.all(sep < 1.*u.arcsec)
