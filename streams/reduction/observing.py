@@ -106,6 +106,7 @@ class CCD(object):
     def bias_correct_frame(self, frame_data, bias):
         """ Bias subtract and overscan subtract """
 
+        # TODO: use full bias frame
         # subtract bias frame
         #data = frame_data - bias
         data = frame_data
@@ -152,12 +153,20 @@ class ArcSpectrum(Spectrum):
 
         o = cls(s["counts"], wavelength=s.get("wavelength", None),
                 cache=filename)
+        o._hand_id_pix = s.get("_hand_id_pix", None)
+        o._hand_id_wvln = s.get("_hand_id_wvln", None)
+        o._all_line_pix = s.get("_all_line_pix", None)
+        o._all_line_wvln = s.get("_all_line_wvln", None)
         return o
 
     def to_json(self):
         s = dict()
         if self.wavelength is not None:
             s["wavelength"] = self.wavelength.tolist()
+            s["_hand_id_pix"] = self._hand_id_pix.tolist()
+            s["_hand_id_wvln"] = self._hand_id_wvln.tolist()
+            s["_all_line_pix"] = self._all_line_pix.tolist()
+            s["_all_line_wvln"] = self._all_line_wvln.tolist()
         s["counts"] = self.counts.tolist()
         s["pix"] = self.pix.tolist()
 
@@ -216,6 +225,9 @@ class ArcSpectrum(Spectrum):
             x = self.pix
             ax.set_xlabel("Pixels")
 
+        ax.plot(x, self.counts, drawstyle='steps', **kwargs)
+        h = (max(self.counts)-min(self.counts))/10
+
         if line_ids:
             if self.wavelength is None:
                 raise ValueError("Lines have not been identified yet!")
@@ -223,13 +235,16 @@ class ArcSpectrum(Spectrum):
             ys = []
             for px,wvln in zip(self._all_line_pix, self._all_line_wvln):
                 ys.append(max(self.counts[int(px) + np.arange(-1,2)]))
-            ys = np.array(ys)
-            ax.vlines(self._all_line_wvln, ys, ys+10)
+                ax.text(wvln-5., ys[-1]+6200.,
+                        s="{:.3f}".format(wvln),
+                        rotation=90, fontsize=10)
 
-        ax.plot(x, self.counts, drawstyle='steps', **kwargs)
+            ys = np.array(ys)
+            ax.vlines(self._all_line_wvln, ys+h/3, ys+h, color='#3182BD')
+
         ax.set_xlim(min(x), max(x))
         ax.set_ylim(0,
-                    max(self.counts) + (max(self.counts)-min(self.counts))/20)
+                    max(self.counts) + 3*h)
         ax.set_ylabel("Raw counts")
 
         return fig,ax
@@ -350,13 +365,15 @@ class ArcSpectrum(Spectrum):
         fit_pix = []
         fit_wvln = []
         for c_pix,wvln in zip(arc_pix, arc_lines):
-            c_idx = int(c_pix)
+            w = 4
+            l = int(np.floor(round(c_pix) - w))
+            r = int(np.ceil(round(c_pix) + w))
 
-            line_pix = self.pix[c_idx-5:c_idx+5]
-            line_data = self.counts[c_idx-5:c_idx+5]
+            line_pix = self.pix[l:r+1]
+            line_data = self.counts[l:r+1]
             p = gaussian_fit(line_pix, line_data)
 
-            if abs(p.mean - c_pix) > 1.:
+            if abs(p.mean - c_pix) > 1.4:
                 logger.info("Line {0} fit failed.".format(wvln))
                 continue
 
@@ -374,7 +391,8 @@ class ArcSpectrum(Spectrum):
             order : int (optional)
                 Order of the polynomial fit to the lines.
         """
-        p = polynomial_fit(self._all_line_pix, self._all_line_wvln)
+        p = polynomial_fit(self._all_line_pix, self._all_line_wvln,
+                           order=order)
         self.pix_to_wavelength = p
 
     def solve_wavelength(self, obs_run, line_list):
@@ -565,6 +583,9 @@ class ObservingNight(object):
 
         self.object_files = object_dict
 
+        self.master_bias = self.make_master_bias()
+        self.master_flat = self.make_master_flat()
+
     def __str__(self):
         return self._night_str
 
@@ -619,7 +640,6 @@ class ObservingNight(object):
         if os.path.exists(cache_file) and overwrite:
             os.remove(cache_file)
 
-        # TODO: make sure flat combination is correct! this is probably where the error is...in making the master flat
         all_flats = None
         if not os.path.exists(cache_file):
             all_flat_files = find_all_imagetyp(self.data_path, "FLAT")
@@ -746,22 +766,46 @@ class TelescopePointing(object):
 
                 w = smooth_length//2
                 col_data = all_arc_data[:,ii-w:ii+w]
-                avg_col = np.mean(col_data, axis=1) # TODO: or median?
+                avg_col = np.median(col_data, axis=1) # TODO: or mean?
 
                 spec = ArcSpectrum(avg_col)
                 spec._hand_id_pix = obs_run.master_arc._hand_id_pix
                 spec._hand_id_wvln = obs_run.master_arc._hand_id_wvln
-                spec._solve_all_lines(hg_ne, dispersion_fit_order=3)
+                spec._solve_all_lines(hg_ne, dispersion_fit_order=5)
                 spec._fit_solved_lines(order=5)
 
                 residual = spec.pix_to_wavelength(spec._all_line_pix) - \
                            spec._all_line_wvln
-                idx = np.fabs(residual) < 0.1
-                spec._all_line_pix = spec._all_line_pix[idx]
-                spec._all_line_wvln = spec._all_line_wvln[idx]
 
-                assert len(spec._all_line_pix) > 20
-                spec._fit_solved_lines(order=5)
+                min_num_lines = 20
+                failed = False
+                while sum(np.fabs(residual) > 0.1) > 0:
+                    del_idx = np.argsort(np.fabs(residual) - 0.1)[-1]
+                    spec._all_line_pix = np.delete(spec._all_line_pix, del_idx)
+                    spec._all_line_wvln = np.delete(spec._all_line_wvln, del_idx)
+
+                    spec._fit_solved_lines(order=5)
+                    residual = spec.pix_to_wavelength(spec._all_line_pix) - \
+                               spec._all_line_wvln
+
+                    if len(spec._all_line_pix) < min_num_lines:
+                        failed = True
+                        break
+
+                if failed:
+                    plt.clf()
+                    plt.subplot(211)
+                    plt.plot(spec._all_line_pix, residual)
+                    plt.xlim(0,1024)
+
+                    plt.subplot(212)
+                    plt.plot(spec._all_line_pix, spec._all_line_wvln, 'ko')
+                    pp = np.linspace(0,1024,1000)
+                    plt.plot(spec._all_line_pix, spec._all_line_wvln, 'ko')
+                    plt.plot(pp, spec.pix_to_wavelength(pp))
+                    plt.xlim(0,1024)
+                    plt.show()
+                    sys.exit(0)
 
                 wavelength_2d[:,i] = spec.pix_to_wavelength(spec.pix)
 
