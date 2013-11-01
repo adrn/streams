@@ -97,14 +97,6 @@ class SgrCoordinates(coord.SphericalCoordinatesBase):
     # Default format for to_string
     _default_string_style = 'dmsdms'
 
-    @property
-    def Lambda(self):
-        return self._lonangle
-
-    @property
-    def Beta(self):
-        return self._latangle
-
 # Define the Euler angles (from Law & Majewski 2010)
 phi = np.radians(180+3.75)
 theta = np.radians(90-13.46)
