@@ -65,6 +65,8 @@ def main():
 
     # TODO: line_ids=True identifies all lines
     fig,ax = obs_run.master_arc.plot(line_ids=True)
+    plt.show()
+    return
     fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
     plt.clf()
 

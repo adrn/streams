@@ -216,6 +216,16 @@ class ArcSpectrum(Spectrum):
             x = self.pix
             ax.set_xlabel("Pixels")
 
+        if line_ids:
+            if self.wavelength is None:
+                raise ValueError("Lines have not been identified yet!")
+
+            ys = []
+            for px,wvln in zip(self._all_line_pix, self._all_line_wvln):
+                ys.append(max(self.counts[int(px) + np.arange(-1,2)]))
+            ys = np.array(ys)
+            ax.vlines(self._all_line_wvln, ys, ys+10)
+
         ax.plot(x, self.counts, drawstyle='steps', **kwargs)
         ax.set_xlim(min(x), max(x))
         ax.set_ylim(0,
