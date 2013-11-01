@@ -51,29 +51,6 @@ def find_all_imagetyp(path, imagetyp):
 
     return files
 
-def plot_spectrum(dispersion, flux, fig=None, ax=None, **kwargs):
-    """ Plot a spectrum.
-
-        Parameters
-        ----------
-        dispersion : array_like
-        flux : array_like
-        fig : matplotlib.Figure
-        ax : matplotlib.Axes
-    """
-
-    if fig is None and ax is None:
-        fig,ax = plt.subplots(1,1,figsize=kwargs.pop("figsize",(11,8)))
-
-    if ax is not None and fig is None:
-        fig = ax.figure
-
-    ax.plot(dispersion, flux, drawstyle='steps', **kwargs)
-    ax.set_xlim(min(dispersion), max(dispersion))
-    ax.set_ylim(0, max(flux) + (max(flux)-min(flux))/20)
-
-    return fig,ax
-
 def plot_wavelength_solution(obs_run, night):
     """ TODO: """
 
@@ -130,11 +107,13 @@ class CCD(object):
         """ Bias subtract and overscan subtract """
 
         # subtract bias frame
-        data = frame_data - bias
+        #data = frame_data - bias
+        data = frame_data
         overscan = data[self.regions["overscan"]]
         overscan_col = np.median(overscan, axis=1)
 
         data -= overscan_col[:,np.newaxis]
+
         return data[self.regions["data"]]
 
 class CCDRegion(list):
@@ -608,6 +587,7 @@ class ObservingNight(object):
         if os.path.exists(cache_file) and overwrite:
             os.remove(cache_file)
 
+        # TODO: make sure flat combination is correct! this is probably where the error is...in making the master flat
         all_flats = None
         if not os.path.exists(cache_file):
             all_flat_files = find_all_imagetyp(self.data_path, "FLAT")
@@ -673,6 +653,7 @@ class TelescopePointing(object):
 
             self.arc_file_paths.append(fn)
 
+        self.object_name = fits.getheader(self.file_paths[0])["OBJECT"]
         #self._read_arcs()
         #self._read_data()
 
@@ -702,46 +683,60 @@ class TelescopePointing(object):
 
         self.all_objects = all_objects
 
-    def solve_2d_wavelength(self, smooth_length=10):
+    def solve_2d_wavelength(self, smooth_length=10, overwrite=False):
         """ TODO: """
 
-        hg_ne = find_line_list("Hg Ne")
-        obs_run = self.night.observing_run
+        n = min([int(float(os.path.split(f)[1][8:12])) for f in self.file_paths])
+        cache_file = os.path.join(self.night.redux_path,
+                                  "{0}_{1}.fits".format(self.object_name, n))
 
-        self._read_arcs()
-        all_arc_data = np.median(self.arcs, axis=-1)
-        sci_arc_data = all_arc_data[obs_run.ccd.regions["science"]]
-        col_idx = (obs_run.ccd.regions["science"][1].start,
-                   obs_run.ccd.regions["science"][1].stop)
+        if os.path.exists(cache_file) and overwrite:
+            os.remove(cache_file)
 
-        # determine wavelength solution for each column on the CCD
-        pix = np.arange(all_arc_data.shape[0])
+        if not os.path.exists(cache_file):
+            hg_ne = find_line_list("Hg Ne")
+            obs_run = self.night.observing_run
 
-        wavelength_2d = np.zeros_like(sci_arc_data)
-        for i in range(sci_arc_data.shape[1]):
-            ii = col_idx[0] + i
-            col_fit_pix = []
-            col_fit_lines = []
+            self._read_arcs()
+            all_arc_data = np.median(self.arcs, axis=-1)
+            sci_arc_data = all_arc_data[obs_run.ccd.regions["science"]]
+            col_idx = (obs_run.ccd.regions["science"][1].start,
+                       obs_run.ccd.regions["science"][1].stop)
 
-            w = smooth_length//2
-            col_data = all_arc_data[:,ii-w:ii+w]
-            avg_col = np.mean(col_data, axis=1) # TODO: or median?
+            # determine wavelength solution for each column on the CCD
+            pix = np.arange(all_arc_data.shape[0])
 
-            spec = ArcSpectrum(avg_col)
-            spec._hand_id_pix = obs_run.master_arc._hand_id_pix
-            spec._hand_id_wvln = obs_run.master_arc._hand_id_wvln
-            spec._solve_all_lines(hg_ne, dispersion_fit_order=3)
-            spec._fit_solved_lines(order=5)
+            wavelength_2d = np.zeros_like(sci_arc_data)
+            for i in range(sci_arc_data.shape[1]):
+                ii = col_idx[0] + i
+                col_fit_pix = []
+                col_fit_lines = []
 
-            residual = spec.pix_to_wavelength(spec._all_line_pix) - \
-                       spec._all_line_wvln
-            idx = np.fabs(residual) < 0.1
-            spec._all_line_pix = spec._all_line_pix[idx]
-            spec._all_line_wvln = spec._all_line_wvln[idx]
+                w = smooth_length//2
+                col_data = all_arc_data[:,ii-w:ii+w]
+                avg_col = np.mean(col_data, axis=1) # TODO: or median?
 
-            assert len(spec._all_line_pix) > 20
-            spec._fit_solved_lines(order=5)
+                spec = ArcSpectrum(avg_col)
+                spec._hand_id_pix = obs_run.master_arc._hand_id_pix
+                spec._hand_id_wvln = obs_run.master_arc._hand_id_wvln
+                spec._solve_all_lines(hg_ne, dispersion_fit_order=3)
+                spec._fit_solved_lines(order=5)
 
-            wavelength_2d[:,i] = spec.pix_to_wavelength(spec.pix)
+                residual = spec.pix_to_wavelength(spec._all_line_pix) - \
+                           spec._all_line_wvln
+                idx = np.fabs(residual) < 0.1
+                spec._all_line_pix = spec._all_line_pix[idx]
+                spec._all_line_wvln = spec._all_line_wvln[idx]
+
+                assert len(spec._all_line_pix) > 20
+                spec._fit_solved_lines(order=5)
+
+                wavelength_2d[:,i] = spec.pix_to_wavelength(spec.pix)
+
+            hdu = fits.PrimaryHDU(wavelength_2d)
+            hdu.writeto(cache_file)
+
+        else:
+            wavelength_2d = fits.getdata(cache_file, 0)
 
         return wavelength_2d
