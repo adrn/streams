@@ -83,8 +83,8 @@ class SgrCoordinates(coord.SphericalCoordinatesBase):
             isinstance(args[0], coord.SphericalCoordinatesBase):
 
             newcoord = args[0].transform_to(self.__class__)
-            self.Lambda = newcoord.Lambda
-            self.Beta = newcoord.Beta
+            self._lonangle = newcoord._lonangle
+            self._latangle = newcoord._latangle
             self._distance = newcoord._distance
         else:
             super(SgrCoordinates, self).\

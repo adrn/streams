@@ -59,7 +59,7 @@ def main():
 
     # jupiter
     obj = TelescopePointing(night,
-                            files=['test.0005.fit'],
+                            files=['test.0004.fit'],
                             arc_files=['m102613.0039.fit','m102613.0039.fit'])
     objects = [obj]
 
@@ -170,9 +170,12 @@ def main():
 
             spec = np.sum(science_data[:,L_idx:R_idx], axis=1)
             spec /= float(R_idx-L_idx)
-            plt.plot(obs_run.master_arc.wavelength, spec,
-                     alpha=1., lw=1, drawstyle='steps')
-            plt.show()
+
+            s = Spectrum(obs_run.master_arc.wavelength*u.angstrom,
+                         spec)
+            fig,ax = s.plot()
+            ax.set_title(hdr["OBJECT"])
+            fig.savefig("/Users/adrian/Downloads/{0}.pdf".format(hdr["OBJECT"]))
             return
             ## HACK
 

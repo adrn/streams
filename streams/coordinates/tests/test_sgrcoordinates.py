@@ -29,6 +29,11 @@ def test_simple():
     c.transform_to(coord.ICRS)
     c.transform_to(coord.Galactic)
 
+    c = coord.Galactic(coord.Angle(217.2141, u.degree),
+                       coord.Angle(-11.4351, u.degree))
+    assert SgrCoordinates(c).Lambda.radian == \
+           c.transform_to(SgrCoordinates).Lambda.radian
+
 def test_against_David_Law():
     """ Test my code against an output file from using David Law's cpp code. Do:
 
