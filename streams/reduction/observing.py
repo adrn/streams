@@ -150,9 +150,20 @@ class ArcSpectrum(Spectrum):
         if not s.has_key("counts"):
             raise ValueError("Invalid JSON file. Must contain counts field.")
 
-        return cls(s["counts"], wavelength=s.get("wavelength", None))
+        o = cls(s["counts"], wavelength=s.get("wavelength", None),
+                cache=filename)
+        return o
 
-    def __init__(self, counts, wavelength=None):
+    def to_json(self):
+        s = dict()
+        if self.wavelength is not None:
+            s["wavelength"] = self.wavelength.tolist()
+        s["counts"] = self.counts.tolist()
+        s["pix"] = self.pix.tolist()
+
+        return json.dumps(s)
+
+    def __init__(self, counts, wavelength=None, cache=None):
         """ Represents the spectrum from an arc lamp.
 
             Parameters
@@ -161,6 +172,8 @@ class ArcSpectrum(Spectrum):
                 Raw counts from the detector.
             wavelength : array_like (optional)
                 If the wavelength grid is already solved.
+            cache : str
+                File to cache things to.
         """
 
         self.counts = np.array(counts)
@@ -171,6 +184,10 @@ class ArcSpectrum(Spectrum):
             assert self.wavelength.shape == self.counts.shape
 
         self.pix = np.arange(len(self.counts))
+        self.cache = cache
+
+    def clear_cache(self):
+        os.remove(self.cache)
 
     def __len__(self):
         return len(self.pix)
@@ -274,7 +291,7 @@ class ArcSpectrum(Spectrum):
         line_id_file = os.path.join(obs_run.redux_path, "plots",
                                     "line_id.pdf")
         fig.savefig(line_id_file)
-        plt.close()
+        plt.clf()
 
         print("")
         print("Now open: {0}".format(line_id_file))
@@ -359,11 +376,15 @@ class ArcSpectrum(Spectrum):
             line_list : array_like
                 List of wavelengths for lines in this arc.
         """
+
         self._hand_id_lines(obs_run)
         self._solve_all_lines(line_list)
         self._fit_solved_lines()
 
         self.wavelength = self.pix_to_wavelength(self.pix)
+
+        with open(self.cache, "w") as f:
+            f.write(self.to_json())
 
 
 class ObservingRun(object):
@@ -431,7 +452,8 @@ class ObservingRun(object):
         plt.switch_backend("agg")
 
         narcs = int(narcs)
-        cache_file = os.path.join(self.redux_path, "arc", "master_arc.json")
+        cache_file = os.path.join(self.redux_path, "arc", \
+                                  "master_arc.json")
 
         if os.path.exists(cache_file) and overwrite:
             os.remove(cache_file)

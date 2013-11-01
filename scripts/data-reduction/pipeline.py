@@ -22,36 +22,6 @@ import matplotlib.pyplot as plt
 from streams.reduction.observing import *
 from streams.reduction.util import *
 
-def plot_cols(cols, *data):
-
-    fig,axes = plt.subplots(len(cols), 1, figsize=(14,10))
-
-    # plot a few columns from the flat to make sure it's sensible
-    for ii,col in enumerate(cols):
-        for d in data:
-            axes[ii].plot(d[:,col], lw=2., alpha=0.5)
-
-    return fig, axes
-
-def sanity_check_flat(master_flat, model_flat):
-    """ TODO:
-    """
-
-    #plot the flat / response function
-    plt.figure()
-    plt.subplot(131)
-    plt.imshow(model_flat, aspect='equal', cmap=cm.Greys,
-               interpolation='nearest')
-    plt.subplot(132)
-    plt.imshow(master_flat, aspect='equal', cmap=cm.Greys,
-               interpolation='nearest')
-    plt.subplot(133)
-    plt.imshow(master_flat/model_flat, aspect='equal', cmap=cm.Greys,
-               interpolation='nearest')
-    plt.colorbar()
-
-    plot_cols([50, 150, 250], master_flat, model_flat)
-
 def main():
 
     # define the ccd and geometry
@@ -59,11 +29,9 @@ def main():
     ccd = CCD(gain=3.7, read_noise=5.33,
               shape=(1024,364), dispersion_axis=0) # shape=(nrows, ncols)
 
-    # region of the detector read out
+    # define regions of the detector
     ccd.regions["data"] = ccd[:,:-64]
     ccd.regions["science"] = ccd[:,100:200]
-
-    # overscan area
     ccd.regions["overscan"] = ccd[:,-64:]
 
     # create an observing run object, which holds paths and some global things
@@ -72,54 +40,35 @@ def main():
                         "2013-10_MDM")
     obs_run = ObservingRun(path, ccd=ccd)
 
-    utc = Time(datetime(2013,10,27), scale="utc")
+    utc = Time(datetime(2013,10,25), scale="utc")
     night = ObservingNight(utc=utc, observing_run=obs_run)
-    # Standard:
-    # obj = TelescopePointing(night,
-    #                         files=['m102413.0036.fit','m102413.0037.fit',\
-    #                                'm102413.0038.fit'],
-    #                         arc_files=['m102413.0039.fit','m102413.0040.fit'])
 
-    # faint rr lyrae:
-    # obj = TelescopePointing(night,
-    #                         files=['m102413.0050.fit','m102413.0051.fit',\
-    #                                'm102413.0052.fit'],
-    #                         arc_files=['m102413.0048.fit','m102413.0049.fit',
-    #                                    'm102413.0053.fit','m102413.0054.fit'])
-
-    # RR Lyrae itself:
+    # Try first with a standard:
     obj = TelescopePointing(night,
-                            files=['m102613.0036.fit','m102613.0037.fit',\
-                                   'm102613.0038.fit'],
-                            arc_files=['m102613.0039.fit','m102613.0040.fit'])
+                            files=['m102413.0036.fit','m102413.0037.fit',\
+                                   'm102413.0038.fit'],
+                            arc_files=['m102413.0039.fit','m102413.0040.fit'])
+    objects = [obj]
 
-    # Jules target J1023
-    # obj = TelescopePointing(night,
-    #                         files=['m102413.0112.fit'],
-    #                         arc_files=['m102413.0113.fit','m102413.0114.fit'])
+    # - median a bunch of arc images, extract a 1D arc spectrum
+    obs_run.make_master_arc(night, narcs=10, overwrite=False)
+    arc = obs_run.master_arc
 
-    arc_file = os.path.join(obs_run.redux_path, "arc", "master_arc.pickle")
-    if not os.path.exists(arc_file):
-        # - median a bunch of arc images, extract a 1D arc spectrum
-        obs_run.make_master_arc(night, narcs=10, overwrite=True)
-        arc = obs_run.master_arc
-
+    if arc.wavelength is None:
         # fit for a rough wavelength solution
         arc.solve_wavelength(obs_run, find_line_list("Hg Ne"))
-        # or, more control:
+        # or, for more control:
         # arc._hand_id_lines(Nlines=4)
         # arc._solve_all_lines(line_list, dispersion_fit_order=3)
         # arc._fit_solved_lines(order=5)
         # arc.wavelength = arc.pix_to_wavelength(arc.pix)
 
-        fnpickle(arc, arc_file)
-
-    obs_run.master_arc = fnunpickle(arc_file)
-
     # TODO: line_ids=True identifies all lines
     fig,ax = obs_run.master_arc.plot(line_ids=True)
     fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
-    plt.close()
+    plt.clf()
+
+    return
 
     # - create a master bias frame. each object will get overscan subtracted,
     #   but this will be used to remove global ccd structure.
