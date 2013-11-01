@@ -24,8 +24,8 @@ __all__ = ["parse_wavelength", "polynomial_fit", \
            "find_line_list", "gaussian_fit"]
 
 @custom_model_1d
-def GaussianPolynomial(x, c=0., log10_amp=4, stddev=1., mean=0):
-    return models.Const1DModel.eval(x, amplitude=c) + \
+def GaussianPolynomial(x, b=0., m=0., log10_amp=4, stddev=1., mean=0):
+    return models.Linear1DModel.eval(x, slope=m, intercept=b) + \
            models.Gaussian1DModel.eval(x, amplitude=10**log10_amp, \
                                        stddev=stddev, mean=mean)
 
@@ -51,7 +51,8 @@ def gaussian_fit(x, y, order=0, **p0):
 
     #g = custom_model_1d(_gaussian_constant_model)
     g = GaussianPolynomial()
-    default_p0 = dict(c=min(y),
+    default_p0 = dict(b=min(y),
+                      m=0.,
                       log10_amp=np.log10(max(y)),
                       stddev=0.5,
                       mean=float(np.mean(x)))
