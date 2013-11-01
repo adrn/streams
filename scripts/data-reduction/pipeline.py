@@ -40,7 +40,7 @@ def main():
                         "2013-10_MDM")
     obs_run = ObservingRun(path, ccd=ccd)
 
-    utc = Time(datetime(2013,10,25), scale="utc")
+    utc = Time(datetime(2013,10,27), scale="utc")
     night = ObservingNight(utc=utc, observing_run=obs_run)
     # this automaticall creates night.master_bias and night.master_flat
 
@@ -51,11 +51,16 @@ def main():
     #                         arc_files=['m102413.0039.fit','m102413.0040.fit'])
 
     # faint rr lyrae:
+    # obj = TelescopePointing(night,
+    #                         files=['m102413.0050.fit','m102413.0051.fit',\
+    #                                'm102413.0052.fit'],
+    #                         arc_files=['m102413.0048.fit','m102413.0049.fit',
+    #                                    'm102413.0053.fit','m102413.0054.fit'])
+
+    # jupiter
     obj = TelescopePointing(night,
-                            files=['m102413.0050.fit','m102413.0051.fit',\
-                                   'm102413.0052.fit'],
-                            arc_files=['m102413.0048.fit','m102413.0049.fit',
-                                       'm102413.0053.fit','m102413.0054.fit'])
+                            files=['test.0005.fit'],
+                            arc_files=['m102613.0039.fit','m102613.0039.fit'])
     objects = [obj]
 
     # - median a bunch of arc images, extract a 1D arc spectrum
@@ -115,7 +120,9 @@ def main():
         for fn in obj.file_paths:
 
             # subtract bias
-            frame_data = fits.getdata(fn)
+            hdu = fits.open(fn)[0]
+            frame_data = hdu.data
+            hdr = hdu.header
             frame_data = ccd.bias_correct_frame(frame_data, night.master_bias)
 
             #TODO: frame.inverse_variance # automatically created from:
@@ -128,13 +135,15 @@ def main():
 
             # TODO: flag CR's
             #frame.flag_cosmic_rays(obs_run)
-            import cosmics
-            c = cosmics.cosmicsimage(frame_data, gain=ccd.gain,
-                                     readnoise=ccd.read_noise,
-                                     sigclip=8.0, sigfrac=0.5,
-                                     objlim=10.0)
-            c.run(maxiter=4)
-            frame_data = c.cleanarray
+            if hdr['EXPTIME'] > 60:
+                import cosmics
+                c = cosmics.cosmicsimage(frame_data, gain=ccd.gain,
+                                         readnoise=ccd.read_noise,
+                                         sigclip=8.0, sigfrac=0.5,
+                                         objlim=10.0)
+                c.run(maxiter=4)
+                frame_data = c.cleanarray
+
             # TODO: inv_var[c.mask] = ??
 
             # plt.subplot(121)
@@ -148,6 +157,24 @@ def main():
             # TODO: cache this!
             wvln_2d = obj.solve_2d_wavelength(overwrite=False)
             science_data = frame_data[ccd.regions["science"]]
+
+            ## HACK
+            collapsed_spec = np.median(science_data, axis=0)
+            row_pix = np.arange(len(collapsed_spec))
+            g = gaussian_fit(row_pix, collapsed_spec,
+                             mean=np.argmax(collapsed_spec))
+
+            # define rough box-car aperture for spectrum
+            L_idx = int(np.floor(g.mean.value - 4*g.stddev.value))
+            R_idx = int(np.ceil(g.mean.value + 4*g.stddev.value))+1
+
+            spec = np.sum(science_data[:,L_idx:R_idx], axis=1)
+            spec /= float(R_idx-L_idx)
+            plt.plot(obs_run.master_arc.wavelength, spec,
+                     alpha=1., lw=1, drawstyle='steps')
+            plt.show()
+            return
+            ## HACK
 
             # first do it the IRAF way:
             row_pix = np.arange(science_data.shape[1])
