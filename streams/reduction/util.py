@@ -93,20 +93,3 @@ def parse_wavelength(wvln, default_unit=u.angstrom):
         wvln_unit = default_unit
 
     return float(wvln_value) * u.Unit(wvln_unit)
-
-def find_line_list(name):
-    """ Read in a list of wavelengths for a given arc lamp.
-
-        TODO: this could be so much better. Need some kind of registry?
-        TODO: is there a full list for Hg Ne somewhere?
-    """
-
-    obs_path = "/Users/adrian/Documents/GraduateSchool/Observing"
-
-    if name.replace(" ", "").lower() == "hgne":
-        fn = os.path.join(obs_path, "MDM 2.4m", "line lists", "Hg_Ne.txt")
-        lines = np.loadtxt(fn)
-    else:
-        raise ValueError("No list for {0}".format(name))
-
-    return lines
