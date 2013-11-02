@@ -40,7 +40,7 @@ def main():
                         "2013-10_MDM")
     obs_run = ObservingRun(path, ccd=ccd)
 
-    utc = Time(datetime(2013,10,27), scale="utc")
+    utc = Time(datetime(2013,10,25), scale="utc")
     night = ObservingNight(utc=utc, observing_run=obs_run)
     # this automaticall creates night.master_bias and night.master_flat
 
@@ -58,9 +58,14 @@ def main():
     #                                    'm102413.0053.fit','m102413.0054.fit'])
 
     # jupiter
+    # obj = TelescopePointing(night,
+    #                         files=['test.0004.fit'],
+    #                         arc_files=['m102613.0039.fit','m102613.0039.fit'])
+
+    # Jules target J1023
     obj = TelescopePointing(night,
-                            files=['test.0004.fit'],
-                            arc_files=['m102613.0039.fit','m102613.0039.fit'])
+                            files=['m102413.0112.fit'],
+                            arc_files=['m102413.0113.fit','m102413.0114.fit'])
     objects = [obj]
 
     # - median a bunch of arc images, extract a 1D arc spectrum
@@ -170,6 +175,13 @@ def main():
 
             spec = np.sum(science_data[:,L_idx:R_idx], axis=1)
             spec /= float(R_idx-L_idx)
+
+            if hdr["EXPTIME"] > 60:
+                sky_l = np.median(science_data[:,L_idx-20:L_idx-10], axis=1)
+                sky_r = np.median(science_data[:,R_idx+10:R_idx+20], axis=1)
+                sky = (sky_l + sky_r) / 2.
+
+                spec -= sky
 
             s = Spectrum(obs_run.master_arc.wavelength*u.angstrom,
                          spec)
