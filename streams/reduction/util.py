@@ -8,7 +8,8 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-#import logging
+import glob
+import logging
 
 # Third-party
 import numpy as np
@@ -18,7 +19,7 @@ from astropy.modeling.functional_models import custom_model_1d
 from scipy.optimize import leastsq
 
 # Create logger
-#logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 #__all__ = ["parse_wavelength", "polynomial_fit", "gaussian_fit"]
 
