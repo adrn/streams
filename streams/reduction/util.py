@@ -20,8 +20,7 @@ from scipy.optimize import leastsq
 # Create logger
 #logger = logging.getLogger(__name__)
 
-__all__ = ["parse_wavelength", "polynomial_fit", \
-           "find_line_list", "gaussian_fit"]
+#__all__ = ["parse_wavelength", "polynomial_fit", "gaussian_fit"]
 
 @custom_model_1d
 def GaussianPolynomial(x, b=0., m=0., log10_amp=4, stddev=1., mean=0):
@@ -93,3 +92,23 @@ def parse_wavelength(wvln, default_unit=u.angstrom):
         wvln_unit = default_unit
 
     return float(wvln_value) * u.Unit(wvln_unit)
+
+def find_all_imagetyp(path, imagetyp):
+    """ Find all FITS files in the given path with the IMAGETYP
+        header keyword equal to whatever is specified.
+
+        Parameters
+        ----------
+        path : str
+            Path to a bunch of FITS files.
+        imagetype : str
+            The desired IMAGETYP.
+    """
+
+    files = []
+    for filename in glob.glob(os.path.join(path, "*.fit*")):
+        hdr = fits.getheader(filename,0)
+        if hdr["IMAGETYP"] == imagetyp:
+            files.append(filename)
+
+    return files

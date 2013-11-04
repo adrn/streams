@@ -32,40 +32,6 @@ logger = logging.getLogger(__name__)
 
 _line_colors = ["red", "green", "blue", "magenta", "cyan", "yellow"]
 
-def find_all_imagetyp(path, imagetyp):
-    """ Find all FITS files in the given path with the IMAGETYP
-        header keyword equal to whatever is specified.
-
-        Parameters
-        ----------
-        path : str
-            Path to a bunch of FITS files.
-        imagetype : str
-            The desired IMAGETYP.
-    """
-
-    files = []
-    for filename in glob.glob(os.path.join(path, "*.fit*")):
-        hdr = fits.getheader(filename,0)
-        if hdr["IMAGETYP"] == imagetyp:
-            files.append(filename)
-
-    return files
-
-def plot_wavelength_solution(obs_run, night):
-    """ TODO: """
-
-    # label the lines, IRAF style
-    fig,ax = plt.subplots(1,1,figsize=(11,8))
-    ax.plot(pix, arc_1d, drawstyle="steps", c='k')
-
-    all_pix, all_wvln = obs_run.solve_all_lines(night)
-    for pix,wvln in zip(all_pix, all_wvln):
-        y = max(spectral_line_model(p_opt, line_pix)) + 3000.
-        ylim_max = max(ylim_max, y)
-        ax.text(line_center-6, y, "{0:.3f}".format(wvln),
-                rotation=90, fontsize=10)
-
 class CCD(object):
 
     def __init__(self, shape, gain, read_noise, dispersion_axis=0):
