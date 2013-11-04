@@ -27,7 +27,7 @@ from .util import *
 logger = logging.getLogger(__name__)
 
 _linelist_path = ("/Users/adrian/Documents/GraduateSchool/Observing/"
-                  "MDM 2.4m/line lists/Hg_Ne.txt")
+                  "MDM 2.4m/line lists")
 
 def find_line_list(name):
     """ Read in a list of wavelengths for a given arc lamp.
@@ -40,7 +40,8 @@ def find_line_list(name):
     """
 
     try:
-        fn = os.path.join(_linelist_path, name.replace(" ", "_"))
+        fn = os.path.join(_linelist_path, name.replace(" ", "_")+".txt")
+        print(fn)
         lines = np.loadtxt(fn)
     except:
         raise ValueError("No list for {0}".format(name))
