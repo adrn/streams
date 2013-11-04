@@ -357,6 +357,7 @@ class ObservingNight(object):
             master_flat_1d = np.median(self.master_flat, axis=1)
             p = models.Polynomial1DModel(degree=15)
             fit = fitting.NonLinearLSQFitter(p)
+            pix = np.arange(len(master_flat_1d))
             fit(pix, master_flat_1d)
             smooth_flat = p(pix)
 
