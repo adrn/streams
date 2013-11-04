@@ -41,7 +41,6 @@ def find_line_list(name):
 
     try:
         fn = os.path.join(_linelist_path, name.replace(" ", "_")+".txt")
-        print(fn)
         lines = np.loadtxt(fn)
     except:
         raise ValueError("No list for {0}".format(name))
