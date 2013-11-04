@@ -29,82 +29,12 @@ from matplotlib import cm
 # Project
 from .util import *
 from .arc import find_line_list, ArcSpectrum
+from .ccd import *
 
 # Create logger
 logger = logging.getLogger(__name__)
 
 _line_colors = ["red", "green", "blue", "magenta", "cyan", "yellow"]
-
-class CCD(object):
-
-    def __init__(self, shape, gain, read_noise, dispersion_axis=0):
-        """ Represents a CCD detector. You should set the following
-            additional attributes:
-
-                data_mask : a boolean mask with shape
-                    'data[readout_mask].shape' that picks out the region
-                    to be used for science;
-                overscan_mask : a boolean mask with shape
-                    'data[readout_mask].shape' that designates the overscan.
-
-            TODO: gain and read_noise should have units?
-
-            Parameters
-            ----------
-            shape : tuple
-                Number of pixels along each axis.
-            gain : numeric
-            read_noise : numeric
-            dispersion_axis : int (optional)
-                Defaults to axis=0. The dispersive axis, e.g., wavelength.
-        """
-
-        self.shape = tuple(shape)
-        if len(self.shape) != 2:
-            raise ValueError("'shape' must be a 2 element iterable.")
-
-        self.gain = float(gain)
-        self.read_noise = float(read_noise)
-        self.dispersion_axis = int(dispersion_axis)
-
-        # can define named sub-regions of the detector
-        self.regions = dict()
-
-    def __getitem__(self, *slices):
-        return CCDRegion(self, *slices)
-
-    def bias_correct_frame(self, frame_data, bias):
-        """ Bias subtract and overscan subtract """
-
-        # TODO: use full bias frame
-        # subtract bias frame
-        #data = frame_data - bias
-        data = frame_data
-        overscan = data[self.regions["overscan"]]
-        overscan_col = np.median(overscan, axis=1)
-
-        data -= overscan_col[:,np.newaxis]
-
-        return data[self.regions["data"]]
-
-class CCDRegion(list):
-
-    def __init__(self, ccd, *slices):
-        """ Represents a region / subset of a CCD detector
-
-            Parameters
-            ----------
-            ccd : CCD
-                The parent CCD object
-            slices : tuple
-                A tuple of slice objects which define the sub-region by
-                slicing along each axis of the CCD.
-        """
-        self.ccd = CCD
-        super(CCDRegion, self).__init__(*slices)
-
-class CCDFrame(object):
-    pass
 
 class ObservingRun(object):
 
