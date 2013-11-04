@@ -156,7 +156,7 @@ class ObservingRun(object):
 
         # find all nights from the run -- these are subdirectories in
         #   data_path that start with, e.g., m10**13
-        self.nights = []
+        self.nights = dict()
         pattr = re.compile("m([0-9]{6})")
         for m_path in glob.glob(os.path.join(self.data_path, "m*")):
             xx,m_date = os.path.split(m_path)
@@ -166,8 +166,8 @@ class ObservingRun(object):
             yr = int("20" + d[4:])
 
             utc = Time(datetime(yr,month,day), scale="utc")
-            self.nights.append(ObservingNight(utc=utc,
-                                              observing_run=self))
+            self.nights[m_date] = ObservingNight(utc=utc,
+                                                 observing_run=self)
 
 
     def make_master_arc(self, night, narcs=10, overwrite=False):
