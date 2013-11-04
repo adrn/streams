@@ -40,34 +40,6 @@ def main():
                         "2013-10_MDM")
     obs_run = ObservingRun(path, ccd=ccd)
 
-    utc = Time(datetime(2013,10,25), scale="utc")
-    night = ObservingNight(utc=utc, observing_run=obs_run)
-    # this automaticall creates night.master_bias and night.master_flat
-
-    # Try first with a standard:
-    # obj = TelescopePointing(night,
-    #                         files=['m102413.0036.fit','m102413.0037.fit',\
-    #                                'm102413.0038.fit'],
-    #                         arc_files=['m102413.0039.fit','m102413.0040.fit'])
-
-    # faint rr lyrae:
-    # obj = TelescopePointing(night,
-    #                         files=['m102413.0050.fit','m102413.0051.fit',\
-    #                                'm102413.0052.fit'],
-    #                         arc_files=['m102413.0048.fit','m102413.0049.fit',
-    #                                    'm102413.0053.fit','m102413.0054.fit'])
-
-    # jupiter
-    # obj = TelescopePointing(night,
-    #                         files=['test.0004.fit'],
-    #                         arc_files=['m102613.0039.fit','m102613.0039.fit'])
-
-    # Jules target J1023
-    obj = TelescopePointing(night,
-                            files=['m102413.0112.fit'],
-                            arc_files=['m102413.0113.fit','m102413.0114.fit'])
-    objects = [obj]
-
     # - median a bunch of arc images, extract a 1D arc spectrum
     obs_run.make_master_arc(night, narcs=10, overwrite=False)
     arc = obs_run.master_arc
@@ -76,48 +48,16 @@ def main():
     if arc.wavelength is None:
         # fit for a rough wavelength solution
         arc.solve_wavelength(obs_run, find_line_list("Hg Ne"))
-        # or, for more control:
-        # arc._hand_id_lines(Nlines=4)
-        # arc._solve_all_lines(line_list, dispersion_fit_order=3)
-        # arc._fit_solved_lines(order=5)
-        # arc.wavelength = arc.pix_to_wavelength(arc.pix)
 
     # plot the arc lamp spectrum with lines identified
     fig,ax = obs_run.master_arc.plot(line_ids=True)
-    fig.savefig(os.path.join(obs_run.redux_path, "plots", "master_arc.pdf"))
+    fig.savefig(os.path.join(obs_run.redux_path,
+                             "plots", "master_arc.pdf"))
     plt.clf()
 
-    # collapse the flat to 1D, fit a polynomial
-    master_flat_1d = np.median(night.master_flat, axis=1)
-    p = models.Polynomial1DModel(degree=15)
-    fit = fitting.NonLinearLSQFitter(p)
-    fit(pix, master_flat_1d)
-    smooth_flat = p(pix)
-
-    # normalize the flat
-    normed_flat = master_flat_1d / smooth_flat
-    normed_flat = normed_flat[:,np.newaxis]
-
-    # I can't get this 2D fit to work...
-    # TODO: fit a 2D response function to the flat to smooth over the fringing
-    # x, y = np.mgrid[:shp[0], :shp[1]]
-    # p = models.Polynomial2DModel(degree=13)
-    # fit = fitting.LinearLSQFitter(p)
-    # fit(x, y, master_flat)
-    # smooth_flat = p(x,y)
-
-    # col = 200
-    # plt.subplot(411)
-    # plt.plot(smooth_flat[:,col])
-    # plt.subplot(412)
-    # plt.plot(master_flat[:,col]/smooth_flat[:,col])
-    # plt.subplot(413)
-    # plt.plot(ally_flat[:,col])
-    # plt.subplot(414)
-    # plt.plot(ally_nflat[:,col])
-    # plt.show()
-
-    # TODO: cache cleaned image, etc.
+    # - the above, rough wavelength solution is used when no arcs were
+    #   taken at a particular pointing, and as intial conditions for the
+    #   line positions for fitting to each individual arc
 
     for obj in [obj]:
         # obj.arc_files should work?
