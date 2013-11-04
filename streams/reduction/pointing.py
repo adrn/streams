@@ -15,6 +15,7 @@ import json
 import re
 
 # Third-party
+import cosmics
 from astropy.io import fits
 from astropy.io.misc import fnpickle, fnunpickle
 from astropy.modeling import models, fitting
@@ -72,8 +73,49 @@ class TelescopePointing(object):
             self.arc_file_paths.append(fn)
 
         self.object_name = fits.getheader(self.file_paths[0])["OBJECT"]
-        #self._read_arcs()
-        #self._read_data()
+
+    def reduce(self):
+        """ Reduce data from this pointing.
+
+        """
+
+        # solve for wavelength at every pixel
+        wvln_2d = self.wavelength_image
+
+        ccd = self.night.observing_run.ccd
+        n_flat = self.night.make_normalized_flat()
+        path = self.night.redux_path
+
+        for fn in self.file_paths:
+            # subtract bias
+            hdu = fits.open(fn)[0]
+            frame_data = hdu.data
+            hdr = hdu.header
+            frame_data = ccd.bias_correct_frame(frame_data,
+                                                self.night.master_bias)
+
+            #TODO: frame.inverse_variance # automatically created?
+            variance_image = frame_data*ccd.gain + ccd.read_noise**2
+            inv_var = 1./variance_image
+
+            # divide by master normalized flat
+            frame_data /= n_flat
+            inv_var *= n_flat**2
+
+            # if the exposure was more than 60 seconds, run this cosmic
+            #   ray flagger on the CCD data
+            if hdr['EXPTIME'] > 60:
+                c = cosmics.cosmicsimage(frame_data, gain=ccd.gain,
+                                         readnoise=ccd.read_noise,
+                                         sigclip=8.0, sigfrac=0.5,
+                                         objlim=10.0)
+                c.run(maxiter=4)
+                frame_data = c.cleanarray
+
+            # write this back out as a 2D image
+            new_hdu = fits.PrimaryHDU(frame_data, header=hdr)
+            new_hdu.writeto(os.path.join(path, os.path.split(fn)[1]))
+
 
     def _read_arcs(self):
         Narcs = len(self.arc_file_paths)
@@ -88,29 +130,28 @@ class TelescopePointing(object):
 
         self.arcs = arcs
 
-    def _read_data(self):
-        Ndata = len(self.file_paths)
+    @property
+    def wavelength_image(self):
+        """ If this pointing has arcs associated with it, use those to
+            get the 2D wavelength solution for the frames. If not, use
+            the master arc.
+        """
+        if len(self.arc_file_paths) > 0:
+            return self._solve_2d_wavelength(self, smooth_length=10)
+        else:
+            wvln_1d = self.night.observing_run.master_arc.wavelength
+            region = self.night.observing_run.ccd.regions["science"]
+            ncols = (region[1].stop - region[1].start)
+            return np.repeat(wvln_1d[:,np.newaxis], ncols, axis=1)
 
-        all_objects = None
-        for ii,fn in enumerate(self.file_paths):
-            data = fits.getdata(fn,0)
-            if all_objects is None:
-                all_objects = np.zeros(data.shape + (Ndata,))
-
-            all_objects[...,ii] = data
-
-        self.all_objects = all_objects
-
-    def solve_2d_wavelength(self, smooth_length=10, overwrite=False):
+    def _solve_2d_wavelength(self, smooth_length=10, overwrite=False):
         """ TODO: """
 
-        try:
-            n = min([int(float(os.path.split(f)[1][8:12])) for f in self.file_paths])
-        except ValueError:
-            n = os.path.splitext(os.path.split(f)[1])[0]
+        xx,suffix = os.path.split(self.file_paths[0])
+        suffix,xx = os.path.splitext(suffix)
 
-        cache_file = os.path.join(self.night.redux_path,
-                                  "{0}_{1}.fits".format(self.object_name, n))
+        cache_file = os.path.join(self.night.redux_path, "arc",
+                                  "arc_{0}.fits".format(suffix))
 
         if os.path.exists(cache_file) and overwrite:
             os.remove(cache_file)
