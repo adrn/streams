@@ -101,7 +101,7 @@ class ObservingRun(object):
             day = int(float(d[2:4]))
             yr = int("20" + d[4:])
 
-            utc = Time(datetime(yr,month,day), scale="utc")
+            utc = Time(datetime(yr,month,day+1), scale="utc")
             self.nights[m_date] = ObservingNight(utc=utc,
                                                  observing_run=self)
 
