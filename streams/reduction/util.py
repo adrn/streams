@@ -14,6 +14,7 @@ import logging
 # Third-party
 import numpy as np
 import astropy.units as u
+from astropy.io import fits
 from astropy.modeling import models, fitting
 from astropy.modeling.functional_models import custom_model_1d
 from scipy.optimize import leastsq

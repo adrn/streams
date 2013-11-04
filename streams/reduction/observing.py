@@ -30,6 +30,7 @@ from matplotlib import cm
 from .util import *
 from .arc import find_line_list, ArcSpectrum
 from .ccd import *
+from .pointing import TelescopePointing
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ class ObservingRun(object):
 
         # load the object/queue config
         if config_file is None:
-            config_file = os.path.join(observing_run.data_path, "config.json")
+            config_file = os.path.join(self.data_path, "config.json")
 
         if not os.path.exists(config_file):
             raise IOError("Queue spec/config file '{0}'' does not exist!"\
@@ -117,9 +118,9 @@ class ObservingRun(object):
             config = json.loads(f.read())
 
         for night_str,night in self.nights.items():
-            ptg = TelescopePointing(self, config[night_str]["spec"], \
-                                   config[night_str]["arc"])
-            night.pointings.append(ptg)
+            for obj in config[night_str]:
+                ptg = TelescopePointing(self, obj["spec"], obj["arc"])
+                night.pointings.append(ptg)
 
     def make_master_arc(self, night, narcs=10, overwrite=False):
         """ Make a 'master' 1D arc for this observing run, cache it to
