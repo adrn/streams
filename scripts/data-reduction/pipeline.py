@@ -59,9 +59,15 @@ def main():
     #   taken at a particular pointing, and as intial conditions for the
     #   line positions for fitting to each individual arc
 
-    for night in obs_run.nights.values():
+    ii = 0
+    for night in [obs_run.nights["m102413"]]:
         for pointing in night.pointings:
-            pointing.reduce()
+            pointing.reduce(overwrite=True)
+            ii += 1
+
+            if ii == 2:
+                pointing.combine()
+                sys.exit(0)
 
             continue
 

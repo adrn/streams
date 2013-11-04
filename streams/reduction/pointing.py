@@ -74,19 +74,31 @@ class TelescopePointing(object):
 
         self.object_name = fits.getheader(self.file_paths[0])["OBJECT"]
 
-    def reduce(self):
+        self._data_file_paths = dict()
+
+    def reduce(self, overwrite=False):
         """ Reduce data from this pointing.
 
         """
 
         # solve for wavelength at every pixel
-        wvln_2d = self.wavelength_image
-
+        science_wvln = self.wavelength_image
         ccd = self.night.observing_run.ccd
+
         n_flat = self.night.make_normalized_flat()
         path = self.night.redux_path
 
         for fn in self.file_paths:
+            _data_fn = os.path.splitext(os.path.split(fn)[1])[0]
+            data_fn = os.path.join(path, "{0}_2d.fit".format(_data_fn))
+            self._data_file_paths[fn] = data_fn
+
+            if os.path.exists(data_fn) and overwrite:
+                os.remove(data_fn)
+
+            if os.path.exists(data_fn):
+                continue
+
             # subtract bias
             hdu = fits.open(fn)[0]
             frame_data = hdu.data
@@ -112,11 +124,45 @@ class TelescopePointing(object):
                 c.run(maxiter=4)
                 frame_data = c.cleanarray
 
-            # write this back out as a 2D image
-            new_hdu = fits.PrimaryHDU(frame_data, header=hdr)
-            new_hdu.writeto(os.path.join(path, os.path.split(fn)[1]))
+            # if exposure time > 60 seconds, do sky subtraction
 
-            sys.exit(0)
+            # extract only the science data region
+            science_data = frame_data[ccd.regions["science"]]
+            science_inv_var = inv_var[ccd.regions["science"]]
+
+            # write this back out as a 2D image
+            new_hdu0 = fits.PrimaryHDU(science_data, header=hdr)
+            new_hdu1 = fits.ImageHDU(science_wvln,
+                            header=fits.Header([("NAME","wavelength")]))
+            new_hdu2 = fits.ImageHDU(science_inv_var,
+                            header=fits.Header([("NAME","inverse variance")]))
+            hdul = fits.HDUList([new_hdu0,new_hdu1,new_hdu2])
+            hdul.writeto(data_fn)
+
+    def combine(self):
+        """ Combine multiple exposures of the same object in 2D. """
+
+        for fn in self._data_file_paths.values():
+            hdulist = fits.open(fn)
+
+            image_data = hdulist[0].data
+            wvln_data = hdulist[1].data
+            inv_var = hdulist[2].data
+
+            try:
+                all_data += image_data*inv_var**2
+                all_inv_var += inv_var**2
+            except NameError:
+                all_data = image_data*inv_var**2
+                all_inv_var = inv_var**2
+
+        all_data /= all_inv_var
+        all_inv_var = np.sqrt(all_inv_var)
+
+        ### TEST HACK
+        hdu = fits.PrimaryHDU(all_data)
+        hdu.writeto("/Users/adrian/Downloads/derp.fits", clobber=True)
+
 
     def _read_arcs(self):
         Narcs = len(self.arc_file_paths)
@@ -151,8 +197,8 @@ class TelescopePointing(object):
         xx,suffix = os.path.split(self.file_paths[0])
         suffix,xx = os.path.splitext(suffix)
 
-        cache_file = os.path.join(self.night.redux_path, "arc",
-                                  "arc_{0}.fits".format(suffix))
+        cache_file = os.path.join(self.night.observing_run.redux_path,
+                                  "arc", "arc_{0}.fit".format(suffix))
 
         if os.path.exists(cache_file) and overwrite:
             os.remove(cache_file)
