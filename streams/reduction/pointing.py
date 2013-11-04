@@ -138,7 +138,7 @@ class TelescopePointing(object):
             the master arc.
         """
         if len(self.arc_file_paths) > 0:
-            return self._solve_2d_wavelength(self, smooth_length=10)
+            return self._solve_2d_wavelength(smooth_length=10)
         else:
             wvln_1d = self.night.observing_run.master_arc.wavelength
             region = self.night.observing_run.ccd.regions["science"]
