@@ -59,44 +59,11 @@ def main():
     #   taken at a particular pointing, and as intial conditions for the
     #   line positions for fitting to each individual arc
 
-    for obj in [obj]:
-        # obj.arc_files should work?
+    for night in obs_run.nights.values():
+        for pointing in night.pointings:
+            pointing.reduce()
 
-        for fn in obj.file_paths:
-
-            # subtract bias
-            hdu = fits.open(fn)[0]
-            frame_data = hdu.data
-            hdr = hdu.header
-            frame_data = ccd.bias_correct_frame(frame_data, night.master_bias)
-
-            #TODO: frame.inverse_variance # automatically created from:
-            variance_image = frame_data*ccd.gain + ccd.read_noise**2
-            inv_var = 1./variance_image
-
-            # divide by master flat
-            frame_data /= normed_flat
-            inv_var *= normed_flat**2
-
-            # TODO: flag CR's
-            #frame.flag_cosmic_rays(obs_run)
-            if hdr['EXPTIME'] > 60:
-                import cosmics
-                c = cosmics.cosmicsimage(frame_data, gain=ccd.gain,
-                                         readnoise=ccd.read_noise,
-                                         sigclip=8.0, sigfrac=0.5,
-                                         objlim=10.0)
-                c.run(maxiter=4)
-                frame_data = c.cleanarray
-
-            # TODO: inv_var[c.mask] = ??
-
-            # plt.subplot(121)
-            # plt.imshow(frame_data)
-            # plt.subplot(122)
-            # plt.imshow(c.cleanarray)
-            # plt.show()
-            # return
+            continue
 
             # create 2D wavelength image
             # TODO: cache this!
