@@ -125,7 +125,7 @@ class ObservingRun(object):
                 spec_files = [_fn.format(night_str, ii) for ii in obj["spec"]]
                 arc_files = [_fn.format(night_str, ii) for ii in obj["arc"]]
 
-                ptg = TelescopePointing(self, spec_files, arc_files)
+                ptg = TelescopePointing(night, spec_files, arc_files)
                 night.pointings.append(ptg)
 
     def make_master_arc(self, night, narcs=10, overwrite=False):
