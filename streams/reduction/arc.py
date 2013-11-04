@@ -47,6 +47,61 @@ def find_line_list(name):
 
     return lines
 
+class Spectrum(object):
+
+    def __init__(self, dispersion, intensity):
+        """ TODO: """
+
+        self.dispersion = dispersion
+        self.intensity = intensity
+
+    def plot(self, fig=None, ax=None, **kwargs):
+        """ Plot the spectrum.
+
+            Parameters
+            ----------
+            fig : matplotlib.Figure
+            ax : matplotlib.Axes
+        """
+
+        if fig is None and ax is None:
+            fig,ax = plt.subplots(1,1,figsize=kwargs.pop("figsize",(11,8)))
+
+        if ax is not None and fig is None:
+            fig = ax.figure
+
+        if hasattr(self.dispersion, "unit"):
+            disp_unit = self.dispersion.unit
+            if disp_unit.physical_type == "length":
+                xlbl = "Wavelength"
+            else:
+                xlbl = disp_unit.physical_type.capitalize()
+
+            x = self.dispersion.value
+
+        else:
+            xlbl = "Pixels"
+            x = self.dispersion
+
+        if hasattr(self.intensity, "unit"):
+            disp_unit = self.dispersion.unit
+            ylbl = disp_unit.physical_type.capitalize()
+            y = self.intensity.value
+
+        else:
+            ylbl = "Counts"
+            y = self.intensity
+
+        ax.plot(x, y, drawstyle='steps', **kwargs)
+        h = (max(y)-min(y))/10
+
+        ax.set_xlim(min(x), max(x))
+        ax.set_ylim(0, max(y) + 3*h)
+        ax.set_xlabel(xlbl)
+        ax.set_ylabel(ylbl)
+
+        return fig,ax
+
 
 class ArcSpectrum(Spectrum):
 
