@@ -13,8 +13,10 @@ import glob
 import logging
 import json
 import re
+from datetime import datetime
 
 # Third-party
+from astropy.time import Time
 from astropy.io import fits
 from astropy.io.misc import fnpickle, fnunpickle
 from astropy.modeling import models, fitting
@@ -106,7 +108,8 @@ class CCDFrame(object):
 
 class ObservingRun(object):
 
-    def __init__(self, path, ccd, data_path=None, redux_path=None):
+    def __init__(self, path, ccd, data_path=None, redux_path=None,
+                 config_file=None):
         """ An object to store global properties of an observing run,
             such as the CCD configuration, a rough wavelength solution,
             various system paths.
@@ -126,6 +129,9 @@ class ObservingRun(object):
             redux_path : str (optional)
                 Path to store reduction products for this observing run.
                 Defaults to path/reduction.
+            config_file : str (optional)
+                Path to a queue config file. Default is in
+                <data_path>/config.json
 
         """
 
@@ -160,7 +166,7 @@ class ObservingRun(object):
         pattr = re.compile("m([0-9]{6})")
         for m_path in glob.glob(os.path.join(self.data_path, "m*")):
             xx,m_date = os.path.split(m_path)
-            d = pattr.search(m_date).groups()
+            d = pattr.search(m_date).groups()[0]
             month = int(float(d[:2]))
             day = int(float(d[2:4]))
             yr = int("20" + d[4:])
@@ -169,6 +175,21 @@ class ObservingRun(object):
             self.nights[m_date] = ObservingNight(utc=utc,
                                                  observing_run=self)
 
+        # load the object/queue config
+        if config_file is None:
+            config_file = os.path.join(observing_run.data_path, "config.json")
+
+        if not os.path.exists(config_file):
+            raise IOError("Queue spec/config file '{0}'' does not exist!"\
+                          .format(config_file))
+
+        with open(config_file) as f:
+            config = json.loads(f.read())
+
+        for night_str,night in self.nights.items():
+            ptg = TelescopePointing(self, config[night_str]["spec"], \
+                                   config[night_str]["arc"])
+            night.pointings.append(ptg)
 
     def make_master_arc(self, night, narcs=10, overwrite=False):
         """ Make a 'master' 1D arc for this observing run, cache it to
