@@ -11,12 +11,10 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import pytest
-from datetime import datetime
 
 # Third-party
 import numpy as np
 import astropy.units as u
-from astropy.time import Time
 import matplotlib.pyplot as plt
 
 from streams.reduction.observing import *
@@ -40,8 +38,10 @@ def main():
                         "2013-10_MDM")
     obs_run = ObservingRun(path, ccd=ccd)
 
-    # - median a bunch of arc images, extract a 1D arc spectrum
-    obs_run.make_master_arc(night, narcs=10, overwrite=False)
+    # - median a bunch of arc images, extract a 1D arc spectrum from
+    #   the first night (arbitrary)
+    obs_run.make_master_arc(obs_run.nights.values()[0],
+                            narcs=10, overwrite=False)
     arc = obs_run.master_arc
     pix = np.arange(len(arc))
 

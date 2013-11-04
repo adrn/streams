@@ -116,6 +116,7 @@ class TelescopePointing(object):
             new_hdu = fits.PrimaryHDU(frame_data, header=hdr)
             new_hdu.writeto(os.path.join(path, os.path.split(fn)[1]))
 
+            sys.exit(0)
 
     def _read_arcs(self):
         Narcs = len(self.arc_file_paths)

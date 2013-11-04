@@ -119,7 +119,13 @@ class ObservingRun(object):
 
         for night_str,night in self.nights.items():
             for obj in config[night_str]:
-                ptg = TelescopePointing(self, obj["spec"], obj["arc"])
+                # in json file, i only specify the exposure id. have
+                #   to turn this into a filename
+                _fn = os.path.join(night.data_path, "{0}.{1:04d}.fit")
+                spec_files = [_fn.format(night_str, ii) for ii in obj["spec"]]
+                arc_files = [_fn.format(night_str, ii) for ii in obj["arc"]]
+
+                ptg = TelescopePointing(self, spec_files, arc_files)
                 night.pointings.append(ptg)
 
     def make_master_arc(self, night, narcs=10, overwrite=False):
@@ -242,6 +248,9 @@ class ObservingNight(object):
 
         self.master_bias = self.make_master_bias()
         self.master_flat = self.make_master_flat()
+
+        # all pointings of the telescope during this night
+        self.pointings = []
 
     def __str__(self):
         return self._night_str
