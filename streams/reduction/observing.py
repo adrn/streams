@@ -310,10 +310,8 @@ class ObservingNight(object):
             # get the shape of the 'data' region of the ccd
             ccd = self.observing_run.ccd
             region = ccd.regions["data"]
-            shp = (region[0].stop-region[0].start, \
-                   region[1].stop-region[1].start)
 
-            all_zero = np.zeros(shp + (Nbias,))
+            all_zero = np.zeros(region.shape + (Nbias,))
             for ii,filename in enumerate(all_bias_files):
                 hdu = fits.open(filename)[0]
 

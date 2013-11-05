@@ -85,8 +85,31 @@ class CCDRegion(list):
                 A tuple of slice objects which define the sub-region by
                 slicing along each axis of the CCD.
         """
-        self.ccd = CCD
+        self.ccd = ccd
         super(CCDRegion, self).__init__(*slices)
+
+    @property
+    def shape(self):
+        ccd_shape = self.ccd.shape
+
+        shp = []
+        for ii,ax in enumerate(self):
+            a, b = ax.start, ax.stop
+
+            if a is not None and b is not None:
+                sz = b-a
+            elif a is None and b is not None:
+                sz = ccd_shape[ii] - abs(b)
+            elif a is not None and b is None:
+                if a < 0:
+                    sz = abs(a)
+                else:
+                    sz = ccd_shape[ii] - a
+            elif a is None and b is None:
+                sz = ccd_shape[ii]
+            shp.append(sz)
+
+        return tuple(shp)
 
 class CCDFrame(object):
     pass
