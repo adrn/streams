@@ -55,19 +55,24 @@ class CCD(object):
     def __getitem__(self, *slices):
         return CCDRegion(self, *slices)
 
-    def bias_correct_frame(self, frame_data, bias):
-        """ Bias subtract and overscan subtract """
-
-        # TODO: use full bias frame
-        # subtract bias frame
-        #data = frame_data - bias
-        data = frame_data
+    def overscan_subtract(self, data):
+        """ Subtract the overscan region from this data. Note that the
+            shape of the returned data will be different from input.
+        """
         overscan = data[self.regions["overscan"]]
         overscan_col = np.median(overscan, axis=1)
 
         data -= overscan_col[:,np.newaxis]
 
         return data[self.regions["data"]]
+
+    def bias_correct_frame(self, data):
+        """ Bias subtract and overscan subtract """
+
+        # TODO: use full bias frame
+        # subtract bias frame
+        #data = frame_data - bias
+        return self.overscan_subtract(data)
 
 class CCDRegion(list):
 
