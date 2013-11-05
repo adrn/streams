@@ -121,10 +121,12 @@ class TelescopePointing(object):
                                          readnoise=ccd.read_noise,
                                          sigclip=8.0, sigfrac=0.5,
                                          objlim=10.0)
-                c.run(maxiter=4)
+                c.run(maxiter=6)
                 frame_data = c.cleanarray
 
             # if exposure time > 60 seconds, do sky subtraction
+            if hdr['EXPTIME'] > 60:
+                pass
 
             # extract only the science data region
             science_data = frame_data[ccd.regions["science"]]
