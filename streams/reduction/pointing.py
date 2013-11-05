@@ -103,8 +103,8 @@ class TelescopePointing(object):
             hdu = fits.open(fn)[0]
             frame_data = hdu.data
             hdr = hdu.header
-            frame_data = ccd.bias_correct_frame(frame_data,
-                                                self.night.master_bias)
+            frame_data = ccd.zero_correct_frame(frame_data,
+                                                self.night.master_zero)
 
             #TODO: frame.inverse_variance # automatically created?
             variance_image = frame_data*ccd.gain + ccd.read_noise**2

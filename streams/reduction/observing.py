@@ -247,6 +247,7 @@ class ObservingNight(object):
         self.object_files = object_dict
 
         self.master_bias = self.make_master_bias()
+        self.master_zero = self.make_master_zero()
         self.master_flat = self.make_master_flat()
 
         # all pointings of the telescope during this night
@@ -290,6 +291,46 @@ class ObservingNight(object):
 
         return master_bias
 
+    def make_master_zero(self, overwrite=False):
+        """ Make a master zero frame, store image.
+
+            Parameters
+            ----------
+            overwrite : bool (optional)
+        """
+        cache_file = os.path.join(self.redux_path, "master_zero.fits")
+
+        if os.path.exists(cache_file) and overwrite:
+            os.remove(cache_file)
+
+        if not os.path.exists(cache_file):
+            all_bias_files = find_all_imagetyp(self.data_path, "ZERO")
+            Nbias = len(all_bias_files)
+
+            # get the shape of the 'data' region of the ccd
+            ccd = self.observing_run.ccd
+            region = ccd.regions["data"]
+            shp = (region[0].stop-region[0].start, \
+                   region[1].stop-region[1].start)
+
+            all_zero = np.zeros(shp + (Nbias,))
+            for ii,filename in enumerate(all_bias_files):
+                hdu = fits.open(filename)[0]
+
+                if hdu.header["EXPTIME"] > 0:
+                    raise ValueError("Bias frame with EXPTIME > 0! ({0})"\
+                                     .format(filename))
+
+                all_zero[...,ii] = ccd.overscan_subtract(hdu.data)
+
+            master_zero = np.median(all_zero, axis=-1)
+            hdu = fits.PrimaryHDU(master_zero)
+            hdu.writeto(cache_file)
+        else:
+            master_zero = fits.getdata(cache_file)
+
+        return master_zero
+
     def make_master_flat(self, overwrite=False):
         """ Make a master flat frame, store image.
 
@@ -298,7 +339,7 @@ class ObservingNight(object):
             overwrite : bool (optional)
         """
 
-        bias = self.make_master_bias()
+        zero = self.make_master_zero()
         cache_file = os.path.join(self.redux_path, "master_flat.fits")
 
         ccd = self.observing_run.ccd
@@ -313,7 +354,7 @@ class ObservingNight(object):
 
             for ii,filename in enumerate(all_flat_files):
                 data = fits.getdata(filename,0)
-                corrected = ccd.bias_correct_frame(data, bias)
+                corrected = ccd.zero_correct_frame(data, zero)
 
                 if all_flats is None:
                     all_flats = np.zeros(corrected.shape + (Nflat,))
