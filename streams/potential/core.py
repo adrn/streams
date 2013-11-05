@@ -21,7 +21,63 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import astropy.units as u
 
-__all__ = ["CartesianPotential", "CompositePotential"]
+from .. import usys
+
+__all__ = ["CartesianPotential", "CompositePotential", "PotentialParameter"]
+
+class PotentialParameter(object):
+
+    def __init__(self, value=None, truth=None, range=(),
+                 latex="", units=usys):
+
+        if value is None and truth is None:
+            raise ValueError("If value not specified, must specify truth.")
+
+        elif value is None:
+            value = truth
+
+        if hasattr(value, "unit"):
+            q = value.decompose(units)
+            self._value = q.value
+            self._unit = q.unit
+
+            t = truth.decompose(units)
+            self._truth = t.value
+
+            lo,hi = range
+            self._range = (lo.decompose(units).value,
+                           hi.decompose(units).value)
+
+        else:
+            self._value = value
+            self._truth = truth
+            self._unit = u.dimensionless_unscaled
+            self._range = range
+
+        self.latex = latex
+
+    @property
+    def value(self):
+        return self._value*self._unit
+
+    @value.setter
+    def value(self, v):
+        self._value = v.to(self._unit).value
+
+    @property
+    def truth(self):
+        return self._truth*self._unit
+
+    @truth.setter
+    def truth(self, v):
+        self._truth = v.to(self._unit).value
+
+    @property
+    def range(self):
+        return (self._range[0]*self._unit, self._range[1]*self._unit)
+
+    def __float__(self):
+        return self._value
 
 class Potential(object):
     pass
@@ -31,7 +87,7 @@ class CartesianPotential(Potential):
     def __init__(self, units, f, f_prime, latex=None, parameters=None):
         """ A baseclass for representing gravitational potentials in Cartesian
             coordinates. You must specify the functional form of the potential
-            component. You may also optionally add derivatives using the 
+            component. You may also optionally add derivatives using the
             f_prime keyword.
 
             Parameters
@@ -48,23 +104,23 @@ class CartesianPotential(Potential):
                 used to make sexy output in iPython Notebook.
             parameters : dict (optional)
                 Any extra parameters that the potential function requires.
-            
+
         """
-            
+
         self.units = units
-        
+
         # Convert parameters to the given units
         self.parameters = parameters
         self._parameters = self._rescale_parameters(parameters)
-        
+
         # Make sure the f is callable, and that the component doesn't already
         #   exist in the potential
         if not hasattr(f, '__call__'):
             raise TypeError("'f' parameter must be a callable function! You "
                             "passed in a '{0}'".format(f.__class__))
-        
+
         self.f = lambda r: f(r, **self._parameters)
-        
+
         if f_prime != None:
             if not hasattr(f_prime, '__call__'):
                 raise TypeError("'f_prime' must be a callable function! You "
@@ -81,10 +137,10 @@ class CartesianPotential(Potential):
                 latex = latex[:-1]
 
             self._latex = latex
-    
+
     def _rescale_parameters(self, parameters):
-        """ Given a dictionary of potential component parameters, trust that 
-            the user passed in Quantity objects where necessary. For the sake 
+        """ Given a dictionary of potential component parameters, trust that
+            the user passed in Quantity objects where necessary. For the sake
             of speed later on, we convert any Quantity-like objects to numeric
             values in the base unit system of this potential.
         """
@@ -94,23 +150,23 @@ class CartesianPotential(Potential):
                 _params[param_name] = val.decompose(bases=self.units).value
             except AttributeError: # not Quantity-like
                 _params[param_name] = val
-        
+
         return _params
-    
+
     def _value_at(self, r):
-        """ Compute the value of the potential at the given position(s), 
+        """ Compute the value of the potential at the given position(s),
             assumed to be in the same system of units as the Potential.
-            
+
             Parameters
             ----------
             r : ndarray
                 Position to compute the value at in same units as Potential.
         """
         return self.f(r)
-        
+
     def value_at(self, r):
-        """ Compute the value of the potential at the given position(s) 
-            
+        """ Compute the value of the potential at the given position(s)
+
             Parameters
             ----------
             r : astropy.units.Quantity
@@ -119,34 +175,34 @@ class CartesianPotential(Potential):
         _r = r.decompose(bases=self.units).value
         c = (u.J/u.kg).decompose(bases=self.units)
         return self._value_at(_r) * u.CompositeUnit(1., c.bases, c.powers)
-    
+
     def _acceleration_at(self, r):
-        """ Compute the acceleration due to the potential at the given 
-            position(s), assumed to be in the same system of units as 
+        """ Compute the acceleration due to the potential at the given
+            position(s), assumed to be in the same system of units as
             the Potential.
-            
+
             Parameters
             ----------
             r : ndarray
                 Position to compute the value at in same units as Potential.
         """
         return self.f_prime(r)
-    
+
     def acceleration_at(self, r):
-        """ Compute the acceleration due to the potential at the given 
-            position(s) 
-            
+        """ Compute the acceleration due to the potential at the given
+            position(s)
+
             Parameters
             ----------
             r : astropy.units.Quantity
                 Position to compute the acceleration at.
         """
-        
+
         _r = r.decompose(bases=self.units).value
         c = (u.m/u.s**2).decompose(bases=self.units)
-        return self._acceleration_at(_r) * u.CompositeUnit(1., c.bases, 
+        return self._acceleration_at(_r) * u.CompositeUnit(1., c.bases,
                                                            c.powers)
-    
+
     def _repr_latex_(self):
         """ Generate a latex representation of the potential. This is used by
             the IPython notebook to render nice latex equations.
@@ -157,7 +213,7 @@ class CartesianPotential(Potential):
         """ Plot equipotentials lines. Must pass in grid arrays to evaluate the
             potential over (positional args). This function takes care of the
             meshgridding...
-            
+
             Parameters
             ----------
             ndim : int
@@ -170,32 +226,32 @@ class CartesianPotential(Potential):
                 kwargs passed to either contourf() or plot().
 
         """
-                
+
         if not hasattr(grid, 'unit'):
             raise TypeError("grid must be a Quantity object")
-        
+
         if axes == None:
             if ndim > 1:
-                fig, axes = plt.subplots(ndim-1, ndim-1, 
-                                         sharex=True, sharey=True, 
+                fig, axes = plt.subplots(ndim-1, ndim-1,
+                                         sharex=True, sharey=True,
                                          figsize=(12,12))
             else:
                 fig, axes = plt.subplots(1, 1, figsize=(12,12))
-        
+
         try:
             axes[0,0]
         except TypeError:
             axes = np.array([[axes]])
-        
+
         fig = axes[0,0].figure
-        
+
         if ndim == 1:
             raise NotImplementedError("1D potential not implemented")
             axes[0,0].plot(grid, self.value_at(grid))
             axes[0,0].set_xlabel("[{0}]".format(grid.unit))
             axes[0,0].set_ylabel(self._repr_latex_())
-            return fig,axes    
-                
+            return fig,axes
+
         else:
             for i in range(1,ndim):
                 for jj in range(ndim-1):
@@ -210,7 +266,7 @@ class CartesianPotential(Potential):
                     r[jj] = X1.ravel()
                     r[i] = X2.ravel()
                     r = r.T
-                    
+
                     Z = self._value_at(r).reshape(X1.shape)
                     cs = axes[ii,jj].contourf(X1, X2, Z, cmap=cm.bone_r, **kwargs)
 
@@ -226,12 +282,12 @@ class CartesianPotential(Potential):
         #fig.suptitle(self._repr_latex_(), fontsize=24)
 
         return fig, axes
-    
+
     def plot_acceleration(self, ndim, grid, axes=None, **kwargs):
-        """ Plot equipotentials of the acceleration field. Must pass in a grid 
-            array to evaluate the potential over. This function takes care of 
+        """ Plot equipotentials of the acceleration field. Must pass in a grid
+            array to evaluate the potential over. This function takes care of
             the meshgridding...
-            
+
             Parameters
             ----------
             ndim : int
@@ -244,32 +300,32 @@ class CartesianPotential(Potential):
                 kwargs passed to either contourf() or plot().
 
         """
-                
+
         if not hasattr(grid, 'unit'):
             raise TypeError("grid must be a Quantity object")
-        
+
         if axes == None:
             if ndim > 1:
-                fig, axes = plt.subplots(ndim-1, ndim-1, 
-                                         sharex=True, sharey=True, 
+                fig, axes = plt.subplots(ndim-1, ndim-1,
+                                         sharex=True, sharey=True,
                                          figsize=(12,12))
             else:
                 fig, axes = plt.subplots(1, 1, figsize=(12,12))
-        
+
         try:
             axes[0,0]
         except TypeError:
             axes = np.array([[axes]])
-        
+
         fig = axes[0,0].figure
-        
+
         if ndim == 1:
             raise NotImplementedError("1D potential not implemented")
             axes[0,0].plot(grid, self.value_at(grid))
             axes[0,0].set_xlabel("[{0}]".format(grid.unit))
             axes[0,0].set_ylabel(self._repr_latex_())
-            return fig,axes    
-                
+            return fig,axes
+
         else:
             for i in range(1,ndim):
                 for jj in range(ndim-1):
@@ -284,10 +340,10 @@ class CartesianPotential(Potential):
                     r[jj] = X1.ravel()
                     r[i] = X2.ravel()
                     r = r.T
-                    
+
                     acc = self._acceleration_at(r)
-                    cs = axes[ii,jj].contourf(X1, X2, 
-                                              np.log(np.sum(acc**2,axis=1)).reshape(X1.shape), 
+                    cs = axes[ii,jj].contourf(X1, X2,
+                                              np.log(np.sum(acc**2,axis=1)).reshape(X1.shape),
                                               cmap=cm.bone_r, **kwargs)
 
             cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
@@ -302,58 +358,58 @@ class CartesianPotential(Potential):
         fig.suptitle(self._repr_latex_(), fontsize=24)
 
         return fig, axes
-        
+
 class CompositePotential(dict, CartesianPotential):
-    
+
     def __init__(self, units, *args, **kwargs):
-        """ Represents a potential composed of several sub-potentials. For 
-            example, two point masses or a galactic disk + halo. The origins 
+        """ Represents a potential composed of several sub-potentials. For
+            example, two point masses or a galactic disk + halo. The origins
             of the components are *relative to the origin of the composite*.
-            
+
             Parameters
             ----------
             units : list
                 Defines a system of physical base units for the potential.
         """
         self.units = units
-        
+
         for v in kwargs.values():
             if not isinstance(v, Potential):
                 raise TypeError("Values may only be Potential objects, not "
                                 "{0}.".format(type(v)))
-        
+
         dict.__init__(self, *args, **kwargs)
-    
-    def __repr__(self):        
+
+    def __repr__(self):
         return "<CompositePotential: {0}>".format(",".join(self.keys()))
-    
+
     def __setitem__(self, key, value):
         if not isinstance(value, Potential):
             raise TypeError("Values may only be Potential objects, not "
                             "{0}.".format(type(value)))
-            
+
         super(CompositePotential, self).__setitem__(key, value)
-    
+
     @property
     def _latex(self):
         return "$\n$".join(set([x._latex for x in self.values()]))
-    
+
     def _value_at(self, r):
-        """ Compute the value of the potential at the given position(s), 
+        """ Compute the value of the potential at the given position(s),
             assumed to be in the same system of units as the Potential.
-            
+
             Parameters
             ----------
             r : ndarray
                 Position to compute the value at in same units as Potential.
         """
         return np.sum([p._value_at(r) for p in self.values()], axis=0)
-    
+
     def _acceleration_at(self, r):
-        """ Compute the acceleration due to the potential at the given 
-            position(s), assumed to be in the same system of units as 
+        """ Compute the acceleration due to the potential at the given
+            position(s), assumed to be in the same system of units as
             the Potential.
-            
+
             Parameters
             ----------
             r : ndarray
