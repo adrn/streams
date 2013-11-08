@@ -349,7 +349,7 @@ def sgr(overwrite=False, seed=42):
 
     if not os.path.exists(_selection_cache):
         lmflag_dist_idx = sgr_dist(sgr_catalina_rv, lm10,
-                                 Nbins=40, sigma_cut=2.3)
+                                 Nbins=40, sigma_cut=2.5)
         fnpickle(lmflag_dist_idx, _selection_cache)
     else:
         lmflag_dist_idx = fnunpickle(_selection_cache)
@@ -399,7 +399,7 @@ def sgr(overwrite=False, seed=42):
 
     # deselect stars possibly associated with the bifurcation
     no_bif = (L > 180) & (L < 360) & (B > -40) & (B < 0)
-    no_bif |= ((L <= 180) & (B < 0))
+    no_bif |= ((L <= 180) & (B < 0) & (L > 80))
 
     # draw a box around some possible bifurcation members
     bifurcation_box  = (L > 210) & (L < 225) & (B > 0) & (B < 15) # OR
@@ -426,7 +426,11 @@ def sgr(overwrite=False, seed=42):
         this_ix = lead_ix & (clump_dist <= xxx)
         ix_lead_clumps |= this_ix #select_only(this_ix, 10)
     ix_lead_clumps &= lead_ix
-    ix_lead_clumps |= ((L > 80) & (L < 180) & lead_ix) # all southern ones
+
+    # all southern leading
+    lll = ((L > 80) & (L < 180) & lead_ix)
+    print("southern leading", sum(lll))
+    ix_lead_clumps |= lll
 
     # select all trailing stuff in south > 90
     # ix_trail_clumps_with = np.zeros_like(trail_ix).astype(bool)
@@ -451,7 +455,11 @@ def sgr(overwrite=False, seed=42):
         this_ix = trail_ix_with & (clump_dist <= xxx)
         ix_trail_clumps_with |= this_ix #select_only(this_ix, 10)
     ix_trail_clumps_with &= trail_ix_with
-    ix_trail_clumps_with |= (L > 90) & (L < 180) & (trail_ix_with)
+
+    # all trailing southern
+    ttt = (L > 90) & (L < 180) & (trail_ix_with)
+    print("southern leading", sum(ttt))
+    ix_trail_clumps_with |= ttt
 
     i1 = integration_time(sgr_catalina_rv[ix_bif]["dist"])
     i2 = integration_time(sgr_catalina_rv[ix_lead_clumps]["dist"])
@@ -468,11 +476,8 @@ def sgr(overwrite=False, seed=42):
     print()
     print("bifurcation", np.sum(i1))
     print("leading",np.sum(i2))
-    print("trailing with nearby",np.sum(i3_with))
-    print("trailing without nearby",np.sum(i3_without))
-    print()
-    print("Total with:",np.sum(integration_time(targets_with["dist"])))
-    print("Total without:",np.sum(integration_time(targets_without["dist"])))
+    print("trailing",np.sum(i3_with))
+    print("Total:",np.sum(integration_time(targets_with["dist"])))
 
     output_file = "sgr.txt"
     output = targets_with.copy()
@@ -505,7 +510,7 @@ def sgr(overwrite=False, seed=42):
             alpha=1., linestyle='none', ms=6, c="#31A354")
 
     ax.set_ylim(0,65)
-    ax.set_title("with nearby trailing", fontsize=20)
+    #ax.set_title("with nearby trailing", fontsize=20)
     fig.tight_layout()
     fig.savefig(os.path.join(notes_path, "with_near_trailing_xz.pdf"))
 
