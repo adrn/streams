@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 from streams.reduction.observing import *
 from streams.reduction.util import *
@@ -59,24 +60,18 @@ def main():
     #   taken at a particular pointing, and as intial conditions for the
     #   line positions for fitting to each individual arc
 
-    ii = 0
-    for night in [obs_run.nights["m102413"]]:
+    all_spec = []
+    for night in obs_run.nights.values(): #[obs_run.nights["m102213"]]:
         for pointing in night.pointings:
+
+            if pointing.object_name != "RR Lyr":
+                continue
+
             pointing.reduce(overwrite=True)
-            ii += 1
 
-            if ii == 2:
-                pointing.combine()
-                sys.exit(0)
+            science_data = fits.getdata(pointing._data_file_paths.values()[0])
+            wvln_2d = pointing.wavelength_image
 
-            continue
-
-            # create 2D wavelength image
-            # TODO: cache this!
-            wvln_2d = obj.solve_2d_wavelength(overwrite=False)
-            science_data = frame_data[ccd.regions["science"]]
-
-            ## HACK
             collapsed_spec = np.median(science_data, axis=0)
             row_pix = np.arange(len(collapsed_spec))
             g = gaussian_fit(row_pix, collapsed_spec,
@@ -89,103 +84,148 @@ def main():
             spec = np.sum(science_data[:,L_idx:R_idx], axis=1)
             spec /= float(R_idx-L_idx)
 
-            if hdr["EXPTIME"] > 60:
-                sky_l = np.median(science_data[:,L_idx-20:L_idx-10], axis=1)
-                sky_r = np.median(science_data[:,R_idx+10:R_idx+20], axis=1)
-                sky = (sky_l + sky_r) / 2.
+            spec_wvln = np.mean(wvln_2d[:,L_idx:R_idx], axis=1)
 
-                spec -= sky
+            all_spec.append((spec_wvln, spec))
 
-            s = Spectrum(obs_run.master_arc.wavelength*u.angstrom,
-                         spec)
-            fig,ax = s.plot()
-            ax.set_title(hdr["OBJECT"])
-            fig.savefig("/Users/adrian/Downloads/{0}.pdf".format(hdr["OBJECT"]))
-            return
-            ## HACK
+            continue
 
-            # first do it the IRAF way:
-            row_pix = np.arange(science_data.shape[1])
-            for row in science_data:
-                g = gaussian_fit(row_pix, row,
-                                 mean=np.argmax(row))
-                L_idx = int(np.floor(g.mean.value - 4*g.stddev.value))
-                R_idx = int(np.ceil(g.mean.value + 4*g.stddev.value))+1
+        if len(all_spec) >= 3:
+            break
 
-                plt.clf()
-                plt.plot(row_pix, row, marker='o', linestyle='none')
-                plt.axvline(L_idx)
-                plt.axvline(R_idx)
-                plt.show()
-                return
+    plt.figure(figsize=(12,6))
+    first_w = None
+    for wv,fx in all_spec:
+        w,f = wv[275:375], fx[275:375]
 
-            collapsed_spec = np.median(science_data, axis=0)
-            row_pix = np.arange(len(collapsed_spec))
-            g = gaussian_fit(row_pix, collapsed_spec,
-                             mean=np.argmax(collapsed_spec))
+        if first_w is None:
+            first_w = w
 
-            # define rough box-car aperture for spectrum
-            L_idx = int(np.floor(g.mean.value - 5*g.stddev.value))
-            R_idx = int(np.ceil(g.mean.value + 5*g.stddev.value))+1
+        ff = interp1d(w,f,bounds_error=False)
+        print(w-first_w)
+        # TODO: gaussian fit should allow negative values
+        #g = gaussian_fit(w, f, mean=6563., log10_amplitude=1E-1)
+        plt.plot(first_w, ff(first_w))
 
+    plt.xlim(6500, 6600)
+    plt.show()
 
-            # grab 2D sky regions around the aperture
-            # sky_l = np.ravel(science_data[:,L_idx-20:L_idx-10])
-            # sky_l_wvln = np.ravel(wvln_2d[:,L_idx-20:L_idx-10])
-            # sky_r = np.ravel(science_data[:,R_idx+10:R_idx+20])
-            # sky_r_wvln = np.ravel(wvln_2d[:,R_idx+10:R_idx+20])
+    if False:
+        # create 2D wavelength image
+        # TODO: cache this!
+        wvln_2d = obj.solve_2d_wavelength(overwrite=False)
+        science_data = frame_data[ccd.regions["science"]]
 
-            # # make 1D, oversampled sky spectrum
-            # sky_wvln = np.append(sky_l_wvln, sky_r_wvln)
-            # idx = np.argsort(sky_wvln)
-            # sky_wvln = sky_wvln[idx]
-            # sky = np.append(sky_l, sky_r)[idx]
+        ## HACK
+        collapsed_spec = np.median(science_data, axis=0)
+        row_pix = np.arange(len(collapsed_spec))
+        g = gaussian_fit(row_pix, collapsed_spec,
+                         mean=np.argmax(collapsed_spec))
 
-            # from scipy.interpolate import UnivariateSpline
-            # interp = UnivariateSpline(sky_wvln, sky, k=3)
+        # define rough box-car aperture for spectrum
+        L_idx = int(np.floor(g.mean.value - 4*g.stddev.value))
+        R_idx = int(np.ceil(g.mean.value + 4*g.stddev.value))+1
 
-            spec_2d = science_data[:,L_idx:R_idx]
-            spec_wvln = wvln_2d[:,L_idx:R_idx]
-            spec_sky = interp(spec_wvln[:,3])
+        spec = np.sum(science_data[:,L_idx:R_idx], axis=1)
+        spec /= float(R_idx-L_idx)
 
-            plt.plot(spec_wvln[:,3],
-                     (spec_2d[:,3] - spec_sky),
-                     drawstyle="steps")
+        if hdr["EXPTIME"] > 60:
+            sky_l = np.median(science_data[:,L_idx-20:L_idx-10], axis=1)
+            sky_r = np.median(science_data[:,R_idx+10:R_idx+20], axis=1)
+            sky = (sky_l + sky_r) / 2.
+
+            spec -= sky
+
+        s = Spectrum(obs_run.master_arc.wavelength*u.angstrom,
+                     spec)
+        fig,ax = s.plot()
+        ax.set_title(hdr["OBJECT"])
+        fig.savefig("/Users/adrian/Downloads/{0}.pdf".format(hdr["OBJECT"]))
+        return
+        ## HACK
+
+        # first do it the IRAF way:
+        row_pix = np.arange(science_data.shape[1])
+        for row in science_data:
+            g = gaussian_fit(row_pix, row,
+                             mean=np.argmax(row))
+            L_idx = int(np.floor(g.mean.value - 4*g.stddev.value))
+            R_idx = int(np.ceil(g.mean.value + 4*g.stddev.value))+1
+
+            plt.clf()
+            plt.plot(row_pix, row, marker='o', linestyle='none')
+            plt.axvline(L_idx)
+            plt.axvline(R_idx)
             plt.show()
             return
 
-            spec = np.sum(science_data[:,L_idx:R_idx], axis=1)
-            spec /= float(R_idx-L_idx)
+        collapsed_spec = np.median(science_data, axis=0)
+        row_pix = np.arange(len(collapsed_spec))
+        g = gaussian_fit(row_pix, collapsed_spec,
+                         mean=np.argmax(collapsed_spec))
 
-            plt.figure()
-            plt.subplot(211)
-            plt.title("sky")
-            plt.plot(obs_run.master_arc.wavelength, sky,
-                     alpha=0.5, lw=2, drawstyle='steps')
-            plt.subplot(212)
-            plt.title("spec")
-            plt.plot(obs_run.master_arc.wavelength, spec,
-                     alpha=0.5, lw=2, drawstyle='steps')
-
-            plt.figure()
-            plt.plot(obs_run.master_arc.wavelength, spec-sky,
-                     alpha=1., lw=1, drawstyle='steps')
-
-            plt.show()
-            return
-
-            #from scipy.interpolate import LSQBivariateSpline
-            #s = UnivariateSpline(wvln_2d[sky_idx], frame_data[sky_idx])
-
-            plt.plot(obs_run.master_arc.wavelength, spec-sky,
-                     drawstyle="steps")
-            plt.show()
-
-            return
+        # define rough box-car aperture for spectrum
+        L_idx = int(np.floor(g.mean.value - 5*g.stddev.value))
+        R_idx = int(np.ceil(g.mean.value + 5*g.stddev.value))+1
 
 
-            # sky subtract
-            frame.sky_subtract(obs_run)
+        # grab 2D sky regions around the aperture
+        # sky_l = np.ravel(science_data[:,L_idx-20:L_idx-10])
+        # sky_l_wvln = np.ravel(wvln_2d[:,L_idx-20:L_idx-10])
+        # sky_r = np.ravel(science_data[:,R_idx+10:R_idx+20])
+        # sky_r_wvln = np.ravel(wvln_2d[:,R_idx+10:R_idx+20])
+
+        # # make 1D, oversampled sky spectrum
+        # sky_wvln = np.append(sky_l_wvln, sky_r_wvln)
+        # idx = np.argsort(sky_wvln)
+        # sky_wvln = sky_wvln[idx]
+        # sky = np.append(sky_l, sky_r)[idx]
+
+        # from scipy.interpolate import UnivariateSpline
+        # interp = UnivariateSpline(sky_wvln, sky, k=3)
+
+        spec_2d = science_data[:,L_idx:R_idx]
+        spec_wvln = wvln_2d[:,L_idx:R_idx]
+        spec_sky = interp(spec_wvln[:,3])
+
+        plt.plot(spec_wvln[:,3],
+                 (spec_2d[:,3] - spec_sky),
+                 drawstyle="steps")
+        plt.show()
+        return
+
+        spec = np.sum(science_data[:,L_idx:R_idx], axis=1)
+        spec /= float(R_idx-L_idx)
+
+        plt.figure()
+        plt.subplot(211)
+        plt.title("sky")
+        plt.plot(obs_run.master_arc.wavelength, sky,
+                 alpha=0.5, lw=2, drawstyle='steps')
+        plt.subplot(212)
+        plt.title("spec")
+        plt.plot(obs_run.master_arc.wavelength, spec,
+                 alpha=0.5, lw=2, drawstyle='steps')
+
+        plt.figure()
+        plt.plot(obs_run.master_arc.wavelength, spec-sky,
+                 alpha=1., lw=1, drawstyle='steps')
+
+        plt.show()
+        return
+
+        #from scipy.interpolate import LSQBivariateSpline
+        #s = UnivariateSpline(wvln_2d[sky_idx], frame_data[sky_idx])
+
+        plt.plot(obs_run.master_arc.wavelength, spec-sky,
+                 drawstyle="steps")
+        plt.show()
+
+        return
+
+
+        # sky subtract
+        frame.sky_subtract(obs_run)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
