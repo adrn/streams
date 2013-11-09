@@ -424,6 +424,7 @@ def sgr(overwrite=False, seed=42):
         xxx = np.sort(clump_dist[lead_ix])[Nclump]
 
         this_ix = lead_ix & (clump_dist <= xxx)
+        print("lead",sum(this_ix))
         ix_lead_clumps |= this_ix #select_only(this_ix, 10)
     ix_lead_clumps &= lead_ix
 
@@ -452,13 +453,13 @@ def sgr(overwrite=False, seed=42):
         clump_dist = np.sqrt((X-x)**2 + (Y-y)**2)
         xxx = np.sort(clump_dist[trail_ix])[10]
 
-        this_ix = trail_ix_with & (clump_dist <= xxx)
+        this_ix = trail_ix_with & (clump_dist < xxx)
         ix_trail_clumps_with |= this_ix #select_only(this_ix, 10)
     ix_trail_clumps_with &= trail_ix_with
 
     # all trailing southern
     ttt = (L > 90) & (L < 180) & (trail_ix_with)
-    print("southern leading", sum(ttt))
+    print("southern trailing", sum(ttt))
     ix_trail_clumps_with |= ttt
 
     i1 = integration_time(sgr_catalina_rv[ix_bif]["dist"])
@@ -466,6 +467,9 @@ def sgr(overwrite=False, seed=42):
     i3_with = integration_time(sgr_catalina_rv[ix_trail_clumps_with]["dist"])
     i3_without = integration_time(sgr_catalina_rv[ix_trail_clumps_without]["dist"])
 
+    print(len(sgr_catalina_rv[ix_bif]))
+    print(len(sgr_catalina_rv[ix_lead_clumps]))
+    print(len(sgr_catalina_rv[ix_trail_clumps_with]))
     targets_with = vstack((sgr_catalina_rv[ix_bif],
                            sgr_catalina_rv[ix_lead_clumps],
                            sgr_catalina_rv[ix_trail_clumps_with]))
