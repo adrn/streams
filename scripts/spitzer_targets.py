@@ -389,7 +389,7 @@ def sgr(overwrite=False, seed=42):
 
     lead_ix = lmflag_dist_idx[1] & lmflag_rv_idx[1]
     trail_ix = lmflag_dist_idx[-1] & lmflag_rv_idx[-1]
-    trail_ix[L < 180] &= B[L < 180] < 5
+    trail_ix[L < 180] &= B[L < 180] > -5
 
     trail_ix &= np.logical_not((L > 50) & (L < 100) & (sgr_catalina_rv["dist"] < 40))
 
@@ -398,11 +398,11 @@ def sgr(overwrite=False, seed=42):
     trail_ix_with = trail_ix & ( ((L > 230) & (L < 315)) | (L < 180) )
 
     # deselect stars possibly associated with the bifurcation
-    no_bif = (L > 180) & (L < 360) & (B > -40) & (B < 0)
-    no_bif |= ((L <= 180) & (B < 0) & (L > 80))
+    no_bif = (L > 180) & (L < 360) & (B < 15) & (B > 0)
+    no_bif |= ((L <= 180) & (B < 10) & (B > -5) & (L > 80))
 
     # draw a box around some possible bifurcation members
-    bifurcation_box  = (L > 210) & (L < 225) & (B > 0) & (B < 15) # OR
+    bifurcation_box  = (L > 205) & (L < 225) & (B < 2) & (B > -10) # OR
     print(sum(bifurcation_box), "bifurcation stars")
     print(sum(lead_ix), "leading arm stars")
     print(sum(trail_ix_with), "trailing arm stars (with nearby)")
@@ -467,9 +467,9 @@ def sgr(overwrite=False, seed=42):
     i3_with = integration_time(sgr_catalina_rv[ix_trail_clumps_with]["dist"])
     i3_without = integration_time(sgr_catalina_rv[ix_trail_clumps_without]["dist"])
 
-    print(len(sgr_catalina_rv[ix_bif]))
-    print(len(sgr_catalina_rv[ix_lead_clumps]))
-    print(len(sgr_catalina_rv[ix_trail_clumps_with]))
+    print("final num bifurcation", len(sgr_catalina_rv[ix_bif]))
+    print("final num leading arm", len(sgr_catalina_rv[ix_lead_clumps]))
+    print("final num trailing arm", len(sgr_catalina_rv[ix_trail_clumps_with]))
     targets_with = vstack((sgr_catalina_rv[ix_bif],
                            sgr_catalina_rv[ix_lead_clumps],
                            sgr_catalina_rv[ix_trail_clumps_with]))
@@ -526,10 +526,11 @@ def sgr(overwrite=False, seed=42):
                 linestyle='none')
 
     dd = sgr_catalina_rv[ix_with]
+    dd_bif = sgr_catalina_rv[ix_with & bifurcation_box]
     ax.plot(dd["Lambda"], dd["Beta"], marker='.', alpha=0.75,
-            linestyle='none', ms=6, c="#CA0020")
-    ax.plot(targets_with["Lambda"], targets_with["Beta"], marker='.',
-            alpha=0.75, linestyle='none', ms=6, c="#31A354")
+            linestyle='none', ms=6)
+    ax.plot(dd_bif["Lambda"], dd_bif["Beta"], marker='.', alpha=0.75,
+            linestyle='none', ms=6, c="#31A354", label="bifurcation")
 
     ax.set_title("RV-selected CSS RRLs", fontsize=20)
     ax.set_xlabel(r"$\Lambda$ [deg]")
