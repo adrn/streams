@@ -153,9 +153,6 @@ def main(config_file, job_name=None):
     if str(Nwalkers).lower() == "auto":
         Nwalkers = ndim*2
 
-    print(Nwalkers, ndim)
-    return
-
     p0 = np.zeros((Nwalkers, ndim))
     for ii in range(Npotentialparams):
         p0[:,ii] = params[ii]._ln_prior.sample(Nwalkers)

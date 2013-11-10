@@ -15,10 +15,10 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import G
 
-from .core import CartesianPotential, CompositePotential, StreamParameter
+from .core import CartesianPotential, CompositePotential
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
 from ._lm10_acceleration import lm10_acceleration
-from ..inference import Parameter
+from ..inference import PotentialParameter
 from .. import usys
 
 class LawMajewski2010(CompositePotential):
@@ -40,23 +40,23 @@ class LawMajewski2010(CompositePotential):
         """
 
         # v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
-        lm10_parameters = { 'q1' : StreamParameter(truth=1.38,
+        lm10_parameters = { 'q1' : PotentialParameter(truth=1.38,
                                               range=(1.1, 1.5),
                                               latex=r"$q_1$"),
-                    'q2' : StreamParameter(truth=1.,
+                    'q2' : PotentialParameter(truth=1.,
                                               range=(0.8, 2.),
                                               latex=r"$q_2$"),
-                    'qz' : StreamParameter(truth=1.36,
+                    'qz' : PotentialParameter(truth=1.36,
                                               range=(1.1, 1.5),
                                               latex=r"$q_z$"),
-                    'phi' : StreamParameter(truth=97.*u.deg,
+                    'phi' : PotentialParameter(truth=97.*u.deg,
                                                range=(85.*u.deg,110.*u.deg),
                                                latex=r"$\phi$"),
-                    'v_halo' : StreamParameter(truth=121.858*u.km/u.s,
+                    'v_halo' : PotentialParameter(truth=121.858*u.km/u.s,
                                                   range=(100.*u.km/u.s,
                                                          150.*u.km/u.s),
                                                   latex=r"$v_{\rm halo}$"),
-                    'R_halo' : StreamParameter(truth=12.*u.kpc,
+                    'R_halo' : PotentialParameter(truth=12.*u.kpc,
                                                   range=(8.*u.kpc, 20*u.kpc),
                                                   latex=r"$R_{\rm halo}$")}
 
