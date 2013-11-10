@@ -4,8 +4,8 @@ script: new_infer_potential.py
 name: adrn
 
 # threading
-mpi: yes
-# or threads: 4
+mpi: no
+threads: 2
 
 # plots / output
 make_plots: False
@@ -15,13 +15,15 @@ output_path: /tmp
 #output_path: /Users/adrian/projects/streams/plots # laptop
 #output_path: /home/adrian/projects/streams/plots # deimos
 
-# potential
-class_name: LawMajewski2010
-model_parameters:
-    - q1
-    - qz
-    - phi
-    - v_halo
+potential:
+    class_name: LawMajewski2010
+
+model:
+    parameters:
+        - q1
+        - qz
+        - phi
+        - v_halo
 
 # particle selection (lm10, sgr, pal5)
 particle_source: sgr

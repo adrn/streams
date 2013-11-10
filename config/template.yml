@@ -15,13 +15,15 @@ output_path: /tmp
 #output_path: /Users/adrian/projects/streams/plots # laptop
 #output_path: /home/adrian/projects/streams/plots # deimos
 
-# potential
-class_name: LawMajewski2010
-model_parameters:
-    - q1
-    - qz
-    - phi
-    - v_halo
+potential:
+    class_name: LawMajewski2010
+
+model:
+    parameters:
+        - q1
+        - qz
+        - phi
+        - v_halo
 
 # particle selection (lm10, sgr, pal5)
 particle_source: sgr
@@ -38,6 +40,6 @@ steps: 100
 # below: with no units specified, it's a fractional error
 observational_errors: true
 global_error_multiple: 1.
-radial_velocity_error: 10. km/s
-proper_motion_error: 1. milliarcsecond/year
-distance_error: 0.02
+#radial_velocity_error: 10. km/s
+#proper_motion_error: 1. milliarcsecond/year
+#distance_error: 0.02

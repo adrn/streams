@@ -40,7 +40,7 @@ from streams.coordinates import _gc_to_hel, _hel_to_gc
 from streams.inference import Parameter, StreamModel, LogUniformPrior
 from streams.io.sgr import mass_selector
 from streams.observation.gaia import RRLyraeErrorModel
-from streams.potential.lm10 import LawMajewski2010
+import streams.potential as sp
 from streams.simulation import config
 
 global pool
@@ -62,8 +62,8 @@ def get_pool(config):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
-    elif config["Nthreads"] > 1:
-        pool = multiprocessing.Pool(Nthreads)
+    elif config["threads"] > 1:
+        pool = multiprocessing.Pool(config["threads"])
     else:
         pool = None
 
@@ -77,6 +77,7 @@ def read_simulation(config):
     elif config["particle_source"] == "lm10":
         #particles_today, satellite_today, time = mass_selector(config["mass"])
         # TODO
+        pass
     else:
         raise ValueError("Invalid particle_source: {particle_source}"\
                          .format(config))
@@ -98,12 +99,20 @@ def main(config_file, job_name=None):
     # get a pool object given the configuration parameters
     pool = get_pool(config)
 
+    # get the potential object specified
+    Potential = getattr(sp, config["potential"]["class_name"])
+
+    print(Potential)
+    return
+
     # Actually get simulation data
     np.random.seed(config["seed"])
-    t1,t2,satellite,particles_today = read_simulation(config)
+    t1,t2,satellite,_particles = read_simulation(config)
 
-    _particles = particles_today(N=Nparticles, expr="tub!=0")
-    error_model = RRLyraeErrorModel(units=usys, factor=error_factor)
+    # TODO: right now error specification in yml doesn't propagate
+    factor = config.get("global_error_multiple", 1.)
+    error_model = RRLyraeErrorModel(units=usys,
+                                    factor=factor)
     obs_data, obs_error = _particles.observe(error_model)
 
     potential = LawMajewski2010()
