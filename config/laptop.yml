@@ -1,0 +1,43 @@
+# general
+seed: 42
+script: new_infer_potential.py
+name: adrn
+
+# threading
+mpi: yes
+# or threads: 4
+
+# plots / output
+make_plots: False
+output_path: /tmp
+#output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
+#output_path: /vega/astro/users/amp2217/output_data # yeti
+#output_path: /Users/adrian/projects/streams/plots # laptop
+#output_path: /home/adrian/projects/streams/plots # deimos
+
+# potential
+class_name: LawMajewski2010
+model_parameters:
+    - q1
+    - qz
+    - phi
+    - v_halo
+
+# particle selection (lm10, sgr, pal5)
+particle_source: sgr
+mass: 2.5e8 # this is specific to sgr
+expr: tub != 0
+Nparticles: 2
+
+# emcee
+walkers: auto # or auto (2 x number of parameters)
+burn_in: 0
+steps: 100
+
+# observational errors
+# below: with no units specified, it's a fractional error
+observational_errors: true
+global_error_multiple: 1.
+radial_velocity_error: 10. km/s
+proper_motion_error: 1. milliarcsecond/year
+distance_error: 0.02

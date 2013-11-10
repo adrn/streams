@@ -9,7 +9,6 @@ a.out
 *~
 .nfs*
 data/*
-config/*
 plots/*
 build/*
 *Notes.bib
