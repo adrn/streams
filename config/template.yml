@@ -24,7 +24,8 @@ model_parameters:
     - v_halo
 
 # particle selection (lm10, sgr, pal5)
-particle_source: lm10
+particle_source: sgr
+mass: 2.5e8 # this is specific to sgr
 expr: Pcol > -1
 Nparticles: 100
 
