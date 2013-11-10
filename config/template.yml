@@ -30,7 +30,8 @@ burn_in: 0
 steps: 100
 
 # observational errors
+# below: with no units specified, it's a fractional error
 observational_errors: true
 radial_velocity_error: 10. km/s
 proper_motion_error: 1. milliarcsecond/year
-distance_error_percent: 2
+distance_error: 0.02
