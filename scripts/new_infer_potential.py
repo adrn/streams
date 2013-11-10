@@ -72,10 +72,10 @@ def get_pool(config):
 def read_simulation(config):
     """ TODO: """
 
-    if config["particle_source"] == "sgr":
+    if config["simulation"]["source"] == "sgr":
         m = config["simulation"]["satellite_mass"]
         particles_today, satellite_today, time = mass_selector(m)
-    elif config["particle_source"] == "lm10":
+    elif config["simulation"]["source"] == "lm10":
         #particles_today, satellite_today, time = mass_selector(config["mass"])
         # TODO
         pass
@@ -116,6 +116,7 @@ def main(config_file, job_name=None):
 
     # now start collecting model parameters
     params = []
+    ndim = 0
 
     # first add the potential parameters
     potential_params = config["potential"].get("parameters", [])
@@ -123,20 +124,34 @@ def main(config_file, job_name=None):
         p = getattr(potential, name)
         prior = LogUniformPrior(*p._range)
         params.append(Parameter(target=p, attr="_value", ln_prior=prior))
+        ndim += 1
 
     # Other parameters
-    params.append(Parameter(target=_particles,
-                            attr="flat_X"))
-    params.append(Parameter(target=_particles,
-                            attr="tub",
-                            ln_prior=LogUniformPrior(t2, t1)))
+    # TODO: flat_X hack...
+    particle_params = config["particles"].get("parameters", [])
+    if "flat_X" in particle_params:
+        particle_params.remove("flat_X")
+        prior = LogUniformPrior(-100., 100.)
+        params.append(Parameter(target=_particles,
+                                attr="flat_X",
+                                ln_prior=prior))
+        ndim += config["particles"]["N"]*6
 
-    return
+    # TODO: tub is only available for sgr...
+    for name in particle_params:
+        p = getattr(_particles, name)
+        prior = LogUniformPrior(*p._range)
+        params.append(Parameter(target=p,
+                                attr="_value",
+                                ln_prior=prior))
+        ndim += config["particles"]["N"]
 
     model = StreamModel(potential, satellite, _particles,
                         obs_data, obs_error, parameters=params)
 
-    ndim = sum([len(pp) for pp in params]) + Npotentialparams
+    print(ndim)
+    return
+
     p0 = np.zeros((Nwalkers, ndim))
     for ii in range(Npotentialparams):
         p0[:,ii] = params[ii]._ln_prior.sample(Nwalkers)
