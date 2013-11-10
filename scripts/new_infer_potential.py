@@ -149,7 +149,11 @@ def main(config_file, job_name=None):
     model = StreamModel(potential, satellite, _particles,
                         obs_data, obs_error, parameters=params)
 
-    print(ndim)
+    Nwalkers = config.get("walkers", "auto")
+    if str(Nwalkers).lower() == "auto":
+        Nwalkers = ndim*2
+
+    print(Nwalkers, ndim)
     return
 
     p0 = np.zeros((Nwalkers, ndim))
