@@ -1,0 +1,6 @@
+pyyaml>=3.0
+numpy>=1.6
+matplotlib>=1.0
+emcee>=1.2
+scipy>=0.11
+astropy>=0.2
