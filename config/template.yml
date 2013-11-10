@@ -1,0 +1,36 @@
+# general
+seed: 42
+script: new_infer_potential.py
+name: adrn
+
+# threading
+mpi: yes
+# or threads: 4
+
+# plots / output
+make_plots: False
+output_path: /tmp
+
+# potential
+class_name: LawMajewski2010
+model_parameters:
+    - q1
+    - qz
+    - phi
+    - v_halo
+
+# particle selection (lm10, sgr, pal5)
+particle_source: lm10
+expr: Pcol > -1
+Nparticles: 100
+
+# emcee
+walkers: 16 # or auto (2 x number of parameters)
+burn_in: 0
+steps: 100
+
+# observational errors
+observational_errors: true
+radial_velocity_error: 10. km/s
+proper_motion_error: 1. milliarcsecond/year
+distance_error_percent: 2
