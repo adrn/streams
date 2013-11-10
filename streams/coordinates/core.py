@@ -19,22 +19,6 @@ import astropy.units as u
 __all__ = ["vgsr_to_vhel", "vhel_to_vgsr", "ra_dec_dist_to_xyz", \
            "gc_to_hel", "hel_to_gc", "_gc_to_hel", "_hel_to_gc"]
 
-# class ReferenceFrame(object):
-
-#     def __init__(self):
-#         pass
-
-#     def
-
-# gsr = ReferenceFrame(...)
-
-# heliocentric = ReferenceFrame(...)
-
-# # velocity = values, coordinate system, reference frame
-# # can transform to new coordinate system, or new reference frame?
-
-# g = Galactic()
-# g.transform_to(Heliocentric)
 
 def vgsr_to_vhel(l, b, v_gsr,
                  v_sun_lsr=[10.,5.25,7.17]*u.km/u.s,
