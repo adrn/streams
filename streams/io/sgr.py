@@ -22,6 +22,7 @@ from astropy.constants import G
 # Project
 from .core import read_table, table_to_particles, table_to_orbits
 from ..util import project_root, u_galactic
+from ..potential import StreamParameter
 
 __all__ = ["mass_selector", "usys_from_file"]
 
@@ -70,7 +71,12 @@ def mass_selector(m):
         pc = pc.to(u_galactic)
 
         t_unit = filter(lambda x: x.is_equivalent(u.s), usys)[0]
-        pc.tub = (np.array(data["tub"])*t_unit).to(u.Myr).value
+
+        t1,t2 = time()
+        tub = StreamParameter(truth=(np.array(data["tub"])*t_unit).to(u.Myr),
+                              range=(t2*u.Myr, t1*u.Myr),
+                              latex=r"$t_{\rm ub}$")
+        pc.tub = tub
         return pc
 
     def satellite_orbit():

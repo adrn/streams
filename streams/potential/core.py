@@ -23,9 +23,9 @@ import astropy.units as u
 
 from .. import usys
 
-__all__ = ["CartesianPotential", "CompositePotential", "PotentialParameter"]
+__all__ = ["CartesianPotential", "CompositePotential", "StreamParameter"]
 
-class PotentialParameter(object):
+class StreamParameter(object):
 
     def __init__(self, value=None, truth=None, range=(),
                  latex="", units=usys):
