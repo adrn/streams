@@ -8,12 +8,9 @@ mpi: no
 threads: 2
 
 # plots / output
-make_plots: False
-output_path: /tmp
-#output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
-#output_path: /vega/astro/users/amp2217/output_data # yeti
-#output_path: /Users/adrian/projects/streams/plots # laptop
-#output_path: /home/adrian/projects/streams/plots # deimos
+make_plots: True
+overwrite: True
+output_path: /Users/adrian/projects/streams/plots # laptop
 
 potential:
     class_name: LawMajewski2010
@@ -23,14 +20,20 @@ potential:
         - phi
         - v_halo
 
-# particle selection (lm10, sgr, pal5)
-particle_source: sgr
-mass: 2.5e8 # this is specific to sgr
-expr: tub != 0
-Nparticles: 2
+simulation:
+    # can be sgr, lm10, pal5
+    source: sgr
+    satellite_mass: 2.5e8 # this is specific to sgr
+
+particles:
+    N: 100
+    selection_expr: tub != 0
+    parameters:
+        - tub # unbinding times
+        - flat_X # all true 6D positions for all particles
 
 # emcee
-walkers: auto # or auto (2 x number of parameters)
+walkers: 16 # or auto (2 x number of parameters)
 burn_in: 0
 steps: 100
 
@@ -38,6 +41,6 @@ steps: 100
 # below: with no units specified, it's a fractional error
 observational_errors: true
 global_error_multiple: 1.
-radial_velocity_error: 10. km/s
-proper_motion_error: 1. milliarcsecond/year
-distance_error: 0.02
+#radial_velocity_error: 10. km/s
+#proper_motion_error: 1. milliarcsecond/year
+#distance_error: 0.02

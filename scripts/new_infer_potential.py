@@ -73,7 +73,8 @@ def read_simulation(config):
     """ TODO: """
 
     if config["particle_source"] == "sgr":
-        particles_today, satellite_today, time = mass_selector(config["mass"])
+        m = config["simulation"]["satellite_mass"]
+        particles_today, satellite_today, time = mass_selector(m)
     elif config["particle_source"] == "lm10":
         #particles_today, satellite_today, time = mass_selector(config["mass"])
         # TODO
@@ -82,8 +83,8 @@ def read_simulation(config):
         raise ValueError("Invalid particle_source: {particle_source}"\
                          .format(config))
 
-    particles = particles_today(N=config["Nparticles"],
-                                expr=config["expr"])
+    particles = particles_today(N=config["particles"]["N"],
+                                expr=config["particles"]["selection_expr"])
     satellite = satellite_today()
     t1,t2 = time()
 
@@ -129,6 +130,8 @@ def main(config_file, job_name=None):
     params.append(Parameter(target=_particles,
                             attr="tub",
                             ln_prior=LogUniformPrior(t2, t1)))
+
+    return
 
     model = StreamModel(potential, satellite, _particles,
                         obs_data, obs_error, parameters=params)

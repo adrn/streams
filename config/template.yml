@@ -23,11 +23,17 @@ potential:
         - phi
         - v_halo
 
-# particle selection (lm10, sgr, pal5)
-particle_source: sgr
-mass: 2.5e8 # this is specific to sgr
-expr: Pcol > -1
-Nparticles: 100
+simulation:
+    # can be sgr, lm10, pal5
+    source: sgr
+    satellite_mass: 2.5e8 # this is specific to sgr
+
+particles:
+    N: 100
+    selection_expr: tub != 0
+    parameters:
+        - tub # unbinding times
+        - flat_X # all true 6D positions for all particles
 
 # emcee
 walkers: 16 # or auto (2 x number of parameters)
