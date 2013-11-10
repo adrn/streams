@@ -17,8 +17,6 @@ output_path: /tmp
 
 potential:
     class_name: LawMajewski2010
-
-model:
     parameters:
         - q1
         - qz

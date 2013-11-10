@@ -101,9 +101,7 @@ def main(config_file, job_name=None):
 
     # get the potential object specified
     Potential = getattr(sp, config["potential"]["class_name"])
-
-    print(Potential)
-    return
+    potential = Potential()
 
     # Actually get simulation data
     np.random.seed(config["seed"])
@@ -115,24 +113,15 @@ def main(config_file, job_name=None):
                                     factor=factor)
     obs_data, obs_error = _particles.observe(error_model)
 
-    potential = LawMajewski2010()
-    satellite = satellite_today()
-
+    # now start collecting model parameters
     params = []
-    # Potential params:
-    params.append(Parameter(target=potential.q1,
-                             attr="_value",
-                             ln_prior=LogUniformPrior(*potential.q1._range)))
-    params.append(Parameter(target=potential.qz,
-                             attr="_value",
-                             ln_prior=LogUniformPrior(*potential.qz._range)))
-    params.append(Parameter(target=potential.v_halo,
-                            attr="_value",
-                            ln_prior=LogUniformPrior(*potential.v_halo._range)))
-    params.append(Parameter(target=potential.phi,
-                            attr="_value",
-                            ln_prior=LogUniformPrior(*potential.phi._range)))
-    Npotentialparams = len(params)
+
+    # first add the potential parameters
+    potential_params = config["potential"].get("parameters", [])
+    for name in potential_params:
+        p = getattr(potential, name)
+        prior = LogUniformPrior(*p._range)
+        params.append(Parameter(target=p, attr="_value", ln_prior=prior))
 
     # Other parameters
     params.append(Parameter(target=_particles,
