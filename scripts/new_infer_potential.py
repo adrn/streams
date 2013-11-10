@@ -69,7 +69,28 @@ def get_pool(config):
 
     return pool
 
+def read_simulation(config):
+    """ TODO: """
+
+    if config["particle_source"] == "sgr":
+        particles_today, satellite_today, time = mass_selector(config["mass"])
+    elif config["particle_source"] == "lm10":
+        #particles_today, satellite_today, time = mass_selector(config["mass"])
+        # TODO
+    else:
+        raise ValueError("Invalid particle_source: {particle_source}"\
+                         .format(config))
+
+    particles = particles_today(N=config["Nparticles"],
+                                expr=config["expr"])
+    satellite = satellite_today()
+    t1,t2 = time()
+
+    return t1,t2,satellite,particles
+
 def main(config_file, job_name=None):
+    """ TODO: """
+
     # read in configurable parameters
     with open(config_file) as f:
         config = yaml.load(f.read())
@@ -79,9 +100,7 @@ def main(config_file, job_name=None):
 
     # Actually get simulation data
     np.random.seed(config["seed"])
-    particles_today, satellite_today, time = mass_selector(m)
-    satellite = satellite_today()
-    t1,t2 = time()
+    t1,t2,satellite,particles_today = read_simulation(config)
 
     _particles = particles_today(N=Nparticles, expr="tub!=0")
     error_model = RRLyraeErrorModel(units=usys, factor=error_factor)
