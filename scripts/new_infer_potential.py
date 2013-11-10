@@ -49,29 +49,12 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def main(config_file, job_name=None):
-    # read in configurable parameters
-    with open(config_file) as f:
-        config = yaml.load(f.read())
+def get_pool(config):
+    """ Given a config structure, return an MPIPool, a Python
+        multiprocessing.Pool, or None.
+    """
 
-    print(config)
-    return
-
-    m = "2.5e8"
-    Nwalkers = 256
-    Nparticles = 10
-    Nburn_in = 200
-    Nsteps = 300
-    mpi = True
-    error_factor = 0.1
-    path = "/hpc/astro/users/amp2217/jobs/output_data/new_likelihood"
-    #path = "/Users/adrian/projects/streams/plots/new_likelihood"
-    #path = "/home/adrian/projects/streams/plots/new_likelihood"
-    Nthreads = 1
-
-    ##########################
-
-    if mpi:
+    if config["mpi"]:
         # Initialize the MPI pool
         pool = MPIPool()
 
@@ -79,13 +62,23 @@ def main(config_file, job_name=None):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
-    elif Nthreads > 1:
+    elif config["Nthreads"] > 1:
         pool = multiprocessing.Pool(Nthreads)
     else:
         pool = None
 
+    return pool
+
+def main(config_file, job_name=None):
+    # read in configurable parameters
+    with open(config_file) as f:
+        config = yaml.load(f.read())
+
+    # get a pool object given the configuration parameters
+    pool = get_pool(config)
+
     # Actually get simulation data
-    np.random.seed(552)
+    np.random.seed(config["seed"])
     particles_today, satellite_today, time = mass_selector(m)
     satellite = satellite_today()
     t1,t2 = time()

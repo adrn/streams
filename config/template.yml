@@ -10,6 +10,10 @@ mpi: yes
 # plots / output
 make_plots: False
 output_path: /tmp
+#output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
+#output_path: /vega/astro/users/amp2217/output_data # yeti
+#output_path: /Users/adrian/projects/streams/plots # laptop
+#output_path: /home/adrian/projects/streams/plots # deimos
 
 # potential
 class_name: LawMajewski2010
