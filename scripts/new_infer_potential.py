@@ -115,9 +115,9 @@ def main(config_file, job_name=None):
                                     factor=factor)
     obs_data, obs_error = _particles.observe(error_model)
 
-    # now start collecting model parameters
-    params = []
-    ndim = 0
+    # now create the model and start adding model parameters
+    model = StreamModel(potential, satellite, _particles,
+                        obs_data, obs_error)
 
     # first add the potential parameters
     potential_params = config["potential"].get("parameters", dict())
@@ -125,24 +125,35 @@ def main(config_file, job_name=None):
         p = getattr(potential, name)
 
         if meta.has_key("range"):
-            print(meta["range"], type(meta["range"][0]))
-            continue
-            lo,hi = map(u.Quantity, meta["range"])
+            # TODO: fix when astropy fixed...
+            #lo,hi = map(u.Quantity, meta["range"])
+            lo_hi = []
+            for ii in range(2):
+                try:
+                    val,unit = meta["range"][ii].split()
+                except AttributeError:
+                    val = meta["range"][ii]
+                    unit = u.dimensionless_unscaled
+
+                lo_hi.append(u.Quantity(float(val), unit))
+            lo, hi = lo_hi
+
             prior = LogUniformPrior(lo.decompose(usys).value,
                                     hi.decompose(usys).value)
         else:
             prior = LogPrior()
 
-        params.append(ModelParameter(targets=p,
-                                     attr="_value",
-                                     ln_prior=prior))
-        ndim += 1
+        model.parameters.append(ModelParameter(targets=p,
+                                               attr="_value",
+                                               ln_prior=prior))
 
     # now add particle parameters
     # tub
     p = _particles.tub
     prior = LogUniformPrior(t2,t1)
-    params.append(ModelParameter(targets=p, attr="_value", ln_prior=prior))
+    model.parameters.append(ModelParameter(targets=p,
+                                           attr="_value",
+                                           ln_prior=prior))
 
     # true positions of particles
     p = _particles.flat_X
@@ -155,6 +166,13 @@ def main(config_file, job_name=None):
 
     plt.show()
     return
+
+
+
+
+
+
+
 
     params.append(ModelParameter(target=p, attr="_value", ln_prior=prior))
 
@@ -178,8 +196,6 @@ def main(config_file, job_name=None):
                                 ln_prior=prior))
         ndim += config["particles"]["N"]
 
-    model = StreamModel(potential, satellite, _particles,
-                        obs_data, obs_error, parameters=params)
 
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
