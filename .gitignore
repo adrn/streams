@@ -18,3 +18,4 @@ text/paper1/arxiv/*
 text/paper1/resubmit*/
 text/other_papers/*
 *.sublime*
+*.eps
