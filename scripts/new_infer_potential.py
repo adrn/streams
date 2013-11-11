@@ -37,7 +37,7 @@ except ImportError:
 # Project
 from streams import usys
 from streams.coordinates import _gc_to_hel, _hel_to_gc
-from streams.inference import Parameter, StreamModel, LogUniformPrior
+from streams.inference import ModelParameter, StreamModel, LogUniformPrior
 from streams.io.sgr import mass_selector
 from streams.observation.gaia import RRLyraeErrorModel
 import streams.potential as sp
@@ -123,8 +123,24 @@ def main(config_file, job_name=None):
     for name in potential_params:
         p = getattr(potential, name)
         prior = LogUniformPrior(*p._range)
-        params.append(Parameter(target=p, attr="_value", ln_prior=prior))
+        params.append(ModelParameter(targets=p,
+                                     attr="_value",
+                                     ln_prior=prior))
         ndim += 1
+
+    # now add particle parameters
+    # tub
+    p = _particles.tub
+    prior = LogUniformPrior(*p._range)
+    params.append(ModelParameter(targets=p, attr="_value", ln_prior=prior))
+
+    # true positions of particles
+    p = _particles.flat_X
+    prior = LogNormalPrior(obs_data, obs_error)
+    print(prior.sample())
+    return
+
+    params.append(ModelParameter(target=p, attr="_value", ln_prior=prior))
 
     # Other parameters
     # TODO: flat_X hack...
@@ -151,7 +167,10 @@ def main(config_file, job_name=None):
 
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
-        Nwalkers = ndim*2
+        Nwalkers = model.ndim*2
+
+    # TODO:
+    p0 = model.ln_prior(size=Nwalkers)
 
     p0 = np.zeros((Nwalkers, ndim))
     for ii in range(Npotentialparams):
