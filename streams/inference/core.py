@@ -17,6 +17,8 @@ import astropy.units as u
 
 from ..coordinates import _gc_to_hel
 from ..integrate.satellite_particles import satellite_particles_integrate
+from .parameter import *
+from .prior import *
 
 __all__ = ["StreamModel"]
 

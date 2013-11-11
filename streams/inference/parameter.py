@@ -14,15 +14,28 @@ import logging
 import numpy as np
 import astropy.units as u
 
-__all__ = ["ModelParameter"]
+__all__ = ["ModelParameter", "Parameter"]
 
 logger = logging.getLogger(__name__)
 
 class ModelParameter(object):
 
     def __init__(self, targets, attr, ln_prior=None):
+        """ This object represents an abstract concept -- the idea of
+            a parameter unbound from actual instances of objects. For
+            example, a ModelParamter could be a mass, which maps to
+            several different target objects that all have associated
+            masses.
+
+            Parameters
+            ----------
+            targets : iterable
+            attr : str
+            ln_prior : LogPrior
+        """
+
         if isinstance(targets, collections.Iterable):
-            self.targets = targets
+            self.targets = list(targets)
         else:
             self.targets = [targets]
 
@@ -56,110 +69,5 @@ class ModelParameter(object):
     def __len__(self):
         return self.get().size
 
-class PotentialParameter(object):
-
-    def __init__(self, value=None, truth=None, range=(),
-                 latex="", units=usys):
-
-        if value is None and truth is None:
-            raise ValueError("If value not specified, must specify truth.")
-
-        elif value is None:
-            value = truth
-
-        if hasattr(value, "unit"):
-            q = value.decompose(units)
-            self._value = q.value
-            self._unit = q.unit
-
-            t = truth.decompose(units)
-            self._truth = t.value
-
-            lo,hi = range
-            self._range = (lo.decompose(units).value,
-                           hi.decompose(units).value)
-
-        else:
-            self._value = value
-            self._truth = truth
-            self._unit = u.dimensionless_unscaled
-            self._range = range
-
-        self.latex = latex
-
-    @property
-    def value(self):
-        return self._value*self._unit
-
-    @value.setter
-    def value(self, v):
-        self._value = v.to(self._unit).value
-
-    @property
-    def truth(self):
-        return self._truth*self._unit
-
-    @truth.setter
-    def truth(self, v):
-        self._truth = v.to(self._unit).value
-
-    @property
-    def range(self):
-        return (self._range[0]*self._unit, self._range[1]*self._unit)
-
-    def __float__(self):
-        return self._value
-
-class ParticleParameter(object):
-
-    def __init__(self, value=None, N=1, truth=None, range=(),
-                 latex="", units=usys):
-
-        if value is None and truth is None:
-            raise ValueError("If value not specified, must specify truth.")
-
-        elif value is None:
-            value = truth
-
-        if hasattr(value, "unit"):
-            q = value.decompose(units)
-            self._value = q.value
-            self._unit = q.unit
-
-            t = truth.decompose(units)
-            self._truth = t.value
-
-            lo,hi = range
-            self._range = (lo.decompose(units).value,
-                           hi.decompose(units).value)
-
-        else:
-            self._value = value
-            self._truth = truth
-            self._unit = u.dimensionless_unscaled
-            self._range = range
-
-        self.latex = latex
-
-    @property
-    def value(self):
-        return self._value*self._unit
-
-    @value.setter
-    def value(self, v):
-        self._value = v.to(self._unit).value
-
-    @property
-    def truth(self):
-        return self._truth*self._unit
-
-    @truth.setter
-    def truth(self, v):
-        self._truth = v.to(self._unit).value
-
-    @property
-    def range(self):
-        return (self._range[0]*self._unit, self._range[1]*self._unit)
-
-    def __float__(self):
-        return self._value
+class Parameter(object):
+    pass
