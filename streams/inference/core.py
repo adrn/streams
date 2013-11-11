@@ -44,6 +44,30 @@ class LogUniformPrior(LogPrior):
     def sample(self, size=1):
         return np.random.uniform(self.a, self.b, size=size)
 
+class LogNormalPrior(LogPrior):
+
+    def __call__(self, value):
+        d = self.mu - value
+        return -0.5 * (np.dot(d, d / self.sigma**2) + self._norm)
+
+    def __init__(self, mu, sigma):
+        self.mu = mu
+        self.sigma = sigma
+
+        if len(self.mu):
+            pass
+            # TODO: check shapes of mu and sigma
+
+        k = len(self.sigma)
+        self._norm = k*np.log(2*np.pi) + 2*np.sum(np.log(np.sigma))
+
+    def sample(self, size):
+        return np.random.normal(self.mu, self.sigma, size=size)
+
+
+# TODO: rename to ModelParameter? Parameter class has prior, etc...?
+# TODO: maybe EmceeParameter is the one that links?
+# TODO: or maybe just add parameter to stream model? idk...
 class Parameter(object):
 
     def __init__(self, target, attr, ln_prior=None):
