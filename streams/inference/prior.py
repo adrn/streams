@@ -57,5 +57,5 @@ class LogNormalPrior(LogPrior):
         k = len(self.sigma)
         self._norm = k*np.log(2*np.pi) + 2*np.sum(np.log(self.sigma))
 
-    def sample(self, size):
+    def sample(self, size=None):
         return np.random.normal(self.mu, self.sigma, size=size)
