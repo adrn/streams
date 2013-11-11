@@ -143,28 +143,31 @@ def main(config_file, job_name=None):
         else:
             prior = LogPrior()
 
-        model.parameters.append(ModelParameter(targets=p,
+        model.parameters.append(ModelParameter(target=p,
                                                attr="_value",
                                                ln_prior=prior))
 
     # now add particle parameters
-    # tub
-    p = _particles.tub
-    prior = LogUniformPrior(t2,t1)
-    model.parameters.append(ModelParameter(targets=p,
-                                           attr="_value",
+    # time unbound / escape time (tub)
+    lo = [t2] * len(_particles)
+    hi = [t1] * len(_particles)
+    prior = LogUniformPrior(lo, hi)
+    model.parameters.append(ModelParameter(target=_particles,
+                                           attr="tub",
                                            ln_prior=prior))
 
-    # true positions of particles
-    p = _particles.flat_X
+    # true positions of particles (flat_X)
     prior = LogNormalPrior(obs_data, obs_error)
+    model.parameters.append(ModelParameter(target=_particles,
+                                           attr="flat_X",
+                                           ln_prior=prior))
 
-    for ii in range(100):
-        O = prior.sample()
-        X = _hel_to_gc(O)
-        plt.plot(X[:,0], X[:,2], marker='.', alpha=0.5, linestyle='none')
+    # for ii in range(100):
+    #     O = model.parameters[-1].sample()
+    #     X = _hel_to_gc(O)
+    #     plt.plot(X[:,0], X[:,2], marker='.', alpha=0.5, linestyle='none')
 
-    plt.show()
+    # plt.show()
     return
 
 

@@ -9,7 +9,6 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import logging
-import collections
 
 # Third-party
 import numpy as np
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class ModelParameter(object):
 
-    def __init__(self, targets, attr, ln_prior=None):
+    def __init__(self, target, attr, ln_prior=None):
         """ This object represents an abstract concept -- the idea of
             a parameter unbound from actual instances of objects. For
             example, a ModelParamter could be a mass, which maps to
@@ -30,16 +29,12 @@ class ModelParameter(object):
 
             Parameters
             ----------
-            targets : iterable
+            target : iterable
             attr : str
             ln_prior : LogPrior
         """
 
-        if isinstance(targets, collections.Iterable):
-            self.targets = list(targets)
-        else:
-            self.targets = [targets]
-
+        self.target = target
         self.attr = attr
 
         if ln_prior is None:
@@ -58,19 +53,16 @@ class ModelParameter(object):
 
     def get(self):
         #return getattr(self.target, self.attr)
-        return np.squeeze([getattr(t, self.attr) for t in self.targets])
+        return np.array(getattr(self.target, self.attr))
 
     def set(self, value):
-        #setattr(self.target, self.attr, value)
-        [setattr(t, self.attr, value) for t in self.targets]
+        setattr(self.target, self.attr, value)
 
     def ln_prior(self):
-        return np.squeeze([self._ln_prior(v) \
-                    for v in np.atleast_1d(self.get())])
+        return self._ln_prior(self.get())
 
     def sample(self, size=None):
-        return np.array([self._ln_prior.sample(size) \
-                    for v in np.atleast_1d(self.get())])
+        return self._ln_prior.sample(size)
 
     def __len__(self):
         return self.get().size
