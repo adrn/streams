@@ -37,7 +37,8 @@ except ImportError:
 # Project
 from streams import usys
 from streams.coordinates import _gc_to_hel, _hel_to_gc
-from streams.inference import ModelParameter, StreamModel, LogUniformPrior
+from streams.inference import (ModelParameter, StreamModel,
+                               LogNormalPrior, LogUniformPrior)
 from streams.io.sgr import mass_selector
 from streams.observation.gaia import RRLyraeErrorModel
 import streams.potential as sp
@@ -131,7 +132,7 @@ def main(config_file, job_name=None):
     # now add particle parameters
     # tub
     p = _particles.tub
-    prior = LogUniformPrior(*p._range)
+    prior = LogUniformPrior(t2,t1)
     params.append(ModelParameter(targets=p, attr="_value", ln_prior=prior))
 
     # true positions of particles
