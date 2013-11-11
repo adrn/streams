@@ -58,14 +58,17 @@ class ModelParameter(object):
 
     def get(self):
         #return getattr(self.target, self.attr)
-        return np.array([getattr(t, self.attr) for t in self.targets])
+        return np.squeeze([getattr(t, self.attr) for t in self.targets])
 
     def set(self, value):
         #setattr(self.target, self.attr, value)
         [setattr(t, self.attr, value) for t in self.targets]
 
     def ln_prior(self):
-        return np.array([self._ln_prior(v) for v in self.get()])
+        return np.squeeze([self._ln_prior(v) for v in self.get()])
+
+    def sample(self, size=None):
+        return np.array([self._ln_prior.sample(size) for v in self.get()])
 
     def __len__(self):
         return self.get().size

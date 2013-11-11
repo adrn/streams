@@ -75,7 +75,7 @@ def mass_selector(m):
         #tub = StreamParameter(truth=(np.array(data["tub"])*t_unit).to(u.Myr),
         #                      range=(t2*u.Myr, t1*u.Myr),
         #                      latex=r"$t_{\rm ub}$")
-        pc.tub = (np.array(data["tub"])*t_unit).to(u.Myr)
+        pc.tub = (np.array(data["tub"])*t_unit).to(u.Myr).value
         return pc
 
     def satellite_orbit():
