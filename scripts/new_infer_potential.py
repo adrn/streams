@@ -55,7 +55,7 @@ def get_pool(config):
         multiprocessing.Pool, or None.
     """
 
-    if config["mpi"]:
+    if config.get("mpi", False):
         # Initialize the MPI pool
         pool = MPIPool()
 
@@ -63,7 +63,7 @@ def get_pool(config):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
-    elif config["threads"] > 1:
+    elif config.get("threads", 0) > 1:
         pool = multiprocessing.Pool(config["threads"])
     else:
         pool = None
@@ -120,10 +120,19 @@ def main(config_file, job_name=None):
     ndim = 0
 
     # first add the potential parameters
-    potential_params = config["potential"].get("parameters", [])
-    for name in potential_params:
+    potential_params = config["potential"].get("parameters", dict())
+    for name,meta in potential_params.items():
         p = getattr(potential, name)
-        prior = LogUniformPrior(*p._range)
+
+        if meta.has_key("range"):
+            print(meta["range"], type(meta["range"][0]))
+            continue
+            lo,hi = map(u.Quantity, meta["range"])
+            prior = LogUniformPrior(lo.decompose(usys).value,
+                                    hi.decompose(usys).value)
+        else:
+            prior = LogPrior()
+
         params.append(ModelParameter(targets=p,
                                      attr="_value",
                                      ln_prior=prior))
@@ -138,7 +147,13 @@ def main(config_file, job_name=None):
     # true positions of particles
     p = _particles.flat_X
     prior = LogNormalPrior(obs_data, obs_error)
-    print(prior.sample())
+
+    for ii in range(100):
+        O = prior.sample()
+        X = _hel_to_gc(O)
+        plt.plot(X[:,0], X[:,2], marker='.', alpha=0.5, linestyle='none')
+
+    plt.show()
     return
 
     params.append(ModelParameter(target=p, attr="_value", ln_prior=prior))
