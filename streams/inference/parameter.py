@@ -65,10 +65,12 @@ class ModelParameter(object):
         [setattr(t, self.attr, value) for t in self.targets]
 
     def ln_prior(self):
-        return np.squeeze([self._ln_prior(v) for v in self.get()])
+        return np.squeeze([self._ln_prior(v) \
+                    for v in np.atleast_1d(self.get())])
 
     def sample(self, size=None):
-        return np.array([self._ln_prior.sample(size) for v in self.get()])
+        return np.array([self._ln_prior.sample(size) \
+                    for v in np.atleast_1d(self.get())])
 
     def __len__(self):
         return self.get().size
