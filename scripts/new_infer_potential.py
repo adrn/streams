@@ -265,13 +265,15 @@ def main(config_file, job_name=None):
         # First, just samples from the priors:
         fig = triangle.corner(p0[:,:Npp],
                     truths=[p.target._truth for p in pparams],
-                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams])
+                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
+                    labels=[p.target.latex for p in pparams])
         fig.savefig(os.path.join(path, "potential_corner_prior.png"))
 
         # Now the actual chains, extents from the priors
         fig = triangle.corner(sampler.flatchain[:,:Npp],
                     truths=[p.target._truth for p in pparams],
-                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams])
+                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
+                    labels=[p.target.latex for p in pparams])
         fig.savefig(os.path.join(path, "potential_corner.png"))
 
         # ---------
@@ -284,7 +286,8 @@ def main(config_file, job_name=None):
             stop = start + 6
             XX = sampler.flatchain[:,start:stop]
 
-            fig = triangle.corner(np.hstack((tub[:,np.newaxis], XX)))
+            fig = triangle.corner(np.hstack((tub[:,np.newaxis], XX)),
+                                  labels=['tub','x','y','z','vx','vy','vz'])
             fig.suptitle("Particle {0}".format(ii))
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
