@@ -279,20 +279,25 @@ def main(config_file, job_name=None):
         # TODO: need these plots to fail if not specified in config...
         for ii in range(Nparticles):
             tub = sampler.flatchain[:,Npp+ii]
-            tub = sampler.flatchain[:,Npp+ii]
-        fig = triangle.corner(sampler.flatchain[:,:Npp],
-                    truths=[p.target._truth for p in pparams],
-                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams])
-        fig.savefig(os.path.join(path, "potential_corner.png"))
 
-        fig = plt.figure(figsize=(6,4))
-        ax = fig.add_subplot(111)
-        for jj in range(Npp) + [10]:
-            ax.cla()
-            for ii in range(Nwalkers):
-                ax.plot(sampler.chain[ii,:,jj], drawstyle='step')
+            start = Npp+Nparticles + 6*ii
+            stop = start + 6
+            XX = sampler.flatchain[:,start:stop]
 
-            fig.savefig(os.path.join(path, "{0}.png".format(jj)))
+            fig = triangle.corner(np.hstack((tub[:,np.newaxis], XX)))
+            fig.suptitle("Particle {0}".format(ii))
+            fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
+                                     .format(ii)))
+            plt.clf()
+
+        # fig = plt.figure(figsize=(6,4))
+        # ax = fig.add_subplot(111)
+        # for jj in range(Npp) + [10]:
+        #     ax.cla()
+        #     for ii in range(Nwalkers):
+        #         ax.plot(sampler.chain[ii,:,jj], drawstyle='step')
+
+        #     fig.savefig(os.path.join(path, "{0}.png".format(jj)))
 
     sys.exit(0)
 
