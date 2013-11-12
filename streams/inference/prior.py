@@ -44,18 +44,26 @@ class LogNormalPrior(LogPrior):
 
     def __call__(self, value):
         d = self.mu - value
-        return -0.5 * (np.dot(d, d / self.sigma**2) + self._norm)
+        q = np.diag(np.dot(d,np.dot(self._icov,d.T)))
+        return self._norm - 0.5 * q
 
-    def __init__(self, mu, sigma):
+    def __init__(self, mu, sigma=None, cov=None):
         self.mu = mu
-        self.sigma = sigma
 
-        if len(self.mu):
-            pass
-            # TODO: check shapes of mu and sigma
+        if sigma is not None:
+            if sigma.shape[0] != mu.shape[-1]:
+                raise ValueError("Shape of std dev vector (sigma) must match shape of mean vector (mu) along axis=-1")
 
-        k = len(self.sigma)
-        self._norm = k*np.log(2*np.pi) + 2*np.sum(np.log(self.sigma))
+            cov = np.diag(sigma**2)
+
+        if cov is None:
+            raise ValueError("Must specify vector of sigmas or covariance matrix.")
+
+        self.cov = cov
+        self._icov = np.linalg.inv(self.cov)
+
+        k,xx = self.cov.shape
+        self._norm = -0.5*k*np.log(2*np.pi) - 0.5*np.log(np.linalg.det(self.cov))
 
     def sample(self, size=None):
-        return np.random.normal(self.mu, self.sigma, size=size)
+        return np.random.multivariate_normal(self.mu, self.cov, size=size)
