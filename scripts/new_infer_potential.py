@@ -91,12 +91,38 @@ def read_simulation(config):
 
     return t1,t2,satellite,particles
 
+def make_path(config):
+
+    try:
+        path = config["output_path"]
+    except KeyError:
+        raise ValueError("You must specify 'output_path' in the config file.")
+
+    iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    path = os.path.join(path, config.get("name", iso_now))
+
+    if os.path.exists(path):
+        if config.get("overwrite", False):
+            shutil.rmtree(path)
+        else:
+            raise IOError("Path {0} already exists!".format(path))
+
+    os.mkdir(path)
+    return path
+
 def main(config_file, job_name=None):
     """ TODO: """
 
     # read in configurable parameters
     with open(config_file) as f:
         config = yaml.load(f.read())
+
+    # determine the output data path
+    path = make_path(config)
+
+    make_plots = config.get("make_plots", False)
+    overwrite = config.get("overwrite", False)
+    sampler_file = os.path.join(path, "sampler_data.pickle")
 
     # get a pool object given the configuration parameters
     pool = get_pool(config)
@@ -173,57 +199,64 @@ def main(config_file, job_name=None):
     obs_error_gc = []
     for ii in range(Nparticles):
         obs_error_gc.append(np.cov(X[:,ii].T))
+
     obs_error_gc = np.array(obs_error_gc)
     obs_data_gc = _hel_to_gc(obs_data)
 
     # true positions of particles (flat_X)
     if "_X" in particle_params:
         prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
-        model.parameters.append(ModelParameter(target=_particles,
-                                               attr="_X",
-                                               ln_prior=prior))
+        p = ModelParameter(target=_particles, attr="_X", ln_prior=prior)
+        p.ln_prior = lambda: 0. # THIS IS A HACK
+        model.parameters.append(p)
 
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
-        Nwalkers = model.ndim*2
+        Nwalkers = model.ndim*2 + 2
 
     p0 = model.sample(size=Nwalkers)
 
-    return
+    if not os.path.exists(sampler_file):
+        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
+                                        args=(t1, t2, -1.),
+                                        pool=pool)
 
-    sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
-                                    args=(t1, t2, -1.),
-                                    pool=pool)
+        Nburn_in = config.get("burn_in", 0)
+        Nsteps = config["steps"]
+        if Nburn_in > 0:
+            pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
+            sampler.reset()
+        else:
+            pos = p0
 
-    if Nburn_in > 0:
-        pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
-        sampler.reset()
+        pos, prob, state = sampler.run_mcmc(pos, Nsteps)
+
+        # write the sampler to a pickle file
+        sampler.lnprobfn = None
+        sampler.pool = None
+        fnpickle(sampler, sampler_file)
     else:
-        pos = p0
-
-    pos, prob, state = sampler.run_mcmc(pos, Nsteps)
-
-    # write the sampler to a pickle file
-    data_file = os.path.join(path, "sampler_data.pickle")
-    sampler.lnprobfn = None
-    sampler.pool = None
-    fnpickle(sampler, data_file)
+        sampler = fnunpickle(sampler_file)
 
     pool.close()
 
-    fig = triangle.corner(sampler.flatchain[:,:Npotentialparams],
-                          truths=[p.target._truth for p in params[:Npotentialparams]])
-    fig.savefig(os.path.join(path, "corner.png"))
+    if make_plots:
+        # Make a corner plot for the potential parameters
+        Npp = len(potential_params) # number of potential parameters
+        fig = triangle.corner(sampler.flatchain[:,:Npp],
+                    truths=[p.target._truth for p in params[:Npp]])
+        fig.savefig(os.path.join(path, "corner.png"))
 
-    fig = plt.figure(figsize=(6,4))
-    ax = fig.add_subplot(111)
-    for jj in range(Npotentialparams) + [10]:
-        ax.cla()
-        for ii in range(Nwalkers):
-            ax.plot(sampler.chain[ii,:,jj], drawstyle='step')
+        #
+        fig = plt.figure(figsize=(6,4))
+        ax = fig.add_subplot(111)
+        for jj in range(Npp) + [10]:
+            ax.cla()
+            for ii in range(Nwalkers):
+                ax.plot(sampler.chain[ii,:,jj], drawstyle='step')
 
-        fig.savefig(os.path.join(path, "{0}.png".format(jj)))
+            fig.savefig(os.path.join(path, "{0}.png".format(jj)))
 
     sys.exit(0)
 
