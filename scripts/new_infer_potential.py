@@ -50,6 +50,9 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
+def _null(*args, **kwargs):
+    return 0.
+
 def get_pool(config):
     """ Given a config structure, return an MPIPool, a Python
         multiprocessing.Pool, or None.
@@ -216,7 +219,7 @@ def main(config_file, job_name=None):
     if "_X" in particle_params:
         prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
         p = ModelParameter(target=_particles, attr="_X", ln_prior=prior)
-        p.ln_prior = lambda: 0. # THIS IS A HACK
+        p.ln_prior = _null # THIS IS A HACK
         model.parameters.append(p)
 
     # read in the number of walkers to use
