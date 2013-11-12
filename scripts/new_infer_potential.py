@@ -56,6 +56,7 @@ def get_pool(config):
     """
 
     if config.get("mpi", False):
+        logger.info("Running with MPI.")
         # Initialize the MPI pool
         pool = MPIPool()
 
@@ -64,8 +65,11 @@ def get_pool(config):
             pool.wait()
             sys.exit(0)
     elif config.get("threads", 0) > 1:
+        logger.info("Running with multiprocessing on {} cores."\
+                    .format(config["threads"]))
         pool = multiprocessing.Pool(config["threads"])
     else:
+        logger.info("Running serial...parallel panda is sad :(")
         pool = None
 
     return pool
@@ -100,13 +104,17 @@ def make_path(config):
 
     iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     path = os.path.join(path, config.get("name", iso_now))
+    logger.info("Will write output to '{0}'...".format(path))
 
     if os.path.exists(path):
+        logger.debug("...output path exists.".format(path))
         if config.get("overwrite", False):
+            logger.debug("...Overwrite=True, deleting path")
             shutil.rmtree(path)
         else:
             raise IOError("Path {0} already exists!".format(path))
 
+    logger.debug("...creating path now.")
     os.mkdir(path)
     return path
 
@@ -116,12 +124,12 @@ def main(config_file, job_name=None):
     # read in configurable parameters
     with open(config_file) as f:
         config = yaml.load(f.read())
+    logger.debug("Configuration file '{0}' loaded.".format(config_file))
 
     # determine the output data path
     path = make_path(config)
 
     make_plots = config.get("make_plots", False)
-    overwrite = config.get("overwrite", False)
     sampler_file = os.path.join(path, "sampler_data.pickle")
 
     # get a pool object given the configuration parameters
@@ -130,6 +138,7 @@ def main(config_file, job_name=None):
     # get the potential object specified
     Potential = getattr(sp, config["potential"]["class_name"])
     potential = Potential()
+    logger.debug("Using {} potential...".format(potential))
 
     # Actually get simulation data
     np.random.seed(config["seed"])
