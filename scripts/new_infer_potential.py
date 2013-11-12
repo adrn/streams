@@ -225,6 +225,9 @@ def main(config_file, job_name=None):
         p.ln_prior = _null # THIS IS A HACK
         model.parameters.append(p)
 
+    # check to see if the satellite position is to be inferred
+    # TODO: infer the damn satellite position!
+
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
