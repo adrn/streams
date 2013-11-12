@@ -126,14 +126,14 @@ def main(config_file, job_name=None):
         config = yaml.load(f.read())
     logger.debug("Configuration file '{0}' loaded.".format(config_file))
 
+    # get a pool object given the configuration parameters
+    pool = get_pool(config)
+
     # determine the output data path
     path = make_path(config)
 
     make_plots = config.get("make_plots", False)
     sampler_file = os.path.join(path, "sampler_data.pickle")
-
-    # get a pool object given the configuration parameters
-    pool = get_pool(config)
 
     # get the potential object specified
     Potential = getattr(sp, config["potential"]["class_name"])
