@@ -149,7 +149,7 @@ def main(config_file, job_name=None):
 
     # TODO: right now error specification in yml doesn't propagate
     if config.has_key("errors"):
-        factor = config.get("global_factor", 1.)
+        factor = config["errors"].get("global_factor", 1.)
         error_model = RRLyraeErrorModel(units=usys,
                                         factor=factor)
         obs_data, obs_error = _particles.observe(error_model)
@@ -216,6 +216,8 @@ def main(config_file, job_name=None):
     obs_error_gc = np.array(obs_error_gc)
     obs_data_gc = _hel_to_gc(obs_data)
 
+    # TODO: plot observed data
+
     # true positions of particles (flat_X)
     if "_X" in particle_params:
         prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
@@ -273,6 +275,16 @@ def main(config_file, job_name=None):
         fig.savefig(os.path.join(path, "potential_corner.png"))
 
         # ---------
+        # Now make 7x7 corner plots for each particle
+        # TODO: need these plots to fail if not specified in config...
+        for ii in range(Nparticles):
+            tub = sampler.flatchain[:,Npp+ii]
+            tub = sampler.flatchain[:,Npp+ii]
+        fig = triangle.corner(sampler.flatchain[:,:Npp],
+                    truths=[p.target._truth for p in pparams],
+                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams])
+        fig.savefig(os.path.join(path, "potential_corner.png"))
+
         fig = plt.figure(figsize=(6,4))
         ax = fig.add_subplot(111)
         for jj in range(Npp) + [10]:
