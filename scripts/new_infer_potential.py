@@ -149,6 +149,7 @@ def main(config_file, job_name=None):
 
     # now add particle parameters
     particle_params = config["particles"].get("parameters", [])
+
     try:
         Nparticles = config["particles"]["N"]
     except KeyError:
@@ -172,6 +173,7 @@ def main(config_file, job_name=None):
     obs_error_gc = []
     for ii in range(Nparticles):
         obs_error_gc.append(np.cov(X[:,ii].T))
+    obs_error_gc = np.array(obs_error_gc)
     obs_data_gc = _hel_to_gc(obs_data)
 
     # true positions of particles (flat_X)
@@ -181,27 +183,16 @@ def main(config_file, job_name=None):
                                                attr="_X",
                                                ln_prior=prior))
 
-    return
-
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
         Nwalkers = model.ndim*2
 
-    # TODO:
-    p0 = model.ln_prior(size=Nwalkers)
+    p0 = model.sample(size=Nwalkers)
 
-    p0 = np.zeros((Nwalkers, ndim))
-    for ii in range(Npotentialparams):
-        p0[:,ii] = params[ii]._ln_prior.sample(Nwalkers)
+    return
 
-    for ii in range(Nwalkers):
-        _x = _hel_to_gc(np.random.normal(obs_data, obs_error))
-        p0[ii,Npotentialparams:Nparticles*6+Npotentialparams] = np.ravel(_x)
-        p0[ii,Nparticles*6+Npotentialparams:] = np.random.randint(6266, \
-                                                                size=Nparticles)
-
-    sampler = emcee.EnsembleSampler(Nwalkers, ndim, model,
+    sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
                                     args=(t1, t2, -1.),
                                     pool=pool)
 
