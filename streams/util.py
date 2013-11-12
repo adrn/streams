@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import re
+import logging
 
 # Third-party
 from astropy.utils.misc import isiterable
