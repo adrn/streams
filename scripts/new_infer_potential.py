@@ -59,7 +59,6 @@ def get_pool(config):
     """
 
     if config.get("mpi", False):
-        logger.info("Running with MPI.")
         # Initialize the MPI pool
         pool = MPIPool()
 
@@ -67,6 +66,8 @@ def get_pool(config):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
+        logger.info("Running with MPI.")
+
     elif config.get("threads", 0) > 1:
         logger.info("Running with multiprocessing on {} cores."\
                     .format(config["threads"]))
@@ -256,6 +257,7 @@ def main(config_file, job_name=None):
     if make_plots:
 
         # Make a corner plot for the potential parameters
+        Npp = len(potential_params) # number of potential parameters
         pparams = model.parameters[:Npp]
 
         # First, just samples from the priors:
@@ -264,7 +266,7 @@ def main(config_file, job_name=None):
                     extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams])
         fig.savefig(os.path.join(path, "potential_corner_prior.png"))
 
-        Npp = len(potential_params) # number of potential parameters
+        # Now the actual chains, extents from the priors
         fig = triangle.corner(sampler.flatchain[:,:Npp],
                     truths=[p.target._truth for p in pparams],
                     extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams])
