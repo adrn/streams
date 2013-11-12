@@ -46,6 +46,7 @@ class LogNormalPrior(LogPrior):
         X = np.atleast_2d(self.mu - value)
         q = np.array([np.dot(d,np.dot(icov,d.T)) \
                       for icov,d in zip(self._icov, X)])
+
         return np.squeeze(self._norm - 0.5 * q)
 
     def __init__(self, mu, sigma=None, cov=None):
@@ -72,7 +73,7 @@ class LogNormalPrior(LogPrior):
 
         self._icov = np.array([np.linalg.inv(c) for c in self.cov])
         self._norm = -0.5*k*np.log(2*np.pi)
-        self._norm -= 0.5*np.log(np.array([np.linalg.det(c) for c in self.cov]))
+        self._norm -=0.5*np.array([np.linalg.slogdet(c)[1] for c in self.cov])
 
     def sample(self, size=None):
         s = np.array([np.random.multivariate_normal(mu, cov, size=size) \
