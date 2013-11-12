@@ -254,13 +254,23 @@ def main(config_file, job_name=None):
     pool.close()
 
     if make_plots:
+
         # Make a corner plot for the potential parameters
+        pparams = model.parameters[:Npp]
+
+        # First, just samples from the priors:
+        fig = triangle.corner(p0[:,:Npp],
+                    truths=[p.target._truth for p in pparams],
+                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams])
+        fig.savefig(os.path.join(path, "potential_corner_prior.png"))
+
         Npp = len(potential_params) # number of potential parameters
         fig = triangle.corner(sampler.flatchain[:,:Npp],
-                    truths=[p.target._truth for p in model.parameters[:Npp]])
-        fig.savefig(os.path.join(path, "corner.png"))
+                    truths=[p.target._truth for p in pparams],
+                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams])
+        fig.savefig(os.path.join(path, "potential_corner.png"))
 
-        #
+        # ---------
         fig = plt.figure(figsize=(6,4))
         ax = fig.add_subplot(111)
         for jj in range(Npp) + [10]:
