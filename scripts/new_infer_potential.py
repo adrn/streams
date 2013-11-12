@@ -128,7 +128,6 @@ def main(config_file, job_name=None):
     # read in configurable parameters
     with open(config_file) as f:
         config = yaml.load(f.read())
-    logger.debug("Configuration file '{0}' loaded.".format(config_file))
 
     # get a pool object given the configuration parameters
     pool = get_pool(config)
@@ -149,10 +148,11 @@ def main(config_file, job_name=None):
     t1,t2,satellite,_particles = read_simulation(config)
 
     # TODO: right now error specification in yml doesn't propagate
-    factor = config.get("global_error_multiple", 1.)
-    error_model = RRLyraeErrorModel(units=usys,
-                                    factor=factor)
-    obs_data, obs_error = _particles.observe(error_model)
+    if config.has_key("errors"):
+        factor = config.get("global_factor", 1.)
+        error_model = RRLyraeErrorModel(units=usys,
+                                        factor=factor)
+        obs_data, obs_error = _particles.observe(error_model)
 
     # now create the model and start adding model parameters
     model = StreamModel(potential, satellite, _particles,
