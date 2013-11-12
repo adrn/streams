@@ -44,23 +44,22 @@ class LogNormalPrior(LogPrior):
 
     def __call__(self, value):
         X = np.atleast_2d(self.mu - value)
-        q = np.array([np.dot(d,np.dot(icov,d.T)) for icov,d in zip(self._icov, X)])
+        q = np.array([np.dot(d,np.dot(icov,d.T)) \
+                      for icov,d in zip(self._icov, X)])
         return np.squeeze(self._norm - 0.5 * q)
 
     def __init__(self, mu, sigma=None, cov=None):
-        """ There's a lot of whack numpy-foo in this class...I had to hack
-            a few things to allow this prior to work for flat_X..."""
-
         self.mu = np.atleast_2d(mu)
 
         if sigma is not None:
-            if sigma.shape[0] != mu.shape[-1]:
-                raise ValueError("Shape of std dev vector (sigma) must match shape of mean vector (mu) along axis=-1")
+            if sigma.shape[-1] != mu.shape[-1]:
+                raise ValueError("Shape of std dev vector (sigma) must match"             " shape of mean vector (mu) along axis=-1")
 
             cov = np.diag(sigma**2)
 
         if cov is None:
-            raise ValueError("Must specify vector of sigmas or covariance matrix.")
+            raise ValueError("Must specify vector of sigmas or "
+                             "covariance matrix.")
 
         if 2 > cov.ndim > 3:
             raise ValueError("covariance matrix must be 2D or 3D")
@@ -76,5 +75,9 @@ class LogNormalPrior(LogPrior):
         self._norm -= 0.5*np.log(np.array([np.linalg.det(c) for c in self.cov]))
 
     def sample(self, size=None):
-        s = np.array([np.random.multivariate_normal(mu, cov, size=size) for mu,cov in zip(self.mu, self.cov)])
-        return np.squeeze(np.rollaxis(s, 1))
+        s = np.array([np.random.multivariate_normal(mu, cov, size=size) \
+                      for mu,cov in zip(self.mu, self.cov)])
+        if size is not None:
+            return np.squeeze(np.rollaxis(s, 1))
+        else:
+            return np.squeeze(s)
