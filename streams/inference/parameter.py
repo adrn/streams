@@ -41,6 +41,8 @@ class ModelParameter(object):
             ln_prior = LogPrior()
         self._ln_prior = ln_prior
 
+        self.shape = self.get().shape
+
     def __str__(self):
         return "{0}".format(self.attr)
 
@@ -52,11 +54,10 @@ class ModelParameter(object):
                                   str(self))
 
     def get(self):
-        #return getattr(self.target, self.attr)
         return np.array(getattr(self.target, self.attr))
 
     def set(self, value):
-        setattr(self.target, self.attr, value)
+        setattr(self.target, self.attr, value.reshape(self.shape))
 
     def ln_prior(self):
         return self._ln_prior(self.get())
