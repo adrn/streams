@@ -10,6 +10,7 @@ mpi: False
 # plots / output
 make_plots: False
 output_path: /tmp
+overwrite: True
 #output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
 #output_path: /vega/astro/users/amp2217/output_data # yeti
 #output_path: /Users/adrian/projects/streams/plots # laptop
@@ -40,7 +41,7 @@ particles:
         - _X
 
 # emcee
-walkers: 16 # or auto (2 x number of parameters)
+walkers: auto # or auto (2 x number of parameters)
 burn_in: 0
 steps: 100
 
