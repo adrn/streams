@@ -257,7 +257,7 @@ def main(config_file, job_name=None):
         # Make a corner plot for the potential parameters
         Npp = len(potential_params) # number of potential parameters
         fig = triangle.corner(sampler.flatchain[:,:Npp],
-                    truths=[p.target._truth for p in params[:Npp]])
+                    truths=[p.target._truth for p in model.parameters[:Npp]])
         fig.savefig(os.path.join(path, "corner.png"))
 
         #
