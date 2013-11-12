@@ -30,7 +30,7 @@ particles:
     selection_expr: tub != 0
     parameters:
         - tub # unbinding times
-        - flat_X # all true 6D positions for all particles
+        - _X # all true 6D positions for all particles
 
 # emcee
 walkers: auto # or auto (2 x number of parameters)
