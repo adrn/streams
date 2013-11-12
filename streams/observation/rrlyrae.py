@@ -23,39 +23,39 @@ __all__ = ["rrl_M_V", "rrl_photometric_distance", "rrl_V_minus_I"]
 rrl_V_minus_I = 0.579
 
 def rrl_M_V(fe_h, dfe_h=0.):
-    """ Given an RR Lyra metallicity, return the V-band absolute magnitude. 
-        
-        This expression comes from Benedict et al. 2011 (AJ 142, 187), 
+    """ Given an RR Lyra metallicity, return the V-band absolute magnitude.
+
+        This expression comes from Benedict et al. 2011 (AJ 142, 187),
         equation 14 reads:
             M_v = (0.214 +/- 0.047)([Fe/H] + 1.5) + a_7
-        
+
         where
             a_7 = 0.45 +/- 0.05
-            
+
         From that, we take the absolute V-band magnitude to be:
             Mabs = 0.214 * ([Fe/H] + 1.5) + 0.45
             δMabs = sqrt[(0.047*(δ[Fe/H]))**2 + (0.05)**2]
-        
+
         Parameters
         ----------
         fe_h : numeric or iterable
             Metallicity.
         dfe_h : numeric or iterable
             Uncertainty in the metallicity.
-        
+
     """
-    
+
     if isiterable(fe_h):
         fe_h = np.array(fe_h)
         dfe_h = np.array(dfe_h)
-        
+
         if not fe_h.shape == dfe_h.shape:
             raise ValueError("Shape mismatch: fe_h and dfe_h must have the same shape.")
-    
+
     # V abs mag for RR Lyrae
     Mabs = 0.214*(fe_h + 1.5) + 0.45
     dMabs = np.sqrt((0.047*dfe_h)**2 + (0.05)**2)
-    
+
     return (Mabs, dMabs)
 
 def rrl_photometric_distance(m_V, fe_h):
@@ -64,10 +64,17 @@ def rrl_photometric_distance(m_V, fe_h):
     """
     M_V, dM_V = rrl_M_V(fe_h)
     mu = m_V - M_V
-    
+
     d = 10**(mu/5. + 1) * u.pc
-    
+
     return d.to(u.kpc)
+
+def rrl_d_to_V(d, fe_h):
+    """ Estimate the V-band magnitude of an RR Lyrae given its distance
+        and metallicity.
+    """
+    M_V, dM_V = rrl_M_V(fe_h)
+    return 5*np.log10(d.to(u.pc).value) - 5 + M_V
 
 def sawtooth_fourier(n_max, x):
     total = np.zeros_like(x)
@@ -76,8 +83,8 @@ def sawtooth_fourier(n_max, x):
     return -total
 
 def time_to_phase(time, period, t0):
-    """ Convert an array astropy.time.Time to an array of phases. 
-        
+    """ Convert an array astropy.time.Time to an array of phases.
+
         Parameters
         ----------
         time : astropy.time.Time
@@ -90,8 +97,8 @@ def time_to_phase(time, period, t0):
     return ((time.jd-t0.jd) % period.to(u.day).value) / period.to(u.day).value
 
 def phase_to_time(phase, day, period, t0):
-    """ Convert an array astropy.time.Time to an array of phases. 
-        
+    """ Convert an array astropy.time.Time to an array of phases.
+
         Parameters
         ----------
         phase : array_like
@@ -102,20 +109,20 @@ def phase_to_time(phase, day, period, t0):
         t0 : astropy.time.Time
             Peak time.
     """
-    
+
     T = period.to(u.day).value
-    
+
     tt = t0.jd
     while tt < day.jd:
         tt += T
     tt -= T
-    
+
     time_jd = tt + phase*T
     return Time(time_jd, format='jd', scale='utc')
-    
+
 def extrapolate_light_curve(time, period, t0):
     """ Extrapolate a model light curve to the given times.
-        
+
         Parameters
         ----------
         time : astropy.time.Time
@@ -132,9 +139,9 @@ def extrapolate_light_curve(time, period, t0):
         print("You must pass in a valid astropy.time.Time object or a "
               "parseable representation for 'time' and 't0'.")
         raise
-    
+
     # really simple model for an RR Lyrae light curve...
     phase_t = time_to_phase(time, period, t0)
     mag = sawtooth_fourier(25, phase_t)
-    
+
     return mag
