@@ -57,6 +57,10 @@ class StreamModel(object):
         return np.concatenate(map(np.atleast_1d,
                                   [p.get() for p in self.parameters]))
 
+    @property
+    def ndim(self):
+        return len(self.sample())
+
     @vector.setter
     def vector(self, values):
         ind = 0
@@ -67,6 +71,19 @@ class StreamModel(object):
             else:
                 p.set(values[ind])
                 ind += 1
+
+    def sample(self, size=None):
+        if size is None:
+            return np.hstack([np.ravel(p.sample()) for p in self.parameters])
+
+        for ii in range(size):
+            x = np.hstack([np.ravel(p.sample()) for p in self.parameters])
+            try:
+                d[ii] = x
+            except NameError:
+                d = np.zeros((size,) + x.shape)
+
+        return d
 
     def ln_prior(self):
         ppar = [p.ln_prior() for p in self.parameters]
