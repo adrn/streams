@@ -86,7 +86,8 @@ class StreamModel(object):
         return d
 
     def ln_prior(self):
-        ppar = [p.ln_prior() for p in self.parameters]
+        ppar = np.concatenate([np.atleast_1d(p.ln_prior())\
+                               for p in self.parameters])
         if not np.all(np.isfinite(ppar)):
             return -np.inf
 
@@ -132,7 +133,7 @@ class StreamModel(object):
                             (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
 
         log_p_D_given_x = -0.5*np.sum(-2.*np.log(self.obs_error) + \
-                                      (hel-self.obs_data)**2/self.obs_error**2, axis=1)
+                            (hel-self.obs_data)**2/self.obs_error**2, axis=1)
 
         return np.sum(log_p_D_given_x + log_p_x_given_phi)
 
