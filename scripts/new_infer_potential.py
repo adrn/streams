@@ -59,7 +59,6 @@ def get_pool(config):
     """
 
     if config.get("mpi", False):
-        logger.info("Running with MPI.")
         # Initialize the MPI pool
         pool = MPIPool()
 
@@ -67,6 +66,8 @@ def get_pool(config):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
+        logger.info("Running with MPI.")
+
     elif config.get("threads", 0) > 1:
         logger.info("Running with multiprocessing on {} cores."\
                     .format(config["threads"]))
