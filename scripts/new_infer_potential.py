@@ -50,6 +50,9 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
+def _null(*args, **kwargs):
+    return 0.
+
 def get_pool(config):
     """ Given a config structure, return an MPIPool, a Python
         multiprocessing.Pool, or None.
@@ -126,14 +129,14 @@ def main(config_file, job_name=None):
         config = yaml.load(f.read())
     logger.debug("Configuration file '{0}' loaded.".format(config_file))
 
+    # get a pool object given the configuration parameters
+    pool = get_pool(config)
+
     # determine the output data path
     path = make_path(config)
 
     make_plots = config.get("make_plots", False)
     sampler_file = os.path.join(path, "sampler_data.pickle")
-
-    # get a pool object given the configuration parameters
-    pool = get_pool(config)
 
     # get the potential object specified
     Potential = getattr(sp, config["potential"]["class_name"])
@@ -216,7 +219,7 @@ def main(config_file, job_name=None):
     if "_X" in particle_params:
         prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
         p = ModelParameter(target=_particles, attr="_X", ln_prior=prior)
-        p.ln_prior = lambda: 0. # THIS IS A HACK
+        p.ln_prior = _null # THIS IS A HACK
         model.parameters.append(p)
 
     # read in the number of walkers to use

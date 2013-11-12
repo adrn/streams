@@ -94,10 +94,11 @@ class StreamModel(object):
         return 0.
 
     def ln_likelihood(self, *args):
-        """ This is a simplified version of the likelihood laid out by D. Hogg in
-            Bread and Butter (https://github.com/davidwhogg/BreadAndButter/). The
-            stars are assumed to come from a Gaussian progenitor, described by
-            just two scales -- the tidal radius and velocity dispersion.
+        """ This is a simplified version of the likelihood laid out by Hogg in
+            Bread and Butter (https://github.com/davidwhogg/BreadAndButter/).
+            The stars are assumed to come from a Gaussian progenitor,
+            described by just two scales -- the tidal radius and
+            velocity dispersion.
         """
 
         t1, t2, dt = args
