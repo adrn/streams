@@ -148,58 +148,42 @@ def main(config_file, job_name=None):
                                                ln_prior=prior))
 
     # now add particle parameters
+    particle_params = config["particles"].get("parameters", [])
+    try:
+        Nparticles = config["particles"]["N"]
+    except KeyError:
+        raise ValueError("Must specify number of partices in config file!")
+
     # time unbound / escape time (tub)
-    lo = [t2] * len(_particles)
-    hi = [t1] * len(_particles)
-    prior = LogUniformPrior(lo, hi)
-    model.parameters.append(ModelParameter(target=_particles,
-                                           attr="tub",
-                                           ln_prior=prior))
+    if "tub" in particle_params:
+        lo = [t2] * len(_particles)
+        hi = [t1] * len(_particles)
+        prior = LogUniformPrior(lo, hi)
+        model.parameters.append(ModelParameter(target=_particles,
+                                               attr="tub",
+                                               ln_prior=prior))
+
+    # here I monte carlo transform the error distribution from observed
+    #   to cartesian, then take np.cov and use that for the gaussian prior
+    O = np.array([np.random.normal(obs_data, obs_error) \
+                    for ii in range(1000)])
+    X = _hel_to_gc(O)
+
+    obs_error_gc = []
+    for ii in range(Nparticles):
+        obs_error_gc.append(np.cov(X[:,ii].T))
+    obs_data_gc = _hel_to_gc(obs_data)
 
     # true positions of particles (flat_X)
-    prior = LogNormalPrior(obs_data, obs_error)
-    model.parameters.append(ModelParameter(target=_particles,
-                                           attr="flat_X",
-                                           ln_prior=prior))
+    if "_X" in particle_params:
+        prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
+        model.parameters.append(ModelParameter(target=_particles,
+                                               attr="_X",
+                                               ln_prior=prior))
 
-    # for ii in range(100):
-    #     O = model.parameters[-1].sample()
-    #     X = _hel_to_gc(O)
-    #     plt.plot(X[:,0], X[:,2], marker='.', alpha=0.5, linestyle='none')
-
-    # plt.show()
     return
 
-
-
-
-
-
-
-
-    params.append(ModelParameter(target=p, attr="_value", ln_prior=prior))
-
-    # Other parameters
-    # TODO: flat_X hack...
-    particle_params = config["particles"].get("parameters", [])
-    if "flat_X" in particle_params:
-        particle_params.remove("flat_X")
-        prior = LogUniformPrior(-100., 100.)
-        params.append(Parameter(target=_particles,
-                                attr="flat_X",
-                                ln_prior=prior))
-        ndim += config["particles"]["N"]*6
-
-    # TODO: tub is only available for sgr...
-    for name in particle_params:
-        p = getattr(_particles, name)
-        prior = LogUniformPrior(*p._range)
-        params.append(Parameter(target=p,
-                                attr="_value",
-                                ln_prior=prior))
-        ndim += config["particles"]["N"]
-
-
+    # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
         Nwalkers = model.ndim*2
