@@ -42,7 +42,7 @@ from streams.inference import (ModelParameter, StreamModel,
 from streams.io.sgr import mass_selector
 from streams.observation.gaia import RRLyraeErrorModel
 import streams.potential as sp
-from streams.simulation import config
+from streams.util import make_path
 
 global pool
 pool = None
@@ -98,29 +98,6 @@ def read_simulation(config):
     t1,t2 = time()
 
     return t1,t2,satellite,particles
-
-def make_path(config):
-
-    try:
-        path = config["output_path"]
-    except KeyError:
-        raise ValueError("You must specify 'output_path' in the config file.")
-
-    iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    path = os.path.join(path, config.get("name", iso_now))
-    logger.info("Will write output to '{0}'...".format(path))
-
-    if os.path.exists(path):
-        logger.debug("...output path exists.".format(path))
-        if config.get("overwrite", False):
-            logger.debug("...Overwrite=True, deleting path")
-            shutil.rmtree(path)
-        else:
-            raise IOError("Path {0} already exists!".format(path))
-
-    logger.debug("...creating path now.")
-    os.mkdir(path)
-    return path
 
 def main(config_file, job_name=None):
     """ TODO: """
