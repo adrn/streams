@@ -335,7 +335,7 @@ def sgr(overwrite=False, seed=42):
         os.remove(rv_selection_cache)
 
     if not os.path.exists(rv_selection_cache):
-        lmflag_rv_idx = sgr_rv(sgr_catalina_rv, lm10, Nbins=50, sigma_cut=3.)
+        lmflag_rv_idx = sgr_rv(sgr_catalina_rv, lm10, Nbins=40, sigma_cut=3.)
         fnpickle(lmflag_rv_idx, rv_selection_cache)
     else:
         lmflag_rv_idx = fnunpickle(rv_selection_cache)
@@ -349,7 +349,7 @@ def sgr(overwrite=False, seed=42):
 
     if not os.path.exists(_selection_cache):
         lmflag_dist_idx = sgr_dist(sgr_catalina_rv, lm10,
-                                 Nbins=40, sigma_cut=2.5)
+                                 Nbins=40, sigma_cut=3.)
         fnpickle(lmflag_dist_idx, _selection_cache)
     else:
         lmflag_dist_idx = fnunpickle(_selection_cache)
@@ -387,35 +387,30 @@ def sgr(overwrite=False, seed=42):
     D = sgr_catalina_rv["dist"]
     X,Y = D*np.cos(np.radians(L)),D*np.sin(np.radians(L))
 
-    lead_ix = lmflag_dist_idx[1] & lmflag_rv_idx[1]
-    trail_ix = lmflag_dist_idx[-1] & lmflag_rv_idx[-1]
+    lead_ix = lmflag_dist_idx[1] & lmflag_rv_idx[1] & (np.fabs(B) < 40)
+    trail_ix = lmflag_dist_idx[-1] & lmflag_rv_idx[-1] & (np.fabs(B) < 40)
     trail_ix[L < 180] &= B[L < 180] > -5
+    trail_ix = trail_ix & ( ((L > 230) & (L < 315)) | (L < 180) )
 
-    trail_ix &= np.logical_not((L > 50) & (L < 100) & (sgr_catalina_rv["dist"] < 40))
-
-    # stars selected w/ distance and RV
-    trail_ix_without = trail_ix & (L < 180)
-    trail_ix_with = trail_ix & ( ((L > 230) & (L < 315)) | (L < 180) )
-
-    # deselect stars possibly associated with the bifurcation
-    no_bif = (L > 180) & (L < 360) & (B < 15) & (B > 0)
-    no_bif |= ((L <= 180) & (B < 10) & (B > -5) & (L > 80))
+    #trail_ix &= np.logical_not((L > 50) & (L < 100) & (sgr_catalina_rv["dist"] < 40))
 
     # draw a box around some possible bifurcation members
-    bifurcation_box  = (L > 205) & (L < 225) & (B < 2) & (B > -10) # OR
-    print(sum(bifurcation_box), "bifurcation stars")
-    print(sum(lead_ix), "leading arm stars")
-    print(sum(trail_ix_with), "trailing arm stars (with nearby)")
-    print(sum(trail_ix_without), "trailing arm stars (without nearby)")
+    bif_ix  = (L > 200) & (L < 230) & (B < 2) & (B > -10) & lead_ix
 
-    # only select 5 bifurcation particles
-    ix_with = (lead_ix & (no_bif | bifurcation_box)) | trail_ix_with
-    ix_bif = select_only(ix_with & bifurcation_box, 8)
+    # deselect stars possibly associated with the bifurcation
+    no_bif = (L > 180) & (L < 225) & (B < 20) & (B > 2)
+    no_bif |= (L > 225) & (L < 360) & (B < 17) & (B > 2)
+    no_bif |= ((L <= 180) & (B < 15) & (B > -8) & (L > 50))
+    lead_ix &= no_bif
+
+    print(sum(bif_ix), "bifurcation stars")
+    print(sum(lead_ix), "leading arm stars")
+    print(sum(trail_ix), "trailing arm stars ")
 
     # select 3 clumps in the leading arm
     Nclump = 11
     ix_lead_clumps = np.zeros_like(lead_ix).astype(bool)
-    for clump in [(215,20), (260,40)]:
+    for clump in [(215,17), (245,25), (260,40)]:
         l,d = clump
         x,y = d*np.cos(np.radians(l)),d*np.sin(np.radians(l))
 
@@ -429,23 +424,12 @@ def sgr(overwrite=False, seed=42):
     ix_lead_clumps &= lead_ix
 
     # all southern leading
-    lll = ((L > 80) & (L < 180) & lead_ix)
+    lll = ((L > 45) & (L < 180) & lead_ix)
     print("southern leading", sum(lll))
     ix_lead_clumps |= lll
 
-    # select all trailing stuff in south > 90
-    # ix_trail_clumps_with = np.zeros_like(trail_ix).astype(bool)
-    # ix_trail_clumps_without = np.zeros_like(trail_ix).astype(bool)
-    # for clump in [(45,75), (75,100), (100, 135), (255, 300)]:
-    #     this_ix_with = trail_ix_with & (L > clump[0]) & (L < clump[1])
-    #     this_ix_without = trail_ix_without & (L > clump[0]) & (L < clump[1])
-
-    #     ix_trail_clumps_with |= select_only(this_ix_with, 10)
-    #     ix_trail_clumps_without |= select_only(this_ix_without, 10)
-    ix_trail_clumps_without = trail_ix_without
-
-    ix_trail_clumps_with = np.zeros_like(trail_ix).astype(bool)
-    for clump in [(280,22)]:
+    ix_trail_clumps = np.zeros_like(trail_ix).astype(bool)
+    for clump in [(260,19)]:
         l,d = clump
         x,y = d*np.cos(np.radians(l)),d*np.sin(np.radians(l))
 
@@ -453,51 +437,71 @@ def sgr(overwrite=False, seed=42):
         clump_dist = np.sqrt((X-x)**2 + (Y-y)**2)
         xxx = np.sort(clump_dist[trail_ix])[10]
 
-        this_ix = trail_ix_with & (clump_dist < xxx)
-        ix_trail_clumps_with |= this_ix #select_only(this_ix, 10)
-    ix_trail_clumps_with &= trail_ix_with
+        this_ix = trail_ix & (clump_dist <= xxx)
+        #bonus_trail_ix = trail_ix & (clump_dist > xxx)
+        ix_trail_clumps |= this_ix #select_only(this_ix, 10)
+    ix_trail_clumps &= trail_ix
 
     # all trailing southern
-    ttt = (L > 90) & (L < 180) & (trail_ix_with)
+    ttt = (L > 45) & (L < 180) & (trail_ix)
     print("southern trailing", sum(ttt))
-    ix_trail_clumps_with |= ttt
+    ix_trail_clumps |= ttt
 
-    i1 = integration_time(sgr_catalina_rv[ix_bif]["dist"])
+    i1 = integration_time(sgr_catalina_rv[bif_ix]["dist"])
     i2 = integration_time(sgr_catalina_rv[ix_lead_clumps]["dist"])
-    i3_with = integration_time(sgr_catalina_rv[ix_trail_clumps_with]["dist"])
-    i3_without = integration_time(sgr_catalina_rv[ix_trail_clumps_without]["dist"])
+    i3 = integration_time(sgr_catalina_rv[ix_trail_clumps]["dist"])
 
-    print("final num bifurcation", len(sgr_catalina_rv[ix_bif]))
+    print("final num bifurcation", len(sgr_catalina_rv[bif_ix]))
     print("final num leading arm", len(sgr_catalina_rv[ix_lead_clumps]))
-    print("final num trailing arm", len(sgr_catalina_rv[ix_trail_clumps_with]))
-    targets_with = vstack((sgr_catalina_rv[ix_bif],
-                           sgr_catalina_rv[ix_lead_clumps],
-                           sgr_catalina_rv[ix_trail_clumps_with]))
-    targets_without = vstack((sgr_catalina_rv[ix_bif],
-                              sgr_catalina_rv[ix_lead_clumps],
-                              sgr_catalina_rv[ix_trail_clumps_without]))
+    print("final num trailing arm",len(sgr_catalina_rv[ix_trail_clumps]))
+    print("final total", sum(ix_trail_clumps) + sum(ix_lead_clumps) + sum(bif_ix))
+    print("final total", sum(ix_trail_clumps | ix_lead_clumps | bif_ix))
 
-    print()
-    print("bifurcation", np.sum(i1))
-    print("leading",np.sum(i2))
-    print("trailing",np.sum(i3_with))
-    print("Total:",np.sum(integration_time(targets_with["dist"])))
+    targets = sgr_catalina_rv[ix_trail_clumps | ix_lead_clumps | bif_ix]
+    bonus_targets = sgr_catalina_rv[(lead_ix | trail_ix) & \
+                            ~(ix_trail_clumps | ix_lead_clumps | bif_ix)]
+
+    # print()
+    # print("bifurcation", np.sum(i1))
+    # print("leading",np.sum(i2))
+    # print("trailing",np.sum(i3))
+    # print("Total:",np.sum(integration_time(targets["dist"])))
+
+    tot_time = 0.
+    for t in targets:
+        Vmag = t["<Vmag>"]
+
+        if Vmag < 16.6:
+            tot_time += 1.286
+        elif 16.6 < Vmag < 16.8:
+            tot_time += 1.31
+        elif 16.8 < Vmag < 17.2:
+            tot_time += 1.83
+        elif 17.2 < Vmag < 17.8:
+            tot_time += 2.52
+        elif Vmag > 17.8:
+            tot_time += 4.34
+
+    print ("total time: ", tot_time)
 
     output_file = "sgr.txt"
-    output = targets_with.copy()
+    output = targets.copy()
     output.rename_column("Eta", "hjd0")
     output.rename_column("<Vmag>", "VMagAvg")
     output.keep_columns(["ID", "ra", "dec", "VMagAvg", "Period", "hjd0"])
     ascii.write(output,
                 os.path.join(project_root, "data", "spitzer_targets", output_file), Writer=ascii.Basic)
 
-    # =========================
-    # =========================
-    # with nearby trailing wrap
-    ix_with = (lead_ix & (no_bif | bifurcation_box)) | trail_ix_with
+    output_file = "sgr_bonus.txt"
+    output = bonus_targets.copy()
+    output.rename_column("Eta", "hjd0")
+    output.rename_column("<Vmag>", "VMagAvg")
+    output.keep_columns(["ID", "ra", "dec", "VMagAvg", "Period", "hjd0"])
+    ascii.write(output,
+                os.path.join(project_root, "data", "spitzer_targets", output_file), Writer=ascii.Basic)
 
     # ----------------------------------
-    # Make Lambda-D plot WITH nearby trailing
+    # Make Lambda-D plot
     fig,ax = plt.subplots(1,1,figsize=(6,6),
                           subplot_kw=dict(projection="polar"))
     ax.set_theta_direction(-1)
@@ -505,18 +509,23 @@ def sgr(overwrite=False, seed=42):
     ax.plot(np.radians(lm10["Lambda"]), lm10["dist"],
             marker=',', alpha=0.2, linestyle='none')
 
-    d = sgr_catalina_rv[ix_with]
+    d = sgr_catalina_rv[lead_ix]
     ax.plot(np.radians(d["Lambda"]), d["dist"], marker='.',
-            alpha=0.75, linestyle='none', ms=6, c="#CA0020")
+            alpha=0.75, linestyle='none', ms=8, c="#CA0020", label="leading")
 
-    d = targets_with
+    d = sgr_catalina_rv[trail_ix]
     ax.plot(np.radians(d["Lambda"]), d["dist"], marker='.',
-            alpha=1., linestyle='none', ms=6, c="#31A354")
+            alpha=0.75, linestyle='none', ms=8, c="#5E3C99", label="trailing")
 
+    ax.plot(np.radians(targets["Lambda"]), targets["dist"], marker='.',
+            alpha=0.7, linestyle='none', ms=10, c="#31A354", label="targets",
+            mfc='none', mec='k', mew=1.5)
+
+    ax.legend(loc="lower right")
+    plt.setp(ax.get_legend().get_texts(), fontsize='12')
     ax.set_ylim(0,65)
-    #ax.set_title("with nearby trailing", fontsize=20)
     fig.tight_layout()
-    fig.savefig(os.path.join(notes_path, "with_near_trailing_xz.pdf"))
+    fig.savefig(os.path.join(notes_path, "xz.pdf"))
 
     # ---------------------
     # Make Lambda-Beta plot
@@ -525,69 +534,31 @@ def sgr(overwrite=False, seed=42):
     ax.plot(lm10["Lambda"], lm10["Beta"], marker=',', alpha=0.2,
                 linestyle='none')
 
-    dd = sgr_catalina_rv[ix_with]
-    dd_bif = sgr_catalina_rv[ix_with & bifurcation_box]
-    ax.plot(dd["Lambda"], dd["Beta"], marker='.', alpha=0.75,
-            linestyle='none', ms=6)
+    dd_bif = sgr_catalina_rv[bif_ix]
     ax.plot(dd_bif["Lambda"], dd_bif["Beta"], marker='.', alpha=0.75,
             linestyle='none', ms=6, c="#31A354", label="bifurcation")
 
+    d = sgr_catalina_rv[lead_ix]
+    ax.plot(d["Lambda"], d["Beta"], marker='.',
+           alpha=0.75, linestyle='none', ms=8, c="#CA0020", label="leading")
+
+    d = sgr_catalina_rv[trail_ix]
+    ax.plot(d["Lambda"], d["Beta"], marker='.',
+            alpha=0.75, linestyle='none', ms=8, c="#5E3C99", label="trailing")
+
+    ax.plot(targets["Lambda"], targets["Beta"], marker='.',
+            alpha=0.7, linestyle='none', ms=10, c="#31A354", label="targets",
+            mfc='none', mec='k', mew=1.5)
+
+    ax.legend(loc="lower right")
+    plt.setp(ax.get_legend().get_texts(), fontsize='12')
     ax.set_title("RV-selected CSS RRLs", fontsize=20)
     ax.set_xlabel(r"$\Lambda$ [deg]")
     ax.set_ylabel(r"$B$ [deg]")
     ax.set_xlim(360, 0)
     ax.set_ylim(-45, 45)
     fig.tight_layout()
-    fig.savefig(os.path.join(notes_path, "with_near_trailing_LB.pdf"))
-
-    # ===================
-    # ===================
-    # WITHOUT nearby wrap
-    ix_without = (lead_ix & (no_bif | bifurcation_box)) | trail_ix_without
-
-    # ----------------------------------
-    # Make X-Z plot WITHOUT nearby trailing
-    fig,ax = plt.subplots(1,1,figsize=(6,6),
-                          subplot_kw=dict(projection="polar"))
-    ax.set_theta_direction(-1)
-
-    ax.plot(np.radians(lm10["Lambda"]), lm10["dist"],
-            marker=',', alpha=0.2, linestyle='none')
-
-    d = sgr_catalina_rv[ix_without]
-    ax.plot(np.radians(d["Lambda"]), d["dist"], marker='.',
-            alpha=0.75, linestyle='none', ms=6, c="#CA0020")
-
-    d = targets_without
-    ax.plot(np.radians(d["Lambda"]), d["dist"], marker='.',
-            alpha=1., linestyle='none', ms=6, c="#31A354")
-
-    ax.set_ylim(0,65)
-    ax.set_title("without nearby trailing", fontsize=20)
-    fig.tight_layout()
-    fig.savefig(os.path.join(notes_path, "without_near_trailing_xz.pdf"))
-
-    # ---------------------
-    # Make Lambda-Beta plot
-    fig,ax = plt.subplots(1,1,figsize=(12,5))
-
-    ax.plot(lm10["Lambda"], lm10["Beta"], marker=',', alpha=0.2,
-                linestyle='none')
-
-    dd = sgr_catalina_rv[ix_without]
-    dd_bif = sgr_catalina_rv[ix_without & bifurcation_box]
-    ax.plot(dd["Lambda"], dd["Beta"], marker='.', alpha=0.75,
-            linestyle='none', ms=6)
-    ax.plot(dd_bif["Lambda"], dd_bif["Beta"], marker='.', alpha=0.75,
-            linestyle='none', ms=6, c="#31A354", label="bifurcation")
-
-    ax.set_title("RV-selected CSS RRLs", fontsize=20)
-    ax.set_xlabel(r"$\Lambda$ [deg]")
-    ax.set_ylabel(r"$B$ [deg]")
-    ax.set_xlim(360, 0)
-    ax.set_ylim(-45, 45)
-    fig.tight_layout()
-    fig.savefig(os.path.join(notes_path, "without_near_trailing_LB.pdf"))
+    fig.savefig(os.path.join(notes_path, "LB.pdf"))
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
