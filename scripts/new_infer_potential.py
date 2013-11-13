@@ -106,11 +106,14 @@ def main(config_file, job_name=None):
     with open(config_file) as f:
         config = yaml.load(f.read())
 
-    # get a pool object given the configuration parameters
-    pool = get_pool(config)
-
     # determine the output data path
     path = make_path(config)
+
+    if not os.path.exists(sampler_file):
+        # get a pool object given the configuration parameters
+        pool = get_pool(config)
+
+    logger.info("Will write output to '{0}'...".format(path))
 
     make_plots = config.get("make_plots", False)
     sampler_file = os.path.join(path, "sampler_data.pickle")
@@ -231,10 +234,11 @@ def main(config_file, job_name=None):
         sampler.lnprobfn = None
         sampler.pool = None
         fnpickle(sampler, sampler_file)
+
+        pool.close()
+
     else:
         sampler = fnunpickle(sampler_file)
-
-    pool.close()
 
     if make_plots:
 
