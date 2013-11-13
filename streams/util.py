@@ -53,16 +53,14 @@ def make_path(config):
 
     iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     path = os.path.join(path, config.get("name", iso_now))
-    logger.info("Will write output to '{0}'...".format(path))
 
     if os.path.exists(path):
-        logger.debug("...output path exists.".format(path))
         if config.get("overwrite", False):
-            logger.debug("...Overwrite=True, deleting path")
             shutil.rmtree(path)
         else:
             raise IOError("Path {0} already exists!".format(path))
 
-    logger.debug("...creating path now.")
-    os.mkdir(path)
+    if not if os.path.exists(path):
+        os.mkdir(path)
+
     return path
