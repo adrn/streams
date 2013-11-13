@@ -106,13 +106,13 @@ def main(config_file, job_name=None):
     with open(config_file) as f:
         config = yaml.load(f.read())
 
+    # TODO: write a separate script just for plotting...
+    # get a pool object given the configuration parameters
+    pool = get_pool(config)
+
     # determine the output data path
     path = make_path(config)
     sampler_file = os.path.join(path, "sampler_data.pickle")
-
-    if not os.path.exists(sampler_file):
-        # get a pool object given the configuration parameters
-        pool = get_pool(config)
 
     logger.info("Will write output to '{0}'...".format(path))
 
