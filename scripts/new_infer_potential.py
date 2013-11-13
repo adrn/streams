@@ -267,9 +267,13 @@ def main(config_file, job_name=None):
             XX = sampler.flatchain[:,start:stop]
             OO = _gc_to_hel(XX)
 
+            extents = zip(obs_data[ii] - 3*obs_error[ii], \
+                          obs_data[ii] + 3*obs_error[ii])
+            extents = [(t2,t1)] + extents
             fig = triangle.corner(np.hstack((tub[:,np.newaxis], OO)),
                                   labels=['tub','l','b','D',\
-                                          r'$\mu_l$', r'$\mu_l$','$v_r$'])
+                                          r'$\mu_l$', r'$\mu_l$','$v_r$'],
+                                  extents=extents)
             fig.suptitle("Particle {0}".format(ii))
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
