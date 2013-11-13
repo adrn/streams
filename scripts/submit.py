@@ -53,7 +53,8 @@ def main(config_file, walltime, memory, job_name):
             name = "adrn"
     else:
         name = job_name
-
+    
+    config["walkers"] = min(config["walkers"], 128)
     d = config["walkers"] / 4
     if int(d) != d:
         raise ValueError()
