@@ -54,9 +54,8 @@ def make_path(config):
     iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     path = os.path.join(path, config.get("name", iso_now))
 
-    if os.path.exists(path):
-        if config.get("overwrite", False):
-            shutil.rmtree(path)
+    if os.path.exists(path) and config.get("overwrite", False):
+        shutil.rmtree(path)
 
     if not os.path.exists(path):
         os.mkdir(path)
