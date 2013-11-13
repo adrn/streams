@@ -108,6 +108,7 @@ def main(config_file, job_name=None):
 
     # determine the output data path
     path = make_path(config)
+    sampler_file = os.path.join(path, "sampler_data.pickle")
 
     if not os.path.exists(sampler_file):
         # get a pool object given the configuration parameters
@@ -116,7 +117,6 @@ def main(config_file, job_name=None):
     logger.info("Will write output to '{0}'...".format(path))
 
     make_plots = config.get("make_plots", False)
-    sampler_file = os.path.join(path, "sampler_data.pickle")
 
     # get the potential object specified
     Potential = getattr(sp, config["potential"]["class_name"])
