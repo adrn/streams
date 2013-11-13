@@ -57,8 +57,6 @@ def make_path(config):
     if os.path.exists(path):
         if config.get("overwrite", False):
             shutil.rmtree(path)
-        else:
-            raise IOError("Path {0} already exists!".format(path))
 
     if not os.path.exists(path):
         os.mkdir(path)
