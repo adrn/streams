@@ -60,7 +60,7 @@ def make_path(config):
         else:
             raise IOError("Path {0} already exists!".format(path))
 
-    if not if os.path.exists(path):
+    if not os.path.exists(path):
         os.mkdir(path)
 
     return path
