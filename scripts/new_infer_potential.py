@@ -213,7 +213,8 @@ def main(config_file, job_name=None):
     # Satellite parameters
     #
     # TODO: infer the damn satellite position!
-    satellite_params = config["satellite"].get("parameters", [])
+    satellite_config = config.get("satellite", dict)
+    satellite_params = satellite_config.get("parameters", [])
 
     # true position of the satellite
     if "_X" in satellite_params:
