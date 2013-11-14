@@ -285,7 +285,7 @@ def main(config_file, job_name=None):
             stop = start + 6
             XX = sampler.flatchain[:,start:stop]
             OO = _gc_to_hel(XX)
-            truths = true_obs_data[ii]
+            truths = np.append(_particles.tub[ii], true_obs_data[ii])
 
             extents = zip(obs_data[ii] - 3*obs_error[ii], \
                           obs_data[ii] + 3*obs_error[ii])
