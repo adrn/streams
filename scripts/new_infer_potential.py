@@ -337,8 +337,8 @@ def main(config_file, job_name=None):
         OO = _gc_to_hel(XX)
         truths = true_obs_data
 
-        extents = zip(sat_obs_data - 3*sat_obs_error[ii], \
-                      sat_obs_data + 3*sat_obs_error[ii])
+        extents = zip(sat_obs_data - 3*sat_obs_error, \
+                      sat_obs_data + 3*sat_obs_error)
         fig = triangle.corner(OO,
                               labels=['l','b','D',\
                                       r'$\mu_l$', r'$\mu_l$','$v_r$'],
