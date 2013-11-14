@@ -40,6 +40,10 @@ particles:
         - tub
         - _X
 
+satellite:
+    parameters:
+        -
+
 # emcee
 walkers: auto # or auto (2 x number of parameters)
 burn_in: 0
