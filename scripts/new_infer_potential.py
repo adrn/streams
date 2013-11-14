@@ -128,11 +128,11 @@ def main(config_file, job_name=None):
     t1,t2,satellite,_particles = read_simulation(config)
 
     # TODO: right now error specification in yml doesn't propagate
-    if config.has_key("errors"):
-        factor = config["errors"].get("global_factor", 1.)
-        error_model = RRLyraeErrorModel(units=usys,
-                                        factor=factor)
-        obs_data, obs_error = _particles.observe(error_model)
+    factor = config["errors"].get("global_factor", 1.)
+    error_model = RRLyraeErrorModel(units=usys,
+                                    factor=factor)
+    obs_data, obs_error = _particles.observe(error_model)
+    true_obs_data = _gc_to_hel(_particles._X)
 
     # now create the model and start adding model parameters
     model = StreamModel(potential, satellite, _particles,
@@ -270,6 +270,7 @@ def main(config_file, job_name=None):
             stop = start + 6
             XX = sampler.flatchain[:,start:stop]
             OO = _gc_to_hel(XX)
+            truths = true_obs_data[ii]
 
             extents = zip(obs_data[ii] - 3*obs_error[ii], \
                           obs_data[ii] + 3*obs_error[ii])
@@ -277,7 +278,8 @@ def main(config_file, job_name=None):
             fig = triangle.corner(np.hstack((tub[:,np.newaxis], OO)),
                                   labels=['tub','l','b','D',\
                                           r'$\mu_l$', r'$\mu_l$','$v_r$'],
-                                  extents=extents)
+                                  extents=extents,
+                                  truths=truths)
             fig.suptitle("Particle {0}".format(ii))
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
