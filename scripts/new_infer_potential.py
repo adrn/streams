@@ -132,10 +132,11 @@ def main(config_file, job_name=None):
     error_model = RRLyraeErrorModel(units=usys,
                                     factor=factor)
     obs_data, obs_error = _particles.observe(error_model)
-    true_obs_data = _gc_to_hel(_particles._X)
+    particles = _particles.copy()
+    particles._X = _hel_to_gc(obs_data)
 
     # now create the model and start adding model parameters
-    model = StreamModel(potential, satellite, _particles,
+    model = StreamModel(potential, satellite, particles,
                         obs_data, obs_error)
 
     ##########################################################################
@@ -211,6 +212,10 @@ def main(config_file, job_name=None):
     # Satellite parameters
     #
     # TODO: infer the damn satellite position!
+    satellite_params = config["satellite"].get("parameters", [])
+
+    # true position of the satellite
+    if "_X" in satellite_params:
 
 
     # read in the number of walkers to use
@@ -270,6 +275,7 @@ def main(config_file, job_name=None):
         # ---------
         # Now make 7x7 corner plots for each particle
         # TODO: need these plots to fail if not specified in config...
+        true_obs_data = _gc_to_hel(_particles._X)
         for ii in range(Nparticles):
             tub = sampler.flatchain[:,Npp+ii]
 
