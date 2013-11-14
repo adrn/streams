@@ -217,7 +217,7 @@ def main(config_file, job_name=None):
 
     # true position of the satellite
     if "_X" in satellite_params:
-
+        pass
 
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
