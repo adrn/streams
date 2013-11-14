@@ -131,10 +131,25 @@ class StreamModel(object):
         log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) +
                             (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
 
-        log_p_D_given_x = -0.5*np.sum(-2.*np.log(self.obs_error) + \
-                            (hel-self.obs_data)**2/self.obs_error**2, axis=1)
+        try:
+            obs_data = self.particles.obs_data
+            obs_error = self.particles.obs_error
+            log_p_D_given_x = -0.5*np.sum(-2.*np.log(obs_data) + \
+                                (hel-obs_data)**2/obs_error**2, axis=1)
+        except AttributeError:
+            log_p_D_given_x = 0.
 
-        return np.sum(log_p_D_given_x + log_p_x_given_phi)
+        try:
+            obs_data = self.satellite.obs_data
+            obs_error = self.satellite.obs_error
+            log_p_D_given_x_sat = -0.5*np.sum(-2.*np.log(obs_data) + \
+                                (hel-obs_data)**2/obs_error**2)
+        except AttributeError:
+            log_p_D_given_x_sat = 0.
+
+        return np.sum(log_p_D_given_x + \
+                      log_p_D_given_x_sat + \
+                      log_p_x_given_phi)
 
     def ln_posterior(self, *args):
         lp = self.ln_prior()
