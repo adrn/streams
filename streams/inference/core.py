@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 #   - frame (heliocentric)
 class StreamModel(object):
 
-    def __init__(self, potential, satellite, true_particles,
+    def __init__(self, potential, satellite, particles,
                  obs_data, obs_error, parameters=[]):
         """ ...
 
@@ -43,7 +43,7 @@ class StreamModel(object):
 
         self.potential = potential
         self.satellite = satellite
-        self.true_particles = true_particles
+        self.particles = particles
         self.parameters = parameters
         self.obs_data = obs_data
         self.obs_error = obs_error
@@ -104,21 +104,19 @@ class StreamModel(object):
         t1, t2, dt = args
 
         # The true positions/velocities of the particles are parameters
-        Nparticles = len(self.true_particles)
-        x = self.true_particles._X
+        Nparticles = len(self.particles)
+        x = self.particles._X
         hel = _gc_to_hel(x)
 
         acc = np.zeros((Nparticles+1,3))
         s,p = satellite_particles_integrate(self.satellite,
-                                        self.true_particles,
+                                        self.particles,
                                         self.potential,
                                         potential_args=(Nparticles+1, acc),
                                         time_spec=dict(t1=t1, t2=t2, dt=dt))
 
         # These are the unbinding times for each particle
-        t_idx = [np.argmin(np.fabs(s._t - tub)) \
-                    for tub in self.true_particles.tub]
-        #t_idx = -self.true_particles.tub
+        t_idx = [np.argmin(np.fabs(s._t - tub)) for tub in self.particles.tub]
 
         Ntimesteps  = p._X.shape[0]
 
