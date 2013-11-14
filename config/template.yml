@@ -42,7 +42,7 @@ particles:
 
 satellite:
     parameters:
-        -
+        - _X
 
 # emcee
 walkers: auto # or auto (2 x number of parameters)
