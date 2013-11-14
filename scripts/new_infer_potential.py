@@ -138,7 +138,9 @@ def main(config_file, job_name=None):
     model = StreamModel(potential, satellite, _particles,
                         obs_data, obs_error)
 
-    # first add the potential parameters
+    ##########################################################################
+    # Potential parameters
+    #
     potential_params = config["potential"].get("parameters", dict())
     for name,meta in potential_params.items():
         p = getattr(potential, name)
@@ -166,7 +168,9 @@ def main(config_file, job_name=None):
                                                attr="_value",
                                                ln_prior=prior))
 
-    # now add particle parameters
+    ##########################################################################
+    # Particle parameters
+    #
     particle_params = config["particles"].get("parameters", [])
 
     try:
@@ -196,17 +200,18 @@ def main(config_file, job_name=None):
     obs_error_gc = np.array(obs_error_gc)
     obs_data_gc = _hel_to_gc(obs_data)
 
-    # TODO: plot observed data
-
     # true positions of particles (flat_X)
     if "_X" in particle_params:
         prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
         p = ModelParameter(target=_particles, attr="_X", ln_prior=prior)
-        p.ln_prior = _null # THIS IS A HACK
+        p.ln_prior = _null # THIS IS A HACK?
         model.parameters.append(p)
 
-    # check to see if the satellite position is to be inferred
+    ##########################################################################
+    # Satellite parameters
+    #
     # TODO: infer the damn satellite position!
+
 
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
@@ -241,6 +246,8 @@ def main(config_file, job_name=None):
         sampler = fnunpickle(sampler_file)
 
     if make_plots:
+
+        # TODO: plot observed data / true particles
 
         # Make a corner plot for the potential parameters
         Npp = len(potential_params) # number of potential parameters
