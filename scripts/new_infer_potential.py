@@ -125,20 +125,19 @@ def main(config_file, job_name=None):
 
     # Actually get simulation data
     np.random.seed(config["seed"])
-    t1,t2,satellite,_particles = read_simulation(config)
+    t1,t2,_satellite,_particles = read_simulation(config)
 
     # TODO: right now error specification in yml doesn't propagate
     factor = config["errors"].get("global_factor", 1.)
     error_model = RRLyraeErrorModel(units=usys,
                                     factor=factor)
     obs_data, obs_error = _particles.observe(error_model)
+    sat_obs_data, sat_obs_error = _satellite.observe(error_model)
+
     particles = _particles.copy()
-    particles._X = _hel_to_gc(obs_data)
+    satellite = _satellite.copy()
 
-    # now create the model and start adding model parameters
-    model = StreamModel(potential, satellite, particles,
-                        obs_data, obs_error)
-
+    model_parameters = []
     ##########################################################################
     # Potential parameters
     #
@@ -165,7 +164,7 @@ def main(config_file, job_name=None):
         else:
             prior = LogPrior()
 
-        model.parameters.append(ModelParameter(target=p,
+        model_parameters.append(ModelParameter(target=p,
                                                attr="_value",
                                                ln_prior=prior))
 
@@ -184,7 +183,7 @@ def main(config_file, job_name=None):
         lo = [t2] * len(particles)
         hi = [t1] * len(particles)
         prior = LogUniformPrior(lo, hi)
-        model.parameters.append(ModelParameter(target=particles,
+        model_parameters.append(ModelParameter(target=particles,
                                                attr="tub",
                                                ln_prior=prior))
 
@@ -204,10 +203,14 @@ def main(config_file, job_name=None):
 
     # true positions of particles (flat_X)
     if "_X" in particle_params:
+        particles._X = _hel_to_gc(obs_data)
+        particles.obs_data = obs_data
+        particles.obs_error = obs_error
+
         prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
         p = ModelParameter(target=particles, attr="_X", ln_prior=prior)
         p.ln_prior = _null # THIS IS A HACK?
-        model.parameters.append(p)
+        model_parameters.append(p)
 
     ##########################################################################
     # Satellite parameters
@@ -216,15 +219,39 @@ def main(config_file, job_name=None):
     satellite_config = config.get("satellite", dict())
     satellite_params = satellite_config.get("parameters", [])
 
+    # here I monte carlo transform the error distribution from observed
+    #   to cartesian, then take np.cov and use that to sample new satellite
+    #   positions
+    O = np.array([np.random.normal(sat_obs_data, sat_obs_error) \
+                    for ii in range(1000)])
+    X = _hel_to_gc(O)
+
+    sat_obs_error_gc = []
+    for ii in range(Nparticles):
+        sat_obs_error_gc.append(np.cov(X[:,ii].T))
+
+    sat_obs_error_gc = np.array(sat_obs_error_gc)
+    sat_obs_data_gc = _hel_to_gc(sat_obs_data)
+
     # true position of the satellite
     if "_X" in satellite_params:
-        pass
+        satellite._X = _hel_to_gc(sat_obs_data)
+        satellite.obs_data = sat_obs_data
+        satellite.obs_error = sat_obs_error
+
+        prior = LogNormalPrior(sat_obs_data_gc, cov=sat_obs_error_gc)
+        p = ModelParameter(target=satellite, attr="_X", ln_prior=prior)
+        p.ln_prior = _null # THIS IS A HACK?
+        model_parameters.append(p)
 
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
         Nwalkers = model.ndim*2 + 2
 
+    # now create the model
+    model = StreamModel(potential, satellite, particles,
+                        parameters=model_parameters)
     p0 = model.sample(size=Nwalkers)
 
     if not os.path.exists(sampler_file):

@@ -22,6 +22,8 @@ from ..coordinates import _gc_to_hel, _hel_to_gc
 
 __all__ = ["Particle"]
 
+# TODO: make ObservedParticle class?
+
 class Particle(DynamicalBase):
 
     def __init__(self, r, v, m=None, units=None):
@@ -245,3 +247,12 @@ class Particle(DynamicalBase):
 
     def __len__(self):
         return self.nparticles
+
+class ObservedParticle(Particle):
+
+    def __init__(self, r, v, obs_data, obs_error, m=None, units=None):
+        """ TODO: ... """
+
+        super(ObservedParticle, self).__init__(r, v, m, units)
+        self.obs_data = obs
+        self.obs_error = obs_error
