@@ -30,23 +30,18 @@ logger = logging.getLogger(__name__)
 #   - frame (heliocentric)
 class StreamModel(object):
 
-    def __init__(self, potential, satellite, particles,
-                 obs_data, obs_error, parameters=[]):
+    def __init__(self, potential, satellite, particles, parameters=[]):
         """ ...
 
             Parameters
             ----------
             ...
         """
-        if obs_data.shape != obs_error.shape:
-            raise ValueError("obs_data shape must match obs_errors shape")
 
         self.potential = potential
         self.satellite = satellite
         self.particles = particles
         self.parameters = parameters
-        self.obs_data = obs_data
-        self.obs_error = obs_error
 
     def __call__(self, p, *args):
         self.vector = p
