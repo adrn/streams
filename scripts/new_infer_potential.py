@@ -226,11 +226,7 @@ def main(config_file, job_name=None):
                     for ii in range(1000)])
     X = _hel_to_gc(O)
 
-    sat_obs_error_gc = []
-    for ii in range(Nparticles):
-        sat_obs_error_gc.append(np.cov(X[:,ii].T))
-
-    sat_obs_error_gc = np.array(sat_obs_error_gc)
+    sat_obs_error_gc = np.array([np.cov(X[:,0].T)])
     sat_obs_data_gc = _hel_to_gc(sat_obs_data)
 
     # true position of the satellite
