@@ -335,10 +335,13 @@ def main(config_file, job_name=None):
 
         XX = sampler.flatchain[:,start:stop]
         OO = _gc_to_hel(XX)
-        truths = true_obs_data
+        truths = np.squeeze(true_obs_data)
+        
+        so = np.squeeze(sat_obs_data)
+        se = np.squeeze(sat_obs_error)
+        extents = zip(so - 3*se, \
+                      so + 3*se)
 
-        extents = zip(sat_obs_data - 3*sat_obs_error, \
-                      sat_obs_data + 3*sat_obs_error)
         fig = triangle.corner(OO,
                               labels=['l','b','D',\
                                       r'$\mu_l$', r'$\mu_l$','$v_r$'],
