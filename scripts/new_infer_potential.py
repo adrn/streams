@@ -181,15 +181,16 @@ def main(config_file, job_name=None):
 
     # time unbound / escape time (tub)
     if "tub" in particle_params:
-        lo = [t2] * len(_particles)
-        hi = [t1] * len(_particles)
+        lo = [t2] * len(particles)
+        hi = [t1] * len(particles)
         prior = LogUniformPrior(lo, hi)
-        model.parameters.append(ModelParameter(target=_particles,
+        model.parameters.append(ModelParameter(target=particles,
                                                attr="tub",
                                                ln_prior=prior))
 
     # here I monte carlo transform the error distribution from observed
-    #   to cartesian, then take np.cov and use that for the gaussian prior
+    #   to cartesian, then take np.cov and use that to sample new particle
+    #   positions
     O = np.array([np.random.normal(obs_data, obs_error) \
                     for ii in range(1000)])
     X = _hel_to_gc(O)
@@ -204,7 +205,7 @@ def main(config_file, job_name=None):
     # true positions of particles (flat_X)
     if "_X" in particle_params:
         prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
-        p = ModelParameter(target=_particles, attr="_X", ln_prior=prior)
+        p = ModelParameter(target=particles, attr="_X", ln_prior=prior)
         p.ln_prior = _null # THIS IS A HACK?
         model.parameters.append(p)
 
