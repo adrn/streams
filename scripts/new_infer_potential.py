@@ -132,7 +132,11 @@ def main(config_file, job_name=None):
     error_model = RRLyraeErrorModel(units=usys,
                                     factor=factor)
     obs_data, obs_error = _particles.observe(error_model)
-    sat_obs_data, sat_obs_error = _satellite.observe(error_model)
+
+    # TODO: satellite has different errors from individual stars...
+    sat_error_model = RRLyraeErrorModel(units=usys,
+                                        factor=0.1)
+    sat_obs_data, sat_obs_error = _satellite.observe(sat_error_model)
 
     particles = _particles.copy()
     satellite = _satellite.copy()
@@ -322,6 +326,26 @@ def main(config_file, job_name=None):
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
             plt.clf()
+
+        # ---------
+        # Now make 6x6 corner plot for satellite
+        true_obs_data = _gc_to_hel(_satellite._X)
+        start = Npp + Nparticles + 6*Nparticles
+        stop = start + 6
+
+        XX = sampler.flatchain[:,start:stop]
+        OO = _gc_to_hel(XX)
+        truths = true_obs_data
+
+        extents = zip(sat_obs_data - 3*sat_obs_error[ii], \
+                      sat_obs_data + 3*sat_obs_error[ii])
+        fig = triangle.corner(OO,
+                              labels=['l','b','D',\
+                                      r'$\mu_l$', r'$\mu_l$','$v_r$'],
+                              extents=extents,
+                              truths=truths)
+        fig.suptitle("Satellite")
+        fig.savefig(os.path.join(path, "satellite_corner.png"))
 
         # fig = plt.figure(figsize=(6,4))
         # ax = fig.add_subplot(111)
