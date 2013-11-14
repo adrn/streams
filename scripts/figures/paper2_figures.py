@@ -14,9 +14,10 @@ import inspect
 # Third-party
 import astropy.units as u
 from astropy.io.misc import fnpickle, fnunpickle
-import daft
 import numpy as np
 import matplotlib
+matplotlib.use("agg")
+import daft
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib import rc_context, rcParams, cm
@@ -38,8 +39,37 @@ plot_path = "plots/paper2/"
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
 
-def graphical_model():
-    pass
+def graphical_model(**kwargs):
+
+    filename = os.path.join(plot_path, "graphical_model.png")
+
+    # Instantiate the PGM.
+    pgm = daft.PGM([3.5, 2.5], origin=[0.3, 0.3])
+
+    # Hierarchical parameters.
+    pgm.add_node(daft.Node("sigma_x", r"$\Sigma_{\rm p}$,$x_{\rm p}$", 0.5, 2, fixed=True))
+    pgm.add_node(daft.Node("beta", r"$\beta$", 1.5, 2))
+
+    # Latent variable.
+    pgm.add_node(daft.Node("w", r"$w_n$", 1, 1))
+
+    # Data.
+    pgm.add_node(daft.Node("x", r"$x_n$", 2, 1, observed=True))
+
+    # Add in the edges.
+    pgm.add_edge("sigma_x", "beta")
+    pgm.add_edge("beta", "w")
+    pgm.add_edge("w", "x")
+    pgm.add_edge("beta", "x")
+
+    # And a plate.
+    pgm.add_plate(daft.Plate([0.5, 0.5, 2, 1], label=r"$n = 1, \cdots, N$",
+        shift=-0.1))
+
+    # Render and save.
+    pgm.render()
+    #pgm.figure.savefig("classic.pdf")
+    pgm.figure.savefig(filename, dpi=150)
 
 
 if __name__ == '__main__':
@@ -96,6 +126,11 @@ if __name__ == '__main__':
         _print_funcs()
         print("="*79)
         sys.exit(0)
+
+    if args.function is None:
+        print ("You must specify a function name! Use -l to get the list "
+               "of functions.")
+        sys.exit(1)
 
     func = getattr(sys.modules[__name__], args.__dict__.get("function"))
     func(**kwargs)
