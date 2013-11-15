@@ -99,6 +99,15 @@ def read_simulation(config):
 
     return t1,t2,satellite,particles
 
+def _parse_quantity(q):
+    try:
+        val,unit = q.split()
+    except AttributeError:
+        val = q
+        unit = u.dimensionless_unscaled
+
+    return u.Quantity(float(val), unit)
+
 def main(config_file, job_name=None):
     """ TODO: """
 
@@ -133,10 +142,15 @@ def main(config_file, job_name=None):
                                     factor=factor)
     obs_data, obs_error = _particles.observe(error_model)
 
-    # TODO: satellite has different errors from individual stars...
+    # satellite has different errors from individual stars...
+    # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
     sat_error_model = RRLyraeErrorModel(units=usys,
                                         factor=0.1)
-    sat_obs_data, sat_obs_error = _satellite.observe(sat_error_model)
+    sat_obs_data, sat_obs_error = _satellite.observe(sat_error_model,
+                                                     mul_err=0.2*u.mas/u.yr,
+                                                     mub_err=0.2*u.mas/u.yr,
+                                                     D_err=2.5*u.kpc,
+                                                     vr_err=5*u.km/u.s)
 
     particles = _particles.copy()
     satellite = _satellite.copy()
@@ -152,17 +166,8 @@ def main(config_file, job_name=None):
         if meta.has_key("range"):
             # TODO: fix when astropy fixed...
             #lo,hi = map(u.Quantity, meta["range"])
-            lo_hi = []
-            for ii in range(2):
-                try:
-                    val,unit = meta["range"][ii].split()
-                except AttributeError:
-                    val = meta["range"][ii]
-                    unit = u.dimensionless_unscaled
-
-                lo_hi.append(u.Quantity(float(val), unit))
-            lo, hi = lo_hi
-
+            lo = _parse_quantity(meta["range"][0])
+            hi = _parse_quantity(meta["range"][1])
             prior = LogUniformPrior(lo.decompose(usys).value,
                                     hi.decompose(usys).value)
         else:
@@ -336,7 +341,7 @@ def main(config_file, job_name=None):
         XX = sampler.flatchain[:,start:stop]
         OO = _gc_to_hel(XX)
         truths = np.squeeze(true_obs_data)
-        
+
         so = np.squeeze(sat_obs_data)
         se = np.squeeze(sat_obs_error)
         extents = zip(so - 3*se, \
