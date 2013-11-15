@@ -141,7 +141,7 @@ class RRLyraeErrorModel(object):
         else:
             D_err = self.D_err
 
-        if not has_attr(D_err, "unit") or D_err.unit == u.dimensionless_unscaled:
+        if not hasattr(D_err, "unit") or D_err.unit == u.dimensionless_unscaled:
             D_err = D_err*D
         else:
             D_err = D_err.decompose(self.units).value
