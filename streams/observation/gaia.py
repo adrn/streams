@@ -133,7 +133,7 @@ class RRLyraeErrorModel(object):
         mul_err = dmu if self.mul_err is None else self.mul_err
         mub_err = dmu if self.mub_err is None else self.mub_err
         mul_err = mul_err.decompose(self.units).value
-        mub_err = mul_err.decompose(self.units).value
+        mub_err = mub_err.decompose(self.units).value
 
         # flat distance error:
         if self.D_err is None:
