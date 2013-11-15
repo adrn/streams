@@ -151,10 +151,10 @@ def main(config_file, job_name=None):
     # satellite has different errors from individual stars...
     # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
     sat_error_model = RRLyraeErrorModel(units=usys,
-                                        mul_err=0.2*u.mas/u.yr,
-                                        mub_err=0.2*u.mas/u.yr,
-                                        D_err=0.05,
-                                        vr_err=5*u.km/u.s)
+                                        mul_err=1000.*u.mas/u.yr,
+                                        mub_err=1000.*u.mas/u.yr,
+                                        D_err=1.,
+                                        vr_err=200.*u.km/u.s)
     sat_obs_data, sat_obs_error = _satellite.observe(sat_error_model)
 
     particles = _particles.copy()
