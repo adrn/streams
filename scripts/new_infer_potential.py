@@ -138,19 +138,24 @@ def main(config_file, job_name=None):
 
     # TODO: right now error specification in yml doesn't propagate
     factor = config["errors"].get("global_factor", 1.)
+    particle_errors = dict()
+    for k,v in config["errors"].items():
+        if k == "global_factor": continue
+        particle_errors["{}_err".format(k)] = _parse_quantity(v)
+
     error_model = RRLyraeErrorModel(units=usys,
-                                    factor=factor)
+                                    factor=factor,
+                                    **particle_errors)
     obs_data, obs_error = _particles.observe(error_model)
 
     # satellite has different errors from individual stars...
     # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
     sat_error_model = RRLyraeErrorModel(units=usys,
-                                        factor=0.1)
-    sat_obs_data, sat_obs_error = _satellite.observe(sat_error_model,
-                                                     mul_err=0.2*u.mas/u.yr,
-                                                     mub_err=0.2*u.mas/u.yr,
-                                                     D_err=2.5*u.kpc,
-                                                     vr_err=5*u.km/u.s)
+                                        mul_err=0.2*u.mas/u.yr,
+                                        mub_err=0.2*u.mas/u.yr,
+                                        D_err=0.05,
+                                        vr_err=5*u.km/u.s)
+    sat_obs_data, sat_obs_error = _satellite.observe(sat_error_model)
 
     particles = _particles.copy()
     satellite = _satellite.copy()
