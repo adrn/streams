@@ -100,13 +100,16 @@ def proper_motion_error(V, V_minus_I):
 # TODO: generalize this, each dimension should have a function?
 class RRLyraeErrorModel(object):
 
-    def __init__(self, units, factor=1.):
+    def __init__(self, units, factor=1., **kwargs):
         """ TODO: need way to change radial velocity error / distance error """
         self.units = units
         self.factor = factor
 
-    def __call__(self, X, l_err=None, b_err=None, D_err=None,
-                          mul_err=None, mub_err=None, vr_err=None):
+        for k in ["l_err", "b_err", "D_err", "mul_err", "mub_err", "vr_err"]:
+            v = kwargs.get(k, None)
+            setattr(self, k, v)
+
+    def __call__(self, X):
         """ Compute our canonical errors at a grid of given 6D
             positions, X.
 
@@ -124,17 +127,19 @@ class RRLyraeErrorModel(object):
         V = apparent_magnitude(M_V, D*r_unit)
 
         # proper motion error, from Gaia:
-        if mul_err is None or mub_err is None:
+        if self.mul_err is None or self.mub_err is None:
             dmu = proper_motion_error(V, rrl_V_minus_I)
 
-        mul_err = dmu if mul_err is None else mul_err
-        mub_err = dmu if mub_err is None else mub_err
+        mul_err = dmu if self.mul_err is None else self.mul_err
+        mub_err = dmu if self.mub_err is None else self.mub_err
         mul_err = mul_err.decompose(self.units).value
         mub_err = mul_err.decompose(self.units).value
 
         # flat distance error:
-        if D_err is None:
+        if self.D_err is None:
             D_err = 0.02
+        else:
+            D_err = self.D_err
 
         if not has_attr(D_err, "unit") or D_err.unit == u.dimensionless_unscaled:
             D_err = D_err*D
@@ -142,11 +147,13 @@ class RRLyraeErrorModel(object):
             D_err = D_err.decompose(self.units).value
 
         # fixed radial velocity error:
-        if vr_err is None:
+        if self.vr_err is None:
             vr_err = 10*u.km/u.s*np.ones(len(l))
         else:
-            if vr_err.ndim == 0:
-                vr_err = np.repeat(vr_err, len(l))
+            if self.vr_err.ndim == 0:
+                vr_err = np.repeat(self.vr_err, len(l))
+            else:
+                vr_err = self.vr_err
 
         vr_err = vr_err.decompose(self.units).value
 
