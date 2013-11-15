@@ -43,6 +43,20 @@ class StreamModel(object):
         self.particles = particles
         self.parameters = parameters
 
+        try:
+            self.obs_data = self.particles.obs_data.copy()
+            self.obs_error = self.particles.obs_error.copy()
+        except AttributeError:
+            self.obs_data = None
+            self.obs_error = None
+
+        try:
+            self.obs_data_sat = self.satellite.obs_data.copy()
+            self.obs_error_sat = self.satellite.obs_error.copy()
+        except AttributeError:
+            self.obs_data_sat = None
+            self.obs_error_sat = None
+
     def __call__(self, p, *args):
         self.vector = p
         return self.ln_posterior(*args)
@@ -103,6 +117,9 @@ class StreamModel(object):
         x = self.particles._X
         hel = _gc_to_hel(x)
 
+        x_sat = self.satellite._X
+        hel_sat = _gc_to_hel(x_sat)
+
         acc = np.zeros((Nparticles+1,3))
         s,p = satellite_particles_integrate(self.satellite,
                                         self.particles,
@@ -126,20 +143,16 @@ class StreamModel(object):
         log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) +
                             (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
 
-        try:
-            obs_data = self.particles.obs_data
-            obs_error = self.particles.obs_error
-            log_p_D_given_x = -0.5*np.sum(-2.*np.log(obs_data) + \
-                                (hel-obs_data)**2/obs_error**2, axis=1)
-        except AttributeError:
+        if self.obs_data is not None:
+            log_p_D_given_x = -0.5*np.sum(-2.*np.log(self.obs_error)\
+                        + (hel-self.obs_data)**2/self.obs_error**2)
+        else:
             log_p_D_given_x = 0.
 
-        try:
-            obs_data = self.satellite.obs_data
-            obs_error = self.satellite.obs_error
-            log_p_D_given_x_sat = -0.5*np.sum(-2.*np.log(obs_data) + \
-                                (hel-obs_data)**2/obs_error**2)
-        except AttributeError:
+        if self.obs_data_sat is not None:
+            log_p_D_given_x_sat = -0.5*np.sum(-2.*np.log(self.obs_error_sat)\
+                    + (hel_sat-self.obs_data_sat)**2/self.obs_error_sat**2)
+        else:
             log_p_D_given_x_sat = 0.
 
         return np.sum(log_p_D_given_x + \
