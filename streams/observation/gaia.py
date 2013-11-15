@@ -105,7 +105,8 @@ class RRLyraeErrorModel(object):
         self.units = units
         self.factor = factor
 
-    def __call__(self, X):
+    def __call__(self, X, l_err=None, b_err=None, D_err=None,
+                          mul_err=None, mub_err=None, vr_err=None):
         """ Compute our canonical errors at a grid of given 6D
             positions, X.
 
@@ -123,19 +124,35 @@ class RRLyraeErrorModel(object):
         V = apparent_magnitude(M_V, D*r_unit)
 
         # proper motion error, from Gaia:
-        dmu = proper_motion_error(V, rrl_V_minus_I).decompose(self.units)
-        mul_err = dmu.value
-        mub_err = dmu.value
+        if mul_err is None or mub_err is None:
+            dmu = proper_motion_error(V, rrl_V_minus_I)
+
+        mul_err = dmu if mul_err is None else mul_err
+        mub_err = dmu if mub_err is None else mub_err
+        mul_err = mul_err.decompose(self.units).value
+        mub_err = mul_err.decompose(self.units).value
 
         # flat distance error:
-        D_err = 0.02*D
+        if D_err is None:
+            D_err = 0.02
+
+        if has_attr(D_err, "unit"):
+            D_err = D_err.decompose(self.units).value
+        else:
+            D_err = D_err*D
 
         # fixed radial velocity error:
-        vr_err = np.ones(len(l))*(10.*u.km/u.s).decompose(self.units).value
+        if vr_err is None:
+            vr_err = 10*u.km/u.s*np.ones(len(l))
+        else:
+            if vr_err.ndim == 0:
+                vr_err = np.repeat(vr_err, len(l))
+
+        vr_err = vr_err.decompose(self.units).value
 
         # negligible..
-        l_err = np.ones(len(l))*(10.*u.microarcsecond).to(u.radian).value
-        b_err = np.ones(len(l))*(10.*u.microarcsecond).to(u.radian).value
+        l_err = np.ones(len(l))*(100.*u.microarcsecond).to(u.radian).value
+        b_err = np.ones(len(l))*(100.*u.microarcsecond).to(u.radian).value
 
         return np.array([l_err, b_err, D_err, mul_err, mub_err, vr_err]).T * self.factor
 
