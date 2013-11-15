@@ -136,10 +136,10 @@ class RRLyraeErrorModel(object):
         if D_err is None:
             D_err = 0.02
 
-        if has_attr(D_err, "unit"):
-            D_err = D_err.decompose(self.units).value
-        else:
+        if not has_attr(D_err, "unit") or D_err.unit == u.dimensionless_unscaled:
             D_err = D_err*D
+        else:
+            D_err = D_err.decompose(self.units).value
 
         # fixed radial velocity error:
         if vr_err is None:
