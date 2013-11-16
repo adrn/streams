@@ -162,10 +162,6 @@ class RRLyraeErrorModel(object):
         l_err = np.ones(len(l))*(100.*u.microarcsecond).to(u.radian).value
         b_err = np.ones(len(l))*(100.*u.microarcsecond).to(u.radian).value
 
-        print(l_err, b_err, D_err, vr_err, mul_err, mub_err)
-        print(l_err.dtype, b_err.dtype, D_err.dtype, vr_err.dtype, mul_err.dtype, mub_err.dtype)
-        #sys.exit(0)
-
         return np.array([l_err, b_err, D_err, mul_err, mub_err, vr_err]).T * self.factor
 
 
