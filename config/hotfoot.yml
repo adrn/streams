@@ -1,0 +1,55 @@
+# general
+seed: 42
+script: new_infer_potential.py
+name: test
+
+# threading
+mpi: True
+# or threads: 4
+
+# plots / output
+make_plots: True
+output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
+overwrite: True
+
+potential:
+    class_name: LawMajewski2010
+    parameters:
+        q1:
+            range: [0.7, 2.]
+        qz:
+            range: [0.7, 2.]
+        phi:
+            range: [80. degree, 120. degree]
+        v_halo:
+            range: [100 km/s, 150 km/s]
+
+simulation:
+    # can be sgr, lm10, pal5
+    source: sgr
+    satellite_mass: 2.5e8 # this is specific to sgr
+
+particles:
+    N: 50
+    selection_expr: tub != 0
+    parameters:
+        - tub
+        - _X
+
+satellite:
+    parameters:
+        - _X
+
+# emcee
+walkers: 512 # or auto (2 x number of parameters)
+burn_in: 500
+steps: 2000
+
+# observational errors
+# below: with no units specified, it's a fractional error
+errors:
+    global_factor: 1.
+    vr: 10. km/s
+    # mul: 1. milliarcsecond/year
+    # mub: 1. milliarcsecond/year
+    D: 0.02
