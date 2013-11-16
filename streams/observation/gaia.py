@@ -132,8 +132,8 @@ class RRLyraeErrorModel(object):
 
         mul_err = dmu if self.mul_err is None else self.mul_err
         mub_err = dmu if self.mub_err is None else self.mub_err
-        mul_err = mul_err.decompose(self.units).value
-        mub_err = mub_err.decompose(self.units).value
+        mul_err = np.atleast_1d(mul_err.decompose(self.units).value)
+        mub_err = np.atleast_1d(mub_err.decompose(self.units).value)
 
         # flat distance error:
         if self.D_err is None:
@@ -141,7 +141,8 @@ class RRLyraeErrorModel(object):
         else:
             D_err = self.D_err
 
-        if not hasattr(D_err, "unit") or D_err.unit == u.dimensionless_unscaled:
+        if not hasattr(D_err, "unit") or \
+                D_err.unit == u.dimensionless_unscaled:
             D_err = D_err*D
         else:
             D_err = D_err.decompose(self.units).value
@@ -160,6 +161,10 @@ class RRLyraeErrorModel(object):
         # negligible..
         l_err = np.ones(len(l))*(100.*u.microarcsecond).to(u.radian).value
         b_err = np.ones(len(l))*(100.*u.microarcsecond).to(u.radian).value
+
+        print(l_err, b_err, D_err, vr_err, mul_err, mub_err)
+        print(l_err.dtype, b_err.dtype, D_err.dtype, vr_err.dtype, mul_err.dtype, mub_err.dtype)
+        #sys.exit(0)
 
         return np.array([l_err, b_err, D_err, mul_err, mub_err, vr_err]).T * self.factor
 
