@@ -352,6 +352,14 @@ def main(config_file, job_name=None):
         extents = zip(so - 3*se, \
                       so + 3*se)
 
+        # First, just samples from the priors:
+        fig = triangle.corner(p0[:,:Npp],
+                    truths=[p.target._truth for p in pparams],
+                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
+                    labels=[p.target.latex for p in pparams])
+        fig.savefig(os.path.join(path, "potential_corner_prior.png"))
+
+
         fig = triangle.corner(OO,
                               labels=['l','b','D',\
                                       r'$\mu_l$', r'$\mu_l$','$v_r$'],
