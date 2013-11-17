@@ -108,24 +108,8 @@ def _parse_quantity(q):
 
     return u.Quantity(float(val), unit)
 
-def main(config_file, job_name=None):
-    """ TODO: """
-
-    # read in configurable parameters
-    with open(config_file) as f:
-        config = yaml.load(f.read())
-
-    # TODO: write a separate script just for plotting...
-    # get a pool object given the configuration parameters
-    pool = get_pool(config)
-
-    # determine the output data path
-    path = make_path(config)
-    sampler_file = os.path.join(path, "sampler_data.pickle")
-
-    logger.info("Will write output to '{0}'...".format(path))
-
-    make_plots = config.get("make_plots", False)
+def build_stream_model(config):
+    """ """
 
     # get the potential object specified
     Potential = getattr(sp, config["potential"]["class_name"])
@@ -229,7 +213,6 @@ def main(config_file, job_name=None):
     ##########################################################################
     # Satellite parameters
     #
-    # TODO: infer the damn satellite position!
     satellite_config = config.get("satellite", dict())
     satellite_params = satellite_config.get("parameters", [])
 
@@ -254,14 +237,38 @@ def main(config_file, job_name=None):
         p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
 
+    # now create the model
+    model = StreamModel(potential, satellite, particles,
+                        parameters=model_parameters)
+
+    return model
+
+def main(config_file, job_name=None):
+    """ TODO: """
+
+    # read in configurable parameters
+    with open(config_file) as f:
+        config = yaml.load(f.read())
+
+    # TODO: write a separate script just for plotting...
+    # get a pool object given the configuration parameters
+    pool = get_pool(config)
+
+    # determine the output data path
+    path = make_path(config)
+    sampler_file = os.path.join(path, "sampler_data.pickle")
+
+    logger.info("Will write output to '{0}'...".format(path))
+
+    make_plots = config.get("make_plots", False)
+
+    model = build_stream_model(config)
+
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
         Nwalkers = model.ndim*2 + 2
 
-    # now create the model
-    model = StreamModel(potential, satellite, particles,
-                        parameters=model_parameters)
     p0 = model.sample(size=Nwalkers)
 
     if not os.path.exists(sampler_file):
