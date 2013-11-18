@@ -15,8 +15,9 @@ import numpy as np
 import astropy.units as u
 
 # Project
-from ... import usys
+from .. import usys
 from .rrlyrae import rrl_M_V, rrl_V_minus_I
+from .core import apparent_magnitude
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -97,7 +98,7 @@ class ErrorModel(object):
         O_err = np.array([l_err, b_err, D_err, mul_err, mub_err, vr_err]).T
         return O_err * self.factor
 
-class SpitzerGaiaErrorModel(object):
+class SpitzerGaiaErrorModel(ErrorModel):
 
     def __init__(self, *args, **kwargs):
         """ By default, has observational errors for RR Lyrae as observed
