@@ -19,11 +19,13 @@ import astropy.units as u
 __all__ = ["vgsr_to_vhel", "vhel_to_vgsr", \
            "gc_to_hel", "hel_to_gc", "_gc_to_hel", "_hel_to_gc"]
 
-v_sun_circ = Cartesian([0., 220., 0.]*u.km/u.s)
-v_sun_lsr = Cartesian([10., 5.25, 7.17]*u.km/u.s)
+v_sun_circ = [0., 220., 0.]*u.km/u.s
+v_sun_lsr = [10., 5.25, 7.17]*u.km/u.s
 R_sun = 8.*u.kpc
 
-def vgsr_to_vhel(l, b, v_gsr):
+def vgsr_to_vhel(l, b, v_gsr,
+                 v_sun_circ=v_sun_circ,
+                 v_sun_lsr=v_sun_lsr):
     """ Convert a velocity from the Galactic standard of rest (GSR) to
         heliocentric radial velocity.
 
@@ -45,7 +47,9 @@ def vgsr_to_vhel(l, b, v_gsr):
 
     return v_hel
 
-def vhel_to_vgsr(l, b, v_hel):
+def vhel_to_vgsr(l, b, v_hel,
+                 v_sun_circ=v_sun_circ,
+                 v_sun_lsr=v_sun_lsr):
     """ Convert a velocity from a heliocentric radial velocity to
         the Galactic center of rest.
 
@@ -66,7 +70,9 @@ def vhel_to_vgsr(l, b, v_hel):
 
     return v_gsr
 
-def gc_to_hel(x,y,z,vx,vy,vz):
+def gc_to_hel(x,y,z,vx,vy,vz,
+              v_sun_circ=v_sun_circ,
+              R_sun=R_sun):
     # transform to heliocentric cartesian
     x = x + R_sun
     vy = vy - v_sun_circ[1] # don't use -= or +=!!!
@@ -87,7 +93,9 @@ def gc_to_hel(x,y,z,vx,vy,vz):
 
     return l,b,d,mul,mub,vr
 
-def hel_to_gc(l,b,d,mul,mub,vr):
+def hel_to_gc(l,b,d,mul,mub,vr,
+              v_sun_circ=v_sun_circ,
+              R_sun=R_sun):
     # transform from spherical to cartesian
     x = d*np.cos(b)*np.cos(l)
     y = d*np.cos(b)*np.sin(l)
