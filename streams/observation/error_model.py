@@ -18,6 +18,7 @@ import astropy.units as u
 from .. import usys
 from .rrlyrae import rrl_M_V, rrl_V_minus_I
 from .core import apparent_magnitude
+from .gaia import proper_motion_error
 
 # Create logger
 logger = logging.getLogger(__name__)
