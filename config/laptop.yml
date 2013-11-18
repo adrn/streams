@@ -39,6 +39,10 @@ particles:
         - tub
         - _X
 
+satellite:
+    parameters:
+        - _X
+
 # emcee
 walkers: 16 # or auto (2 x number of parameters)
 burn_in: 0
@@ -51,4 +55,4 @@ errors:
     vr: 10. km/s
     # mu_l: 1. milliarcsecond/year
     # mu_b: 1. milliarcsecond/year
-    distance: 0.02
+    D: 0.02
