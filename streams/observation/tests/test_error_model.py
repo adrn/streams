@@ -21,3 +21,16 @@ def test_error_model():
     pass
 
 def test_spitzer_gaia():
+    test_data = np.random.random((100,6))
+
+    em = SpitzerGaiaErrorModel()
+    err = em(test_data)
+    assert err.shape == test_data.shape
+
+    em = SpitzerGaiaErrorModel(D_err=0.05)
+    err = em(test_data)
+    assert err.shape == test_data.shape
+
+    em = SpitzerGaiaErrorModel(mul_err=1.*u.mas/u.yr)
+    err = em(test_data)
+    assert err.shape == test_data.shape
