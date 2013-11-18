@@ -120,16 +120,16 @@ def build_stream_model(config):
     np.random.seed(config["seed"])
     t1,t2,_satellite,_particles = read_simulation(config)
 
-    # TODO: right now error specification in yml doesn't propagate
+    # get errors for particles in observed quantities
     factor = config["errors"].get("global_factor", 1.)
     particle_errors = dict()
     for k,v in config["errors"].items():
         if k == "global_factor": continue
         particle_errors["{}_err".format(k)] = _parse_quantity(v)
 
-    error_model = RRLyraeErrorModel(units=usys,
-                                    factor=factor,
-                                    **particle_errors)
+    error_model = SpitzerGaiaErrorModel(units=usys,
+                                        factor=factor,
+                                        **particle_errors)
     obs_data, obs_error = _particles.observe(error_model)
 
     # satellite has different errors from individual stars...
