@@ -40,7 +40,7 @@ from streams.coordinates import _gc_to_hel, _hel_to_gc
 from streams.inference import (ModelParameter, StreamModel,
                                LogNormalPrior, LogUniformPrior)
 from streams.io.sgr import mass_selector
-from streams.observation.gaia import RRLyraeErrorModel
+from streams.observation import SpitzerGaiaErrorModel
 import streams.potential as sp
 from streams.util import make_path
 
@@ -269,6 +269,7 @@ def main(config_file, job_name=None):
     if str(Nwalkers).lower() == "auto":
         Nwalkers = model.ndim*2 + 2
 
+    # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
 
     if not os.path.exists(sampler_file):
