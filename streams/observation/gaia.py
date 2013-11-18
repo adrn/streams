@@ -16,11 +16,9 @@ import astropy.units as u
 from astropy.utils.misc import isiterable
 
 from ..dynamics import Particle
-from .core import apparent_magnitude
 from ..coordinates import gc_to_hel, hel_to_gc
 
-__all__ = ["parallax_error", "proper_motion_error",  \
-           "apparent_magnitude", "V_to_G"]
+__all__ = ["parallax_error", "proper_motion_error", "V_to_G"]
 
 def V_to_G(V, V_minus_I):
     """ Convert Johnson V to Gaia G-band.
