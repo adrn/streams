@@ -18,45 +18,49 @@ import astropy.units as u
 from astropy.coordinates import transformations
 from astropy.coordinates.angles import rotation_matrix
 
-__all__ = ["OrphanCoordinates", "distance_to_orp_plane"]
+__all__ = ["OrphanCoordinates", "distance_to_orphan_plane"]
 
 class OrphanCoordinates(coord.SphericalCoordinatesBase):
-    """ A spherical coordinate system defined by the orbit of the Orphan
-        stream as described in
+    """ A spherical coordinate system defined by the orbit of the Orphan stream
+        as described in 
         http://iopscience.iop.org/0004-637X/711/1/32/pdf/apj_711_1_32.pdf
 
     """
-    __doc__ = __doc__.format(params=coord.SphericalCoordinatesBase. \
-            _init_docstring_param_templ.format(lonnm='Lambda', latnm='Beta'))
+    __doc__ = __doc__.format(params=coord.SphericalCoordinatesBase.\
+                                          _init_docstring_param_templ.\
+                                          format(lonnm='Lambda', latnm='Beta'))
 
     def __init__(self, *args, **kwargs):
         super(OrphanCoordinates, self).__init__()
 
         if len(args) == 1 and len(kwargs) == 0 and \
             isinstance(args[0], coord.SphericalCoordinatesBase):
-
             newcoord = args[0].transform_to(self.__class__)
-            self._lonangle = newcoord._lonangle
-            self._latangle = newcoord._latangle
+            self.Lambda = newcoord.Lambda
+            self.Beta = newcoord.Beta
             self._distance = newcoord._distance
         else:
-            super(OrphanCoordinates, self).\
-                _initialize_latlon('Lambda', 'Beta', args, kwargs)
+            super(OrphanCoordinates, self)._initialize_latlon('Lambda', 'Beta', \
+                False, args, kwargs, anglebounds=((-180, 180), (-90,90)))
 
-    #strings used for making __repr__ work
-    _repr_lon_name = 'Lambda'
-    _repr_lat_name = 'Beta'
+    def __repr__(self):
+        if self.distance is not None:
+            diststr = ', Distance={0:.2g} {1!s}'.format(self.distance._value, 
+                                                        self.distance._unit)
+        else:
+            diststr = ''
 
-    # Default format for to_string
-    _default_string_style = 'dmsdms'
+        msg = "<{0} Lambda={1:.5f} deg, Beta={2:.5f} deg{3}>"
+        return msg.format(self.__class__.__name__, self.Lambda.degrees,
+                          self.Beta.degrees, diststr)
 
     @property
-    def Lambda(self):
-        return self._lonangle
+    def lonangle(self):
+        return self.Lambda
 
     @property
-    def Beta(self):
-        return self._latangle
+    def latangle(self):
+        return self.Beta
 
 # Define the Euler angles
 phi = radians(128.79)
@@ -70,9 +74,9 @@ B = rotation_matrix(psi, "z", unit=u.radian)
 sgr_matrix = np.array(B.dot(C).dot(D))
 
 # Galactic to Orphan coordinates
-@transformations.transform_function(coord.Galactic, OrphanCoordinates)
+@transformations.transform_function(coord.GalacticCoordinates, OrphanCoordinates)
 def galactic_to_orphan(galactic_coord):
-    """ Compute the transformation from Galactic spherical to Orphan coordinates.
+    """ Compute the transformation from Galactic spherical to Orphan coordinates. 
     """
 
     l = galactic_coord.l.radian
@@ -82,7 +86,7 @@ def galactic_to_orphan(galactic_coord):
     Y = cos(b)*sin(l)
     Z = sin(b)
 
-    # Calculate X,Y,Z,distance in the Orp system
+    # Calculate X,Y,Z,distance in the Sgr system
     Xs, Ys, Zs = sgr_matrix.dot(np.array([X, Y, Z]))
 
     # Calculate the angular coordinates lambda,beta
@@ -92,10 +96,10 @@ def galactic_to_orphan(galactic_coord):
 
     Beta = degrees(np.arcsin(Zs/np.sqrt(Xs*Xs+Ys*Ys+Zs*Zs)))
 
-    return OrphanCoordinates(Lambda, Beta, distance=galactic_coord.distance,
+    return OrphanCoordinates(Lambda, Beta, distance=galactic_coord.distance, 
                           unit=(u.degree, u.degree))
 
-@transformations.transform_function(OrphanCoordinates, coord.Galactic)
+@transformations.transform_function(OrphanCoordinates, coord.GalacticCoordinates)
 def orphan_to_galactic(orphan_coord):
     L = orphan_coord.Lambda.radian
     B = orphan_coord.Beta.radian
@@ -112,27 +116,28 @@ def orphan_to_galactic(orphan_coord):
     if l<0:
         l += 360
 
-    return coord.GalacticCoordinates(l, b, distance=orphan_coord.distance,
+    return coord.GalacticCoordinates(l, b, distance=orphan_coord.distance, 
                                      unit=(u.degree, u.degree))
 
-def distance_to_orp_plane(ra, dec, heliocentric_distance):
+def distance_to_orphan_plane(ra, dec, heliocentric_distance):
     """ Given an RA, Dec, and Heliocentric distance, compute the distance
-        to the midplane of the Orphan orbital plane
+        to the midplane of the Orphan plane 
 
         Parameters
         ----------
-        ra : astropy.coordinates.Angle
-            Right ascension.
-        dec : astropy.coordinates.Angle
-            Declination.
-        heliocentric_distance : Quantity
-            The distance from the Sun to a star.
+        ra : float
+            A right ascension in decimal degrees
+        dec : float
+            A declination in decimal degrees
+        heliocentric_distance : float
+            The distance from the sun to a star in kpc.
 
     """
 
-    icrs = coord.ICRSCoordinates(ra, dec)
-    sgr_coords = icrs.transform_to(OrphanCoordinates)
-    sgr_coords.distance = coord.Distance(heliocentric_distance)
+    eq_coords = coord.ICRSCoordinates(ra, dec, unit=(u.degree, u.degree))
+    orphan_coords = eq_coords.transform_to(OrphanCoordinates)
+    orphan_coords.distance = coord.Distance(heliocentric_distance, unit=u.kpc)
 
-    Z_sgr = sgr_coords.distance * np.sin(sgr_coords.Beta.radian)
-    return Z_sgr
+    Z_orp_sol = orphan_coords.distance.kpc * np.sin(orphan_coords.Beta.radian)
+
+    return Z_orp_sol

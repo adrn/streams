@@ -19,7 +19,7 @@ from astropy.io import ascii
 from ..orphan import OrphanCoordinates
 
 def test_table():
-    """ Test the transformation code against table 2 values from
+    """ Test the transformation code against table 2 values from 
         Newberg et al. 2010 (below)
     """
 
@@ -34,16 +34,19 @@ def test_table():
 185 50.5 0.7 -21.42 1.12 18.6 0.1
 175 47.5 0.7 -28.59 1.88 0. 0.
 171 45.8 1.0 -31.81 2.10 0. 0."""
-
+    
     table = ascii.read(table, names=names)
-
-    for line in table:
-        galactic = coord.Galactic(line['l'], line['b'],
-                                  unit=(u.degree, u.degree))
-
-        orp = galactic.transform_to(OrphanCoordinates)
+    
+    for line in table:   
+        galactic = coord.GalacticCoordinates(line['l'], line['b'], 
+                                             unit=(u.degree, u.degree))
+                                             
+        orp = galactic.transform_to(OrphanCoordinates)       
         true_orp = OrphanCoordinates(line['Lambda'], line['Beta'],
                                      unit=(u.degree, u.degree))
-
+        
         print(orp, true_orp)
-        assert true_orp.separation(orp).arcsec < 20
+        
+        # TODO: change with astropy 0.3
+        sep = true_orp.separation(orp).arcsecs*u.arcsec
+        assert sep < 20*u.arcsec
