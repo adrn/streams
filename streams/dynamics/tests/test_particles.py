@@ -16,52 +16,40 @@ import pytest
 
 # Project
 from ..particles import *
-from ...observation.gaia import RRLyraeErrorModel
+from ...observation.error_model import SpitzerGaiaErrorModel
 from ... import usys
 
 plot_path = "plots/tests/dynamics"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-units = (u.kpc, u.Myr, u.M_sun)
+units = (u.kpc, u.Myr, u.M_sun, u.radian)
 
-def test_Particle_init():
+def test_init():
 
-    # Init with individual arrays of ndim=1
-    r = np.random.random(3)*u.kpc
-    v = np.random.random(3)*u.km/u.s
-    m = np.random.random()*u.M_sun
+    x = np.random.random(size=100)
+    vx = np.random.random(size=100)
+    p = Particle(q=(x, vx), names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
+    p = Particle(q=(x*u.kpc, vx*u.km/u.s), names=("x","vx"))
+    assert p["x"].value == x
+
+    x_vx = np.random.random(size=(2,100))
+    p = Particle(q=x_vx, names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
+
+    xyz = np.random.random(size=(3,100))*u.kpc
+    p = Particle(q=xyz, names=("x","y","z"))
 
     with pytest.raises(ValueError):
-        pc = Particle(r=r, v=v, m=m, units=units)
+        xyz = np.random.random(size=(3,100))
+        p = Particle(q=xyz, names=("x","y","z"))
 
-    r = np.random.random(size=(10,3))*u.kpc
-    v = np.random.random(size=(10,3))*u.kpc/u.Myr
-    m = np.random.random(10)*u.M_sun
+    with pytest.raises(ValueError):
+        v = np.random.random(size=100)*u.kpc
+        p = Particle(q=(v, v.value), names=("x","y"))
 
-    pc = Particle(r=r, v=v, m=m, units=units)
-
-    assert np.all(pc.r.value == r.value)
-    assert np.all(pc.v.value == v.value)
-    assert np.all(pc.m.value == m.value)
-
-    assert np.all(pc._r == r.value)
-    assert np.all(pc._v == v.value)
-    assert np.all(pc._m == m.value)
-
-def test_acceleration():
-    r = np.array([[1.,0.],
-                  [0, 1.],
-                  [-1., 0.],
-                  [0., -1.]])*u.kpc
-    v = np.zeros_like(r.value)*u.km/u.s
-    m = np.random.random()*u.M_sun
-
-    pc = Particle(r=r, v=v, m=m, units=units)
-
-    pc.acceleration_at(np.array([0.,0.])*u.kpc)
-
-    a = pc.acceleration_at(np.array([[0.5,0.5], [0.0,0.0], [-0.5, -0.5]])*u.kpc)
+'''
 
 def test_merge():
     # test merging two particle collections
@@ -128,7 +116,7 @@ def test_observe():
     p = Particle(r=r, v=v, m=1*u.M_sun)
 
     for factor in [0.01, 0.1, 1., 10.]:
-        error_model = RRLyraeErrorModel(units=usys, factor=factor)
+        error_model = SpitzerGaiaErrorModel(units=usys, factor=factor)
         new_p = p.observe(error_model)
 
         fig = p.plot_r()
@@ -147,8 +135,13 @@ def test_time_observe():
     m = np.random.random(100)*u.M_sun
     p = Particle(r=r, v=v, m=m, units=usys)
 
-    error_model = RRLyraeErrorModel(units=usys, factor=1.)
+    error_model = SpitzerGaiaErrorModel(units=usys, factor=1.)
     a = time.time()
     for ii in range(10):
         new_p = p.observe(error_model)
     print((time.time()-a)/10.)
+
+def test_observed_particle():
+    pass
+
+'''

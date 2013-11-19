@@ -17,14 +17,98 @@ from astropy.constants import G
 import triangle
 
 # Project
+from .. import usys
 from .core import _validate_quantity, DynamicalBase
 from ..coordinates import _gc_to_hel, _hel_to_gc
 
 __all__ = ["Particle"]
 
-# TODO: make ObservedParticle class?
 
-class Particle(DynamicalBase):
+class Particle(object):
+
+    def __init__(self, q=(), names=(), units=None, meta=dict()):
+        """ Represents a dynamical particle or collection of particles.
+            Particles can have associated metadata, e.g., mass or for
+            a Satellite, velocity dispersion.
+
+            Parameters
+            ----------
+            q : iterable
+                Can either be an iterable (e.g., list or tuple) of Quantity
+                objects, in which case their units are grabbed from the
+                objects themselves, or an array_like object with the first
+                axis as the separate coordinate dimensions, and the units
+                parameter specifying the units along each dimension.
+            names : iterable
+                Names of each coordinate dimension. These end up being
+                attributes of the object.
+            units : iterable (optional)
+                Must be specified if q is an array_like object, otherwise this
+                is constructed from the Quantity objects in q.
+            meta : dict (optoonal)
+                Any additional metadata.
+        """
+
+        if isinstance(q, np.ndarray):
+            if q.ndim == 1:
+                q = np.atleast_2d(q).T
+
+            ndim = q.shape[0]
+
+            if hasattr(q, "unit"):
+                units = [q.unit] * ndim
+            else:
+                if units is None:
+                    raise ValueError("Must specify units if input is "
+                                     "an ndarray.")
+
+                q = [q[ii]*units[ii] for ii in range(ndim)]
+
+        else:
+            ndim = len(q)
+
+            if units is None:
+                try:
+                    units = [qq.unit for qq in q]
+                except AttributeError:
+                    raise ValueError("All coordinates must be Quantity's")
+
+        # find units in usys that match the physical types of each units
+        self._internal_units = []
+        for unit in units:
+            self._internal_units.append((1*unit).decompose(usys).unit)
+        self._repr_units = units
+
+        if len(names) != ndim:
+            raise ValueError("Must specify coordinate name for each "
+                             "dimension.")
+
+        self._X = np.zeros((ndim,) + q[0].shape)
+        for ii in range(ndim):
+            if not hasattr(q[ii], "unit"):
+                qq = q[ii]*units[ii]
+            else:
+                qq = q[ii]
+
+            self._X[ii] = qq.to(self._internal_units[ii]).value
+
+        # TODO: descriptors to access
+        #   (self._X[ii]*self._internal_units[ii]).to(self._repr_units[ii)
+
+    def __getitem__(self, slc):
+
+        if isinstance(slc, (int,slice)):
+            raise NotImplementedError()
+        else:
+            try:
+                ii = self.names.index(slc)
+            except ValueError:
+                raise AttributeError("Invalid coordinate name {}".format(slc))
+
+            return (self._X[ii]*self._internal_units[ii])\
+                        .to(self._repr_units[ii])
+
+class OldParticle(DynamicalBase):
 
     def __init__(self, r, v, m=None, units=None):
         """ A represents a dynamical particle or collection of particles.
@@ -117,49 +201,6 @@ class Particle(DynamicalBase):
     def copy(self):
         return copy.deepcopy(self)
 
-    def acceleration_at(self, r):
-        """ Compute the acceleration at a given position due to the
-            collection of particles. Inputs must be Quantity objects.
-
-            Parameters
-            ----------
-            r : astropy.units.Quantity
-                Position.
-
-        """
-        _validate_quantity(r, unit_like=u.km)
-
-        r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
-        t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
-
-        a = self._acceleration_at(r.decompose(self.units).value)
-        return a * r_unit / t_unit**2
-
-    def _acceleration_at(self, _r):
-        """ Compute the acceleration at a given position due to the
-            collection of particles. Inputs are arrays, and assumes they
-            are in the correct system of units.
-        """
-        if _r.ndim == 1:
-            rr = _r - self._r
-            a = self._G * self._m * rr / np.linalg.norm(rr)**3
-            return np.sum(a, axis=0)
-
-        elif _r.ndim == 2:
-            # could do: (np.repeat(_r[np.newaxis], self._r.shape[0], axis=0) - \
-            #                self._r[...,np.newaxis]).sum(axis=0)
-            #   but this involves making a potentially big array in memory...
-            a = np.zeros_like(_r)
-            for ii in range(_r.shape[0]):
-                rr = _r[ii] - self._r
-                a[ii] = (self._G * self._m * rr / np.sum(rr**2,axis=0)**1.5)\
-                        .sum(axis=0)
-
-            return a
-
-        else:
-            raise ValueError()
-
     def plot_r(self, coord_names=['x','y','z'], **kwargs):
         """ Make a scatter-plot of 3 projections of the positions of the
             particle coordinates.
@@ -229,15 +270,6 @@ class Particle(DynamicalBase):
 
         return Particle(r=r, v=v, m=m, units=self.units)
 
-    @property
-    def flat_X(self):
-        return self._X.flat
-
-    @flat_X.setter
-    def flat_X(self, val):
-        val = np.array(val)
-        self._X = val.reshape(self.nparticles, 6)
-
     def __getitem__(self, key):
         r = self.r[key]
         v = self.v[key]
@@ -247,12 +279,3 @@ class Particle(DynamicalBase):
 
     def __len__(self):
         return self.nparticles
-
-class ObservedParticle(Particle):
-
-    def __init__(self, r, v, obs_data, obs_error, m=None, units=None):
-        """ TODO: ... """
-
-        super(ObservedParticle, self).__init__(r, v, m, units)
-        self.obs_data = obs
-        self.obs_error = obs_error
