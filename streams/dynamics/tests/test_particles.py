@@ -32,7 +32,8 @@ def test_init():
     p = Particle(q=(x, vx), names=("x","vx"),
                  units=[u.kpc, u.km/u.s])
     p = Particle(q=(x*u.kpc, vx*u.km/u.s), names=("x","vx"))
-    assert p["x"].value == x
+    assert np.all(p["x"].value == x)
+    assert np.all(p["vx"].value == vx)
 
     x_vx = np.random.random(size=(2,100))
     p = Particle(q=x_vx, names=("x","vx"),

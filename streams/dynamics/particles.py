@@ -49,7 +49,7 @@ class Particle(object):
                 Any additional metadata.
         """
 
-        if isinstance(q, np.ndarray):
+        if isinstance(q, np.ndarray): # ndarray or Quantity! TODO: figure out this logic biatch
             if q.ndim == 1:
                 q = np.atleast_2d(q).T
 
@@ -82,6 +82,7 @@ class Particle(object):
         if len(names) != ndim:
             raise ValueError("Must specify coordinate name for each "
                              "dimension.")
+        self.names = names
 
         self._X = np.zeros((ndim,) + q[0].shape)
         for ii in range(ndim):
@@ -91,9 +92,6 @@ class Particle(object):
                 qq = q[ii]
 
             self._X[ii] = qq.to(self._internal_units[ii]).value
-
-        # TODO: descriptors to access
-        #   (self._X[ii]*self._internal_units[ii]).to(self._repr_units[ii)
 
     def __getitem__(self, slc):
 
