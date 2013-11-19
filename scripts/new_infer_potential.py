@@ -118,7 +118,7 @@ def build_stream_model(config):
 
     # Actually get simulation data
     np.random.seed(config["seed"])
-    t1,t2,_satellite,_particles = read_simulation(config)
+    t1,t2,satellite,particles = read_simulation(config)
 
     # get errors for particles in observed quantities
     factor = config["errors"].get("global_factor", 1.)
@@ -127,22 +127,16 @@ def build_stream_model(config):
         if k == "global_factor": continue
         particle_errors["{}_err".format(k)] = _parse_quantity(v)
 
-    error_model = SpitzerGaiaErrorModel(units=usys,
-                                        factor=factor,
+    error_model = SpitzerGaiaErrorModel(factor=factor,
                                         **particle_errors)
-    obs_data, obs_error = _particles.observe(error_model)
+    observed_particles = error_model.observe(particles)
+    # observed_particles.error and observed_particles.truth
 
     # satellite has different errors from individual stars...
     # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
-    sat_error_model = RRLyraeErrorModel(units=usys,
-                                        mul_err=1000.*u.mas/u.yr,
-                                        mub_err=1000.*u.mas/u.yr,
-                                        D_err=1.,
-                                        vr_err=200.*u.km/u.s)
-    sat_obs_data, sat_obs_error = _satellite.observe(sat_error_model)
-
-    particles = _particles.copy()
-    satellite = _satellite.copy()
+    sat_error_model = SpitzerGaiaErrorModel(factor=factor,
+                                            **satellite_errors)
+    observed_satellite = sat_error_model.observe(satellite)
 
     model_parameters = []
     ##########################################################################
@@ -164,7 +158,8 @@ def build_stream_model(config):
 
         model_parameters.append(ModelParameter(target=p,
                                                attr="_value",
-                                               ln_prior=prior))
+                                               ln_prior=prior,
+                                               group="potential"))
 
     ##########################################################################
     # Particle parameters
@@ -174,7 +169,7 @@ def build_stream_model(config):
     try:
         Nparticles = config["particles"]["N"]
     except KeyError:
-        raise ValueError("Must specify number of partices in config file!")
+        raise ValueError("Must specify number of particles in config file!")
 
     # time unbound / escape time (tub)
     if "tub" in particle_params:
@@ -183,31 +178,17 @@ def build_stream_model(config):
         prior = LogUniformPrior(lo, hi)
         model_parameters.append(ModelParameter(target=particles,
                                                attr="tub",
-                                               ln_prior=prior))
+                                               ln_prior=prior,
+                                               group="particles"))
 
-    # here I monte carlo transform the error distribution from observed
-    #   to cartesian, then take np.cov and use that to sample new particle
-    #   positions
-    O = np.array([np.random.normal(obs_data, obs_error) \
-                    for ii in range(1000)])
-    X = _hel_to_gc(O)
-
-    obs_error_gc = []
-    for ii in range(Nparticles):
-        obs_error_gc.append(np.cov(X[:,ii].T))
-
-    obs_error_gc = np.array(obs_error_gc)
-    obs_data_gc = _hel_to_gc(obs_data)
-
-    # true positions of particles (flat_X)
-    if "_X" in particle_params:
-        particles._X = _hel_to_gc(obs_data)
-        particles.obs_data = obs_data
-        particles.obs_error = obs_error
-
-        prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
-        p = ModelParameter(target=particles, attr="_X", ln_prior=prior)
-        p.ln_prior = _null # THIS IS A HACK?
+    # true positions of particles in heliocentric coordinates
+    if "???" in particle_params:
+        prior = LogNormalPrior(observed_particles._heliocentric,
+                               cov=observed_particles._error)
+        p = ModelParameter(target=observed_particles,
+                           attr="???",
+                           ln_prior=prior,
+                           group="particles")
         model_parameters.append(p)
 
     ##########################################################################
@@ -216,26 +197,39 @@ def build_stream_model(config):
     satellite_config = config.get("satellite", dict())
     satellite_params = satellite_config.get("parameters", [])
 
-    # here I monte carlo transform the error distribution from observed
-    #   to cartesian, then take np.cov and use that to sample new satellite
-    #   positions
-    O = np.array([np.random.normal(sat_obs_data, sat_obs_error) \
-                    for ii in range(1000)])
-    X = _hel_to_gc(O)
-
-    sat_obs_error_gc = np.array([np.cov(X[:,0].T)])
-    sat_obs_data_gc = _hel_to_gc(sat_obs_data)
-
-    # true position of the satellite
-    if "_X" in satellite_params:
-        satellite._X = _hel_to_gc(sat_obs_data)
-        satellite.obs_data = sat_obs_data
-        satellite.obs_error = sat_obs_error
-
-        prior = LogNormalPrior(sat_obs_data_gc, cov=sat_obs_error_gc)
-        p = ModelParameter(target=satellite, attr="_X", ln_prior=prior)
-        p.ln_prior = _null # THIS IS A HACK?
+    # true position of the satellite in heliocentric coordinates
+    if "???" in satellite_params:
+        prior = LogNormalPrior(observed_satellite._heliocentric,
+                               cov=observed_satellite._error)
+        p = ModelParameter(target=observed_satellite,
+                           attr="???",
+                           ln_prior=prior,
+                           group="satellite")
         model_parameters.append(p)
+
+    # mass of the satellite
+    if "m" in satellite_params:
+        # prior = LogNormalPrior(observed_satellite._heliocentric,
+        #                        cov=observed_satellite._error)
+        # p = ModelParameter(target=observed_satellite,
+        #                    attr="???",
+        #                    ln_prior=prior,
+        #                    group="satellite")
+        # TODO:
+        # model_parameters.append(p)
+        pass
+
+    # velocity dispersion of the satellite
+    if "v_disp" in satellite_params:
+        # prior = LogNormalPrior(observed_satellite._heliocentric,
+        #                        cov=observed_satellite._error)
+        # p = ModelParameter(target=observed_satellite,
+        #                    attr="???",
+        #                    ln_prior=prior,
+        #                    group="satellite")
+        # TODO:
+        # model_parameters.append(p)
+        pass
 
     # now create the model
     model = StreamModel(potential, satellite, particles,
