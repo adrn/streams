@@ -43,6 +43,20 @@ class StreamModel(object):
         self.particles = particles
         self.parameters = parameters
 
+        try:
+            self.obs_data = self.particles.obs_data.copy()
+            self.obs_error = self.particles.obs_error.copy()
+        except AttributeError:
+            self.obs_data = None
+            self.obs_error = None
+
+        try:
+            self.obs_data_sat = self.satellite.obs_data.copy()
+            self.obs_error_sat = self.satellite.obs_error.copy()
+        except AttributeError:
+            self.obs_data_sat = None
+            self.obs_error_sat = None
+
     def __call__(self, p, *args):
         self.vector = p
         return self.ln_posterior(*args)
@@ -100,7 +114,7 @@ class StreamModel(object):
 
         # The true positions/velocities of the particles are parameters
         Nparticles = len(self.particles)
-        x = self.particles._galactocentric.cartesian
+        x = self.particles._X
         hel = _gc_to_hel(x)
 
         x_sat = self.satellite._X

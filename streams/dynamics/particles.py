@@ -22,30 +22,44 @@ from ..coordinates import _gc_to_hel, _hel_to_gc
 
 __all__ = ["Particle"]
 
+# TODO: make ObservedParticle class?
+
 class Particle(DynamicalBase):
 
-    def __init__(self, position, velocity, m=None,
-                 reference_frame=None, coordinate_system=None):
+    def __init__(self, r, v, m=None, units=None):
         """ A represents a dynamical particle or collection of particles.
             Particles can have mass or be massless.
 
             Parameters
             ----------
-            position : ... or tuple
-                Either a fully-fledged coordinate system/frame or a tuple of
-                Quantity objects.
-            velocity : ... or tuple
-                Either a fully-fledged coordinate system/frame or a tuple of
-                Quantity objects.
+            r : astropy.units.Quantity
+                Position of the particle(s). Should have shape
+                (nparticles, ndim).
+            v : astropy.units.Quantity
+                Velocity of the particle(s). Should have shape
+                (nparticles, ndim).
             m : astropy.units.Quantity (optional)
                 Mass of the particle(s). Should have shape (nparticles, ).
-            reference_frame : ReferenceFrame
-                If position and velocity have no associated frame, specify
-                it here.
-            coordinate_system : CoordinateSystem
-                If position and velocity have no associated coordinate
-                system, specify it here.
+            units : list (optional)
+                A list of units defining the desired unit system for
+                the particles. If not provided, will use the units of
+                the input Quantities to define a system of units. Mainly
+                used for internal representations.
         """
+
+        # Make sure position has position-like units, same for velocity
+        _validate_quantity(r, unit_like=u.km)
+        _validate_quantity(v, unit_like=u.km/u.s)
+
+        if r.value.ndim == 1:
+            r = r.reshape((1, len(r)))
+            v = v.reshape((1, len(v)))
+
+        try:
+            self.nparticles, self.ndim = r.value.shape
+        except ValueError:
+            raise ValueError("Position and velocity should have shape "
+                             "(nparticles, ndim)")
 
         if units is None and m is None:
             raise ValueError("If not specifying a list of units, you must "
