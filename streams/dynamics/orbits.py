@@ -51,9 +51,13 @@ class Orbit(Particle):
             raise TypeError("'t' must be a quantity-like object with a .unit"
                             " attribute")
 
+        if self._X.ndim != 3:
+            raise ValueError("Coordinate data must be 2D - 0th axis for each "
+                             "particle, 1st axis for time.")
+
         self.t = t
-        if self._X.shape[1] != self.t.shape[0]:
-            raise ValueError("Shape of t ({}) should match 0th axis of each "             "coordinate ({})".format(self.t.shape[0], \
+        if self._X.shape[-1] != self.t.shape[0]:
+            raise ValueError("Shape of t ({}) should match last axis of each "             "coordinate ({})".format(self.t.shape[0], \
                                                       self._X.shape[1]))
 
     def plot(self, fig=None, labels=None, **kwargs):

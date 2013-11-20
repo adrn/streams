@@ -73,8 +73,8 @@ class Particle(object):
         self._repr_units = _repr_units
         self._X = _X
 
-        if self._X.ndim > 2:
-            raise ValueError("Particle coordinates must be 1D.")
+        #if self._X.ndim > 2:
+        #    raise ValueError("Particle coordinates must be 1D.")
 
         # find units in usys that match the physical types of each units
         self._internal_units = []
@@ -118,7 +118,8 @@ class Particle(object):
 
         return np.array(_repr_X)
 
-    def __len__(self):
+    @property
+    def nparticles(self):
         return self._X.shape[1]
 
     def plot(self, fig=None, labels=None, **kwargs):
