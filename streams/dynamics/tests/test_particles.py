@@ -111,20 +111,4 @@ def test_observe():
         new_p.plot_v(fig=fig, color="r")
         fig.savefig(os.path.join(plot_path,
                     "particle_observed_v_fac{0}.png".format(factor)))
-
-def test_time_observe():
-    r = np.random.random(size=(100,3))*u.kpc
-    v = np.random.random(size=(100,3))*u.kpc/u.Myr
-    m = np.random.random(100)*u.M_sun
-    p = Particle(r=r, v=v, m=m, units=usys)
-
-    error_model = SpitzerGaiaErrorModel(units=usys, factor=1.)
-    a = time.time()
-    for ii in range(10):
-        new_p = p.observe(error_model)
-    print((time.time()-a)/10.)
-
-def test_observed_particle():
-    pass
-
 '''
