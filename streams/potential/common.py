@@ -176,19 +176,13 @@ def _cartesian_hernquist_model(bases):
     _G = G.decompose(bases=bases).value
 
     def f(r,r_0,m,c):
-        try:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))[:,np.newaxis]
-        except IndexError:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))
+        rr = np.sqrt(np.sum((r-r_0)**2, axis=0))
         val = -_G * m / (rr + c)
         return val
 
     def df(r,r_0,m,c):
         rr = r-r_0
-        try:
-            R = np.sqrt(np.sum((rr)**2, axis=0))[:,np.newaxis]
-        except IndexError:
-            R = np.sqrt(np.sum((rr)**2, axis=0))
+        R = np.sqrt(np.sum((rr)**2, axis=0))
 
         fac = -_G*m / ((R + c)**2 * R)
         return fac*rr
@@ -245,19 +239,13 @@ def _cartesian_isochrone_model(bases):
     _G = G.decompose(bases=bases).value
 
     def f(r,r_0,m,b):
-        try:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))[:,np.newaxis]
-        except IndexError:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))
+        rr = np.sqrt(np.sum((r-r_0)**2, axis=0))
         val = -_G * m / (np.sqrt(rr**2 + b**2) + b)
         return val
 
     def df(r,r_0,m,b):
         rr = r-r_0
-        try:
-            R = np.sqrt(np.sum((rr)**2, axis=0))[:,np.newaxis]
-        except IndexError:
-            R = np.sqrt(np.sum((rr)**2, axis=0))
+        R = np.sqrt(np.sum((rr)**2, axis=0))
 
         fac = -_G*m / (np.sqrt(R**2 + b**2) + b)
         return fac*rr
@@ -390,10 +378,7 @@ def _cartesian_logarithmic_lj_model(bases):
         C3 = 2.*math.sin(phi)*math.cos(phi)*(1./q1**2 - 1./q2**2)
 
         rr = r-r_0
-        try:
-            x,y,z = rr[:,0],rr[:,1],rr[:,2]
-        except IndexError:
-            x,y,z = rr
+        x,y,z = rr
 
         return v_halo*v_halo * np.log(C1*x*x + C2*y*y + C3*x*y + z*z/qz**2 + R_halo**2)
 
@@ -403,10 +388,7 @@ def _cartesian_logarithmic_lj_model(bases):
         C3 = 2.*math.sin(phi)*math.cos(phi)*(1./q1**2 - 1./q2**2)
 
         rr = r-r_0
-        try:
-            x,y,z = rr[:,0],rr[:,1],rr[:,2]
-        except IndexError:
-            x,y,z = rr
+        x,y,z = rr
 
         fac = v_halo*v_halo / (C1*x*x + C2*y*y + C3*x*y + z*z/qz**2 + R_halo**2)
 
@@ -467,10 +449,7 @@ def _cartesian_axisymmetric_nfw_model(bases):
 
     def f(r,r_0,log_m,qz,Rs):
         rr = r-r_0
-        try:
-            x,y,z = rr[:,0],rr[:,1],rr[:,2]
-        except IndexError:
-            x,y,z = rr
+        x,y,z = rr
 
         m = np.exp(log_m)
         R_sq = x**2 + y**2
@@ -481,10 +460,7 @@ def _cartesian_axisymmetric_nfw_model(bases):
 
     def df(r,r_0,log_m,qz,Rs):
         rr = r-r_0
-        try:
-            x,y,z = rr[:,0],rr[:,1],rr[:,2]
-        except IndexError:
-            x,y,z = rr
+        x,y,z = rr
 
         m = np.exp(log_m)
         zz = z/qz
@@ -532,19 +508,13 @@ def _cartesian_axisymmetric_logarithmic_model(bases):
 
     def f(r,r_0,v_c,qz):
         rr = r-r_0
-        try:
-            x,y,z = rr[:,0],rr[:,1],rr[:,2]
-        except IndexError:
-            x,y,z = rr
+        x,y,z = rr
 
         return 0.5*v_c*v_c * np.log(x*x + y*y + z*z/qz**2)
 
     def df(r,r_0,v_c,qz):
         rr = r-r_0
-        try:
-            x,y,z = rr[:,0],rr[:,1],rr[:,2]
-        except IndexError:
-            x,y,z = rr
+        x,y,z = rr
 
         fac = v_c*v_c / (x*x + y*y + z*z/(qz*qz))
 
