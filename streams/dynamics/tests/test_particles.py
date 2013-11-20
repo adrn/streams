@@ -54,51 +54,16 @@ def test_init():
         v = np.random.random(size=100)*u.kpc
         p = Particle((v, v.value), names=("x","y"))
 
-'''
-
-def test_merge():
-    # test merging two particle collections
-
-    r = np.random.random(size=(10,3))*u.kpc
-    v = np.random.random(size=(10,3))*u.km/u.s
-    m = np.random.random(10)*u.M_sun
-
-    pc1 = Particle(r=r, v=v, m=m, units=units)
-
-    r = np.random.random(size=(10,3))*u.kpc
-    v = np.random.random(size=(10,3))*u.km/u.s
-    m = np.random.random(10)*u.M_sun
-
-    pc2 = Particle(r=r, v=v, m=m, units=units)
-
-    pc_merged = pc1.merge(pc2)
-
-    assert pc_merged._r.shape == (20,3)
-
-def test_to():
-    r = np.random.random(size=(10,3))*u.kpc
-    v = np.random.random(size=(10,3))*u.kpc/u.Myr
-    m = np.random.random(10)*u.M_sun
-
-    pc = Particle(r=r, v=v, m=m, units=units)
-
-    usys2 = (u.km, u.s, u.kg)
-    pc2 = pc.to(usys2)
-
-    assert np.allclose(pc2._r, r.to(u.km).value)
-    assert np.allclose(pc2._v, v.to(u.km/u.s).value)
-    assert np.allclose(pc2._m, m.to(u.kg).value)
-
 def test_getitem():
-    r = np.random.random(size=(100,3))*u.kpc
-    v = np.random.random(size=(100,3))*u.kpc/u.Myr
-    m = np.random.random(100)*u.M_sun
+    xyz = np.random.random(size=(3,100))*u.km
+    p = Particle(xyz, names=("x","y","z"))
+    assert len(p) == 100
 
-    pc = Particle(r=r, v=v, m=m, units=units)
-    pc2 = pc[15:30]
+    p2 = p[15:30]
+    assert len(p2) == 15
+    assert (p2._X[:,0] == p._X[:,15]).all()
 
-    assert pc2.nparticles == 15
-    assert (pc2._r[0] == pc._r[15]).all()
+'''
 
 def test_plot():
     r = np.random.random(size=(100,3))*u.kpc
