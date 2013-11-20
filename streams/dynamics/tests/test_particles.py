@@ -57,10 +57,10 @@ def test_init():
 def test_getitem():
     xyz = np.random.random(size=(3,100))*u.km
     p = Particle(xyz, names=("x","y","z"))
-    assert len(p) == 100
+    assert p.nparticles == 100
 
     p2 = p[15:30]
-    assert len(p2) == 15
+    assert p2.nparticles == 15
     assert (p2._X[:,0] == p._X[:,15]).all()
 
 def test_repr_X():
