@@ -34,19 +34,26 @@ class ParticleIntegrator(LeapfrogIntegrator):
                 A Particle, or list/tuple of Particle objects.
         """
 
+        self.particles = particles
+        super(ParticleIntegrator,self).__init__(potential._acceleration_at,
+                                                self.X0[:3], self.X0[3:],
+                                                args=args)
+
+    @property
+    def X0(self):
         # Stack positions and velocities from particles
+        particles = self.particles
         if isinstance(particles, Particle):
             X0 = particles._X
         else:
             X0 = np.hstack([p._X for p in particles])
 
-        r0 = X0[:3]
-        v0 = X0[3:]
-
-        super(ParticleIntegrator,self).__init__(potential._acceleration_at,
-                                                r0, v0, args=args)
+        return X0
 
     def run(self, **time_spec):
+        self.r_im1 = self.X0[:3]
+        self.v_im1 = self.X0[3:]
+
         t,r,v = super(ParticleIntegrator,self).run(**time_spec)
 
         return t,r,v
