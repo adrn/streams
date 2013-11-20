@@ -13,16 +13,13 @@ import copy
 # Third-party
 import numpy as np
 import astropy.units as u
-from astropy.constants import G
 import triangle
 
 # Project
 from .. import usys
-from .core import _validate_quantity, DynamicalBase
 from ..coordinates import _gc_to_hel, _hel_to_gc
 
 __all__ = ["Particle"]
-
 
 class Particle(object):
 
