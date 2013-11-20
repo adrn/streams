@@ -86,9 +86,18 @@ class Particle(object):
                              "dimension.")
         self.names = names
 
+    def copy(self):
+        """ Return a copy of the current instance. I'm just a copy
+            of a copy of a copy...
+        """
+        return copy.deepcopy(self)
+
     def __getitem__(self, slc):
         if isinstance(slc, (int,slice)):
-            raise NotImplementedError()
+            cpy = self.copy()
+            cpy._X = cpy._X[:,slc]
+            return cpy
+
         else:
             try:
                 ii = self.names.index(slc)
