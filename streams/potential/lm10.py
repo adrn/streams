@@ -85,7 +85,7 @@ class LawMajewski2010(CompositePotential):
         #                                       bulge=bulge,
         #                                       disk=disk,
         #                                       halo=halo)
-
+        self.units = usys
         self._G = G.decompose(bases=usys).value
 
     def _acceleration_at(self, r, n_particles, acc):
@@ -122,7 +122,7 @@ class LawMajewski2010(CompositePotential):
         """
 
         # Radius of Sgr center relative to galactic center
-        R_orbit = np.sqrt(np.sum(r**2., axis=-1))
+        R_orbit = np.sqrt(np.sum(r**2., axis=0))
         m_enc = self._enclosed_mass(R_orbit)
 
         return R_orbit * (m / (m_enc))**(0.33333)

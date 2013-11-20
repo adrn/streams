@@ -28,7 +28,7 @@ def test_tidal_radius():
     r_tide = p.tidal_radius(m, r)
     _r_tide = p._tidal_radius(m.value, r.value)
 
-    assert _r_tide == r_tide.value
+    assert (_r_tide == r_tide.value).all()
 
 def test_escape_velocity():
     p = LawMajewski2010()
@@ -43,4 +43,4 @@ def test_escape_velocity():
     _r_tide = p._tidal_radius(m.value, r.value)
     _v_esc = p._escape_velocity(m.value, r_tide=_r_tide)
 
-    assert _v_esc == v_esc.value
+    assert (_v_esc == v_esc.value).all()
