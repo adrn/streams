@@ -85,6 +85,7 @@ class Particle(object):
             raise ValueError("Must specify coordinate name for each "
                              "dimension.")
         self.names = names
+        self.meta = meta
 
     def copy(self):
         """ Return a copy of the current instance. I'm just a copy
