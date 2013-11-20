@@ -63,20 +63,33 @@ def test_getitem():
     assert len(p2) == 15
     assert (p2._X[:,0] == p._X[:,15]).all()
 
-'''
+def test_repr_X():
+    x = np.random.random(size=100)
+    vx = np.random.random(size=100)
+    p = Particle((x, vx), names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
+
+    assert np.allclose(p._repr_X[0], x)
+    assert np.allclose(p._repr_X[1], vx)
 
 def test_plot():
-    r = np.random.random(size=(100,3))*u.kpc
-    v = np.random.random(size=(100,3))*u.kpc/u.Myr
-    m = np.random.random(100)*u.M_sun
-    p = Particle(r=r, v=v, m=m, units=units)
+    x = np.random.random(size=1000)
+    vx = np.random.random(size=1000)
+    p = Particle((x, vx), names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
 
-    fig = p.plot_r()
-    fig.savefig(os.path.join(plot_path, "particle_r.png"))
+    fig = p.plot()
+    fig.savefig(os.path.join(plot_path, "particle_2d.png"))
 
-    fig = p.plot_v()
-    fig.savefig(os.path.join(plot_path, "particle_v.png"))
+    # now try 6D case
+    xx = np.random.random(size=(6,100))
+    p = Particle(xx, names=("x","y","z","vx","vy","vz"),
+                 units=[u.kpc, u.kpc, u.kpc, u.km/u.s, u.km/u.s, u.km/u.s])
 
+    fig = p.plot()
+    fig.savefig(os.path.join(plot_path, "particle_6d.png"))
+
+'''
 def test_observe():
 
     # from LM10 -- copied here so I don't have to read in each time...

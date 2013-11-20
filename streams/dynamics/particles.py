@@ -116,26 +116,33 @@ class Particle(object):
 
         _repr_X = []
         for ii in range(self.ndim):
-            _repr_X.append(self._X[ii]*self._internal_units[ii])\
-                               .to(self._repr_units[ii].value.tolist())
+            _repr_X.append((self._X[ii]*self._internal_units[ii])\
+                               .to(self._repr_units[ii]).value.tolist())
 
         return np.array(_repr_X)
 
     def __len__(self):
         return self._X.shape[1]
 
-    def plot(self, labels=None):
+    def plot(self, fig=None, labels=None, **kwargs):
         """ Make a corner plot showing all dimensions.
 
         """
 
         if labels is None:
-            labels = self.names
+            labels = ["{0} [{1}]".format(n,uu) \
+                        for n,uu in zip(self.names,self._repr_units)]
 
-        fig = triangle.corner(self._X.T, labels=labels,
+        if fig is not None:
+            kwargs["fig"] = fig
+
+        fig = triangle.corner(self._repr_X.T,
+                              labels=labels,
                               plot_contours=False,
                               plot_datapoints=True,
                               **kwargs)
+
+        return fig
 
 class OldParticle(DynamicalBase):
 
