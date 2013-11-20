@@ -107,6 +107,9 @@ class Particle(object):
             return (self._X[ii]*self._internal_units[ii])\
                         .to(self._repr_units[ii])
 
+    def __len__(self):
+        return self._X.shape[1]
+
 class OldParticle(DynamicalBase):
 
     def __init__(self, r, v, m=None, units=None):
