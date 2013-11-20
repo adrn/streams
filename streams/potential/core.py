@@ -24,9 +24,10 @@ import astropy.units as u
 from .. import usys
 from ..inference import Parameter
 
-__all__ = ["CartesianPotential", "CompositePotential"]
+__all__ = ["CartesianPotential", "CompositePotential", "PotentialParameter"]
 
-class PotentialParameter(Parameter):
+
+class PotentialParameter(object):
 
     def __init__(self, value=None, truth=None, range=(),
                  latex="", units=usys):
