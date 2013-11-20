@@ -26,7 +26,7 @@ __all__ = ["Particle"]
 
 class Particle(object):
 
-    def __init__(self, coords=(), names=(), units=None, meta=dict()):
+    def __init__(self, coords, names, units=None, meta=dict()):
         """ Represents a dynamical particle or collection of particles.
             Particles can have associated metadata, e.g., mass or for
             a Satellite, velocity dispersion.
@@ -45,7 +45,7 @@ class Particle(object):
             units : iterable (optional)
                 Must be specified if q is an array_like object, otherwise this
                 is constructed from the Quantity objects in q.
-            meta : dict (optoonal)
+            meta : dict (optional)
                 Any additional metadata.
         """
 
