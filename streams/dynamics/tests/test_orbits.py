@@ -55,19 +55,20 @@ def test_repr_X():
     assert np.allclose(o._repr_X[0], x)
     assert np.allclose(o._repr_X[1], vx)
 
-# def test_plot():
-#     x = np.random.random(size=1000)
-#     vx = np.random.random(size=1000)
-#     p = Particle((x, vx), names=("x","vx"),
-#                  units=[u.kpc, u.km/u.s])
+def test_plot():
+    t = np.arange(0,100)*u.Myr
+    x = np.random.random(size=(3,len(t)))
+    vx = np.random.random(size=(3,len(t)))
+    o = Orbit(t, (x, vx), names=("x","vx"),
+                          units=[u.kpc, u.km/u.s])
 
-#     fig = p.plot()
-#     fig.savefig(os.path.join(plot_path, "particle_2d.png"))
+    fig = o.plot()
+    fig.savefig(os.path.join(plot_path, "orbit_2d.png"))
 
-#     # now try 6D case
-#     xx = np.random.random(size=(6,100))
-#     p = Particle(xx, names=("x","y","z","vx","vy","vz"),
-#                  units=[u.kpc, u.kpc, u.kpc, u.km/u.s, u.km/u.s, u.km/u.s])
+    # TODO: now try 6D case
+    # xx = np.random.random(size=(6,100))
+    # p = Particle(xx, names=("x","y","z","vx","vy","vz"),
+    #              units=[u.kpc, u.kpc, u.kpc, u.km/u.s, u.km/u.s, u.km/u.s])
 
-#     fig = p.plot()
-#     fig.savefig(os.path.join(plot_path, "particle_6d.png"))
+    # fig = p.plot()
+    # fig.savefig(os.path.join(plot_path, "particle_6d.png"))
