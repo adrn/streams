@@ -176,13 +176,15 @@ def _cartesian_hernquist_model(bases):
     _G = G.decompose(bases=bases).value
 
     def f(r,r_0,m,c):
-        rr = np.sqrt(np.sum((r-r_0)**2, axis=0))
-        val = -_G * m / (rr + c)
+        rr = r-r_0
+        R = np.sqrt(np.sum(rr**2, axis=0))
+
+        val = -_G * m / (R + c)
         return val
 
     def df(r,r_0,m,c):
         rr = r-r_0
-        R = np.sqrt(np.sum((rr)**2, axis=0))
+        R = np.sqrt(np.sum(rr**2, axis=0))
 
         fac = -_G*m / ((R + c)**2 * R)
         return fac*rr
@@ -396,7 +398,7 @@ def _cartesian_logarithmic_lj_model(bases):
         dy = fac * (2.*C2*y + C3*x)
         dz = 2.* fac * z * qz**-2
 
-        return -np.array([dx,dy,dz]).T
+        return -np.array([dx,dy,dz])
 
     return (f, df)
 
@@ -473,7 +475,7 @@ def _cartesian_axisymmetric_nfw_model(bases):
         _y = fac * y
         _z = fac * z / qz**2
 
-        return np.array([_x,_y,_z]).T
+        return np.array([_x,_y,_z])
 
     return (f, df)
 
