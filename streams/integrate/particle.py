@@ -18,7 +18,7 @@ import astropy.units as u
 
 # Project
 from .leapfrog import LeapfrogIntegrator
-from ..dynamics import Particle
+from ..dynamics import Particle, Orbit
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -34,26 +34,33 @@ class ParticleIntegrator(LeapfrogIntegrator):
                 A Particle, or list/tuple of Particle objects.
         """
 
+        if isinstance(particles, Particle):
+            self.X0 = particles._X
+            particles = [particles]
+        else:
+            self.X0 = np.hstack([p._X for p in particles])
         self.particles = particles
+
         super(ParticleIntegrator,self).__init__(potential._acceleration_at,
                                                 self.X0[:3], self.X0[3:],
                                                 args=args)
-
-    @property
-    def X0(self):
-        # Stack positions and velocities from particles
-        particles = self.particles
-        if isinstance(particles, Particle):
-            X0 = particles._X
-        else:
-            X0 = np.hstack([p._X for p in particles])
-
-        return X0
 
     def run(self, **time_spec):
         self.r_im1 = self.X0[:3]
         self.v_im1 = self.X0[3:]
 
         t,r,v = super(ParticleIntegrator,self).run(**time_spec)
+        t = t*u.Myr # HACK!!!
 
-        return t,r,v
+        orbits = []
+        ix = 0
+        for ii,p in enumerate(self.particles):
+            X = np.vstack((r[:,ix:ix+p.nparticles],v[:,ix:ix+p.nparticles]))
+            o = Orbit(t, X,
+                      names=p.names,
+                      units=p._internal_units,
+                      meta=p.meta)
+            ix += p.nparticles
+            orbits.append(o)
+
+        return orbits
