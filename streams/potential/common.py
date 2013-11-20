@@ -41,14 +41,11 @@ def _cartesian_point_mass_model(bases):
     _G = G.decompose(bases=bases).value
 
     def f(r,r_0,m):
-        return -_G * m / np.sqrt(np.sum((r-r_0)**2, axis=-1))
+        R = np.sqrt(np.sum((r-r_0)**2, axis=0))
+        return -_G * m / R
 
     def df(r,r_0,m):
-        try:
-            a = (np.sum((r-r_0)**2, axis=-1)**-1.5)[:,np.newaxis]
-        except IndexError:
-            a = (np.sum((r-r_0)**2, axis=-1)**-1.5)
-
+        a = (np.sum((r-r_0)**2, axis=0)**-1.5)
         return -_G * m * (r-r_0) * a
 
     return (f, df)
@@ -76,7 +73,11 @@ class PointMassPotential(CartesianPotential):
         latex = "$\\Phi = -\\frac{GM}{r-r_0}$"
 
         assert "m" in parameters.keys(), "You must specify a mass."
-        assert "r_0" in parameters.keys(), "You must specify a location for the mass."
+        assert "r_0" in parameters.keys(), ("You must specify a location "
+                                            "for the mass.")
+
+        if not parameters["r_0"].ndim == 2:
+            parameters["r_0"] = parameters["r_0"][:,np.newaxis]
 
         # get functions for evaluating potential and derivatives
         f,df = _cartesian_point_mass_model(units)
@@ -190,18 +191,18 @@ def _cartesian_hernquist_model(bases):
 
     def f(r,r_0,m,c):
         try:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))[:,np.newaxis]
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))[:,np.newaxis]
         except IndexError:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))
         val = -_G * m / (rr + c)
         return val
 
     def df(r,r_0,m,c):
         rr = r-r_0
         try:
-            R = np.sqrt(np.sum((rr)**2, axis=-1))[:,np.newaxis]
+            R = np.sqrt(np.sum((rr)**2, axis=0))[:,np.newaxis]
         except IndexError:
-            R = np.sqrt(np.sum((rr)**2, axis=-1))
+            R = np.sqrt(np.sum((rr)**2, axis=0))
 
         fac = -_G*m / ((R + c)**2 * R)
         return fac*rr
@@ -262,18 +263,18 @@ def _cartesian_isochrone_model(bases):
 
     def f(r,r_0,m,b):
         try:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))[:,np.newaxis]
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))[:,np.newaxis]
         except IndexError:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))
         val = -_G * m / (np.sqrt(rr**2 + b**2) + b)
         return val
 
     def df(r,r_0,m,b):
         rr = r-r_0
         try:
-            R = np.sqrt(np.sum((rr)**2, axis=-1))[:,np.newaxis]
+            R = np.sqrt(np.sum((rr)**2, axis=0))[:,np.newaxis]
         except IndexError:
-            R = np.sqrt(np.sum((rr)**2, axis=-1))
+            R = np.sqrt(np.sum((rr)**2, axis=0))
 
         fac = -_G*m / (np.sqrt(R**2 + b**2) + b)
         return fac*rr
@@ -334,18 +335,18 @@ def _cartesian_plummer_model(bases):
 
     def f(r,r_0,m,a):
         try:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))[:,np.newaxis]
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))[:,np.newaxis]
         except IndexError:
-            rr = np.sqrt(np.sum((r-r_0)**2, axis=-1))
+            rr = np.sqrt(np.sum((r-r_0)**2, axis=0))
         val = -_G * m / np.sqrt(rr**2 + a**2)
         return val
 
     def df(r,r_0,m,a):
         rr = r-r_0
         try:
-            R_sq = np.sum((rr)**2, axis=-1)[:,np.newaxis]
+            R_sq = np.sum((rr)**2, axis=0)[:,np.newaxis]
         except IndexError:
-            R_sq = np.sum((rr)**2, axis=-1)
+            R_sq = np.sum((rr)**2, axis=0)
 
         fac = -_G*m / (R_sq + a**2)**1.5
         return fac*rr
