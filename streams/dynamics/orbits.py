@@ -52,11 +52,15 @@ class Orbit(Particle):
                             " attribute")
 
         self.t = t
+        if self._X.shape[1] != self.t.shape[0]:
+            raise ValueError("Shape of t ({}) should match 0th axis of each "             "coordinate ({})".format(self.t.shape[0], \
+                                                      self._X.shape[1]))
 
     def plot(self, fig=None, labels=None, **kwargs):
         """ Make a corner plot showing all dimensions.
 
         """
+        # TODO:
 
         if labels is None:
             labels = ["{0} [{1}]".format(n,uu) \

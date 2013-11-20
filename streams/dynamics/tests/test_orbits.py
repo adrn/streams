@@ -23,7 +23,7 @@ if not os.path.exists(plot_path):
 
 def test_init():
 
-    t = np.arange(0,100)*u.Myr
+    t = np.arange(0,1000)*u.Myr
     x = np.random.random(size=100)
     vx = np.random.random(size=100)
     p = Orbit(t, (x, vx), names=("x","vx"),
@@ -37,7 +37,7 @@ def test_init():
 
 def test_getitem():
     xyz = np.random.random(size=(3,100))*u.km
-    p = Particle(xyz, names=("x","y","z"))
+    p = Orbit(xyz, names=("x","y","z"))
     assert len(p) == 100
 
     p2 = p[15:30]
