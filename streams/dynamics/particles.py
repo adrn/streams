@@ -56,7 +56,7 @@ class Particle(object):
             if _X is None:
                 _X = np.zeros((self.ndim,) + q.shape)
 
-            if hasattr(q, "unit"):
+            if hasattr(q, "unit") and q.unit != u.dimensionless_unscaled:
                 unit = q.unit
                 value = q.decompose(usys).value
             else:
@@ -129,7 +129,7 @@ class Particle(object):
 
         if labels is None:
             labels = ["{0} [{1}]".format(n,uu) \
-                        for n,uu in zip(self.names,self._repr_units)]
+                        for n,uu in zip(self.names, self._repr_units)]
 
         if fig is not None:
             kwargs["fig"] = fig
