@@ -49,15 +49,15 @@ class Particle(object):
                 Any additional metadata.
         """
 
-        ndim = len(coords)
+        self.ndim = len(coords)
 
         _X = None
         _repr_units = []
-        for ii in range(ndim):
+        for ii in range(self.ndim):
             q = coords[ii]
 
             if _X is None:
-                _X = np.zeros((ndim,) + q.shape)
+                _X = np.zeros((self.ndim,) + q.shape)
 
             if hasattr(q, "unit"):
                 unit = q.unit
@@ -76,12 +76,15 @@ class Particle(object):
         self._repr_units = _repr_units
         self._X = _X
 
+        if self._X.ndim > 2:
+            raise ValueError("Particle coordinates must be 1D.")
+
         # find units in usys that match the physical types of each units
         self._internal_units = []
         for unit in self._repr_units:
             self._internal_units.append((1*unit).decompose(usys).unit)
 
-        if len(names) != ndim:
+        if len(names) != self.ndim:
             raise ValueError("Must specify coordinate name for each "
                              "dimension.")
         self.names = names
@@ -107,8 +110,32 @@ class Particle(object):
             return (self._X[ii]*self._internal_units[ii])\
                         .to(self._repr_units[ii])
 
+    @property
+    def _repr_X(self):
+        """ Return the 6D array of all coordinates in the repr units """
+
+        _repr_X = []
+        for ii in range(self.ndim):
+            _repr_X.append(self._X[ii]*self._internal_units[ii])\
+                               .to(self._repr_units[ii].value.tolist())
+
+        return np.array(_repr_X)
+
     def __len__(self):
         return self._X.shape[1]
+
+    def plot(self, labels=None):
+        """ Make a corner plot showing all dimensions.
+
+        """
+
+        if labels is None:
+            labels = self.names
+
+        fig = triangle.corner(self._X.T, labels=labels,
+                              plot_contours=False,
+                              plot_datapoints=True,
+                              **kwargs)
 
 class OldParticle(DynamicalBase):
 
