@@ -29,26 +29,30 @@ def test_init():
 
     x = np.random.random(size=100)
     vx = np.random.random(size=100)
-    p = Particle(q=(x, vx), names=("x","vx"),
+    p = Particle((x, vx), names=("x","vx"),
                  units=[u.kpc, u.km/u.s])
-    p = Particle(q=(x*u.kpc, vx*u.km/u.s), names=("x","vx"))
+    p = Particle((x*u.kpc, vx*u.km/u.s), names=("x","vx"))
     assert np.all(p["x"].value == x)
-    assert np.all(p["vx"].value == vx)
+    assert np.allclose(p["vx"].value, vx, rtol=1E-15, atol=1E-15)
 
     x_vx = np.random.random(size=(2,100))
-    p = Particle(q=x_vx, names=("x","vx"),
+    p = Particle(x_vx, names=("x","vx"),
                  units=[u.kpc, u.km/u.s])
 
-    xyz = np.random.random(size=(3,100))*u.kpc
-    p = Particle(q=xyz, names=("x","y","z"))
+    xyz = np.random.random(size=(3,100))*u.km
+    p = Particle(xyz, names=("x","y","z"))
+    assert p["x"].unit == u.km
+    assert p["y"].unit == u.km
+    assert p["z"].unit == u.km
+    assert np.allclose(p["z"].value, xyz[2], rtol=1E-15, atol=1E-15)
 
     with pytest.raises(ValueError):
         xyz = np.random.random(size=(3,100))
-        p = Particle(q=xyz, names=("x","y","z"))
+        p = Particle(xyz, names=("x","y","z"))
 
     with pytest.raises(ValueError):
         v = np.random.random(size=100)*u.kpc
-        p = Particle(q=(v, v.value), names=("x","y"))
+        p = Particle((v, v.value), names=("x","y"))
 
 '''
 

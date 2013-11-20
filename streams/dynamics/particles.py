@@ -26,14 +26,14 @@ __all__ = ["Particle"]
 
 class Particle(object):
 
-    def __init__(self, q=(), names=(), units=None, meta=dict()):
+    def __init__(self, coords=(), names=(), units=None, meta=dict()):
         """ Represents a dynamical particle or collection of particles.
             Particles can have associated metadata, e.g., mass or for
             a Satellite, velocity dispersion.
 
             Parameters
             ----------
-            q : iterable
+            coords : iterable
                 Can either be an iterable (e.g., list or tuple) of Quantity
                 objects, in which case their units are grabbed from the
                 objects themselves, or an array_like object with the first
@@ -49,52 +49,44 @@ class Particle(object):
                 Any additional metadata.
         """
 
-        if isinstance(q, np.ndarray): # ndarray or Quantity! TODO: figure out this logic biatch
-            if q.ndim == 1:
-                q = np.atleast_2d(q).T
+        ndim = len(coords)
 
-            ndim = q.shape[0]
+        _X = None
+        _repr_units = []
+        for ii in range(ndim):
+            q = coords[ii]
+
+            if _X is None:
+                _X = np.zeros((ndim,) + q.shape)
 
             if hasattr(q, "unit"):
-                units = [q.unit] * ndim
+                unit = q.unit
+                value = q.decompose(usys).value
             else:
-                if units is None:
-                    raise ValueError("Must specify units if input is "
-                                     "an ndarray.")
-
-                q = [q[ii]*units[ii] for ii in range(ndim)]
-
-        else:
-            ndim = len(q)
-
-            if units is None:
                 try:
-                    units = [qq.unit for qq in q]
-                except AttributeError:
-                    raise ValueError("All coordinates must be Quantity's")
+                    unit = units[ii]
+                except TypeError:
+                    raise ValueError("Must specify units for each"
+                                     "coordinate dimension.")
+                value = (q*unit).decompose(usys).value
+
+            _repr_units.append(unit)
+            _X[ii] = value
+
+        self._repr_units = _repr_units
+        self._X = _X
 
         # find units in usys that match the physical types of each units
         self._internal_units = []
-        for unit in units:
+        for unit in self._repr_units:
             self._internal_units.append((1*unit).decompose(usys).unit)
-        self._repr_units = units
 
         if len(names) != ndim:
             raise ValueError("Must specify coordinate name for each "
                              "dimension.")
         self.names = names
 
-        self._X = np.zeros((ndim,) + q[0].shape)
-        for ii in range(ndim):
-            if not hasattr(q[ii], "unit"):
-                qq = q[ii]*units[ii]
-            else:
-                qq = q[ii]
-
-            self._X[ii] = qq.to(self._internal_units[ii]).value
-
     def __getitem__(self, slc):
-
         if isinstance(slc, (int,slice)):
             raise NotImplementedError()
         else:
