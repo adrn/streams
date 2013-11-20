@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" Astropy coordinate class for the Sagittarius coordinate system """
+""" Astropy coordinate class for the Orphan coordinate system """
 
 from __future__ import division, print_function
 
