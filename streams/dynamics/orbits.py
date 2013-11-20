@@ -61,22 +61,28 @@ class Orbit(Particle):
                                                       self._X.shape[1]))
 
     def plot(self, fig=None, labels=None, **kwargs):
-        """ Make a corner plot showing all dimensions.
-
-        """
-        # TODO:
+        """ Make a corner plot showing all dimensions. """
 
         if labels is None:
             labels = ["{0} [{1}]".format(n,uu) \
-                        for n,uu in zip(self.names,self._repr_units)]
+                        for n,uu in zip(self.names, self._repr_units)]
 
         if fig is not None:
             kwargs["fig"] = fig
 
-        fig = triangle.corner(self._repr_X.T,
-                              labels=labels,
-                              plot_contours=False,
-                              plot_datapoints=True,
-                              **kwargs)
+        for ii in range(self.nparticles):
+            # TODO: each should get a different color?
+            if kwargs.get("fig", None) is None:
+                kwargs["fig"] = triangle.corner(self._repr_X[:,ii].T,
+                                         labels=labels,
+                                         plot_contours=False,
+                                         plot_datapoints=True,
+                                         **kwargs)
+            else:
+                kwargs["fig"] = triangle.corner(self._repr_X[:,ii].T,
+                                    labels=labels,
+                                    plot_contours=False,
+                                    plot_datapoints=True,
+                                    **kwargs)
 
-        return fig
+        return kwargs["fig"]
