@@ -23,16 +23,13 @@ if not os.path.exists(plot_path):
 def test_simple():
     p = Palomar5()
     p = Palomar5(m=1.21*u.M_sun)
-    
+
 def test_plot():
     potential = Palomar5()
-    r = [0.,0.,0.]*u.kpc
-    pot_val = potential.value_at(r)        
+    r = ([0.,0.,0.]*u.kpc).reshape(3,1)
+    pot_val = potential.value_at(r)
     acc_val = potential.acceleration_at(r)
-    
+
     grid = np.linspace(-20.,20, 50)*u.kpc
     fig,axes = potential.plot(grid=grid, ndim=3)
     fig.savefig(os.path.join(plot_path, "pal5.png"))
-    
-    fig,axes = potential.plot_acceleration(grid=grid, ndim=3)
-    fig.savefig(os.path.join(plot_path, "pal5_acceleration.png"))
