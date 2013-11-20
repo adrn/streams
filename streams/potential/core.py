@@ -112,6 +112,12 @@ class CartesianPotential(Potential):
 
         # Convert parameters to the given units
         self.parameters = parameters
+        if not parameters.has_key("r_0"):
+            parameters["r_0"] = ([0.,0.,0.]*u.km).decompose(self.units)
+
+        if not parameters["r_0"].ndim == 2:
+            parameters["r_0"] = parameters["r_0"][:,np.newaxis]
+
         self._parameters = self._rescale_parameters(parameters)
 
         # Make sure the f is callable, and that the component doesn't already

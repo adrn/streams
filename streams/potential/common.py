@@ -73,11 +73,6 @@ class PointMassPotential(CartesianPotential):
         latex = "$\\Phi = -\\frac{GM}{r-r_0}$"
 
         assert "m" in parameters.keys(), "You must specify a mass."
-        assert "r_0" in parameters.keys(), ("You must specify a location "
-                                            "for the mass.")
-
-        if not parameters["r_0"].ndim == 2:
-            parameters["r_0"] = parameters["r_0"][:,np.newaxis]
 
         # get functions for evaluating potential and derivatives
         f,df = _cartesian_point_mass_model(units)
@@ -87,7 +82,7 @@ class PointMassPotential(CartesianPotential):
                                                  parameters=parameters)
 
 
-####################################################################################
+##############################################################################
 #    Miyamoto-Nagai Disk potential from Miyamoto & Nagai 1975
 #    http://adsabs.harvard.edu/abs/1975PASJ...27..533M
 #
@@ -105,20 +100,14 @@ def _cartesian_miyamoto_nagai_model(bases):
 
     def f(r,r_0,m,a,b):
         rr = r-r_0
-        try:
-            x,y,z = rr[:,0],rr[:,1],rr[:,2]
-        except IndexError:
-            x,y,z = rr
+        x,y,z = rr
 
         z_term = a + np.sqrt(z*z + b*b)
         return -_G * m / np.sqrt(x*x + y*y + z_term*z_term)
 
     def df(r,r_0,m,a,b):
         rr = r-r_0
-        try:
-            x,y,z = rr[:,0],rr[:,1],rr[:,2]
-        except IndexError:
-            x,y,z = rr
+        x,y,z = rr
 
         sqrtz = np.sqrt(z*z + b*b)
         z_term = a + sqrtz
@@ -130,7 +119,7 @@ def _cartesian_miyamoto_nagai_model(bases):
         c = a / sqrtz
         dz = fac*z * (1. + c)
 
-        return np.array([dx,dy,dz]).T
+        return np.array([dx,dy,dz])
 
     return (f, df)
 
@@ -159,9 +148,6 @@ class MiyamotoNagaiPotential(CartesianPotential):
 
         latex = "$\\Phi_{disk} = -\\frac{GM_{disk}}{\\sqrt{R^2 + (a + \\sqrt{z^2 + b^2})^2}}$"
 
-        if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*u.kpc
-
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "a" in parameters.keys(), "You must specify the parameter 'a'."
         assert "b" in parameters.keys(), "You must specify the parameter 'b'."
@@ -173,7 +159,7 @@ class MiyamotoNagaiPotential(CartesianPotential):
                                                      latex=latex,
                                                      parameters=parameters)
 
-####################################################################################
+##############################################################################
 #    Hernquist Spheroid potential from Hernquist 1990
 #    http://adsabs.harvard.edu/abs/1990ApJ...356..359H
 #
@@ -233,9 +219,6 @@ class HernquistPotential(CartesianPotential):
 
         latex = "$\\Phi_{spher} = -\\frac{GM_{spher}}{r + c}$"
 
-        if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*u.kpc
-
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "c" in parameters.keys(), "You must specify the parameter 'c'."
 
@@ -246,7 +229,7 @@ class HernquistPotential(CartesianPotential):
                                                  latex=latex,
                                                  parameters=parameters)
 
-####################################################################################
+##############################################################################
 #    Isochrone potential
 #
 def _cartesian_isochrone_model(bases):
@@ -305,9 +288,6 @@ class IsochronePotential(CartesianPotential):
 
         latex = "$\\Phi = -\\frac{GM}{\sqrt{r^2+b^2} + b}$"
 
-        if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*u.kpc
-
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "b" in parameters.keys(), "You must specify the parameter 'b'."
 
@@ -318,7 +298,7 @@ class IsochronePotential(CartesianPotential):
                                                  latex=latex,
                                                  parameters=parameters)
 
-####################################################################################
+##############################################################################
 #    Plummer potential
 #
 def _cartesian_plummer_model(bases):
@@ -376,9 +356,6 @@ class PlummerPotential(CartesianPotential):
 
         latex = r"$\Phi = -\frac{GM}{\sqrt{r^2 + a^2}}$"
 
-        if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*u.kpc
-
         assert "m" in parameters.keys(), "You must specify a mass."
         assert "a" in parameters.keys(), "You must specify the parameter 'a'."
 
@@ -389,7 +366,7 @@ class PlummerPotential(CartesianPotential):
                                                  latex=latex,
                                                  parameters=parameters)
 
-####################################################################################
+##############################################################################
 #    Triaxial, Logarithmic potential (see: Johnston et al. 1998)
 #    http://adsabs.harvard.edu/abs/1999ApJ...512L.109J
 #
@@ -460,9 +437,6 @@ class LogarithmicPotentialLJ(CartesianPotential):
 
         latex = "$\\Phi_{halo} = v_{halo}^2\\ln(C_1x^2 + C_2y^2 + C_3xy + z^2/q_z^2 + R_halo^2)$"
 
-        if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*u.kpc
-
         for p in ["q1", "q2", "qz", "phi", "v_halo", "R_halo"]:
             assert p in parameters.keys(), \
                     "You must specify the parameter '{0}'.".format(p)
@@ -475,7 +449,7 @@ class LogarithmicPotentialLJ(CartesianPotential):
                                                      parameters=parameters)
 
 
-####################################################################################
+##############################################################################
 #    Axisymmetric NFW potential
 #
 def _cartesian_axisymmetric_nfw_model(bases):
@@ -533,9 +507,6 @@ class AxisymmetricNFWPotential(CartesianPotential):
 
         latex = "$\sigma$"
 
-        if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*u.kpc
-
         assert "log_m" in parameters.keys(), "You must specify a log-mass."
         assert "qz" in parameters.keys(), "You must specify the parameter 'qz'."
         assert "Rs" in parameters.keys(), "You must specify the parameter 'Rs'."
@@ -547,7 +518,7 @@ class AxisymmetricNFWPotential(CartesianPotential):
                                                  latex=latex,
                                                  parameters=parameters)
 
-####################################################################################
+##############################################################################
 #    Axisymmetric, Logarithmic potential
 #
 def _cartesian_axisymmetric_logarithmic_model(bases):
@@ -603,9 +574,6 @@ class AxisymmetricLogarithmicPotential(CartesianPotential):
         """
 
         latex = "$\\Phi_{halo} = v_{halo}^2\\ln(C_1x^2 + C_2y^2 + C_3xy + z^2/q_z^2 + R_halo^2)$"
-
-        if "r_0" not in parameters.keys():
-            parameters["r_0"] = [0.,0.,0.]*u.kpc
 
         for p in ["qz", "v_c"]:
             assert p in parameters.keys(), \
