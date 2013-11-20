@@ -85,18 +85,18 @@ def test_run():
     fig.savefig(os.path.join(plot_path, "one_xyz.png"))
 
     apos = np.max(np.sqrt(np.sum(r**2, axis=0)), axis=-1)
-    fig, ax = plt.subplots(1,1,figsize=(12,12))
+    fig, ax = plt.subplots(1,1,figsize=(8.5,11))
     ax.set_color_cycle(['#9E0142', '#D53E4F', '#F46D43', '#FDAE61', \
                         '#FEE08B', '#E6F598', '#ABDDA4', '#66C2A5', \
                         '#3288BD', '#5E4FA2'])
     for ii in range(N):
-        ax.plot(r[0,ii], r[1,ii], alpha=(apos[ii]/max(apos))**1.5,
-                linestyle='-', lw=2.5, marker=None)
+        ax.plot(r[0,ii], r[1,ii], alpha=(apos[ii]/max(apos))**1.8*0.99+0.01,
+                linestyle='-', lw=2., marker=None)
 
-    ax.set_axis_bgcolor("#555555")
+    ax.set_axis_bgcolor("#333333")
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
     ax.set_xlim(-20,20)
-    ax.set_ylim(-20,20)
+    ax.set_ylim(-25.88,25.88)
     fig.subplots_adjust(left=0., right=1., top=1., bottom=0.)
-    fig.savefig(os.path.join(plot_path, "all_orbit.pdf"), facecolor='#555555')
+    fig.savefig(os.path.join(plot_path, "all_orbit.pdf"), facecolor='#333333')
