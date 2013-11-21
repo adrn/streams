@@ -57,9 +57,9 @@ class SgrSimulation(SimulationData):
             mass : str
                 e.g., 2.5e8
         """
-        filename = os.path.join(_path,mass,"SNAP"))
+        filename = os.path.join(_path,mass,"SNAP")
         self.mass = float(mass)
-        self._units = _units_from_file(os.path.join(_path,mass,"SCFPAR")))
+        self._units = _units_from_file(os.path.join(_path,mass,"SCFPAR"))
 
         super(SgrSimulation, self).__init__(filename=filename)
         self._hel_colnames = ()
