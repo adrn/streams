@@ -42,34 +42,41 @@ def test_position():
     fig,axes = plt.subplots(2, 2, figsize=(10,10))
     axes[0,1].set_visible(False)
 
-    axes[0,0].plot(particles["x"].value, particles["y"].value,
+    axes[0,0].plot(particles["x"].value,
+                   particles["y"].value,
                    label="all particles", **p_kwargs)
-    axes[1,0].plot(particles["x"].value, particles["z"].value, **p_kwargs)
-    axes[1,1].plot(particles["y"].value, particles["z"].value, **p_kwargs)
+    axes[1,0].plot(particles["x"].value,
+                   particles["z"].value,
+                   **p_kwargs)
+    axes[1,1].plot(particles["y"].value,
+                   particles["z"].value,
+                   **p_kwargs)
 
-    axes[0,0].plot(satellite["x"].decompose(usys).value,
-                   satellite["y"].decompose(usys).value,
+    axes[0,0].plot(satellite["x"].value,
+                   satellite["y"].value,
                    label="Satellite", **s_kwargs)
-    axes[1,0].plot(satellite["x"].decompose(usys).value,
-                   satellite["z"].decompose(usys).value,
+    axes[1,0].plot(satellite["x"].value,
+                   satellite["z"].value,
                    **s_kwargs)
-    axes[1,1].plot(satellite["y"].decompose(usys).value,
-                   satellite["z"].decompose(usys).value,
+    axes[1,1].plot(satellite["y"].value,
+                   satellite["z"].value,
                    **s_kwargs)
 
     axes[0,0].plot(law_r[0], law_r[1], label="Law", **l_kwargs)
     axes[1,0].plot(law_r[0], law_r[2], **l_kwargs)
     axes[1,1].plot(law_r[1], law_r[2], **l_kwargs)
 
-    axes[0,0].set_xlim(law_r[0]-1, law_r[0]+1)
-    axes[0,0].set_ylim(law_r[1]-1, law_r[1]+1)
+    sz = 5
+    axes[0,0].set_xlim(law_r[0]-5, law_r[0]+5)
+    axes[0,0].set_ylim(law_r[1]-5, law_r[1]+5)
 
-    axes[1,0].set_xlim(law_r[0]-1, law_r[0]+1)
-    axes[1,0].set_ylim(law_r[2]-1, law_r[2]+1)
+    axes[1,0].set_xlim(law_r[0]-5, law_r[0]+5)
+    axes[1,0].set_ylim(law_r[2]-5, law_r[2]+5)
 
-    axes[1,1].set_xlim(law_r[1]-1, law_r[1]+1)
-    axes[1,1].set_ylim(law_r[2]-1, law_r[2]+1)
+    axes[1,1].set_xlim(law_r[1]-5, law_r[1]+5)
+    axes[1,1].set_ylim(law_r[2]-5, law_r[2]+5)
 
+    axes[0,0].legend(fontsize=10)
     fig.subplots_adjust(hspace=0.02,wspace=0.02)
     fig.savefig(os.path.join(plot_path, "sat_ptcl_positions.png"))
 
