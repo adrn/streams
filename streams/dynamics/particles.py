@@ -143,6 +143,11 @@ class Particle(object):
 
         return fig
 
+    def decompose(self, units):
+        """ Decompose each coordinate axis to the given unit system """
+        q = [self[n].decompose(units) for n in self.names]
+        return Particle(q, self.names, units=self.units, meta=self.meta)
+
 '''
 def observe(self, error_model):
         """ Given an error model, transform to heliocentric coordinates,
