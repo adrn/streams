@@ -46,7 +46,7 @@ law_v = np.squeeze(v0.decompose(usys).value)
 def test_position():
     p_kwargs = dict(marker='.', linestyle='none', color='k', alpha=0.1)
     s_kwargs = dict(marker='o', linestyle='none', color='r', alpha=0.75)
-    l_kwargs = dict(marker='o', linestyle='none', color='g', alpha=0.75)
+    l_kwargs = dict(marker='^', linestyle='none', color='g', alpha=0.75)
 
     #fig,axes = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(10,10))
     fig,axes = plt.subplots(2, 2, figsize=(10,10))
@@ -76,15 +76,15 @@ def test_position():
     axes[1,0].plot(law_r[0], law_r[2], **l_kwargs)
     axes[1,1].plot(law_r[1], law_r[2], **l_kwargs)
 
-    sz = 5
-    axes[0,0].set_xlim(law_r[0]-5, law_r[0]+5)
-    axes[0,0].set_ylim(law_r[1]-5, law_r[1]+5)
+    sz = 2
+    axes[0,0].set_xlim(law_r[0]-sz, law_r[0]+sz)
+    axes[0,0].set_ylim(law_r[1]-sz, law_r[1]+sz)
 
-    axes[1,0].set_xlim(law_r[0]-5, law_r[0]+5)
-    axes[1,0].set_ylim(law_r[2]-5, law_r[2]+5)
+    axes[1,0].set_xlim(law_r[0]-sz, law_r[0]+sz)
+    axes[1,0].set_ylim(law_r[2]-sz, law_r[2]+sz)
 
-    axes[1,1].set_xlim(law_r[1]-5, law_r[1]+5)
-    axes[1,1].set_ylim(law_r[2]-5, law_r[2]+5)
+    axes[1,1].set_xlim(law_r[1]-sz, law_r[1]+sz)
+    axes[1,1].set_ylim(law_r[2]-sz, law_r[2]+sz)
 
     axes[0,0].legend(fontsize=10)
     fig.subplots_adjust(hspace=0.02,wspace=0.02)
