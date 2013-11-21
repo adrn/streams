@@ -131,7 +131,7 @@ class SimulationData(object):
         tbl = self.table(expr)
 
         if N != None and N > 0:
-            idx = np.random.randint(0, len(data), N)
+            idx = np.random.randint(0, len(tbl), N)
             tbl = tbl[idx]
 
         cols = _tbl_to_quantity_list(tbl, column_names)
