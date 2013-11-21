@@ -11,6 +11,8 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 
 # Third-party
+import astropy.units as u
+from astropy.constants import G
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -29,9 +31,17 @@ particles = particles.decompose(usys)
 satellite = lm10.satellite()
 satellite = satellite.decompose(usys)
 
-# from email
-law_r = [19.0149, 2.64883, -6.8686]
-law_v = [230.2018, -35.18828, 194.7525]
+# Here are the true parameters from the last block in R601LOG
+GG = G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value
+X = (GG / 0.85**3 * 6.4E8)**-0.5
+length_unit = u.Unit("0.85 kpc")
+mass_unit = u.Unit("6.4E8 M_sun")
+time_unit = u.Unit("{:08f} Myr".format(X))
+r0 = np.array([[2.3279727753E+01,2.8190329987,-6.8798148785]])*length_unit
+v0 = np.array([[3.9481694047,-6.1942673069E-01,3.4555581435]])*length_unit/time_unit
+
+law_r = np.squeeze(r0.decompose(usys).value)
+law_v = np.squeeze(v0.decompose(usys).value)
 
 def test_position():
     p_kwargs = dict(marker='.', linestyle='none', color='k', alpha=0.1)
