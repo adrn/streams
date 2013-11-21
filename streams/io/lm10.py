@@ -63,7 +63,7 @@ class LM10Simulation(SimulationData):
 
         return super(LM10Simulation, self).table(expr=expr)
 
-    def satellite(self, bound_expr="Pcol>-1", frame="galactocentric",
+    def satellite(self, bound_expr="Pcol==-1", frame="galactocentric",
                   column_names=None):
         return super(LM10Simulation, self).satellite(bound_expr=bound_expr,
                                                     frame=frame,
