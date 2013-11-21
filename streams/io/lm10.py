@@ -40,25 +40,28 @@ class LM10Simulation(SimulationData):
         self.t2 = -8000.
 
     def table(self, expr=None):
-        tbl = super(LM10Simulation, self).table(expr=expr)
-        tbl.rename_column("xgc","x")
-        tbl.rename_column("ygc","y")
-        tbl.rename_column("zgc","z")
+        if self._table is None:
+            tbl = super(LM10Simulation, self).table(expr=expr)
+            tbl.rename_column("xgc","x")
+            tbl.rename_column("ygc","y")
+            tbl.rename_column("zgc","z")
 
-        tbl.rename_column("u","vx")
-        tbl.rename_column("v","vy")
-        tbl.rename_column("w","vz")
+            tbl.rename_column("u","vx")
+            tbl.rename_column("v","vy")
+            tbl.rename_column("w","vz")
 
-        tbl["x"] = -tbl["x"]
-        tbl["vx"] = -tbl["vx"]
+            tbl["x"] = -tbl["x"]
+            tbl["vx"] = -tbl["vx"]
 
-        for x in "xyz":
-            tbl[x].unit = u.kpc
+            for x in "xyz":
+                tbl[x].unit = u.kpc
 
-        for x in ("vx","vy","vz"):
-            tbl[x].unit = u.km/u.s
+            for x in ("vx","vy","vz"):
+                tbl[x].unit = u.km/u.s
 
-        return tbl
+            self._table = tbl
+
+        return self._table
 
     def satellite(self, bound_expr="Pcol>-1", frame="galactocentric",
                   column_names=None):
