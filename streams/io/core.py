@@ -98,7 +98,7 @@ class SimulationData(object):
         Particle([np.mean(c) for c in cols], names=column_names,
                  meta=dict(expr=bound_expr))
 
-    def particles(self, N, expr=None, frame="galactocentric",
+    def particles(self, N=None, expr=None, frame="galactocentric",
                   column_names=None):
         """ Return a Particle object with N particles selected from the
             simulation with expression expr in the specified reference
@@ -106,8 +106,8 @@ class SimulationData(object):
 
             Parameters
             ----------
-            N : int
-                Number of particles to return.
+            N : int or None (optional)
+                Number of particles to return. None or 0 means 'all'
             expr : str (optional)
                 Use numexpr to select out only rows that match criteria.
             frame : str (optional)
