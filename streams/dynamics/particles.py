@@ -86,6 +86,8 @@ class Particle(object):
                              "dimension.")
         self.names = names
         self.meta = meta
+        for k,v in self.meta.items():
+            setattr(self,k,v)
 
     def copy(self):
         """ Return a copy of the current instance. I'm just a copy
