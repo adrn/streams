@@ -50,7 +50,6 @@ class SimulationData(object):
 
         # cache
         self._table = None
-        self.bound_expr = bound_expr
 
         self._gal_colnames = ("x","y","z","vx","vy","vz")
         self._hel_colnames = ("l","b","D","mul","mub","vr")
