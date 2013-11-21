@@ -21,8 +21,7 @@ import astropy.coordinates as coord
 from ..coordinates import SgrCoordinates, distance_to_sgr_plane
 from ..dynamics import Particle, Orbit
 
-__all__ = ["read_table", "add_sgr_coordinates", "table_to_particles", \
-           "table_to_orbits"]
+__all__ = ["SimulationData"]
 
 def _tbl_to_quantity_list(tbl, column_names):
     cols = []
