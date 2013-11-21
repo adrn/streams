@@ -41,7 +41,7 @@ class LM10Simulation(SimulationData):
 
     def table(self, expr=None):
         if self._table is None:
-            tbl = super(LM10Simulation, self).table(expr=expr)
+            tbl = super(LM10Simulation, self).table()
             tbl.rename_column("xgc","x")
             tbl.rename_column("ygc","y")
             tbl.rename_column("zgc","z")
@@ -61,7 +61,7 @@ class LM10Simulation(SimulationData):
 
             self._table = tbl
 
-        return self._table
+        return super(LM10Simulation, self).table(expr=expr)
 
     def satellite(self, bound_expr="Pcol>-1", frame="galactocentric",
                   column_names=None):

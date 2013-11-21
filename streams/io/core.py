@@ -94,7 +94,7 @@ class SimulationData(object):
         # get the satellite position / velocity from the median of the
         #   bound particle positions/velocities
         bound = self.table(bound_expr)
-        cols = _tbl_to_quantity_list(cols, column_names)
+        cols = _tbl_to_quantity_list(bound, column_names)
         Particle([np.mean(c) for c in cols], names=column_names,
                  meta=dict(expr=bound_expr))
 
