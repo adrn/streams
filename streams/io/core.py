@@ -95,8 +95,8 @@ class SimulationData(object):
         #   bound particle positions/velocities
         bound = self.table(bound_expr)
         cols = _tbl_to_quantity_list(bound, column_names)
-        Particle([np.mean(c) for c in cols], names=column_names,
-                 meta=dict(expr=bound_expr))
+        return Particle([np.mean(c) for c in cols], names=column_names,
+                        meta=dict(expr=bound_expr))
 
     def particles(self, N=None, expr=None, frame="galactocentric",
                   column_names=None):
