@@ -45,8 +45,10 @@ law_v = np.squeeze(v0.decompose(usys).value)
 
 def test_position():
     p_kwargs = dict(marker='.', linestyle='none', color='k', alpha=0.1)
-    s_kwargs = dict(marker='o', linestyle='none', color='r', alpha=0.75)
-    l_kwargs = dict(marker='^', linestyle='none', color='g', alpha=0.75)
+    s_kwargs = dict(marker='o', linestyle='none', color='r', alpha=0.75,
+                    markersize=10)
+    l_kwargs = dict(marker='^', linestyle='none', color='g', alpha=0.75,
+                    markersize=10)
 
     #fig,axes = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(10,10))
     fig,axes = plt.subplots(2, 2, figsize=(10,10))
