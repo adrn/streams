@@ -39,9 +39,8 @@ class LM10Simulation(SimulationData):
         self.t1 = 0.
         self.t2 = -8000.
 
-    @property
-    def table(self):
-        tbl = super(LM10Simulation, self).table
+    def table(self, expr=None):
+        tbl = super(LM10Simulation, self).table(expr=expr)
         tbl.rename_column("xgc","x")
         tbl.rename_column("ygc","y")
         tbl.rename_column("zgc","z")
