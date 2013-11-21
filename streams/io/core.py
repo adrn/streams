@@ -24,6 +24,54 @@ from ..dynamics import Particle, Orbit
 __all__ = ["read_table", "add_sgr_coordinates", "table_to_particles", \
            "table_to_orbits"]
 
+# TODO: should be singleton...
+class SimulationData(object):
+
+    def __init__(self, filename):
+        """ Represents data from a simulation. """
+
+        self._table = None # cache
+
+    @property
+    def table(self):
+        if self._table is None:
+            # TODO: read table..
+            pass
+
+        return self._table
+
+    def particles(self, N, expr=None, frame="galactocentric",
+                  column_names=None):
+        """ Return a Particle object with N particles selected from the
+            simulation with expression expr in the specified reference
+            frame / coordinates.
+
+            Parameters
+            ----------
+            N : int
+                Number of particles to return.
+            expr : str (optional)
+                Use numexpr to select out only rows that match criteria.
+            frame : str (optional)
+                Can be either 'galactocentric' or 'g' or 'heliocentric' or 'h'
+            column_names : iterable (optional)
+                A list of the column names to read from the table and put in
+                Particle.
+        """
+
+        if frame.lower().startswith("g"):
+            if column_names is None:
+                column_names = ("x","y","z","vx","vy","vz")
+
+        elif frame.lower().startswith("h"):
+            if column_names is None:
+                column_names = ("l","b","D","mul","mub","vr")
+
+        else:
+            raise ValueError("Invalid reference frame.")
+
+
+
 def read_table(filename, column_names=None, column_map=dict(),
                column_scales=dict(), path=None, N=None, expr=None):
     """ Read in data from an ASCII file.
@@ -74,6 +122,7 @@ def read_table(filename, column_names=None, column_map=dict(),
 
     return data
 
+# TODO: can get rid of this?
 def table_to_particles(table, units,
                        position_columns=["x","y","z"],
                        velocity_columns=["vx","vy","vz"]):
