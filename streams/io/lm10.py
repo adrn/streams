@@ -31,9 +31,10 @@ class LM10Simulation(SimulationData):
 
             Parameters
             ----------
-
+            filename : str (optional)
+                Path to the Sgr particle snapshot data from LM10.
         """
-        super(LM10Simulation, self).__init__(...)
+        super(LM10Simulation, self).__init__(filename=filename)
         self._hel_colnames = ("l","b","D","mul","mub","vr") # TODO: FIX
         self.t1 = 0.
         self.t2 = -8000.
