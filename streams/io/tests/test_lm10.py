@@ -43,14 +43,13 @@ v0 = np.array([[3.9481694047,-6.1942673069E-01,3.4555581435]])*length_unit/time_
 law_r = np.squeeze(r0.decompose(usys).value)
 law_v = np.squeeze(v0.decompose(usys).value)
 
-def test_position():
-    p_kwargs = dict(marker='.', linestyle='none', color='k', alpha=0.1)
-    s_kwargs = dict(marker='o', linestyle='none', color='r', alpha=0.75,
-                    markersize=10)
-    l_kwargs = dict(marker='^', linestyle='none', color='g', alpha=0.75,
-                    markersize=10)
+p_kwargs = dict(marker='.', linestyle='none', color='k', alpha=0.1)
+s_kwargs = dict(marker='o', linestyle='none', color='r', alpha=0.75,
+                markersize=10)
+l_kwargs = dict(marker='^', linestyle='none', color='g', alpha=0.75,
+                markersize=10)
 
-    #fig,axes = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(10,10))
+def test_position():
     fig,axes = plt.subplots(2, 2, figsize=(10,10))
     axes[0,1].set_visible(False)
 
@@ -93,46 +92,43 @@ def test_position():
     fig.savefig(os.path.join(plot_path, "sat_ptcl_positions.png"))
 
 def test_velocity():
-
-    fig,axes = plt.subplots(2, 2)
-
+    fig,axes = plt.subplots(2, 2, figsize=(10,10))
     axes[0,1].set_visible(False)
 
-    axes[0,0].plot(particles._v[...,0], particles._v[...,1], marker='.',
-                   linestyle='none', color='k', alpha=0.1)
-    axes[1,0].plot(particles._v[...,0], particles._v[...,2], marker='.',
-                   linestyle='none', color='k', alpha=0.1)
-    axes[1,1].plot(particles._v[...,1], particles._v[...,2], marker='.',
-                   linestyle='none', color='k', alpha=0.1)
+    axes[0,0].plot(particles["vx"].value,
+                   particles["vy"].value,
+                   label="all particles", **p_kwargs)
+    axes[1,0].plot(particles["vx"].value,
+                   particles["vz"].value,
+                   **p_kwargs)
+    axes[1,1].plot(particles["vy"].value,
+                   particles["vz"].value,
+                   **p_kwargs)
 
-    axes[0,0].plot(satellite._v[...,0], satellite._v[...,1], marker='o',
-                   linestyle='none', color='r')
-    axes[1,0].plot(satellite._v[...,0], satellite._v[...,2], marker='o',
-                   linestyle='none', color='r')
-    axes[1,1].plot(satellite._v[...,1], satellite._v[...,2], marker='o',
-                   linestyle='none', color='r')
+    axes[0,0].plot(satellite["vx"].value,
+                   satellite["vy"].value,
+                   label="Satellite", **s_kwargs)
+    axes[1,0].plot(satellite["vx"].value,
+                   satellite["vz"].value,
+                   **s_kwargs)
+    axes[1,1].plot(satellite["vy"].value,
+                   satellite["vz"].value,
+                   **s_kwargs)
 
-    mean_v = np.mean(particles._v, axis=0)
-    axes[0,0].plot(mean_v[0], mean_v[1], marker='o',
-                   linestyle='none', color='b', alpha=0.4)
-    axes[1,0].plot(mean_v[0], mean_v[2], marker='o',
-                   linestyle='none', color='b', alpha=0.4)
-    axes[1,1].plot(mean_v[1], mean_v[2], marker='o',
-                   linestyle='none', color='b', alpha=0.4)
+    axes[0,0].plot(law_v[0], law_v[1], label="Law", **l_kwargs)
+    axes[1,0].plot(law_v[0], law_v[2], **l_kwargs)
+    axes[1,1].plot(law_v[1], law_v[2], **l_kwargs)
 
-    axes[0,0].plot(law_v[0], law_v[1], marker='o',
-                   linestyle='none', color='g', alpha=0.4)
-    axes[1,0].plot(law_v[0], law_v[2], marker='o',
-                   linestyle='none', color='g', alpha=0.4)
-    axes[1,1].plot(law_v[1], law_v[2], marker='o',
-                   linestyle='none', color='g', alpha=0.4)
+    sz = 2
+    axes[0,0].set_xlim(law_v[0]-sz, law_v[0]+sz)
+    axes[0,0].set_ylim(law_v[1]-sz, law_v[1]+sz)
 
-    axes[0,0].set_xlim(mean_v[0]-0.02,mean_v[0]+0.02)
-    axes[1,0].set_xlim(mean_v[0]-0.02,mean_v[0]+0.02)
-    axes[1,1].set_xlim(mean_v[1]-0.02,mean_v[1]+0.02)
+    axes[1,0].set_xlim(law_v[0]-sz, law_v[0]+sz)
+    axes[1,0].set_ylim(law_v[2]-sz, law_v[2]+sz)
 
-    axes[0,0].set_ylim(mean_v[1]-0.02,mean_v[1]+0.02)
-    axes[1,0].set_ylim(mean_v[2]-0.02,mean_v[2]+0.02)
-    axes[1,1].set_ylim(mean_v[2]-0.02,mean_v[2]+0.02)
+    axes[1,1].set_xlim(law_v[1]-sz, law_v[1]+sz)
+    axes[1,1].set_ylim(law_v[2]-sz, law_v[2]+sz)
 
-    plt.savefig(os.path.join(plot_path, "sat_part_velocities.png"))
+    axes[0,0].legend(fontsize=10)
+    fig.subplots_adjust(hspace=0.02,wspace=0.02)
+    fig.savefig(os.path.join(plot_path, "sat_ptcl_velocities.png"))
