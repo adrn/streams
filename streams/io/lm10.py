@@ -65,6 +65,6 @@ class LM10Simulation(SimulationData):
 
     def satellite(self, bound_expr="Pcol>-1", frame="galactocentric",
                   column_names=None):
-        super(LM10Simulation, self).satellite(bound_expr=bound_expr,
-                                              frame=frame,
-                                              column_names=column_names)
+        return super(LM10Simulation, self).satellite(bound_expr=bound_expr,
+                                                    frame=frame,
+                                                    column_names=column_names)
