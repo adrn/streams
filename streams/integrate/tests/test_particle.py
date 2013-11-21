@@ -116,9 +116,7 @@ def test_run_pretty():
 
     apos = np.max(np.sqrt(np.sum(orbit._X[:3]**2, axis=0)), axis=-1)
     fig, ax = plt.subplots(1,1,figsize=(8.5,11))
-    ax.set_color_cycle(['#9E0142', '#D53E4F', '#F46D43', '#FDAE61', \
-                        '#FEE08B', '#E6F598', '#ABDDA4', '#66C2A5', \
-                        '#3288BD', '#5E4FA2'])
+    ax.set_color_cycle(['#9E0142', '#D53E4F', '#F46D43', '#FEE08B', '#E6F598',                '#ABDDA4', '#66C2A5', '#3288BD', '#5E4FA2'])
     for ii in range(N):
         ax.plot(orbit["x"][ii].value, orbit["y"][ii].value,
                 alpha=(apos[ii]/max(apos))**1.8*0.99+0.01,
