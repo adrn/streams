@@ -89,6 +89,17 @@ def test_plot():
     fig = p.plot()
     fig.savefig(os.path.join(plot_path, "particle_6d.png"))
 
+def test_decompose():
+    x = np.random.random(size=1000)
+    vx = np.random.random(size=1000)
+    p = Particle((x, vx), names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
+
+    p = p.decompose([u.pc, u.radian, u.Gyr, u.M_sun])
+
+    fig = p.plot()
+    fig.savefig(os.path.join(plot_path, "particle_2d_decompose.png"))
+
 '''
 def test_observe():
 

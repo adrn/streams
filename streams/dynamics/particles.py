@@ -145,8 +145,9 @@ class Particle(object):
 
     def decompose(self, units):
         """ Decompose each coordinate axis to the given unit system """
+
         q = [self[n].decompose(units) for n in self.names]
-        return Particle(q, self.names, units=self.units, meta=self.meta)
+        return Particle(q, self.names, meta=self.meta)
 
 '''
 def observe(self, error_model):
