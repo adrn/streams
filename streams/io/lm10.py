@@ -27,56 +27,41 @@ __all__ = ["particle_table", "particles_today", "satellite_today", \
 
 _lm10_path = os.path.join(project_root, "data", "simulation", "LM10")
 
-# These are used for the orbit file David Law sent me
-X = (G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value / 0.85**3 * 6.4E8)**-0.5
-length_unit = u.Unit("0.85 kpc")
-mass_unit = u.Unit("6.4E8 M_sun")
-time_unit = u.Unit("{:08f} Myr".format(X))
+class LM10Simulation(SimulationData):
 
-# This is used for the SgrTriax*.dat files
-lm10_usys = (u.kpc, u.M_sun, u.Gyr)
+    def __init__(self,
+                 filename=os.path.join(project_root,"SgrTriax_DYN.dat")):
+        """ ...
 
-def particle_table(N=None, expr=None):
-    """ Read in particles from Law & Majewski 2010.
+            Parameters
+            ----------
 
-        Parameters
-        ----------
-        N : int
-            Number of particles to read. None means 'all'.
-        expr : str
-            String selection condition to be fed to numexpr for selecting
-            particles.
+        """
+        super(LM10Simulation, self).__init__(...)
+        self._hel_colnames = ("l","b","D","mul","mub","vr") # TODO: FIX
 
-    """
+    @property
+    def table(self):
+        tbl = super(LM10Simulation, self).table
+        tbl.rename_column("xgc","x")
+        tbl.rename_column("ygc","y")
+        tbl.rename_column("zgc","z")
 
-    # Read in particle data -- a snapshot of particle positions, velocities at
-    #   the end of the simulation
-    col_map = dict(xgc="x", ygc="y", zgc="z", u="vx", v="vy", w="vz")
-    col_scales = dict(x=-1., vx=-1.)
-    data = read_table("SgrTriax_DYN.dat", path=_lm10_path,
-                      column_map=col_map, column_scales=col_scales,
-                      N=N, expr=expr)
+        tbl.rename_column("u","vx")
+        tbl.rename_column("v","vy")
+        tbl.rename_column("w","vz")
 
-    return data
+        tbl["x"] = -tbl["x"]
+        tbl["vx"] = -tbl["vx"]
 
-def particles_today(N=None, expr=None):
-    """ Read in particles from Law & Majewski 2010.
+        for x in "xyz":
+            tbl[x].unit = u.kpc
 
-        Parameters
-        ----------
-        N : int
-            Number of particles to read. None means 'all'.
-        expr : str
-            String selection condition to be fed to numexpr for selecting
-            particles.
+        for x in ("vx","vy","vz"):
+            tbl[x].unit = u.km/u.s
 
-    """
-    data = particle_table(N=N, expr=expr)
-    pc = table_to_particles(data, lm10_usys,
-                            position_columns=["x","y","z"],
-                            velocity_columns=["vx","vy","vz"])
+        return tbl
 
-    return pc.to(u_galactic)
 
 def satellite_today():
     """ Read in the position and velocity of the Sgr satellite at the end of
