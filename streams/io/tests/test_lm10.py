@@ -119,7 +119,7 @@ def test_velocity():
     axes[1,0].plot(law_v[0], law_v[2], **l_kwargs)
     axes[1,1].plot(law_v[1], law_v[2], **l_kwargs)
 
-    sz = 2
+    sz = (50*u.km/u.s).decompose(usys).value
     axes[0,0].set_xlim(law_v[0]-sz, law_v[0]+sz)
     axes[0,0].set_ylim(law_v[1]-sz, law_v[1]+sz)
 
