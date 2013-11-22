@@ -174,6 +174,8 @@ def test_observe(d_err):
     err = gaia_spitzer_errors(p)
     err["D"] = p["D"]*d_err
     o_p = p.observe(err)
+    assert hasattr(o_p, "errors")
+    assert o_p.errors.has_key("D")
 
     fig = p.plot()
     fig = o_p.plot(fig=fig, color='r')
