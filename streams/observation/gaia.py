@@ -17,8 +17,11 @@ from astropy.utils.misc import isiterable
 
 from ..dynamics import Particle
 from ..coordinates import gc_to_hel, hel_to_gc
+from .rrlyrae import *
+from .core import *
 
-__all__ = ["parallax_error", "proper_motion_error", "V_to_G"]
+__all__ = ["parallax_error", "proper_motion_error", "V_to_G", \
+           "gaia_spitzer_errors"]
 
 def V_to_G(V, V_minus_I):
     """ Convert Johnson V to Gaia G-band.
@@ -91,3 +94,35 @@ def proper_motion_error(V, V_minus_I):
     dmu = 0.526*dmu
 
     return dmu.to(u.radian/u.yr)
+
+def gaia_spitzer_errors(particles):
+    """ Given particles in heliocentric frame, return an array of
+        Gaia + Spitzer errors (same shape as particles._X).
+    """
+
+    # assuming [Fe/H] = -0.5 for Sgr
+    M_V, dM_V = rrl_M_V(-0.5)
+
+    try:
+        V = apparent_magnitude(M_V, particles["D"])
+    except AttributeError:
+        raise ValueError("Particles in wrong reference frame? Has "
+                         "coordinates: {}".format(particles.names))
+    dlb = parallax_error(V, rrl_V_minus_I)
+    dmu = proper_motion_error(V, rrl_V_minus_I)
+
+    # angular position error is negligible
+    l = dlb.to(particles["l"].unit)
+    b = dlb.to(particles["b"].unit)
+
+    # proper motion
+    mul = dmu.to(particles["mul"].unit)
+    mub = dmu.to(particles["mub"].unit)
+
+    # distance
+    D = 0.02*particles["D"]
+
+    # radial velocity
+    vr = 10.*u.km/u.s * np.ones_like(particles["vr"].value)
+
+    return dict(l=l, b=b, D=D, mul=mul,mub=mub,vr=vr)

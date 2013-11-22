@@ -37,3 +37,15 @@ def test_against_table():
     # M6V star
     np.testing.assert_almost_equal(parallax_error(15, 3.85).value, 9E-6, 4)
     np.testing.assert_almost_equal(parallax_error(20, 3.85).value, 100E-6, 4)
+
+def test_gaia_spitzer_errors():
+
+    from ...io import OrphanSimulation
+
+    sim = OrphanSimulation()
+    p = sim.particles(N=100, expr="tub!=0")
+    with pytest.raises(ValueError):
+        err = gaia_spitzer_errors(p)
+
+    p = p.to_frame("heliocentric")
+    err = gaia_spitzer_errors(p)
