@@ -100,6 +100,17 @@ def test_decompose():
     fig = p.plot()
     fig.savefig(os.path.join(plot_path, "particle_2d_decompose.png"))
 
+def test_unit_to():
+    # now try 6D case
+    xx = np.random.random(size=(6,100))
+    p = Particle(xx, names=("x","y","z","vx","vy","vz"),
+                 units=[u.kpc, u.kpc, u.kpc, u.km/u.s, u.km/u.s, u.km/u.s])
+
+    p = p.to_units(u.pc, u.Gpc, u.km, u.kpc/u.Gyr, u.m/u.ms, u.km/u.s)
+
+    fig = p.plot()
+    fig.savefig(os.path.join(plot_path, "particle_6d_to_units.png"))
+
 '''
 def test_observe():
 

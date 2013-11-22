@@ -151,6 +151,22 @@ class Particle(object):
         q = [self[n].decompose(units) for n in self.names]
         return Particle(q, self.names, meta=self.meta)
 
+    def to_units(self, *units):
+        """ Convert each coordinate axis to corresponding unit in given
+            list.
+        """
+
+        if len(units) == 1:
+            units = units[0]
+
+        if len(units) != self.ndim:
+            raise ValueError("Must specify a unit for each dimension ({})."\
+                             .format(self.ndim))
+
+        q = [self[n].to(units[ii]) for ii,n in enumerate(self.names)]
+        return Particle(q, self.names, meta=self.meta)
+
+
 '''
 def observe(self, error_model):
         """ Given an error model, transform to heliocentric coordinates,
