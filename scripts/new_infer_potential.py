@@ -216,19 +216,18 @@ def main(config_file, job_name=None):
                                                attr="tub",
                                                ln_prior=prior))
 
-    return
-
-    # TODO: a) this assumes no covariance
-    #       b) need to make an ObservedParticle with ._err attribute like ._X
-    # true positions of particles
     if "_X" in particle_params:
+        sigmas =[o_particles.errors[n].decompose(usys)\
+                    for n in o_particles.names]
         prior = LogNormalPrior(o_particles._X,
-                               cov=o_particles._err)
+                               sigmas=sigmas)
         p = ModelParameter(target=o_particles,
-                           attr="_O",
+                           attr="_X",
                            ln_prior=prior)
         p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
+
+    return
 
     ##########################################################################
     # Satellite parameters
