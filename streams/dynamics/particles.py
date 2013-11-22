@@ -128,7 +128,7 @@ class Particle(object):
     @property
     def nparticles(self):
         try:
-            return self._X.shape[1]
+            return self._X.shape[0]
         except IndexError:
             return 1
 

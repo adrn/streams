@@ -56,9 +56,9 @@ class Orbit(Particle):
                              "particle, 1st axis for time.")
 
         self.t = t
-        if self._X.shape[-1] != self.t.shape[0]:
+        if self._X.shape[0] != self.t.shape[0]:
             raise ValueError("Shape of t ({}) should match last axis of each "             "coordinate ({})".format(self.t.shape[0], \
-                                                      self._X.shape[1]))
+                                                      self._X.shape[0]))
 
     def plot(self, fig=None, labels=None, **kwargs):
         """ Make a corner plot showing all dimensions. """
