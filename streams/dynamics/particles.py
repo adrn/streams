@@ -127,7 +127,10 @@ class Particle(object):
 
     @property
     def nparticles(self):
-        return self._X.shape[1]
+        try:
+            return self._X.shape[1]
+        except IndexError:
+            return 1
 
     def plot(self, fig=None, labels=None, **kwargs):
         """ Make a corner plot showing all dimensions.
