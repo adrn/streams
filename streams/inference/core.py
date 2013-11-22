@@ -15,6 +15,7 @@ import emcee
 import numpy as np
 import astropy.units as u
 
+from ..dynamics import Particle
 from ..coordinates import _gc_to_hel, _hel_to_gc
 from ..integrate import ParticleIntegrator
 from .parameter import *
@@ -102,8 +103,12 @@ class StreamModel(object):
         x_p_gc = _hel_to_gc(self.particles._X)
         x_s_gc = _hel_to_gc(self.satellite._X)
 
-        acc = np.zeros((Nparticles+1,3))
-        pi = ParticleIntegrator(p, potential, args=(Nparticles+1, acc))
+        p = Particle(np.vstack((x_s_gc,x_p_gc)).T,
+                     units=self.particles._internal_units,
+                     names=("x","y","z","vx","vy","vz"))
+
+        acc = np.zeros((p.nparticles,3))
+        pi = ParticleIntegrator(p, self.potential, args=(p.nparticles, acc))
         orbit = pi.run(t1=t1, t2=t2, dt=dt)
 
         # These are the unbinding times for each particle
