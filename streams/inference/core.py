@@ -114,36 +114,35 @@ class StreamModel(object):
         t_idx = [np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
                     for tub in self.particles.tub]
 
-        return
-
-        Ntimesteps  = p._X.shape[0]
+        Ntimesteps  = len(particle_orbit.t)
 
         sat_var = np.zeros((Ntimesteps,6))
-        sat_var[:,:3] = self.potential._tidal_radius(self.satellite._m, s._r)*1.26
-        sat_var[:,3:] += self.satellite._v_disp
+        sat_var[:,:3] = self.potential._tidal_radius(self.satellite.m,
+                                            satellite_orbit._X[...,:3])*1.26
+        sat_var[:,3:] += self.satellite.v_disp
         cov = sat_var**2
 
         Sigma = np.array([cov[jj] for ii,jj in enumerate(t_idx)])
-        p_x = np.array([p._X[jj,ii] for ii,jj in enumerate(t_idx)])
-        s_x = np.array([s._X[jj,0] for ii,jj in enumerate(t_idx)])
+        p_x = np.array([particle_orbit._X[jj,ii] \
+                            for ii,jj in enumerate(t_idx)])
+        s_x = np.array([satellite_orbit._X[jj,0] \
+                            for ii,jj in enumerate(t_idx)])
         log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) +
                             (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
 
-        if self.obs_data is not None:
-            log_p_D_given_x = -0.5*np.sum(-2.*np.log(self.obs_error)\
-                        + (hel-self.obs_data)**2/self.obs_error**2)
-        else:
-            log_p_D_given_x = 0.
+        return np.sum(log_p_x_given_phi)
 
-        if self.obs_data_sat is not None:
-            log_p_D_given_x_sat = -0.5*np.sum(-2.*np.log(self.obs_error_sat)\
-                    + (hel_sat-self.obs_data_sat)**2/self.obs_error_sat**2)
-        else:
-            log_p_D_given_x_sat = 0.
+        # if self.obs_data is not None:
+        #     log_p_D_given_x = -0.5*np.sum(-2.*np.log(self.obs_error)\
+        #                 + (hel-self.obs_data)**2/self.obs_error**2)
+        # else:
+        #     log_p_D_given_x = 0.
 
-        return np.sum(log_p_D_given_x + \
-                      log_p_D_given_x_sat + \
-                      log_p_x_given_phi)
+        # if self.obs_data_sat is not None:
+        #     log_p_D_given_x_sat = -0.5*np.sum(-2.*np.log(self.obs_error_sat)\
+        #             + (hel_sat-self.obs_data_sat)**2/self.obs_error_sat**2)
+        # else:
+        #     log_p_D_given_x_sat = 0.
 
     def ln_posterior(self, *args):
         lp = self.ln_prior()
