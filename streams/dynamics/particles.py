@@ -89,6 +89,10 @@ class Particle(object):
         for k,v in self.meta.items():
             setattr(self,k,v)
 
+    def __repr__(self):
+        return "<Particle N={0}, coords={1}>".format(self.nparticles, \
+                                                     self.names)
+
     def copy(self):
         """ Return a copy of the current instance. I'm just a copy
             of a copy of a copy...
