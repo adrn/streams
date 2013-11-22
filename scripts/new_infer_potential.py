@@ -161,6 +161,7 @@ def main(config_file, job_name=None):
             particle_errors[k] = np.ones_like(particle_errors[k].value) * err
 
     o_particles = particles.observe(particle_errors)
+    logger.debug("Particles: {}".format(o_particles))
     # now has o_particles.errors["D"] etc.
 
     # satellite has different errors from individual stars...
@@ -172,6 +173,7 @@ def main(config_file, job_name=None):
                             mub=1.2*u.mas/u.yr,
                             vr=5*u.km/u.s)
     o_satellite = satellite.observe(satellite_errors)
+    logger.debug("Satellite: {}".format(o_satellite))
 
     return
 
