@@ -175,8 +175,6 @@ def main(config_file, job_name=None):
     o_satellite = satellite.observe(satellite_errors)
     logger.debug("Satellite: {}".format(o_satellite))
 
-    return
-
     model_parameters = []
     ##########################################################################
     # Potential parameters
@@ -211,17 +209,21 @@ def main(config_file, job_name=None):
 
     # time unbound / escape time (tub)
     if "tub" in particle_params:
-        lo = [t2] * len(particles)
-        hi = [t1] * len(particles)
+        lo = [simulation.t2] * particles.nparticles
+        hi = [simulation.t1] * particles.nparticles
         prior = LogUniformPrior(lo, hi)
         model_parameters.append(ModelParameter(target=particles,
                                                attr="tub",
                                                ln_prior=prior))
 
-    # true positions of particles (flat_X)
-    if "_O" in particle_params:
-        prior = LogNormalPrior(o_particles._O,
-                               cov=o_particles._O_err)
+    return
+
+    # TODO: a) this assumes no covariance
+    #       b) need to make an ObservedParticle with ._err attribute like ._X
+    # true positions of particles
+    if "_X" in particle_params:
+        prior = LogNormalPrior(o_particles._X,
+                               cov=o_particles._err)
         p = ModelParameter(target=o_particles,
                            attr="_O",
                            ln_prior=prior)
