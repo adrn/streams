@@ -99,7 +99,7 @@ class SimulationData(object):
                         meta=dict(expr=bound_expr))
 
     def particles(self, N=None, expr=None, frame="galactocentric",
-                  column_names=None):
+                  column_names=None, meta_cols=[]):
         """ Return a Particle object with N particles selected from the
             simulation with expression expr in the specified reference
             frame / coordinates.
@@ -115,6 +115,8 @@ class SimulationData(object):
             column_names : iterable (optional)
                 A list of the column names to read from the table and put in
                 Particle.
+            meta_cols : iterable (optional)
+                List of columns to add to meta data.
         """
 
         if frame.lower().startswith("g"):
@@ -135,9 +137,13 @@ class SimulationData(object):
             tbl = tbl[idx]
 
         cols = _tbl_to_quantity_list(tbl, column_names)
+        meta = dict(expr=expr)
+
+        for col in meta_cols:
+            meta[col] = np.array(tbl[col])
 
         return Particle(cols, names=column_names,
-                        meta=dict(expr=expr))
+                        meta=meta)
 
     def add_sgr_coordinates(self):
         # TODO: this is broken

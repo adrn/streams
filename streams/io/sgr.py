@@ -86,15 +86,36 @@ class SgrSimulation(SimulationData):
         s = super(SgrSimulation, self).satellite(bound_expr=bound_expr,
                                                  frame=frame,
                                                  column_names=column_names)
-        s.meta["m"] = self.mass
+        s.m = s.meta["m"] = self.mass
 
         bound = self.table(bound_expr)
-        s.meta["v_disp"] = np.sqrt(np.std(bound["vx"])**2 + \
+        s.v_disp = s.meta["v_disp"] = np.sqrt(np.std(bound["vx"])**2 + \
                                    np.std(bound["vy"])**2 + \
                                    np.std(bound["vz"])**2)
 
         return s.decompose(usys)
 
-    def particles(self, *args, **kwargs):
-        p = super(SgrSimulation, self).particles(*args, **kwargs)
+    def particles(self, N=None, expr=None, frame="galactocentric",
+                  column_names=None, meta_cols=['tub']):
+        """ Return a Particle object with N particles selected from the
+            simulation with expression expr in the specified reference
+            frame / coordinates.
+
+            Parameters
+            ----------
+            N : int or None (optional)
+                Number of particles to return. None or 0 means 'all'
+            expr : str (optional)
+                Use numexpr to select out only rows that match criteria.
+            frame : str (optional)
+                Can be either 'galactocentric' or 'g' or 'heliocentric' or 'h'
+            column_names : iterable (optional)
+                A list of the column names to read from the table and put in
+                Particle.
+            meta_cols : iterable (optional)
+                List of columns to add to meta data.
+        """
+        p = super(SgrSimulation, self).particles(N=N, expr=expr, frame=frame,
+                                                 column_names=column_names,
+                                                 meta_cols=meta_cols)
         return p.decompose(usys)
