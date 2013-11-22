@@ -134,16 +134,49 @@ class Particle(object):
             labels = ["{0} [{1}]".format(n,uu) \
                         for n,uu in zip(self.names, self._repr_units)]
 
-        if fig is not None:
-            kwargs["fig"] = fig
+        kwargs["alpha"] = kwargs.get("alpha", 0.5)
 
         fig = triangle.corner(self._repr_X.T,
                               labels=labels,
                               plot_contours=False,
                               plot_datapoints=True,
-                              **kwargs)
+                              fig=fig,
+                              plot_kwargs=kwargs)
 
         return fig
+
+    def to_frame(self, frame_name):
+        """ Transform coordinates and reference frame.
+
+            TODO: With astropy 0.4 (or 1.0) this will need to be
+                  seriously updated.
+
+            Parameters
+            ----------
+            frame_name : str
+                Can be 'heliocentric' or 'galactocentric'.
+        """
+
+        # TODO: need to make these units lists from default GC and Helio.
+        #       units defined in top level __init__ (e.g., usys)
+        if frame_name.lower() == 'heliocentric':
+            _O = _gc_to_hel(self._X.T)
+            units = [u.rad,u.rad,u.kpc,u.rad/u.Myr,u.rad/u.Myr,u.kpc/u.Myr]
+            p = Particle(_O.T, units=units,
+                         names=("l","b","D","mul","mub","vr"))
+            return p.to_units(u.deg,u.deg,u.kpc,\
+                              u.mas/u.yr,u.mas/u.yr,u.km/u.s)
+
+        elif frame_name.lower() == 'galactocentric':
+            _X = _hel_to_gc(self._X.T)
+            units = [u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr]
+            p = Particle(_X.T, units=units,
+                         names=("x","y","z","vx","vy","vz"))
+            return p.to_units(u.kpc,u.kpc,u.kpc,\
+                              u.km/u.s,u.km/u.s,u.km/u.s)
+
+        else:
+            raise ValueError("Invalid reference frame {}".format(frame_name))
 
     def decompose(self, units):
         """ Decompose each coordinate axis to the given unit system """

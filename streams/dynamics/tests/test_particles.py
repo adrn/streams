@@ -23,7 +23,17 @@ plot_path = "plots/tests/dynamics"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-units = (u.kpc, u.Myr, u.M_sun, u.radian)
+# from LM10 -- copied here so I don't have to read in each time...
+lm10_X =np.array([[-24.7335,-9.35652,17.7755,-0.266238,-0.013697,-0.00862857],
+ [4.04449, -8.58018, 43.6431, -0.147417, -0.00453593, -0.0570219],
+ [40.7303, -9.38172, -52.45, 0.10542100000000001, 0.0255395, 0.0676476],
+ [31.9827, -0.46618, 3.68191, -0.199363, -0.00786105, 0.16698300000000002],
+ [-55.4545, 3.40444, -14.4413, 0.10564799999999999, 0.00946331, -0.0706881],
+ [-24.9119, -4.18854, 16.2446, -0.0358232, 0.0333882, -0.20689400000000002],
+ [7.63141, 5.4841, 42.3225, -0.238398, -0.02333, -0.0920642],
+ [47.9773, -5.17874, -44.0926, 0.0372335, 0.014637, 0.116505],
+ [24.7687, 1.91995, -38.9927, 0.13775, 0.0183352, 0.0059355599999999994],
+ [35.3565, 15.0336, -55.0006, 0.0649749, -0.0182314,0.124926]]).T
 
 def test_init():
 
@@ -100,7 +110,7 @@ def test_decompose():
     fig = p.plot()
     fig.savefig(os.path.join(plot_path, "particle_2d_decompose.png"))
 
-def test_unit_to():
+def test_to_units():
     # now try 6D case
     xx = np.random.random(size=(6,100))
     p = Particle(xx, names=("x","y","z","vx","vy","vz"),
@@ -110,6 +120,23 @@ def test_unit_to():
 
     fig = p.plot()
     fig.savefig(os.path.join(plot_path, "particle_6d_to_units.png"))
+
+def test_to_frame():
+    # now try 6D case
+
+    p = Particle(lm10_X, names=("x","y","z","vx","vy","vz"),
+                units=[u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr])
+
+    fig = p.plot(ms=3.)
+    fig.savefig(os.path.join(plot_path, "lm10_particle_original.png"))
+
+    p = p.to_frame('heliocentric')
+    fig = p.plot(ms=3.)
+    fig.savefig(os.path.join(plot_path, "lm10_particle_6d_helio.png"))
+
+    p = p.to_frame('galactocentric')
+    fig = p.plot(ms=3.)
+    fig.savefig(os.path.join(plot_path, "lm10_particle_6d_galacto.png"))
 
 '''
 def test_observe():
