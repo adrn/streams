@@ -220,7 +220,7 @@ def main(config_file, job_name=None):
         sigmas =[o_particles.errors[n].decompose(usys)\
                     for n in o_particles.names]
         prior = LogNormalPrior(o_particles._X,
-                               sigmas=sigmas)
+                               sigma=sigmas)
         p = ModelParameter(target=o_particles,
                            attr="_X",
                            ln_prior=prior)
