@@ -50,12 +50,12 @@ class LogNormalPrior(LogPrior):
         return np.squeeze(self._norm - 0.5 * q)
 
     def __init__(self, mu, sigma=None, cov=None):
-        self.mu = np.atleast_2d(mu)
+        self.mu = np.array(mu)
 
         if sigma is not None:
-            if sigma.shape[-1] != mu.shape[-1]:
+            sigma = np.array(sigma)
+            if sigma.shape[0] != mu.shape[0]:
                 raise ValueError("Shape of std dev vector (sigma) must match"             " shape of mean vector (mu) along axis=-1")
-
             cov = np.diag(sigma**2)
 
         if cov is None:
