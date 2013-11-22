@@ -217,9 +217,9 @@ def main(config_file, job_name=None):
                                                ln_prior=prior))
 
     if "_X" in particle_params:
-        sigmas = [o_particles.errors[n].decompose(usys).value \
-                    for n in o_particles.names]
-        covs = [np.diag(s**2) for s in np.array(sigmas).T]
+        sigmas = np.array([o_particles.errors[n].decompose(usys).value \
+                    for n in o_particles.names]).T
+        covs = [np.diag(s**2) for s in sigmas]
 
         prior = LogNormalPrior(o_particles._X,
                                cov=np.array(covs))
@@ -229,34 +229,27 @@ def main(config_file, job_name=None):
         p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
 
-    return
-
     ##########################################################################
     # Satellite parameters
     #
     satellite_config = config.get("satellite", dict())
     satellite_params = satellite_config.get("parameters", [])
 
-    # here I monte carlo transform the error distribution from observed
-    #   to cartesian, then take np.cov and use that to sample new satellite
-    #   positions
-    O = np.array([np.random.normal(sat_obs_data, sat_obs_error) \
-                    for ii in range(1000)])
-    X = _hel_to_gc(O)
-
-    sat_obs_error_gc = np.array([np.cov(X[:,0].T)])
-    sat_obs_data_gc = _hel_to_gc(sat_obs_data)
-
     # true position of the satellite
     if "_X" in satellite_params:
-        satellite._X = _hel_to_gc(sat_obs_data)
-        satellite.obs_data = sat_obs_data
-        satellite.obs_error = sat_obs_error
+        sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
+                    for n in o_satellite.names])[np.newaxis]
+        covs = [np.diag(s**2) for s in sigmas]
 
-        prior = LogNormalPrior(sat_obs_data_gc, cov=sat_obs_error_gc)
-        p = ModelParameter(target=satellite, attr="_X", ln_prior=prior)
+        prior = LogNormalPrior(o_satellite._X,
+                               cov=np.array(covs))
+        p = ModelParameter(target=satellite,
+                           attr="_X",
+                           ln_prior=prior)
         p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
+
+    return
 
     # now create the model
     model = StreamModel(potential, satellite, particles,
