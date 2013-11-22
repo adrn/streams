@@ -15,7 +15,7 @@ import emcee
 import numpy as np
 import astropy.units as u
 
-from ..coordinates import _gc_to_hel
+from ..coordinates import _gc_to_hel, _hel_to_gc
 from ..integrate import ParticleIntegrator
 from .parameter import *
 from .prior import *
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class StreamModel(object):
 
-    def __init__(self, potential, satellite, particles, parameters=[]):
+    def __init__(self, potential, simulation, satellite, particles, parameters=[]):
         """ ...
 
             Parameters
@@ -35,12 +35,13 @@ class StreamModel(object):
         """
 
         self.potential = potential
+        self.simulation = simulation
         self.satellite = satellite
         self.particles = particles
         self.parameters = parameters
 
     def __call__(self, p, *args):
-        self.vector = p
+        self.vector = np.array(p)
         return self.ln_posterior(*args)
 
     @property
@@ -92,23 +93,24 @@ class StreamModel(object):
             velocity dispersion.
         """
 
-        t1, t2, dt = args
+        t1 = self.simulation.t1
+        t2 = self.simulation.t2
+        dt = -1. # TODO HACK
 
         # The true positions/velocities of the particles are parameters
-        Nparticles = len(self.particles)
-        x = self.particles._X
-        hel = _gc_to_hel(x)
-
-        x_sat = self.satellite._X
-        hel_sat = _gc_to_hel(x_sat)
+        Nparticles = self.particles.nparticles
+        x_p_gc = _hel_to_gc(self.particles._X)
+        x_s_gc = _hel_to_gc(self.satellite._X)
 
         acc = np.zeros((Nparticles+1,3))
-
         pi = ParticleIntegrator(p, potential, args=(Nparticles+1, acc))
         orbit = pi.run(t1=t1, t2=t2, dt=dt)
 
         # These are the unbinding times for each particle
-        t_idx = [np.argmin(np.fabs(s._t - tub)) for tub in self.particles.tub]
+        t_idx = [np.argmin(np.fabs(orbit.t.value - tub)) \
+                    for tub in self.particles.tub]
+
+        return
 
         Ntimesteps  = p._X.shape[0]
 
