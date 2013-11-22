@@ -71,7 +71,7 @@ class Particle(object):
             _X[ii] = value
 
         self._repr_units = _repr_units
-        self._X = _X
+        self._X = _X.T
 
         #if self._X.ndim > 2:
         #    raise ValueError("Particle coordinates must be 1D.")
@@ -111,7 +111,7 @@ class Particle(object):
             except ValueError:
                 raise AttributeError("Invalid coordinate name {}".format(slc))
 
-            return (self._X[ii]*self._internal_units[ii])\
+            return (self._X[...,ii]*self._internal_units[ii])\
                         .to(self._repr_units[ii])
 
     @property
@@ -120,7 +120,7 @@ class Particle(object):
 
         _repr_X = []
         for ii in range(self.ndim):
-            _repr_X.append((self._X[ii]*self._internal_units[ii])\
+            _repr_X.append((self._X[...,ii]*self._internal_units[ii])\
                                .to(self._repr_units[ii]).value.tolist())
 
         return np.array(_repr_X)
@@ -143,7 +143,7 @@ class Particle(object):
 
         kwargs["alpha"] = kwargs.get("alpha", 0.5)
 
-        fig = triangle.corner(self._repr_X.T,
+        fig = triangle.corner(self._repr_X,
                               labels=labels,
                               plot_contours=False,
                               plot_datapoints=True,
@@ -167,7 +167,7 @@ class Particle(object):
         # TODO: need to make these units lists from default GC and Helio.
         #       units defined in top level __init__ (e.g., usys)
         if frame_name.lower() == 'heliocentric':
-            _O = _gc_to_hel(self._X.T)
+            _O = _gc_to_hel(self._X)
             units = [u.rad,u.rad,u.kpc,u.rad/u.Myr,u.rad/u.Myr,u.kpc/u.Myr]
             p = Particle(_O.T, units=units,
                          names=("l","b","D","mul","mub","vr"),
@@ -176,7 +176,7 @@ class Particle(object):
                               u.mas/u.yr,u.mas/u.yr,u.km/u.s)
 
         elif frame_name.lower() == 'galactocentric':
-            _X = _hel_to_gc(self._X.T)
+            _X = _hel_to_gc(self._X)
             units = [u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr]
             p = Particle(_X.T, units=units,
                          names=("x","y","z","vx","vy","vz"),
