@@ -14,6 +14,8 @@ import logging
 import numpy as np
 import astropy.units as u
 
+from .prior import LogPrior
+
 __all__ = ["ModelParameter", "Parameter"]
 
 logger = logging.getLogger(__name__)

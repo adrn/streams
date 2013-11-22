@@ -47,7 +47,7 @@ class StreamModel(object):
 
     @property
     def vector(self):
-        return np.concatenate(map(np.atleast_1d,
+        return np.concatenate(map(np.ravel,
                                   [p.get() for p in self.parameters]))
 
     @property

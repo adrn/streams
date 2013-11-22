@@ -90,16 +90,16 @@ class TestStreamModel(object):
                                 attr="_value",
                                 ln_prior=LogUniformPrior(*self.potential.q1._range)))
         params.append(ModelParameter(target=particles,
-                                attr="flat_X"))
+                                attr="_X"))
         params.append(ModelParameter(target=particles,
                                 attr="tub"))
 
-        model = StreamModel(self.potential, self.satellite, particles,
+        model = StreamModel(self.potential, self.simulation,
+                            self.satellite, particles,
                             parameters=params)
 
         model([1.4] + list(np.random.random(size=self.Nparticles*6)) + \
-              list(np.random.randint(6266, size=self.Nparticles)),
-              self.simulation.t1, self.simulation.t2, -1.)
+              list(np.random.randint(6266, size=self.Nparticles)))
 
         assert model.vector[0] == self.potential.q1.value
         assert self.potential.q1.value == self.potential.parameters["q1"].value
@@ -110,7 +110,7 @@ class TestStreamModel(object):
         ax = fig.add_subplot(111)
 
         for p_name in self.potential.parameters.keys():
-            _particles = copy.deepcopy(self._particles)
+            particles = self.particles.copy()
             potential = LawMajewski2010()
             p = potential.parameters[p_name]
 
@@ -118,23 +118,22 @@ class TestStreamModel(object):
             params.append(ModelParameter(target=p,
                                     attr="_value",
                                     ln_prior=LogUniformPrior(*p._range)))
-            params.append(ModelParameter(target=_particles,
-                                    attr="flat_X"))
-            params.append(ModelParameter(target=_particles,
+            params.append(ModelParameter(target=particles,
+                                    attr="_X"))
+            params.append(ModelParameter(target=particles,
                                     attr="tub"))
 
-            model = StreamModel(potential, self.satellite, _particles,
-                                self.obs_data, self.obs_error,
+            model = StreamModel(potential, self.simulation,
+                                self.satellite, particles,
                                 parameters=params)
 
-            sampled_X = np.ravel(_particles._X)
-            tub = _particles.tub # true
+            sampled_X = np.ravel(particles._X)
+            tub = particles.tub # true
 
             Ls = []
             vals = np.linspace(0.8, 1.2, 31)*p._truth
             for q in vals:
-                Ls.append(model([q] + list(sampled_X) + list(tub), \
-                          self.t1, self.t2, -1.))
+                Ls.append(model([q] + list(sampled_X) + list(tub)))
 
             ax.cla()
             ax.plot(vals, Ls)
