@@ -170,7 +170,8 @@ class Particle(object):
             _O = _gc_to_hel(self._X.T)
             units = [u.rad,u.rad,u.kpc,u.rad/u.Myr,u.rad/u.Myr,u.kpc/u.Myr]
             p = Particle(_O.T, units=units,
-                         names=("l","b","D","mul","mub","vr"))
+                         names=("l","b","D","mul","mub","vr"),
+                         meta=self.meta)
             return p.to_units(u.deg,u.deg,u.kpc,\
                               u.mas/u.yr,u.mas/u.yr,u.km/u.s)
 
@@ -178,7 +179,8 @@ class Particle(object):
             _X = _hel_to_gc(self._X.T)
             units = [u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr]
             p = Particle(_X.T, units=units,
-                         names=("x","y","z","vx","vy","vz"))
+                         names=("x","y","z","vx","vy","vz"),
+                         meta=self.meta)
             return p.to_units(u.kpc,u.kpc,u.kpc,\
                               u.km/u.s,u.km/u.s,u.km/u.s)
 
