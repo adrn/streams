@@ -31,8 +31,8 @@ class LeapfrogIntegrator(object):
 
             Initial position and velocity should have shape (ndim,nparticles)
             e.g., for 100 particles in 3D cartesian coordinates, the position
-            array should have shape (3,100). For a single particle, (3,) is
-            accepted and converted to (3,1).
+            array should have shape (100,3). For a single particle, (3,) is
+            accepted and converted to (1,3).
 
             `acceleration_function` should accept the array of position(s) and
             optionally a set of arguments specified by `acceleration_args`.
@@ -68,11 +68,11 @@ class LeapfrogIntegrator(object):
         if not r_initial.shape == v_initial.shape:
             raise ValueError("Shape of positions must match velocities")
         elif r_initial.ndim == 1:
-            r_initial = r_initial[:,np.newaxis]
-            v_initial = v_initial[:,np.newaxis]
+            r_initial = r_initial[np.newaxis]
+            v_initial = v_initial[np.newaxis]
         elif r_initial.ndim > 2:
             raise ValueError("Initial conditions should have shape "
-                             "(ndim, nparticles) or (ndim,).")
+                             "(nparticles,ndim) or (ndim,).")
 
         self.r_im1 = r_initial
         self.v_im1 = v_initial
@@ -152,16 +152,16 @@ class LeapfrogIntegrator(object):
 
         self._prime(dts[0])
 
-        rs = np.zeros(self.r_im1.shape + (Ntimesteps,), dtype=float)
-        vs = np.zeros(self.v_im1.shape + (Ntimesteps,), dtype=float)
+        rs = np.zeros((Ntimesteps,) + self.r_im1.shape, dtype=float)
+        vs = np.zeros((Ntimesteps,) + self.v_im1.shape, dtype=float)
 
         # Set first step to the initial conditions
-        rs[...,0] = self.r_im1
-        vs[...,0] = self.v_im1
+        rs[0] = self.r_im1
+        vs[0] = self.v_im1
 
         for ii,dt in enumerate(dts):
             r_i, v_i = self.step(dt)
-            rs[...,ii+1] = r_i
-            vs[...,ii+1] = v_i
+            rs[ii+1] = r_i
+            vs[ii+1] = v_i
 
         return times, rs, vs

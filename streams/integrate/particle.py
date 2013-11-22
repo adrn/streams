@@ -40,16 +40,16 @@ class ParticleIntegrator(LeapfrogIntegrator):
             self.X0 = particles._X
             particles = [particles]
         else:
-            self.X0 = np.hstack([p._X for p in particles])
+            self.X0 = np.vstack([p._X for p in particles])
         self.particles = particles
 
         super(ParticleIntegrator,self).__init__(potential._acceleration_at,
-                                                self.X0[:3], self.X0[3:],
-                                                args=args)
+                                            self.X0[...,:3], self.X0[...,3:],
+                                            args=args)
 
     def run(self, **time_spec):
-        self.r_im1 = self.X0[:3]
-        self.v_im1 = self.X0[3:]
+        self.r_im1 = np.array(self.X0[...,:3])
+        self.v_im1 = np.array(self.X0[...,3:])
 
         t,r,v = super(ParticleIntegrator,self).run(**time_spec)
         t = t*u.Myr # HACK!!!
@@ -57,7 +57,8 @@ class ParticleIntegrator(LeapfrogIntegrator):
         orbits = []
         ix = 0
         for ii,p in enumerate(self.particles):
-            X = np.vstack((r[:,ix:ix+p.nparticles],v[:,ix:ix+p.nparticles]))
+            X = np.vstack((r[:,ix:ix+p.nparticles].T,
+                           v[:,ix:ix+p.nparticles].T))
             o = Orbit(t, X,
                       names=p.names,
                       units=p._internal_units,
