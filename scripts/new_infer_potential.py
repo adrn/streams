@@ -40,7 +40,7 @@ from streams.coordinates import _gc_to_hel, _hel_to_gc
 from streams.inference import (ModelParameter, StreamModel,
                                LogNormalPrior, LogUniformPrior)
 from streams.io import *
-from streams.observation import SpitzerGaiaErrorModel
+from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as sp
 from streams.util import make_path
 
@@ -140,7 +140,7 @@ def main(config_file, job_name=None):
     particles = simulation.particles(N=config["particles"]["N"],
                                      expr=expr)
     particles = particles.to_frame('heliocentric')
-    gaia_spitzer_errors = gaia_spitzer_errors(particles)
+    particle_errors = gaia_spitzer_errors(particles)
 
     satellite = simulation.satellite()
     satellite = satellite.to_frame('heliocentric')
@@ -148,7 +148,6 @@ def main(config_file, job_name=None):
 
     # get errors specified by user in config
     factor = config["errors"].get("global_factor", 1.)
-    particle_errors = gaia_spitzer_errors.copy()
     for k,v in config["errors"].items():
         if k == "global_factor": continue
 
@@ -162,30 +161,19 @@ def main(config_file, job_name=None):
             particle_errors[k] = np.ones_like(particle_errors[k].value) * err
 
     o_particles = particles.observe(particle_errors)
-
-    return
-
-    # TODO:
-    error_model.observe(particles)
-
-    ##????
-    error_model = SpitzerGaiaErrorModel(units=usys,
-                                        factor=factor,
-                                        **particle_errors)
-    #obs_data, obs_error = _particles.observe(error_model)
-    o_particles = _particles.observe(error_model)
+    # now has o_particles.errors["D"] etc.
 
     # satellite has different errors from individual stars...
     # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
-    sat_error_model = SpitzerGaiaErrorModel(units=usys,
-                                        mul_err=1000.*u.mas/u.yr,
-                                        mub_err=1000.*u.mas/u.yr,
-                                        D_err=1.,
-                                        vr_err=200.*u.km/u.s)
-    sat_obs_data, sat_obs_error = _satellite.observe(sat_error_model)
+    satellite_errors = dict(l=10*u.microarcsecond,
+                            b=10*u.microarcsecond,
+                            D=1.2*u.kpc,
+                            mul=1.2*u.mas/u.yr,
+                            mub=1.2*u.mas/u.yr,
+                            vr=5*u.km/u.s)
+    o_satellite = satellite.observe(satellite_errors)
 
-    particles = _particles.copy()
-    satellite = _satellite.copy()
+    return
 
     model_parameters = []
     ##########################################################################
