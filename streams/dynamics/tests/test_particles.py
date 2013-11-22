@@ -11,6 +11,7 @@ import time
 
 # Third-party
 import astropy.units as u
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
@@ -137,3 +138,23 @@ def test_to_frame():
     p = p.to_frame('galactocentric')
     fig = p.plot(ms=3.)
     fig.savefig(os.path.join(plot_path, "lm10_particle_6d_galacto.png"))
+
+def test_field_of_streams():
+    from streams.io import LM10Simulation
+    from astropy.coordinates import Galactic
+
+    sgr = LM10Simulation()
+    p = sgr.particles(N=10000, expr="(Pcol>-1) & (Pcol<8) & (abs(Lmflag)==1)")
+    p2 = p.to_frame("heliocentric")
+
+    icrs = Galactic(p2["l"], p2["b"]).icrs
+
+    g = Galactic(p2["l"], p2["b"], distance=p2["D"])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(icrs.ra.degree, icrs.dec.degree, marker='.',
+            linestyle='none', alpha=0.25)
+    ax.set_xlim(230,110)
+    ax.set_ylim(-2,60)
+    fig.savefig(os.path.join(plot_path, "field_of_streams_test.png"))
