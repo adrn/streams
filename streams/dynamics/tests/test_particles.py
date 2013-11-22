@@ -159,7 +159,7 @@ def test_field_of_streams():
     ax.set_ylim(-2,60)
     fig.savefig(os.path.join(plot_path, "field_of_streams_test.png"))
 
-@pytest.mark.parametrize("d_err,", [
+@pytest.mark.parametrize("d_err", [
     (0.02),
     (0.1),
     (0.5),
