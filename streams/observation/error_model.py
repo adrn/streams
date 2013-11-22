@@ -121,9 +121,9 @@ class SpitzerGaiaErrorModel(ErrorModel):
 
     def __call__(self, O):
         try:
-            l,b,D,mul,mub,vr = O.T
-        except:
             l,b,D,mul,mub,vr = O
+        except:
+            l,b,D,mul,mub,vr = O.T
 
         if self.mul_err is None or self.mub_err is None:
             # assuming [Fe/H] = -0.5 for Sgr
