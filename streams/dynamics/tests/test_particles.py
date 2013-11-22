@@ -140,7 +140,7 @@ def test_to_frame():
     fig.savefig(os.path.join(plot_path, "lm10_particle_6d_galacto.png"))
 
 def test_field_of_streams():
-    from streams.io import LM10Simulation
+    from ...io import LM10Simulation
     from astropy.coordinates import Galactic
 
     sgr = LM10Simulation()
@@ -158,3 +158,31 @@ def test_field_of_streams():
     ax.set_xlim(230,110)
     ax.set_ylim(-2,60)
     fig.savefig(os.path.join(plot_path, "field_of_streams_test.png"))
+
+@pytest.mark.parametrize("d_err,", [
+    (0.02),
+    (0.1),
+    (0.5),
+])
+def test_observe(d_err):
+    from ...io import LM10Simulation
+    from ...observation.gaia import gaia_spitzer_errors
+    sgr = LM10Simulation()
+    p = sgr.particles(N=100, expr="(Pcol>-1) & (Pcol<8) & (abs(Lmflag)==1)")
+    p = p.to_frame("heliocentric")
+
+    err = gaia_spitzer_errors(p)
+    err["D"] = p["D"]*d_err
+    o_p = p.observe(err)
+
+    fig = p.plot()
+    fig = o_p.plot(fig=fig, color='r')
+    fig.savefig(os.path.join(plot_path, "test_observe_hel_{}.png"\
+                                        .format(d_err)))
+
+    p = p.to_frame("galactocentric")
+    o_p = o_p.to_frame("galactocentric")
+    fig = p.plot()
+    fig = o_p.plot(fig=fig, color='r')
+    fig.savefig(os.path.join(plot_path, "test_observe_gal_{}.png"\
+                                        .format(d_err)))
