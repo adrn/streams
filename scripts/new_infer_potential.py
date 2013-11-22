@@ -217,10 +217,12 @@ def main(config_file, job_name=None):
                                                ln_prior=prior))
 
     if "_X" in particle_params:
-        sigmas =[o_particles.errors[n].decompose(usys)\
+        sigmas = [o_particles.errors[n].decompose(usys).value \
                     for n in o_particles.names]
+        covs = [np.diag(s**2) for s in np.array(sigmas).T]
+
         prior = LogNormalPrior(o_particles._X,
-                               sigma=sigmas)
+                               cov=np.array(covs))
         p = ModelParameter(target=o_particles,
                            attr="_X",
                            ln_prior=prior)
