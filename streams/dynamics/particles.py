@@ -198,19 +198,3 @@ class Particle(object):
 
         q = [self[n].to(units[ii]) for ii,n in enumerate(self.names)]
         return Particle(q, self.names, meta=self.meta)
-
-
-'''
-def observe(self, error_model):
-        """ Given an error model, transform to heliocentric coordinates,
-            apply errors models, transform back and return a new Particle
-            object.
-        """
-        _X = self._X[:]
-        hel = _gc_to_hel(_X)
-        hel_err = error_model(hel)
-
-        O = np.random.normal(hel, hel_err) # observed
-        return O, hel_err
-
-'''
