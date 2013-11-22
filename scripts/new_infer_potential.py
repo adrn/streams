@@ -165,8 +165,8 @@ def main(config_file, job_name=None):
 
     # satellite has different errors from individual stars...
     # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
-    satellite_errors = dict(l=10*u.microarcsecond,
-                            b=10*u.microarcsecond,
+    satellite_errors = dict(l=10*u.milliarcsecond,
+                            b=10*u.milliarcsecond,
                             D=1.2*u.kpc,
                             mul=1.2*u.mas/u.yr,
                             mub=1.2*u.mas/u.yr,
