@@ -23,6 +23,8 @@ from ..dynamics import Particle, Orbit
 # Create logger
 logger = logging.getLogger(__name__)
 
+__all__ = ["ParticleIntegrator"]
+
 class ParticleIntegrator(LeapfrogIntegrator):
 
     def __init__(self, particles, potential, args=()):
