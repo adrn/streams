@@ -100,19 +100,18 @@ class StreamModel(object):
 
         # The true positions/velocities of the particles are parameters
         Nparticles = self.particles.nparticles
-        x_p_gc = _hel_to_gc(self.particles._X)
-        x_s_gc = _hel_to_gc(self.satellite._X)
 
-        p = Particle(np.vstack((x_s_gc,x_p_gc)).T,
-                     units=self.particles._internal_units,
-                     names=("x","y","z","vx","vy","vz"))
+        particles_gc = self.particles.to_frame("galactocentric")
+        satellite_gc = self.satellite.to_frame("galactocentric")
 
-        acc = np.zeros((p.nparticles,3))
-        pi = ParticleIntegrator(p, self.potential, args=(p.nparticles, acc))
-        orbit = pi.run(t1=t1, t2=t2, dt=dt)
+        acc = np.zeros((Nparticles+1,3))
+        pi = ParticleIntegrator((particles_gc,satellite_gc),
+                                self.potential,
+                                args=(Nparticles+1, acc))
+        particle_orbit,satellite_orbit = pi.run(t1=t1, t2=t2, dt=dt)
 
         # These are the unbinding times for each particle
-        t_idx = [np.argmin(np.fabs(orbit.t.value - tub)) \
+        t_idx = [np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
                     for tub in self.particles.tub]
 
         return
