@@ -209,7 +209,7 @@ class Particle(object):
         new_qs = []
         for name in self.names:
             new_q = np.random.normal(self[name].value,
-                                     errors.to(self[name].unit).value)
+                                     errors[name].to(self[name].unit).value)
             new_q = new_q * self[name].unit
             new_qs.append(new_q)
 
