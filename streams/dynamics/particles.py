@@ -198,3 +198,21 @@ class Particle(object):
 
         q = [self[n].to(units[ii]) for ii,n in enumerate(self.names)]
         return Particle(q, self.names, meta=self.meta)
+
+    def observe(self, errors):
+        """ Assuming the current Particle object is in heliocentric
+            coordinates, "observe" the positions given the errors
+            specified in the dictionary "errors". The error dictionary
+            should have keys == particles.names.
+        """
+
+        new_qs = []
+        for name in self.names:
+            new_q = np.random.normal(self[name].value,
+                                     errors.to(self[name].unit).value)
+            new_q = new_q * self[name].unit
+            new_qs.append(new_q)
+
+        meta = self.meta.copy()
+        meta["errors"] = errors
+        return Particle(new_qs, names=self.names, meta=meta)
