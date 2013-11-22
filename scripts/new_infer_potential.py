@@ -39,7 +39,7 @@ from streams import usys
 from streams.coordinates import _gc_to_hel, _hel_to_gc
 from streams.inference import (ModelParameter, StreamModel,
                                LogNormalPrior, LogUniformPrior)
-from streams.io.sgr import mass_selector
+from streams.io import *
 from streams.observation import SpitzerGaiaErrorModel
 import streams.potential as sp
 from streams.util import make_path
@@ -83,21 +83,19 @@ def read_simulation(config):
 
     if config["simulation"]["source"] == "sgr":
         m = config["simulation"]["satellite_mass"]
-        particles_today, satellite_today, time = mass_selector(m)
+        simulation = SgrSimulation(mass=m)
+
     elif config["simulation"]["source"] == "lm10":
-        #particles_today, satellite_today, time = mass_selector(config["mass"])
-        # TODO
-        pass
+        simulation = LM10Simulation()
+
+    elif config["simulation"]["source"] == "orphan":
+        simulation = OrphanSimulation()
+
     else:
         raise ValueError("Invalid particle_source: {particle_source}"\
                          .format(config))
 
-    particles = particles_today(N=config["particles"]["N"],
-                                expr=config["particles"]["selection_expr"])
-    satellite = satellite_today()
-    t1,t2 = time()
-
-    return t1,t2,satellite,particles
+    return simulation
 
 def _parse_quantity(q):
     try:
@@ -108,33 +106,78 @@ def _parse_quantity(q):
 
     return u.Quantity(float(val), unit)
 
-def build_stream_model(config):
-    """ """
+def main(config_file, job_name=None):
+    """ TODO: """
+
+    # read in configurable parameters
+    with open(config_file) as f:
+        config = yaml.load(f.read())
+
+    # TODO: write a separate script just for plotting...
+    # get a pool object given the configuration parameters
+    pool = get_pool(config)
+
+    # determine the output data path
+    path = make_path(config)
+    sampler_file = os.path.join(path, "sampler_data.pickle")
+
+    make_plots = config.get("make_plots", False)
+    if make_plots:
+        logger.info("Will write output to '{0}'...".format(path))
+    else:
+        logger.info("OK fine, I won't write anything to disk...")
 
     # get the potential object specified
     Potential = getattr(sp, config["potential"]["class_name"])
     potential = Potential()
     logger.debug("Using {} potential...".format(potential))
 
-    # Actually get simulation data
+    # get simulation data
     np.random.seed(config["seed"])
-    t1,t2,_satellite,_particles = read_simulation(config)
+    expr = config["particles"]["selection_expr"]
 
-    # get errors for particles in observed quantities
+    simulation = read_simulation(config)
+    particles = simulation.particles(N=config["particles"]["N"],
+                                     expr=expr)
+    particles = particles.to_frame('heliocentric')
+    gaia_spitzer_errors = gaia_spitzer_errors(particles)
+
+    satellite = simulation.satellite()
+    satellite = satellite.to_frame('heliocentric')
+    # Note: now particles and satellite are in heliocentric coordinates!
+
+    # get errors specified by user in config
     factor = config["errors"].get("global_factor", 1.)
-    particle_errors = dict()
+    particle_errors = gaia_spitzer_errors.copy()
     for k,v in config["errors"].items():
         if k == "global_factor": continue
-        particle_errors["{}_err".format(k)] = _parse_quantity(v)
 
+        assert particle_errors.has_key(k)
+        err = _parse_quantity(v)
+
+        if err.unit == u.dimensionless_unscaled:
+            # fractional error
+            particle_errors[k] = err.value * particles[k]
+        else:
+            particle_errors[k] = np.ones_like(particle_errors[k].value) * err
+
+    o_particles = particles.observe(particle_errors)
+
+    return
+
+    # TODO:
+    error_model.observe(particles)
+
+    ##????
     error_model = SpitzerGaiaErrorModel(units=usys,
                                         factor=factor,
                                         **particle_errors)
-    obs_data, obs_error = _particles.observe(error_model)
+    #obs_data, obs_error = _particles.observe(error_model)
+    o_particles = _particles.observe(error_model)
 
     # satellite has different errors from individual stars...
     # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
-    sat_error_model = RRLyraeErrorModel(units=usys,
+    sat_error_model = SpitzerGaiaErrorModel(units=usys,
                                         mul_err=1000.*u.mas/u.yr,
                                         mub_err=1000.*u.mas/u.yr,
                                         D_err=1.,
@@ -185,28 +228,13 @@ def build_stream_model(config):
                                                attr="tub",
                                                ln_prior=prior))
 
-    # here I monte carlo transform the error distribution from observed
-    #   to cartesian, then take np.cov and use that to sample new particle
-    #   positions
-    O = np.array([np.random.normal(obs_data, obs_error) \
-                    for ii in range(1000)])
-    X = _hel_to_gc(O)
-
-    obs_error_gc = []
-    for ii in range(Nparticles):
-        obs_error_gc.append(np.cov(X[:,ii].T))
-
-    obs_error_gc = np.array(obs_error_gc)
-    obs_data_gc = _hel_to_gc(obs_data)
-
     # true positions of particles (flat_X)
-    if "_X" in particle_params:
-        particles._X = _hel_to_gc(obs_data)
-        particles.obs_data = obs_data
-        particles.obs_error = obs_error
-
-        prior = LogNormalPrior(obs_data_gc, cov=obs_error_gc)
-        p = ModelParameter(target=particles, attr="_X", ln_prior=prior)
+    if "_O" in particle_params:
+        prior = LogNormalPrior(o_particles._O,
+                               cov=o_particles._O_err)
+        p = ModelParameter(target=o_particles,
+                           attr="_O",
+                           ln_prior=prior)
         p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
 
@@ -240,29 +268,6 @@ def build_stream_model(config):
     # now create the model
     model = StreamModel(potential, satellite, particles,
                         parameters=model_parameters)
-
-    return model
-
-def main(config_file, job_name=None):
-    """ TODO: """
-
-    # read in configurable parameters
-    with open(config_file) as f:
-        config = yaml.load(f.read())
-
-    # TODO: write a separate script just for plotting...
-    # get a pool object given the configuration parameters
-    pool = get_pool(config)
-
-    # determine the output data path
-    path = make_path(config)
-    sampler_file = os.path.join(path, "sampler_data.pickle")
-
-    logger.info("Will write output to '{0}'...".format(path))
-
-    make_plots = config.get("make_plots", False)
-
-    model = build_stream_model(config)
 
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
