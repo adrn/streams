@@ -16,7 +16,7 @@ import numpy as np
 import astropy.units as u
 
 from ..coordinates import _gc_to_hel
-from ..integrate.satellite_particles import satellite_particles_integrate
+from ..integrate import ParticleIntegrator
 from .parameter import *
 from .prior import *
 
@@ -24,10 +24,6 @@ __all__ = ["StreamModel"]
 
 logger = logging.getLogger(__name__)
 
-# TODO: would be nice if I could pass in one object that knows:
-#   - star 6d positions in heliocentric
-#   - errors on heliocentric data
-#   - frame (heliocentric)
 class StreamModel(object):
 
     def __init__(self, potential, satellite, particles, parameters=[]):
@@ -42,20 +38,6 @@ class StreamModel(object):
         self.satellite = satellite
         self.particles = particles
         self.parameters = parameters
-
-        try:
-            self.obs_data = self.particles.obs_data.copy()
-            self.obs_error = self.particles.obs_error.copy()
-        except AttributeError:
-            self.obs_data = None
-            self.obs_error = None
-
-        try:
-            self.obs_data_sat = self.satellite.obs_data.copy()
-            self.obs_error_sat = self.satellite.obs_error.copy()
-        except AttributeError:
-            self.obs_data_sat = None
-            self.obs_error_sat = None
 
     def __call__(self, p, *args):
         self.vector = p
@@ -121,11 +103,9 @@ class StreamModel(object):
         hel_sat = _gc_to_hel(x_sat)
 
         acc = np.zeros((Nparticles+1,3))
-        s,p = satellite_particles_integrate(self.satellite,
-                                        self.particles,
-                                        self.potential,
-                                        potential_args=(Nparticles+1, acc),
-                                        time_spec=dict(t1=t1, t2=t2, dt=dt))
+
+        pi = ParticleIntegrator(p, potential, args=(Nparticles+1, acc))
+        orbit = pi.run(t1=t1, t2=t2, dt=dt)
 
         # These are the unbinding times for each particle
         t_idx = [np.argmin(np.fabs(s._t - tub)) for tub in self.particles.tub]
