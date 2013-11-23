@@ -103,9 +103,11 @@ class SgrSimulation(SimulationData):
         s.m = s.meta["m"] = self.mass
 
         bound = self.table(bound_expr)
-        s.v_disp = s.meta["v_disp"] = np.sqrt(np.std(bound["vx"])**2 + \
-                                   np.std(bound["vy"])**2 + \
-                                   np.std(bound["vz"])**2)
+        vx = (np.array(bound["vx"])*bound["vx"].unit).to(u.kpc/u.Myr).value
+        vy = (np.array(bound["vy"])*bound["vy"].unit).to(u.kpc/u.Myr).value
+        vz = (np.array(bound["vz"])*bound["vz"].unit).to(u.kpc/u.Myr).value
+
+        s.v_disp =s.meta["v_disp"] = np.sqrt(np.var(vx)+np.var(vy)+np.var(vz))
 
         return s.decompose(usys)
 
