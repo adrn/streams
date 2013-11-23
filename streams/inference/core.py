@@ -110,9 +110,9 @@ class StreamModel(object):
                                 args=(Nparticles+1, acc))
         particle_orbit,satellite_orbit = pi.run(t1=t1, t2=t2, dt=dt)
 
-        # These are the unbinding times for each particle
-        t_idx = [np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
-                    for tub in self.particles.tub]
+        # These are the unbinding time indices for each particle
+        t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
+                            for tub in self.particles.tub])
 
         Ntimesteps  = len(particle_orbit.t)
 
