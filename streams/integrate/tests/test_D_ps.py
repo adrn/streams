@@ -97,3 +97,27 @@ def test_dps():
         ax.set_ylim(0,5)
         ax.axhline(1.4)
         fig.savefig(os.path.join(plot_path, "d_ps_{}.png".format(jj)))
+
+def test_likelihood_shape():
+
+    qs = np.linspace(1.,1.5,25)
+    Ls = []
+    for qz in qs:
+        potential = LawMajewski2010(qz=qz)
+        particle_orbit,satellite_orbit = orbits_from_potential(potential)
+        sat_var = np.zeros((len(particle_orbit.t),6))
+        sat_var[:,:3] = potential._tidal_radius(satellite.m,
+                                                satellite_orbit._X[...,:3])*1.26
+        sat_var[:,3:] += satellite.v_disp
+        cov = (sat_var**2)[:,np.newaxis]
+
+        diff = (particle_orbit._X - satellite_orbit._X)
+        D_ps = np.sqrt(np.sum(diff**2/cov, axis=-1))
+
+        t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
+                            for tub in particles.tub], dtype=int)
+
+        Ls.append(np.sum(D_ps[t_idx]))
+
+    plt.plot(qs,Ls)
+    plt.savefig(os.path.join(plot_path, "really_stupid_test.png"))
