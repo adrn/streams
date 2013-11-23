@@ -21,6 +21,7 @@ from astropy.constants import G
 
 # Project
 from .. import usys
+from ..dynamics import Orbit
 from .core import SimulationData
 from ..util import project_root
 
@@ -66,6 +67,19 @@ class SgrSimulation(SimulationData):
 
         self.t1 = (4.189546E+02 * self._units["time"]).to(u.Myr).value
         self.t2 = 0
+
+        sgr_orbit = ascii.read(os.path.join(_path,mass,"SCFCEN"))
+        for x in "xyz":
+            sgr_orbit[x].unit = self._units["length"]
+
+        for x in ("vx","vy","vz"):
+            sgr_orbit[x].unit = self._units["length"]/self._units["time"]
+
+        names = ("x","y","z","vx","vy","vz")
+        self.satellite_orbit = Orbit(sgr_orbit["t"]*self._units["time"],
+              [np.atleast_2d(np.array(sgr_orbit[x])) for x in names],
+              names=names,
+              units=[sgr_orbit[x].unit for x in names])
 
     def table(self, expr=None):
         if self._table is None:
@@ -118,4 +132,6 @@ class SgrSimulation(SimulationData):
         p = super(SgrSimulation, self).particles(N=N, expr=expr, frame=frame,
                                                  column_names=column_names,
                                                  meta_cols=meta_cols)
+        p.meta["tub"] = (p.meta["tub"]*self._units["time"])\
+                          .decompose(usys).value
         return p.decompose(usys)
