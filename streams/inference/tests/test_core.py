@@ -110,30 +110,26 @@ class TestStreamModel(object):
         ax = fig.add_subplot(111)
 
         for p_name in self.potential.parameters.keys():
-            particles = self.particles.copy()
             potential = LawMajewski2010()
+
+            particles = self.particles.to_frame("heliocentric")
+            satellite = self.satellite.to_frame("heliocentric")
+
             p = potential.parameters[p_name]
 
             params = []
             params.append(ModelParameter(target=p,
                                     attr="_value",
                                     ln_prior=LogUniformPrior(*p._range)))
-            params.append(ModelParameter(target=particles,
-                                    attr="_X"))
-            params.append(ModelParameter(target=particles,
-                                    attr="tub"))
 
             model = StreamModel(potential, self.simulation,
-                                self.satellite, particles,
+                                satellite, particles,
                                 parameters=params)
-
-            sampled_X = np.ravel(particles._X)
-            tub = particles.tub # true
 
             Ls = []
             vals = np.linspace(0.8, 1.2, 31)*p._truth
             for q in vals:
-                Ls.append(model([q] + list(sampled_X) + list(tub)))
+                Ls.append(model([q]))
 
             ax.cla()
             ax.plot(vals, Ls)
@@ -143,65 +139,94 @@ class TestStreamModel(object):
             fig.savefig(os.path.join(self.plot_path,
                                      "{0}.png".format(p_name)))
 
+    def test_potential_likelihood_w_particle_X(self):
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        for p_name in self.potential.parameters.keys():
+            potential = LawMajewski2010()
+
+            particles = self.particles.to_frame("heliocentric")
+            satellite = self.satellite.to_frame("heliocentric")
+
+            p = potential.parameters[p_name]
+
+            params = []
+            params.append(ModelParameter(target=p,
+                                    attr="_value",
+                                    ln_prior=LogUniformPrior(*p._range)))
+            params.append(ModelParameter(target=particles,
+                                         attr="_X",
+                                         ln_prior=LogPrior()))
+
+            model = StreamModel(potential, self.simulation,
+                                satellite, particles,
+                                parameters=params)
+
+            Ls = []
+            vals = np.linspace(0.8, 1.2, 31)*p._truth
+            for q in vals:
+                Ls.append(model([q] + list(np.ravel(particles._X))))
+
+            ax.cla()
+            ax.plot(vals, Ls)
+            ax.axvline(p._truth, color='r')
+            ax.set_ylabel("ln likelihood", fontsize=24)
+            ax.set_xlabel(p.latex, fontsize=24)
+            fig.savefig(os.path.join(self.plot_path,
+                                     "{0}_X.png".format(p_name)))
+
     def test_particle_position_likelihood(self):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        for ii in range(self.Nparticles*6):
-            _particles = copy.deepcopy(self._particles)
-            potential = LawMajewski2010()
+        potential = LawMajewski2010()
 
-            params = []
-            params.append(ModelParameter(target=_particles,
-                                    attr="flat_X"))
-            params.append(ModelParameter(target=_particles,
-                                    attr="tub"))
+        _particles = self.particles.to_frame("heliocentric")
+        particles = self.particles.to_frame("heliocentric")
+        satellite = self.satellite.to_frame("heliocentric")
 
-            model = StreamModel(potential, self.satellite, _particles,
-                                self.obs_data, self.obs_error,
-                                parameters=params)
+        params = []
+        params.append(ModelParameter(target=particles,
+                                     attr="_X",
+                                     ln_prior=LogPrior()))
 
-            true_sampled_X = np.ravel(self._particles._X)
-            sampled_X = np.ravel(_particles._X)
-            tub = _particles.tub # true
+        model = StreamModel(potential, self.simulation,
+                            satellite, particles,
+                            parameters=params)
 
-            Ls = []
-            vals = np.linspace(0.8, 1.2, 31)*true_sampled_X[ii]
-            for v in vals:
-                sampled_X[ii] = v
-                Ls.append(model(list(sampled_X) + list(tub), \
-                          self.t1, self.t2, -1.))
+        Ls = []
+        vals = np.linspace(0.5, 1.5, 21)
+        for v in vals:
+            sampled_X = np.ravel(_particles._X)*v
+            Ls.append(model(list(sampled_X)))
 
-            dist = np.sqrt(np.sum(self._particles._X[int(ii / 6),:3]**2))
-
-            ax.cla()
-            ax.plot(vals, Ls)
-            ax.axvline(true_sampled_X[ii], color='r')
-            ax.set_title("particle {0}, dist={1}".format(int(ii / 6), dist))
-            ax.set_ylabel("ln likelihood", fontsize=24)
-            ax.set_xlabel("dim {0}".format(ii%6), fontsize=24)
-            fig.savefig(os.path.join(self.plot_path,
-                      "particle_{0}_dim{1}.png".format(int(ii / 6), ii % 6)))
+        ax.cla()
+        ax.plot(vals, Ls)
+        ax.axvline(1., color='r')
+        ax.set_ylabel("ln likelihood", fontsize=24)
+        fig.savefig(os.path.join(self.plot_path, "particles.png"))
 
     def test_particle_tub_likelihood(self):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
+        _particles = self.particles.to_frame("heliocentric")
         for ii in range(self.Nparticles):
-            _particles = copy.deepcopy(self._particles)
             potential = LawMajewski2010()
 
+            particles = self.particles.to_frame("heliocentric")
+            satellite = self.satellite.to_frame("heliocentric")
+
             params = []
-            params.append(ModelParameter(target=_particles,
-                                    attr="flat_X"))
-            params.append(ModelParameter(target=_particles,
-                                    attr="tub"))
+            params.append(ModelParameter(target=particles,
+                                         attr="tub",
+                                         ln_prior=LogPrior()))
 
-            model = StreamModel(potential, self.satellite, _particles,
-                                self.obs_data, self.obs_error,
+            model = StreamModel(potential, self.simulation,
+                                satellite, particles,
                                 parameters=params)
-
-            sampled_X = np.ravel(_particles._X)
 
             true_tub = np.array(_particles.tub)
             tub = _particles.tub
@@ -210,15 +235,12 @@ class TestStreamModel(object):
             vals = np.linspace(0.8, 1.2, 31)*true_tub[ii]
             for v in vals:
                 tub[ii] = v
-                Ls.append(model(list(sampled_X) + list(tub),
-                                self.t1, self.t2, -1.))
-
-            dist = np.sqrt(np.sum(self._particles._X[ii,:3]**2))
+                Ls.append(model(list(tub)))
 
             ax.cla()
             ax.plot(vals, Ls)
             ax.axvline(true_tub[ii], color='r')
-            ax.set_title("particle {0}, dist={1}".format(ii, dist))
+            ax.set_title("particle {0}".format(ii))
             ax.set_ylabel("ln likelihood", fontsize=24)
             ax.set_xlabel("particle {0}, tub".format(ii), fontsize=24)
             fig.savefig(os.path.join(self.plot_path,
