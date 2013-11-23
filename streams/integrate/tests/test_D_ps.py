@@ -37,18 +37,20 @@ Nparticles = 3
 colors = ["#F1A340", "#998EC3", "#67A9CF"]
 dt = -1.
 
-potential = LawMajewski2010()
+true_potential = LawMajewski2010()
 wrong_potential = LawMajewski2010(qz=1.8)
 simulation = SgrSimulation(mass="2.5e8")
 particles = simulation.particles(N=Nparticles,
                                  expr="tub!=0")
 satellite = simulation.satellite()
 
-acc = np.zeros((Nparticles+1,3))
-pi = ParticleIntegrator((particles,satellite), potential,
-                        args=(Nparticles+1, acc))
-particle_orbit,satellite_orbit = pi.run(t1=simulation.t1,
-                                        t2=simulation.t2, dt=dt)
+def orbits_from_potential(potential):
+    acc = np.zeros((Nparticles+1,3))
+    pi = ParticleIntegrator((particles,satellite), potential,
+                            args=(Nparticles+1, acc))
+    return pi.run(t1=simulation.t1, t2=simulation.t2, dt=dt)
+
+particle_orbit,satellite_orbit = orbits_from_potential(true_potential)
 
 def test_orbits():
 
@@ -68,28 +70,30 @@ def test_orbits():
     sgr_fig.savefig(os.path.join(plot_path, "sgr_orbit.png"))
 
     for ii in range(Nparticles):
-        x = particle_orbit["x"][:,ii].to(u.kpc).value
-        z = particle_orbit["z"][:,ii].to(u.kpc).value
-        print(x.shape)
-        return
+        x = particle_orbit[ii]["x"].to(u.kpc).value
+        z = particle_orbit[ii]["z"].to(u.kpc).value
         ax.plot(x, z, color=colors[ii], alpha=0.75)
 
     fig.savefig(os.path.join(plot_path, "orbits.png"))
 
 def test_dps():
-    sat_var = np.zeros((len(particle_orbit.t),6))
-    sat_var[:,:3] = potential._tidal_radius(satellite.m,
-                                            satellite_orbit._X[...,:3])*1.26
-    sat_var[:,3:] += satellite.v_disp
-    cov = (sat_var**2)[:,np.newaxis]
+    for jj,potential in enumerate([true_potential,wrong_potential]):
+        particle_orbit,satellite_orbit = orbits_from_potential(potential)
+        sat_var = np.zeros((len(particle_orbit.t),6))
+        sat_var[:,:3] = potential._tidal_radius(satellite.m,
+                                                satellite_orbit._X[...,:3])*1.26
+        sat_var[:,3:] += satellite.v_disp
+        cov = (sat_var**2)[:,np.newaxis]
 
-    D_ps = np.sqrt(np.sum((particle_orbit._X - satellite_orbit._X)**2 / cov, \
-                          axis=-1))
+        D_ps = np.sqrt(np.sum((particle_orbit._X - satellite_orbit._X)**2 / cov, \
+                              axis=-1))
 
-    fig,ax = plt.subplots(1,1,figsize=(12,6))
-    for ii in range(Nparticles):
-        ax.plot(particle_orbit.t.value, D_ps[:,ii],
-                color=colors[ii], alpha=0.8)
-        ax.axvline(particles.tub[ii], color=colors[ii], alpha=0.8)
+        fig,ax = plt.subplots(1,1,figsize=(12,6))
+        for ii in range(Nparticles):
+            ax.plot(particle_orbit.t.value, D_ps[:,ii],
+                    color=colors[ii], alpha=0.8)
+            ax.axvline(particles.tub[ii], color=colors[ii], alpha=0.8)
 
-    fig.savefig(os.path.join(plot_path, "d_ps.png"))
+        ax.set_ylim(0,5)
+        ax.axhline(1.4)
+        fig.savefig(os.path.join(plot_path, "d_ps_{}.png".format(jj)))
