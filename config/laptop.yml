@@ -29,8 +29,9 @@ potential:
 
 simulation:
     # can be sgr, lm10, pal5
-    source: sgr
-    satellite_mass: 2.5e8 # this is specific to sgr
+    class_name: sgr
+    kwargs:
+        mass: 2.5e8 # this is specific to sgr
 
 particles:
     N: 2
@@ -51,7 +52,7 @@ steps: 100
 # observational errors
 # below: with no units specified, it's a fractional error
 errors:
-    global_factor: 1.
+    factor: 1. # multplies all errors
     vr: 10. km/s
     # mu_l: 1. milliarcsecond/year
     # mu_b: 1. milliarcsecond/year
