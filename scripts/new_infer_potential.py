@@ -372,33 +372,30 @@ def main(config_file, job_name=None):
                     hist_kwargs=dict(color='k'))
         fig.savefig(os.path.join(path, "potential_corner.png"))
 
-        return
-
         # ---------
         # Now make 7x7 corner plots for each particle
-        # TODO: need these plots to fail if not specified in config...
-        true_obs_data = _gc_to_hel(_particles._X)
         for ii in range(Nparticles):
-            tub = sampler.flatchain[:,Npp+ii]
+            tub = flatchain[:,Npp+ii]
 
-            start = Npp+Nparticles + 6*ii
+            start = Npp + Nparticles + 6*ii
             stop = start + 6
-            XX = sampler.flatchain[:,start:stop]
-            OO = _gc_to_hel(XX)
-            truths = np.append(_particles.tub[ii], true_obs_data[ii])
+            OO = sampler.flatchain[:,start:stop]
+            truths = np.append(particles.tub[ii], particles._repr_X[ii])
 
-            extents = zip(obs_data[ii] - 3*obs_error[ii], \
-                          obs_data[ii] + 3*obs_error[ii])
-            extents = [(t2,t1)] + extents
+            #extents = zip(obs_data[ii] - 3*obs_error[ii], \
+            #              obs_data[ii] + 3*obs_error[ii])
+            #extents = [(t2,t1)] + extents
+            #extents=extents,
             fig = triangle.corner(np.hstack((tub[:,np.newaxis], OO)),
                                   labels=['tub','l','b','D',\
                                           r'$\mu_l$', r'$\mu_l$','$v_r$'],
-                                  extents=extents,
                                   truths=truths)
             fig.suptitle("Particle {0}".format(ii))
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
             plt.clf()
+
+        return
 
         # ---------
         # Now make 6x6 corner plot for satellite
