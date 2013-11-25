@@ -298,9 +298,9 @@ def main(config_file, job_name=None):
 
         # write the sampler data to numpy save files
         logger.info("Writing sampler data to files in {}".format(path))
-        np.save(sampler.chain, chain_file)
-        np.save(sampler.flatchain, flatchain_file)
-        np.save(sampler.lnprobability, lnprob_file)
+        np.save(chain_file, sampler.chain)
+        np.save(flatchain_file, sampler.flatchain)
+        np.save(lnprob_file, sampler.lnprobability)
 
         chain = np.array(sampler.chain)
         flatchain = np.array(sampler.flatchain)
