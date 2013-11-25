@@ -41,6 +41,9 @@ class StreamModel(object):
         self.particles = particles
         self.parameters = parameters
 
+        # TODO HACK because of:
+        self.simulation._table = None
+
     def __call__(self, p, *args):
         self.vector = np.array(p)
         return self.ln_posterior(*args)
