@@ -91,9 +91,9 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="")
     parser.add_argument("-f", "--file", dest="file", required=True,
                     help="Path to the configuration file to run with.")
-    parser.add_argument("-t", "--walltime", dest="time", default="36:00:00",
+    parser.add_argument("-t", "--walltime", dest="time", default="12:00:00",
                     help="Amount of time to request.")
-    parser.add_argument("-m", "--memory", dest="memory", default="16gb",
+    parser.add_argument("-m", "--memory", dest="memory", default="32gb",
                     help="Amount of memory to request.")
     parser.add_argument("-n", "--name", dest="job_name", default=None,
                     help="The name of the job.")
