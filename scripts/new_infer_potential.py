@@ -66,14 +66,14 @@ def get_pool(config):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
-        logger.info("Running with MPI.")
+        logger.debug("Running with MPI.")
 
     elif config.get("threads", 0) > 1:
-        logger.info("Running with multiprocessing on {} cores."\
+        logger.debug("Running with multiprocessing on {} cores."\
                     .format(config["threads"]))
         pool = multiprocessing.Pool(config["threads"])
     else:
-        logger.info("Running serial...parallel panda is sad :(")
+        logger.debug("Running serial...parallel panda is sad :(")
         pool = None
 
     return pool
@@ -261,24 +261,26 @@ def main(config_file, job_name=None):
     # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
 
-    return
-
     if not os.path.exists(sampler_file):
+        logger.debug("Initializing sampler...")
         sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
                                         args=(t1, t2, -1.),
                                         pool=pool)
 
         Nburn_in = config.get("burn_in", 0)
         Nsteps = config["steps"]
+        logger.info("Burning in sampler for {} steps...".format(Nburn_in))
         if Nburn_in > 0:
             pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
             sampler.reset()
         else:
             pos = p0
 
+        logger.info("Running sampler for {} steps...".format(Nsteps))
         pos, prob, state = sampler.run_mcmc(pos, Nsteps)
 
         # write the sampler to a pickle file
+        logger.info("Writing sampler data to files {}".format())
         sampler.lnprobfn = None
         sampler.pool = None
         fnpickle(sampler, sampler_file)
