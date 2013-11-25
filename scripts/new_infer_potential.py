@@ -145,7 +145,7 @@ def main(config_file, job_name=None):
     particle_errors = gaia_spitzer_errors(particles)
 
     # now get errors specified by user in the yml configuration
-    factor = config["errors"].get("global_factor", 1.)
+    factor = config["errors"].get("factor", 1.)
     for k,v in config["errors"].items():
         if not particle_errors.has_key(k):
             logger.debug("Skipping error key {} because not found "
@@ -162,7 +162,6 @@ def main(config_file, job_name=None):
             particle_errors[k] = np.ones_like(particle_errors[k].value) * err
 
     o_particles = particles.observe(particle_errors)
-    logger.debug("Particles: {}".format(o_particles))
     # now has o_particles.errors["D"] etc.
 
     # satellite has different errors from individual stars...
@@ -176,10 +175,12 @@ def main(config_file, job_name=None):
     o_satellite = satellite.observe(satellite_errors)
     logger.debug("Satellite: {}".format(o_satellite))
 
-    model_parameters = []
     ##########################################################################
-    # Potential parameters
+    # Setting up the Model
     #
+    model_parameters = []
+
+    # Potential parameters
     potential_params = config["potential"].get("parameters", dict())
     for name,meta in potential_params.items():
         p = getattr(potential, name)
@@ -198,15 +199,8 @@ def main(config_file, job_name=None):
                                                attr="_value",
                                                ln_prior=prior))
 
-    ##########################################################################
     # Particle parameters
-    #
     particle_params = config["particles"].get("parameters", [])
-
-    try:
-        Nparticles = config["particles"]["N"]
-    except KeyError:
-        raise ValueError("Must specify number of partices in config file!")
 
     # time unbound / escape time (tub)
     if "tub" in particle_params:
@@ -222,17 +216,15 @@ def main(config_file, job_name=None):
                     for n in o_particles.names]).T
         covs = [np.diag(s**2) for s in sigmas]
 
-        prior = LogNormalPrior(o_particles._X,
+        prior = LogNormalPrior(np.array(o_particles._X),
                                cov=np.array(covs))
         p = ModelParameter(target=o_particles,
                            attr="_X",
                            ln_prior=prior)
-        p.ln_prior = _null # THIS IS A HACK?
+        #p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
 
-    ##########################################################################
     # Satellite parameters
-    #
     satellite_config = config.get("satellite", dict())
     satellite_params = satellite_config.get("parameters", [])
 
@@ -242,12 +234,12 @@ def main(config_file, job_name=None):
                     for n in o_satellite.names])[np.newaxis]
         covs = [np.diag(s**2) for s in sigmas]
 
-        prior = LogNormalPrior(o_satellite._X,
+        prior = LogNormalPrior(np.array(o_satellite._X),
                                cov=np.array(covs))
         p = ModelParameter(target=satellite,
                            attr="_X",
                            ln_prior=prior)
-        p.ln_prior = _null # THIS IS A HACK?
+        #p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
 
     return
