@@ -114,7 +114,8 @@ def main(config_file, job_name=None):
     # get the potential object specified from the potential subpackage
     Potential = getattr(s_potential, config["potential"]["class_name"])
     potential = Potential()
-    logger.debug("Using {} potential...".format(potential))
+    logger.debug("Using {} potential..."\
+                 .format(config["potential"]["class_name"]))
 
     ##########################################################################
     # Simulation data
@@ -122,7 +123,7 @@ def main(config_file, job_name=None):
     # read the simulation data from the specified class
     np.random.seed(config["seed"])
     Simulation = getattr(s_io, config["simulation"]["class_name"])
-    simulation = Simulation(config["simulation"].get("kwargs", dict()))
+    simulation = Simulation(**config["simulation"].get("kwargs", dict()))
 
     # read particles from the simulation class
     particles = simulation.particles(N=config["particles"]["N"],
@@ -242,19 +243,25 @@ def main(config_file, job_name=None):
         #p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
 
-    return
-
     # now create the model
-    model = StreamModel(potential, satellite, particles,
+    model = StreamModel(potential, simulation, satellite, particles,
                         parameters=model_parameters)
+    logger.info("Model has {} parameters".format(model.ndim))
+
+    ##########################################################################
+    # Emcee!
+    #
 
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
         Nwalkers = model.ndim*2 + 2
+    logger.debug("Running with {} walkers".format(Nwalkers))
 
     # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
+
+    return
 
     if not os.path.exists(sampler_file):
         sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
