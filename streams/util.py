@@ -43,21 +43,3 @@ def _validate_coord(x):
         return np.array([x])
 
 u_galactic = [u.kpc, u.Myr, u.M_sun, u.radian]
-
-def make_path(config):
-
-    try:
-        path = config["output_path"]
-    except KeyError:
-        raise ValueError("You must specify 'output_path' in the config file.")
-
-    iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    path = os.path.join(path, config.get("name", iso_now))
-
-    if os.path.exists(path) and config.get("overwrite", False):
-        shutil.rmtree(path)
-
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-    return path

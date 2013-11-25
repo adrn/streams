@@ -42,7 +42,6 @@ from streams.inference import (ModelParameter, StreamModel,
 import streams.io as s_io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
-from streams.util import make_path
 
 global pool
 pool = None
@@ -77,6 +76,25 @@ def get_pool(config):
         pool = None
 
     return pool
+
+def make_path(config):
+
+    try:
+        path = config["output_path"]
+    except KeyError:
+        raise ValueError("You must specify 'output_path' in the config file.")
+
+    iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    path = os.path.join(path, config.get("name", iso_now))
+
+    if os.path.exists(path) and config.get("overwrite", False):
+        shutil.rmtree(path)
+
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
 
 def _parse_quantity(q):
     try:
@@ -261,7 +279,7 @@ def main(config_file, job_name=None):
     # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
 
-    if not os.path.exists(sampler_file):
+    if not os.path.exists(chain_file):
         logger.debug("Initializing sampler...")
         sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
                                         args=(t1, t2, -1.),
