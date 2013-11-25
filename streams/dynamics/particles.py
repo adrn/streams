@@ -133,7 +133,8 @@ class Particle(object):
             return 1
 
     def plot(self, fig=None, labels=None, \
-             plot_kwargs=dict(), hist_kwargs=dict()):
+             plot_kwargs=dict(), hist_kwargs=dict(),
+             **kwargs):
         """ Make a corner plot showing all dimensions.
 
         """
@@ -150,7 +151,8 @@ class Particle(object):
                               plot_datapoints=True,
                               fig=fig,
                               plot_kwargs=plot_kwargs,
-                              hist_kwargs=hist_kwargs)
+                              hist_kwargs=hist_kwargs,
+                              **kwargs)
 
         return fig
 
