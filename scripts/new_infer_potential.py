@@ -306,17 +306,17 @@ def main(config_file, job_name=None):
         flatchain = np.array(sampler.flatchain)
         lnprobability = np.array(sampler.lnprobability)
 
-        try:
-            pool.close()
-        except AttributeError:
-            pass
-
         del sampler
 
     else:
         chain = np.load(chain_file)
         flatchain = np.load(flatchain_file)
         lnprobability = np.load(lnprob_file)
+
+    try:
+        pool.close()
+    except AttributeError:
+        pass
 
     if make_plots:
 
