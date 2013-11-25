@@ -108,33 +108,52 @@ def main(config_file, job_name=None):
     else:
         logger.info("OK fine, I won't write anything to disk...")
 
+    ##########################################################################
+    # Potential
+    #
     # get the potential object specified from the potential subpackage
     Potential = getattr(s_potential, config["potential"]["class_name"])
     potential = Potential()
     logger.debug("Using {} potential...".format(potential))
 
-    # read the simulation data
+    ##########################################################################
+    # Simulation data
+    #
+    # read the simulation data from the specified class
     np.random.seed(config["seed"])
-    expr = config["particles"]["selection_expr"]
-
     Simulation = getattr(s_io, config["simulation"]["class_name"])
     simulation = Simulation(config["simulation"].get("kwargs", dict()))
-    particles = simulation.particles(N=config["particles"]["N"],
-                                     expr=expr)
-    particles = particles.to_frame('heliocentric')
-    particle_errors = gaia_spitzer_errors(particles)
 
+    # read particles from the simulation class
+    particles = simulation.particles(N=config["particles"]["N"],
+                                expr=config["particles"]["selection_expr"])
+    particles = particles.to_frame('heliocentric')
+    logger.debug("Read in {} particles with expr='{}'"\
+                 .format(particles.nparticles, particles.expr))
+
+    # read the satellite position
     satellite = simulation.satellite()
     satellite = satellite.to_frame('heliocentric')
+    logger.debug("Read in present position of satellite {}..."\
+                 .format(satellite))
     # Note: now particles and satellite are in heliocentric coordinates!
 
-    # get errors specified by user in config
+    ##########################################################################
+    # Observational errors
+    #
+    # first get the Gaia + Spitzer errors as default
+    particle_errors = gaia_spitzer_errors(particles)
+
+    # now get errors specified by user in the yml configuration
     factor = config["errors"].get("global_factor", 1.)
     for k,v in config["errors"].items():
-        if k == "global_factor": continue
+        if not particle_errors.has_key(k):
+            logger.debug("Skipping error key {} because not found "
+                         "in particle_errors...".format(k))
+            continue
 
-        assert particle_errors.has_key(k)
         err = _parse_quantity(v)
+        logger.debug("Dimension {}, error {}...".format(k, err))
 
         if err.unit == u.dimensionless_unscaled:
             # fractional error
