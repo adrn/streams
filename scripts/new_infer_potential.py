@@ -39,9 +39,9 @@ from streams import usys
 from streams.coordinates import _gc_to_hel, _hel_to_gc
 from streams.inference import (ModelParameter, StreamModel,
                                LogNormalPrior, LogUniformPrior)
-from streams.io import *
+import streams.io as s_io
 from streams.observation.gaia import gaia_spitzer_errors
-import streams.potential as sp
+import streams.potential as s_potential
 from streams.util import make_path
 
 global pool
@@ -78,25 +78,6 @@ def get_pool(config):
 
     return pool
 
-def read_simulation(config):
-    """ TODO: """
-
-    if config["simulation"]["source"] == "sgr":
-        m = config["simulation"]["satellite_mass"]
-        simulation = SgrSimulation(mass=m)
-
-    elif config["simulation"]["source"] == "lm10":
-        simulation = LM10Simulation()
-
-    elif config["simulation"]["source"] == "orphan":
-        simulation = OrphanSimulation()
-
-    else:
-        raise ValueError("Invalid particle_source: {particle_source}"\
-                         .format(config))
-
-    return simulation
-
 def _parse_quantity(q):
     try:
         val,unit = q.split()
@@ -127,16 +108,17 @@ def main(config_file, job_name=None):
     else:
         logger.info("OK fine, I won't write anything to disk...")
 
-    # get the potential object specified
-    Potential = getattr(sp, config["potential"]["class_name"])
+    # get the potential object specified from the potential subpackage
+    Potential = getattr(s_potential, config["potential"]["class_name"])
     potential = Potential()
     logger.debug("Using {} potential...".format(potential))
 
-    # get simulation data
+    # read the simulation data
     np.random.seed(config["seed"])
     expr = config["particles"]["selection_expr"]
 
-    simulation = read_simulation(config)
+    Simulation = getattr(s_io, config["simulation"]["class_name"])
+    simulation = Simulation(config["simulation"].get("kwargs", dict()))
     particles = simulation.particles(N=config["particles"]["N"],
                                      expr=expr)
     particles = particles.to_frame('heliocentric')
