@@ -318,8 +318,6 @@ def main(config_file, job_name=None):
         flatchain = np.load(flatchain_file)
         lnprobability = np.load(lnprob_file)
 
-    return
-
     if make_plots:
 
         # plot observed data / true particles
