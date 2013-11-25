@@ -155,6 +155,7 @@ def main(config_file, job_name=None):
     satellite = satellite.to_frame('heliocentric')
     logger.debug("Read in present position of satellite {}..."\
                  .format(satellite))
+    simulation._table = None # HACK
     # Note: now particles and satellite are in heliocentric coordinates!
 
     ##########################################################################
