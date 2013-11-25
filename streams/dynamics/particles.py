@@ -123,7 +123,7 @@ class Particle(object):
             _repr_X.append((self._X[...,ii]*self._internal_units[ii])\
                                .to(self._repr_units[ii]).value.tolist())
 
-        return np.array(_repr_X)
+        return np.array(_repr_X).T
 
     @property
     def nparticles(self):
