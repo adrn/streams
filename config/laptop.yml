@@ -36,18 +36,19 @@ simulation:
 particles:
     N: 2
     selection_expr: tub != 0
-    parameters:
-        - tub
-        - _X
+    #parameters:
+    #    - tub
+    #    - _X
 
 satellite:
-    parameters:
-        - _X
+    name: Sgr
+    #parameters:
+    #    - _X
 
 # emcee
 walkers: 16 # or auto (2 x number of parameters)
 burn_in: 0
-steps: 100
+steps: 10
 
 # observational errors
 # below: with no units specified, it's a fractional error

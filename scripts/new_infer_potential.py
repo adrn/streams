@@ -286,8 +286,8 @@ def main(config_file, job_name=None):
 
         Nburn_in = config.get("burn_in", 0)
         Nsteps = config["steps"]
-        logger.info("Burning in sampler for {} steps...".format(Nburn_in))
         if Nburn_in > 0:
+            logger.info("Burning in sampler for {} steps...".format(Nburn_in))
             pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
             sampler.reset()
         else:
