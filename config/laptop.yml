@@ -29,7 +29,7 @@ potential:
 
 simulation:
     # can be sgr, lm10, pal5
-    class_name: sgr
+    class_name: SgrSimulation
     kwargs:
         mass: 2.5e8 # this is specific to sgr
 
