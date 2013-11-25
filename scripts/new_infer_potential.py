@@ -17,7 +17,6 @@ import multiprocessing
 
 # Third-party
 import astropy.units as u
-from astropy.io.misc import fnpickle, fnunpickle
 from astropy.utils.console import color_print
 import emcee
 import matplotlib.pyplot as plt
@@ -95,7 +94,6 @@ def make_path(config):
 
     return path
 
-
 def _parse_quantity(q):
     try:
         val,unit = q.split()
@@ -118,7 +116,9 @@ def main(config_file, job_name=None):
 
     # determine the output data path
     path = make_path(config)
-    sampler_file = os.path.join(path, "sampler_data.pickle")
+    chain_file = os.path.join(path, "chain.npy")
+    flatchain_file = os.path.join(path, "flatchain.npy")
+    lnprob_file = os.path.join(path, "lnprobability.npy")
 
     make_plots = config.get("make_plots", False)
     if make_plots:
@@ -297,16 +297,25 @@ def main(config_file, job_name=None):
         logger.info("Running sampler for {} steps...".format(Nsteps))
         pos, prob, state = sampler.run_mcmc(pos, Nsteps)
 
-        # write the sampler to a pickle file
-        logger.info("Writing sampler data to files {}".format())
-        sampler.lnprobfn = None
-        sampler.pool = None
-        fnpickle(sampler, sampler_file)
+        # write the sampler data to numpy save files
+        logger.info("Writing sampler data to files in {}".format(path))
+        np.save(sampler.chain, chain_file)
+        np.save(sampler.flatchain, flatchain_file)
+        np.save(sampler.lnprobability, lnprob_file)
+
+        chain = np.array(sampler.chain)
+        flatchain = np.array(sampler.flatchain)
+        lnprobability = np.array(sampler.lnprobability)
 
         pool.close()
+        del sampler
 
     else:
-        sampler = fnunpickle(sampler_file)
+        chain = np.load(chain_file)
+        flatchain = np.load(flatchain_file)
+        lnprobability = np.load(lnprob_file)
+
+    return
 
     if make_plots:
 
