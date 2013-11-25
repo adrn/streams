@@ -306,7 +306,11 @@ def main(config_file, job_name=None):
         flatchain = np.array(sampler.flatchain)
         lnprobability = np.array(sampler.lnprobability)
 
-        pool.close()
+        try:
+            pool.close()
+        except AttributeError:
+            pass
+
         del sampler
 
     else:
