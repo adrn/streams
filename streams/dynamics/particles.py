@@ -142,7 +142,7 @@ class Particle(object):
             labels = ["{0} [{1}]".format(n,uu) \
                         for n,uu in zip(self.names, self._repr_units)]
 
-        kwargs["alpha"] = kwargs.get("alpha", 0.5)
+        plot_kwargs["alpha"] = plot_kwargs.get("alpha", 0.75)
 
         fig = triangle.corner(self._repr_X,
                               labels=labels,
