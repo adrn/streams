@@ -321,21 +321,21 @@ def main(config_file, job_name=None):
     if make_plots:
 
         # plot observed data / true particles
-        fig = particles.plot(plot_kwargs=dict(markersize=6, color='k'),
+        fig = particles.plot(plot_kwargs=dict(markersize=4, color='k'),
                              hist_kwargs=dict(color='k'))
         fig = o_particles.plot(fig=fig,
-                               plot_kwargs=dict(markersize=6, color='r'),
+                               plot_kwargs=dict(markersize=4, color='r'),
                                hist_kwargs=dict(color='r'))
         fig.savefig(os.path.join(path,"particles_hc.png"))
 
-        extents = [(-75,60)]*3 + [(-175,175)]*3
+        extents = [(-75,60)]*3 + [(-200,200)]*3
         fig = particles.to_frame("galactocentric")\
-                       .plot(plot_kwargs=dict(markersize=6, color='k'),
+                       .plot(plot_kwargs=dict(markersize=4, color='k'),
                              hist_kwargs=dict(color='k'),
                              extents=extents)
         fig = o_particles.to_frame("galactocentric")\
                          .plot(fig=fig,
-                               plot_kwargs=dict(markersize=6, color='r'),
+                               plot_kwargs=dict(markersize=4, color='r'),
                                hist_kwargs=dict(color='r'),
                                extents=extents)
         fig.savefig(os.path.join(path,"particles_gc.png"))
@@ -348,16 +348,21 @@ def main(config_file, job_name=None):
         fig = triangle.corner(p0[:,:Npp],
                     truths=[p.target._truth for p in pparams],
                     extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
-                    labels=[p.target.latex for p in pparams])
+                    labels=[p.target.latex for p in pparams],
+                    plot_kwargs=dict(color='k'),
+                    hist_kwargs=dict(color='k'))
         fig.savefig(os.path.join(path, "potential_corner_prior.png"))
 
         # Now the actual chains, extents from the priors
         fig = triangle.corner(flatchain[:,:Npp],
                     truths=[p.target._truth for p in pparams],
                     extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
-                    labels=[p.target.latex for p in pparams])
+                    labels=[p.target.latex for p in pparams],
+                    plot_kwargs=dict(color='k'),
+                    hist_kwargs=dict(color='k'))
         fig.savefig(os.path.join(path, "potential_corner.png"))
 
+        return
 
         # ---------
         # Now make 7x7 corner plots for each particle
