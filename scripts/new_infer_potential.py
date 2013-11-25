@@ -282,7 +282,6 @@ def main(config_file, job_name=None):
     if not os.path.exists(chain_file):
         logger.debug("Initializing sampler...")
         sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
-                                        args=(t1, t2, -1.),
                                         pool=pool)
 
         Nburn_in = config.get("burn_in", 0)
