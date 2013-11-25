@@ -321,8 +321,12 @@ def main(config_file, job_name=None):
     if make_plots:
 
         # plot observed data / true particles
-        fig = particles.plot(alpha=0.8)
-        fig = o_particles.plot(fig=fig, color="r")
+        fig = particles.plot(alpha=0.8,
+                             plot_kwargs=dict(markersize=6,color='k'),
+                             hist_kwargs=dict(color='k'))
+        fig = o_particles.plot(fig=fig,
+                               plot_kwargs=dict(markersize=6,color='r'),
+                               hist_kwargs=dict(color='r'))
         fig.savefig(os.path.join(path,"particles.png"))
 
         return
