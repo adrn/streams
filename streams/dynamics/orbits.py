@@ -15,7 +15,6 @@ import astropy.units as u
 from astropy.constants import G
 import triangle
 
-from .core import _validate_quantity, DynamicalBase
 from .particles import Particle
 
 __all__ = ["Orbit"]
