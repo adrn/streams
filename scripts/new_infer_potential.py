@@ -322,7 +322,12 @@ def main(config_file, job_name=None):
 
     if make_plots:
 
-        # TODO: plot observed data / true particles
+        # plot observed data / true particles
+        fig = particles.plot(alpha=0.8)
+        fig = o_particles.plot(fig=fig, color="r")
+        fig.savefig(os.path.join(path,"particles.png"))
+
+        return
 
         # Make a corner plot for the potential parameters
         Npp = len(potential_params) # number of potential parameters
