@@ -328,16 +328,17 @@ def main(config_file, job_name=None):
                                hist_kwargs=dict(color='r'))
         fig.savefig(os.path.join(path,"particles_hc.png"))
 
+        extents = [(-75,60)]*3 + [(-175,175)]*3
         fig = particles.to_frame("galactocentric")\
                        .plot(plot_kwargs=dict(markersize=6, color='k'),
-                             hist_kwargs=dict(color='k'))
+                             hist_kwargs=dict(color='k'),
+                             extents=extents)
         fig = o_particles.to_frame("galactocentric")\
                          .plot(fig=fig,
                                plot_kwargs=dict(markersize=6, color='r'),
-                               hist_kwargs=dict(color='r'))
+                               hist_kwargs=dict(color='r'),
+                               extents=extents)
         fig.savefig(os.path.join(path,"particles_gc.png"))
-
-        return
 
         # Make a corner plot for the potential parameters
         Npp = len(potential_params) # number of potential parameters
@@ -351,11 +352,12 @@ def main(config_file, job_name=None):
         fig.savefig(os.path.join(path, "potential_corner_prior.png"))
 
         # Now the actual chains, extents from the priors
-        fig = triangle.corner(sampler.flatchain[:,:Npp],
+        fig = triangle.corner(flatchain[:,:Npp],
                     truths=[p.target._truth for p in pparams],
                     extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
                     labels=[p.target.latex for p in pparams])
         fig.savefig(os.path.join(path, "potential_corner.png"))
+
 
         # ---------
         # Now make 7x7 corner plots for each particle
