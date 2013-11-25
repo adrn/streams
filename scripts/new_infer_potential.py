@@ -246,15 +246,25 @@ def main(config_file, job_name=None):
     # Satellite parameters
     satellite_config = config.get("satellite", dict())
     satellite_params = satellite_config.get("parameters", [])
+    no_progenitor = satellite_config.get("no_progenitor", False)
 
     # true position of the satellite
     if "_X" in satellite_params:
-        sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
-                    for n in o_satellite.names])[np.newaxis]
-        covs = [np.diag(s**2) for s in sigmas]
+        if no_progenitor:
+            los = [-180*u.deg, -90*u.deg, 10.*u.kpc,
+                   -5.*u.mas/u.yr, -5.*u.mas/u.yr, -400.*u.km/u.s]
+            los = np.array([l.decompose(usys) for l in los])
+            his = [180*u.deg, 90*u.deg, 100.*u.kpc,
+                   5.*u.mas/u.yr, 5.*u.mas/u.yr, 400.*u.km/u.s]
+            his = np.array([l.decompose(usys) for l in los])
+            prior = LogUniformPrior(los, his)
+        else:
+            sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
+                        for n in o_satellite.names])[np.newaxis]
+            covs = [np.diag(s**2) for s in sigmas]
 
-        prior = LogNormalPrior(np.array(o_satellite._X),
-                               cov=np.array(covs))
+            prior = LogNormalPrior(np.array(o_satellite._X),
+                                   cov=np.array(covs))
         p = ModelParameter(target=satellite,
                            attr="_X",
                            ln_prior=prior)
