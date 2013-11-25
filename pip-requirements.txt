@@ -5,3 +5,4 @@ emcee>=1.2
 scipy>=0.11
 astropy>=0.2
 triangle_plot
+cython>=0.19
