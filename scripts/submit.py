@@ -35,7 +35,7 @@ job_sh = """#!/bin/sh
 date
 
 #Command to execute Python program
-mpirun -n {walkers:d} /vega/astro/users/amp2217/yt-x86_64/bin/python /vega/astro/users/amp2217/projects/streams/scripts/{script} -f /vega/astro/users/amp2217/projects/streams/config/{config_file} -v
+mpirun -n {mpi_threads:d} /vega/astro/users/amp2217/yt-x86_64/bin/python /vega/astro/users/amp2217/projects/streams/scripts/{script} -f /vega/astro/users/amp2217/projects/streams/config/{config_file} -v
 
 date
 
@@ -47,7 +47,8 @@ date
 #End of script
 """
 
-def main(config_file, walltime, memory, job_name):
+def main(config_file, mpi_threads=None, walltime=None, memory=None,
+         job_name=None):
 
     # Read in simulation parameters from config file
     with open(config_file) as f:
@@ -60,14 +61,16 @@ def main(config_file, walltime, memory, job_name):
             name = "adrn"
     else:
         name = job_name
-    
-    config["walkers"] = min(config["walkers"], 128)
-    d = config["walkers"] / 8
+
+    if mpi_threads is None:
+        mpi_threads = 999999
+    mpi_threads = min(config.get("walkers"), 128, mpi_threads)
+    d = mpi_threads / 8
     if int(d) != d:
         raise ValueError()
 
-    sh = job_sh.format(walkers=config["walkers"],
-                       nodes=config["walkers"]//8,
+    sh = job_sh.format(mpi_threads=mpi_threads,
+                       nodes=mpi_threads//8,
                        time=walltime,
                        memory=memory,
                        config_file=os.path.basename(config_file),
@@ -91,18 +94,21 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="")
     parser.add_argument("-f", "--file", dest="file", required=True,
                     help="Path to the configuration file to run with.")
-    parser.add_argument("-t", "--walltime", dest="time", default="12:00:00",
+    parser.add_argument("--walltime", dest="time", default="12:00:00",
                     help="Amount of time to request.")
-    parser.add_argument("-m", "--memory", dest="memory", default="32gb",
+    parser.add_argument("--memory", dest="memory", default="32gb",
                     help="Amount of memory to request.")
-    parser.add_argument("-n", "--name", dest="job_name", default=None,
+    parser.add_argument("--name", dest="job_name", default=None,
                     help="The name of the job.")
+    parser.add_argument("--threads", dest="mpi_threads", default=None,
+                    help="The number of MPI threads.")
 
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)
 
     filename = os.path.join("/vega/astro/users/amp2217/projects/streams/", args.file)
-    main(filename, walltime=args.time, memory=args.memory, job_name=args.job_name)
+    main(filename, mpi_threads=args.mpi_threads, walltime=args.time,
+         memory=args.memory, job_name=args.job_name)
     sys.exit(0)
 
