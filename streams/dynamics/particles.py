@@ -71,7 +71,7 @@ class Particle(object):
             _X[ii] = value
 
         self._repr_units = _repr_units
-        self._X = _X.T
+        self._X = _X.T.copy()
 
         #if self._X.ndim > 2:
         #    raise ValueError("Particle coordinates must be 1D.")
