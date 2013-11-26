@@ -110,6 +110,27 @@ def main(config_file, job_name=None):
     with open(config_file) as f:
         config = yaml.load(f.read())
 
+    # This needs to go here so I don't read in the particle file N times!!
+    # get a pool object given the configuration parameters
+    #pool = get_pool(config)
+    if config.get("mpi", False):
+        # Initialize the MPI pool
+        pool = MPIPool()
+
+        # Make sure the thread we're running on is the master
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
+        logger.debug("Running with MPI.")
+
+    elif config.get("threads", 0) > 1:
+        logger.debug("Running with multiprocessing on {} cores."\
+                    .format(config["threads"]))
+        pool = multiprocessing.Pool(config["threads"])
+    else:
+        logger.debug("Running serial...parallel panda is sad :(")
+        pool = None
+
     # TODO: write a separate script just for plotting...
 
     # determine the output data path
@@ -294,10 +315,6 @@ def main(config_file, job_name=None):
 
     # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
-
-    # This needs to go here so I don't read in the particle file N times!!
-    # get a pool object given the configuration parameters
-    pool = get_pool(config)
 
     if not os.path.exists(chain_file):
         logger.debug("Initializing sampler...")
