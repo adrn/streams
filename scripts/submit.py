@@ -101,7 +101,7 @@ if __name__ == "__main__":
     parser.add_argument("--name", dest="job_name", default=None,
                     help="The name of the job.")
     parser.add_argument("--threads", dest="mpi_threads", default=None,
-                    help="The number of MPI threads.")
+                        type=int, help="The number of MPI threads.")
 
     args = parser.parse_args()
 
