@@ -26,7 +26,7 @@ potential:
 simulation:
     # can be sgr, lm10, pal5
     class_name: SgrSimulation
-    kwargs: 
+    kwargs:
         mass: 2.5e8 # this is specific to sgr
 
 particles:
@@ -37,9 +37,9 @@ particles:
         - _X
 
 # emcee
-walkers: 32
-burn_in: 10
-steps: 25
+walkers: 256
+burn_in: 2
+steps: 4
 
 # observational errors
 # below: with no units specified, it's a fractional error
