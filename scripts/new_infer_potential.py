@@ -277,6 +277,7 @@ def main(config_file, job_name=None):
                         parameters=model_parameters)
     logger.info("Model has {} parameters".format(model.ndim))
 
+    from astropy.io.misc import fnpickle
     fnpickle(model, os.path.join(path, "model.pickle"))
 
     return
