@@ -22,7 +22,7 @@ from astropy.constants import G
 # Project
 from .. import usys
 from ..dynamics import Orbit
-from .core import SimulationData
+from .core import SimulationData, read_table
 from ..util import project_root
 
 __all__ = ["SgrSimulation"]
@@ -67,7 +67,7 @@ class SgrSimulation(SimulationData):
 
         self.t1 = (4.189546E+02 * self._units["time"]).to(u.Myr).value
         self.t2 = 0
-        
+
         if orbit:
             sgr_orbit = ascii.read(os.path.join(_path,mass,"SCFCEN"))
             for x in "xyz":
@@ -82,38 +82,24 @@ class SgrSimulation(SimulationData):
               names=names,
               units=[sgr_orbit[x].unit for x in names])
 
-    def table(self, expr=None):
-        # if self._table is None:
-        #     tbl = super(SgrSimulation, self).table()
-
-        #     for x in "xyz":
-        #         tbl[x].unit = self._units["length"]
-
-        #     for x in ("vx","vy","vz"):
-        #         tbl[x].unit = self._units["length"]/self._units["time"]
-
-        #     self._table = tbl
-        #return super(SgrSimulation, self).table(expr=expr)
-
-        tbl = super(SgrSimulation, self).table(expr=expr)
-        for x in "xyz":
-            tbl[x].unit = self._units["length"]
-
-        for x in ("vx","vy","vz"):
-            tbl[x].unit = self._units["length"]/self._units["time"]
-        return tbl
-
     def satellite(self, bound_expr="tub==0", frame="galactocentric",
                   column_names=None):
+
+        col_units = [self._units["length"]]*3 + \
+                    [self._units["length"]/self._units["time"]]*3
         s = super(SgrSimulation, self).satellite(bound_expr=bound_expr,
                                                  frame=frame,
-                                                 column_names=column_names)
+                                                 column_names=column_names,
+                                                 column_units=col_units)
         s.m = s.meta["m"] = self.mass
 
-        bound = self.table(bound_expr)
-        vx = np.array((bound["vx"].data*bound["vx"].unit).to(u.kpc/u.Myr).value, copy=True)
-        vy = np.array((bound["vy"].data*bound["vy"].unit).to(u.kpc/u.Myr).value, copy=True)
-        vz = np.array((bound["vz"].data*bound["vz"].unit).to(u.kpc/u.Myr).value, copy=True)
+        bound = read_table(self.filename, expr=bound_expr)
+        vx = np.array((bound["vx"]*col_units[3]).to(u.kpc/u.Myr).value, \
+                      copy=True)
+        vy = np.array((bound["vy"]*col_units[3]).to(u.kpc/u.Myr).value, \
+                      copy=True)
+        vz = np.array((bound["vz"]*col_units[3]).to(u.kpc/u.Myr).value, \
+                      copy=True)
 
         del bound
         s.v_disp =s.meta["v_disp"] = np.sqrt(np.var(vx)+np.var(vy)+np.var(vz))
@@ -140,8 +126,12 @@ class SgrSimulation(SimulationData):
             meta_cols : iterable (optional)
                 List of columns to add to meta data.
         """
+
+        col_units = [self._units["length"]]*3 + \
+                    [self._units["length"]/self._units["time"]]*3
         p = super(SgrSimulation, self).particles(N=N, expr=expr, frame=frame,
                                                  column_names=column_names,
+                                                 column_units=col_units,
                                                  meta_cols=meta_cols)
         p.meta["tub"] = (p.meta["tub"]*self._units["time"])\
                           .decompose(usys).value

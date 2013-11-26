@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import gc
 
 # Third-party
 import numpy as np
@@ -23,13 +24,19 @@ from ..dynamics import Particle, Orbit
 
 __all__ = ["SimulationData"]
 
-def _tbl_to_quantity_list(tbl, column_names):
-    cols = []
-    for cname in column_names:
-        col = np.array(tbl[cname], copy=True) * tbl[cname].unit
-        cols.append(col)
+def read_table(filename, expr=None, N=None):
+    #_table = ascii.read(filename)
+    _table = np.genfromtxt(filename, names=True)
 
-    return cols
+    if expr is not None:
+        idx = numexpr.evaluate(str(expr), _table)
+        _table = _table[idx]
+
+    if N is not None and N > 0:
+        np.random.shuffle(_table)
+        _table = _table[:min(N,len(_table))]
+
+    return _table.copy()
 
 # TODO: should be singleton...
 class SimulationData(object):
@@ -54,21 +61,8 @@ class SimulationData(object):
         self._gal_colnames = ("x","y","z","vx","vy","vz")
         self._hel_colnames = ("l","b","D","mul","mub","vr")
 
-    def table(self, expr=None):
-        #if self._table is None:
-        #    self._table = ascii.read(self.filename)
-        _table = ascii.read(self.filename)
-
-        if expr is not None:
-            #idx = numexpr.evaluate(str(expr), self._table)
-            #return self._table[idx]
-            idx = numexpr.evaluate(str(expr), _table)
-            return _table[idx]
-
-        return _table
-
     def satellite(self, bound_expr, frame="galactocentric",
-                  column_names=None):
+                  column_names=None, column_units=None):
         """ Return a Particle object for the present-day position of the
             Satellite in the specified reference frame / coordinates.
 
@@ -81,6 +75,8 @@ class SimulationData(object):
             column_names : iterable (optional)
                 A list of the column names to read from the table and put in
                 Particle.
+            column_units : iterable (optional)
+                A list of the column units.
         """
 
         if frame.lower().startswith("g"):
@@ -96,15 +92,20 @@ class SimulationData(object):
 
         # get the satellite position / velocity from the median of the
         #   bound particle positions/velocities
-        bound = self.table(bound_expr)
-        cols = _tbl_to_quantity_list(bound, column_names)
-        return Particle([np.median(np.array(c.value)) for c in cols],
+        tbl = read_table(self.filename, expr=bound_expr)
+
+        cols = []
+        for cname,cunit in zip(column_names,column_units):
+            col = tbl[cname].copy() * cunit
+            cols.append(col)
+
+        return Particle([np.median(c.value) for c in cols],
                         names=column_names,
                         units=[c.unit for c in cols],
                         meta=dict(expr=bound_expr))
 
     def particles(self, N=None, expr=None, frame="galactocentric",
-                  column_names=None, meta_cols=[]):
+                  column_names=None, column_units=None, meta_cols=[]):
         """ Return a Particle object with N particles selected from the
             simulation with expression expr in the specified reference
             frame / coordinates.
@@ -120,6 +121,8 @@ class SimulationData(object):
             column_names : iterable (optional)
                 A list of the column names to read from the table and put in
                 Particle.
+            column_units : iterable (optional)
+                A list of the column units.
             meta_cols : iterable (optional)
                 List of columns to add to meta data.
         """
@@ -135,21 +138,22 @@ class SimulationData(object):
         else:
             raise ValueError("Invalid reference frame.")
 
-        tbl = self.table(expr)
+        tbl = read_table(self.filename, expr=expr, N=N)
+        #tbl = np.genfromtxt(self.filename, names=True)
 
-        if N != None and N > 0:
-            idx = np.random.randint(0, len(tbl), N)
-            tbl = tbl[idx]
+        # if no column units specified, try to get them from the table
+        # TODO:
+        #if column_units is None:
+        #    column_units = [tbl[c].unit for c in column_names]
 
-        cols = _tbl_to_quantity_list(tbl, column_names)
+        cols = []
+        for cname,cunit in zip(column_names,column_units):
+            col = tbl[cname].copy() * cunit
+            cols.append(col)
+
         meta = dict(expr=expr)
-
         for col in meta_cols:
-            meta[col] = np.array(tbl[col].data.tolist())
-        
-        import gc
-        del tbl
-        gc.collect()
+            meta[col] = tbl[col].copy()
 
         return Particle(cols, names=column_names,
                         meta=meta)
