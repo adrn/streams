@@ -280,6 +280,8 @@ def main(config_file, job_name=None):
     from astropy.io.misc import fnpickle
     fnpickle(model, os.path.join(path, "model.pickle"))
 
+    raw_input("DONE.")
+
     return
 
     ##########################################################################
