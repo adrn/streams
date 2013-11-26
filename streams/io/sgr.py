@@ -82,18 +82,25 @@ class SgrSimulation(SimulationData):
               units=[sgr_orbit[x].unit for x in names])
 
     def table(self, expr=None):
-        if self._table is None:
-            tbl = super(SgrSimulation, self).table()
+        # if self._table is None:
+        #     tbl = super(SgrSimulation, self).table()
 
-            for x in "xyz":
-                tbl[x].unit = self._units["length"]
+        #     for x in "xyz":
+        #         tbl[x].unit = self._units["length"]
 
-            for x in ("vx","vy","vz"):
-                tbl[x].unit = self._units["length"]/self._units["time"]
+        #     for x in ("vx","vy","vz"):
+        #         tbl[x].unit = self._units["length"]/self._units["time"]
 
-            self._table = tbl
+        #     self._table = tbl
+        #return super(SgrSimulation, self).table(expr=expr)
 
-        return super(SgrSimulation, self).table(expr=expr)
+        tbl = super(SgrSimulation, self).table(expr=expr)
+        for x in "xyz":
+            tbl[x].unit = self._units["length"]
+
+        for x in ("vx","vy","vz"):
+            tbl[x].unit = self._units["length"]/self._units["time"]
+        return tbl
 
     def satellite(self, bound_expr="tub==0", frame="galactocentric",
                   column_names=None):
