@@ -45,6 +45,8 @@ class StreamModel(object):
         # TODO HACK because of:
         self.simulation._table = None
 
+        self.acc = np.zeros((particles.nparticles+1,3))
+
     def __call__(self, p, *args):
         self.vector = np.array(p)
         return self.ln_posterior(*args)
@@ -108,10 +110,9 @@ class StreamModel(object):
         particles_gc = self.particles.to_frame("galactocentric")
         satellite_gc = self.satellite.to_frame("galactocentric")
 
-        acc = np.zeros((Nparticles+1,3))
         pi = ParticleIntegrator((particles_gc,satellite_gc),
                                 self.potential,
-                                args=(Nparticles+1, acc))
+                                args=(Nparticles+1, self.acc))
         particle_orbit,satellite_orbit = pi.run(t1=t1, t2=t2, dt=dt)
 
         # These are the unbinding time indices for each particle
