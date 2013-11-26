@@ -13,6 +13,7 @@ import copy
 import numpy as np
 import pytest
 import astropy.units as u
+from astropy.io.misc import fnpickle
 import matplotlib.pyplot as plt
 
 from ... import usys
@@ -245,3 +246,45 @@ class TestStreamModel(object):
             ax.set_xlabel("particle {0}, tub".format(ii), fontsize=24)
             fig.savefig(os.path.join(self.plot_path,
                         "tub_particle_{0}.png".format(ii)))
+
+    def test_pickle(self):
+        from ...observation.gaia import gaia_spitzer_errors
+
+        potential = LawMajewski2010()
+
+        particles = self.particles.to_frame("heliocentric")
+        satellite = self.satellite.to_frame("heliocentric")
+
+        particle_errors = gaia_spitzer_errors(particles)
+        particles = particles.observe(particle_errors)
+
+        params = []
+        for p_name in self.potential.parameters.keys():
+            p = potential.parameters[p_name]
+            params.append(ModelParameter(target=p,
+                                    attr="_value",
+                                    ln_prior=LogUniformPrior(*p._range)))
+
+        params.append(ModelParameter(target=particles,
+                                     attr="tub",
+                                     ln_prior=LogPrior()))
+
+        sigmas = np.array([particles.errors[n].decompose(usys).value \
+                    for n in particles.names]).T
+        covs = [np.diag(s**2) for s in sigmas]
+
+        prior = LogNormalPrior(np.array(particles._X),
+                               cov=np.array(covs))
+        params.append(ModelParameter(target=particles,
+                                     attr="_X",
+                                     ln_prior=prior))
+
+        params.append(ModelParameter(target=satellite,
+                                     attr="_X",
+                                     ln_prior=LogPrior()))
+
+        model = StreamModel(potential, self.simulation,
+                            satellite, particles,
+                            parameters=params)
+
+        fnpickle(model, os.path.join(self.plot_path, "test.pickle"))
