@@ -112,7 +112,24 @@ def main(config_file, job_name=None):
 
     # TODO: write a separate script just for plotting...
     # get a pool object given the configuration parameters
-    pool = get_pool(config)
+    #pool = get_pool(config)
+    if config.get("mpi", False):
+        # Initialize the MPI pool
+        pool = MPIPool()
+
+        # Make sure the thread we're running on is the master
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
+        logger.debug("Running with MPI.")
+
+    elif config.get("threads", 0) > 1:
+        logger.debug("Running with multiprocessing on {} cores."\
+                    .format(config["threads"]))
+        pool = multiprocessing.Pool(config["threads"])
+    else:
+        logger.debug("Running serial...parallel panda is sad :(")
+        pool = None
 
     # determine the output data path
     path = make_path(config)
