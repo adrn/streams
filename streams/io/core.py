@@ -98,7 +98,8 @@ class SimulationData(object):
         #   bound particle positions/velocities
         bound = self.table(bound_expr)
         cols = _tbl_to_quantity_list(bound, column_names)
-        return Particle([np.median(c) for c in cols], names=column_names,
+        return Particle([np.median(np.array(c.data)) for c in cols],
+                        names=column_names,
                         meta=dict(expr=bound_expr))
 
     def particles(self, N=None, expr=None, frame="galactocentric",
@@ -143,7 +144,7 @@ class SimulationData(object):
         meta = dict(expr=expr)
 
         for col in meta_cols:
-            meta[col] = np.array(tbl[col])
+            meta[col] = np.array(tbl[col].data)
 
         return Particle(cols, names=column_names,
                         meta=meta)
