@@ -145,7 +145,7 @@ class SimulationData(object):
         meta = dict(expr=expr)
 
         for col in meta_cols:
-            meta[col] = np.array(tbl[col].data, copy=True)
+            meta[col] = np.array(tbl[col].data.tolist())
 
         return Particle(cols, names=column_names,
                         meta=meta)
