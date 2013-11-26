@@ -49,20 +49,23 @@ class SimulationData(object):
         self.filename = filename
 
         # cache
-        self._table = None
+        #self._table = None
 
         self._gal_colnames = ("x","y","z","vx","vy","vz")
         self._hel_colnames = ("l","b","D","mul","mub","vr")
 
     def table(self, expr=None):
-        if self._table is None:
-            self._table = ascii.read(self.filename)
+        #if self._table is None:
+        #    self._table = ascii.read(self.filename)
+        _table = ascii.read(self.filename)
 
         if expr is not None:
-            idx = numexpr.evaluate(str(expr), self._table)
-            return self._table[idx]
+            #idx = numexpr.evaluate(str(expr), self._table)
+            #return self._table[idx]
+            idx = numexpr.evaluate(str(expr), _table)
+            return _table[idx]
 
-        return self._table
+        return _table
 
     def satellite(self, bound_expr, frame="galactocentric",
                   column_names=None):
