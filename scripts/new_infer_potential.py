@@ -181,12 +181,6 @@ def main(config_file, job_name=None):
                  .format(satellite))
     simulation._table = None # HACK
     # Note: now particles and satellite are in heliocentric coordinates!
-    
-    import gc
-    gc.collect()
-
-    raw_input("adsffd")
-    return
 
     ##########################################################################
     # Observational errors
@@ -306,11 +300,6 @@ def main(config_file, job_name=None):
     model = StreamModel(potential, simulation, satellite, particles,
                         parameters=model_parameters)
     logger.info("Model has {} parameters".format(model.ndim))
-
-    from astropy.io.misc import fnpickle
-    fnpickle(model, os.path.join(path, "model.pickle"))
-
-    raw_input("DONE.")
 
     return
 
