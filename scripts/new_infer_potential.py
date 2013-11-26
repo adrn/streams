@@ -406,7 +406,7 @@ def main(config_file, job_name=None):
 
             start = Npp + Nparticles + 6*ii
             stop = start + 6
-            OO = sampler.flatchain[:,start:stop]
+            OO = flatchain[:,start:stop]
             truths = np.append(particles.tub[ii], particles._repr_X[ii])
 
             #extents = zip(obs_data[ii] - 3*obs_error[ii], \
