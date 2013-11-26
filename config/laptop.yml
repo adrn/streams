@@ -46,9 +46,9 @@ satellite:
     #    - _X
 
 # emcee
-walkers: 16 # or auto (2 x number of parameters)
+walkers: 32 # or auto (2 x number of parameters)
 burn_in: 0
-steps: 10
+steps: 2
 
 # observational errors
 # below: with no units specified, it's a fractional error

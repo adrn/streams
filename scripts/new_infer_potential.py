@@ -295,6 +295,7 @@ def main(config_file, job_name=None):
     # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
 
+    # This needs to go here so I don't read in the particle file N times!!
     # get a pool object given the configuration parameters
     pool = get_pool(config)
 
