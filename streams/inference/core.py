@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 
 class StreamModel(object):
 
-    def __init__(self, potential, simulation, satellite, particles, parameters=[]):
+    def __init__(self, potential, simulation,
+                 satellite, particles, parameters=[]):
         """ ...
 
             Parameters
@@ -100,6 +101,8 @@ class StreamModel(object):
         t1 = self.simulation.t1
         t2 = self.simulation.t2
         dt = -1. # TODO HACK
+
+        return np.random.uniform() # HACK
 
         # The true positions/velocities of the particles are parameters
         Nparticles = self.particles.nparticles
