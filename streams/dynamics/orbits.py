@@ -15,155 +15,73 @@ import astropy.units as u
 from astropy.constants import G
 import triangle
 
-from .core import _validate_quantity, DynamicalBase
 from .particles import Particle
 
 __all__ = ["Orbit"]
 
-class Orbit(DynamicalBase):
+class Orbit(Particle):
 
-    def __init__(self, t, r, v, m=None, units=None):
-        """ Represents a collection of orbits, e.g. positions and velocities
-            over time for a set of particles.
-
-            Input r and v should be shape (ntimesteps, nparticles, ndim).
+    def __init__(self, t, coords, names, units=None, meta=dict()):
+        """ Represents a particle orbit or collection of orbits.
 
             Parameters
             ----------
-            t : astropy.units.Quantity
-                Time.
-            r : astropy.units.Quantity
-                Position of the particle(s). Should have shape
-                (ntimesteps, nparticles, ndim).
-            v : astropy.units.Quantity
-                Velocity of the particle(s). Should have shape
-                (ntimesteps, nparticles, ndim).
-            m : astropy.units.Quantity (optional)
-                Mass.
-            units : list (optional)
-                A list of units defining the desired unit system for
-                the particles. If not provided, will use the units of
-                the input Quantities to define a system of units. Mainly
-                used for internal representations.
+            t : quantity_like
+                An array representing the time along the 0th axis of each
+                coordinate, or the 1st axis along _X.
+            coords : iterable
+                Can either be an iterable (e.g., list or tuple) of Quantity
+                objects, in which case their units are grabbed from the
+                objects themselves, or an array_like object with the first
+                axis as the separate coordinate dimensions, and the units
+                parameter specifying the units along each dimension.
+            names : iterable
+                Names of each coordinate dimension. These end up being
+                attributes of the object.
+            units : iterable (optional)
+                Must be specified if q is an array_like object, otherwise this
+                is constructed from the Quantity objects in q.
+            meta : dict (optional)
+                Any additional metadata.
         """
 
-        _validate_quantity(t, unit_like=u.s)
-        _validate_quantity(r, unit_like=u.km)
-        _validate_quantity(v, unit_like=u.km/u.s)
+        super(Orbit, self).__init__(coords, names, units=units, meta=meta)
+        if not hasattr(t, "unit"):
+            raise TypeError("'t' must be a quantity-like object with a .unit"
+                            " attribute")
 
-        try:
-            self.ntimesteps, self.nparticles, self.ndim = r.value.shape
-        except ValueError:
-            raise ValueError("Position and velocity should have shape "
-                             "(ntimesteps, nparticles, ndim)")
+        if self._X.ndim != 3:
+            raise ValueError("Coordinate data must be 2D - 0th axis for each "
+                             "particle, 1st axis for time.")
 
-        if units is None and m is None:
-            raise ValueError("If not specifying list of units, you must "
-                             "specify a mass Quantity for the particles.")
-        elif units is not None and m is None:
-            m = ([0.] * self.nparticles * u.kg).decompose(units)
+        self.t = t
+        if self._X.shape[0] != self.t.shape[0]:
+            raise ValueError("Shape of t ({}) should match last axis of each "             "coordinate ({})".format(self.t.shape[0], \
+                                                      self._X.shape[0]))
 
-        _validate_quantity(m, unit_like=u.kg)
+    def plot(self, fig=None, labels=None, **kwargs):
+        """ Make a corner plot showing all dimensions. """
 
-        if units is None:
-            _units = [r.unit, m.unit] + v.unit.bases + [u.radian]
-            self.units = set(_units)
-        else:
-            self.units = units
+        if labels is None:
+            labels = ["{0} [{1}]".format(n,uu) \
+                        for n,uu in zip(self.names, self._repr_units)]
 
-        unq_types = np.unique([x.physical_type for x in self.units])
-        if len(self.units) != len(unq_types):
-            raise ValueError("Multiple units specify the same physical type!")
+        if fig is not None:
+            kwargs["fig"] = fig
 
-        if r.value.shape != v.value.shape:
-            raise ValueError("Position and velocity must have same shape.")
+        for ii in range(self.nparticles):
+            # TODO: each should get a different color?
+            if kwargs.get("fig", None) is None:
+                kwargs["fig"] = triangle.corner(self._repr_X[:,ii].T,
+                                         labels=labels,
+                                         plot_contours=False,
+                                         plot_datapoints=True,
+                                         **kwargs)
+            else:
+                kwargs["fig"] = triangle.corner(self._repr_X[:,ii].T,
+                                    labels=labels,
+                                    plot_contours=False,
+                                    plot_datapoints=True,
+                                    **kwargs)
 
-        if len(t.value) != self.ntimesteps:
-            raise ValueError("Length of time array must match number of "
-                             "timesteps in position and velocity.")
-
-        # decompose each input into the specified unit system
-        _r = r.decompose(self.units).value
-        _v = v.decompose(self.units).value
-
-        # create container for all 6 phasespace
-        self._X = np.zeros((self.ntimesteps, self.nparticles, self.ndim*2))
-        self._X[..., :self.ndim] = _r
-        self._X[..., self.ndim:] = _v
-        self._m = m.decompose(self.units).value
-        self._t = t.decompose(self.units).value
-
-    @property
-    def t(self):
-        t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
-        return self._t * t_unit
-
-    def to(self, units):
-        """ Return a new Orbit in the specified unit system. """
-        return Orbit(t=self.t, r=self.r, v=self.v, m=self.m, units=units)
-
-    def plot_r(self, coord_names=['x','y','z'], **kwargs):
-        """ Make a scatter-plot of 3 projections of the orbit positions.
-
-            Parameters
-            ----------
-            coord_names : list
-                Name of each axis, e.g. ['x','y','z']
-            kwargs (optional)
-                Keyword arguments that get passed to triangle.corner()
-        """
-        from ..plot.data import scatter_plot_matrix
-        if not len(coord_names) == self.ndim:
-            raise ValueError("Must pass a coordinate name for each dimension.")
-
-        labels = [r"{0} [{1}]".format(nm, self.r.unit)
-                    for nm in coord_names]
-
-        kwargs["ms"] = kwargs.get("ms", 2.)
-        kwargs["alpha"] = kwargs.get("alpha", 0.5)
-
-        fig = triangle.corner(np.vstack(self._r), labels=labels,
-                              plot_contours=False, plot_datapoints=True,
-                              **kwargs)
-
-        return fig
-
-    def plot_v(self, coord_names=['vx','vy','vz'], **kwargs):
-        """ Make a scatter-plot of 3 projections of the velocities of the
-            particle coordinates.
-
-            Parameters
-            ----------
-            coord_names : list
-                Name of each axis, e.g. ['Vx','Vy','Vz']
-            kwargs (optional)
-                Keyword arguments that get passed to triangle.corner()
-        """
-        from ..plot.data import scatter_plot_matrix
-        assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
-
-        labels = [r"{0} [{1}]".format(nm, self.v.unit)
-                    for nm in coord_names]
-
-        kwargs["ms"] = kwargs.get("ms", 2.)
-        kwargs["alpha"] = kwargs.get("alpha", 0.5)
-
-        fig = triangle.corner(np.vstack(self._v), labels=labels,
-                              plot_contours=False, plot_datapoints=True,
-                              **kwargs)
-        return fig
-
-    def __getitem__(self, key):
-        """ Slice on time """
-
-        if isinstance(key, slice) :
-            #Get the start, stop, and step from the slice
-            return Orbit(t=self.t[key], r=self.r[key],
-                         v=self.v[key], m=self.m[key], units=self.units)
-
-        elif isinstance(key, int) :
-            return Particle(r=self.r[key], v=self.v[key], m=self.m[key],
-                            units=self.units)
-
-        else:
-            raise TypeError("Invalid argument type.")
+        return kwargs["fig"]

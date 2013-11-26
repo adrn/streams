@@ -11,144 +11,180 @@ import time
 
 # Third-party
 import astropy.units as u
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
 # Project
 from ..particles import *
-from ...observation.gaia import RRLyraeErrorModel
+from ...observation.error_model import SpitzerGaiaErrorModel
 from ... import usys
 
 plot_path = "plots/tests/dynamics"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
-units = (u.kpc, u.Myr, u.M_sun)
+# from LM10 -- copied here so I don't have to read in each time...
+lm10_X =np.array([[-24.7335,-9.35652,17.7755,-0.266238,-0.013697,-0.00862857],
+ [4.04449, -8.58018, 43.6431, -0.147417, -0.00453593, -0.0570219],
+ [40.7303, -9.38172, -52.45, 0.10542100000000001, 0.0255395, 0.0676476],
+ [31.9827, -0.46618, 3.68191, -0.199363, -0.00786105, 0.16698300000000002],
+ [-55.4545, 3.40444, -14.4413, 0.10564799999999999, 0.00946331, -0.0706881],
+ [-24.9119, -4.18854, 16.2446, -0.0358232, 0.0333882, -0.20689400000000002],
+ [7.63141, 5.4841, 42.3225, -0.238398, -0.02333, -0.0920642],
+ [47.9773, -5.17874, -44.0926, 0.0372335, 0.014637, 0.116505],
+ [24.7687, 1.91995, -38.9927, 0.13775, 0.0183352, 0.0059355599999999994],
+ [35.3565, 15.0336, -55.0006, 0.0649749, -0.0182314,0.124926]]).T
 
-def test_Particle_init():
+def test_init():
 
-    # Init with individual arrays of ndim=1
-    r = np.random.random(3)*u.kpc
-    v = np.random.random(3)*u.km/u.s
-    m = np.random.random()*u.M_sun
+    x = np.random.random(size=100)
+    vx = np.random.random(size=100)
+    p = Particle((x, vx), names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
+    p = Particle((x*u.kpc, vx*u.km/u.s), names=("x","vx"))
+    assert np.all(p["x"].value == x)
+    assert np.allclose(p["vx"].value, vx, rtol=1E-15, atol=1E-15)
+
+    x_vx = np.random.random(size=(2,100))
+    p = Particle(x_vx, names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
+
+    xyz = np.random.random(size=(3,100))*u.km
+    p = Particle(xyz, names=("x","y","z"))
+    assert p["x"].unit == u.km
+    assert p["y"].unit == u.km
+    assert p["z"].unit == u.km
+    assert np.allclose(p["z"].value, xyz[2], rtol=1E-15, atol=1E-15)
 
     with pytest.raises(ValueError):
-        pc = Particle(r=r, v=v, m=m, units=units)
+        xyz = np.random.random(size=(3,100))
+        p = Particle(xyz, names=("x","y","z"))
 
-    r = np.random.random(size=(10,3))*u.kpc
-    v = np.random.random(size=(10,3))*u.kpc/u.Myr
-    m = np.random.random(10)*u.M_sun
-
-    pc = Particle(r=r, v=v, m=m, units=units)
-
-    assert np.all(pc.r.value == r.value)
-    assert np.all(pc.v.value == v.value)
-    assert np.all(pc.m.value == m.value)
-
-    assert np.all(pc._r == r.value)
-    assert np.all(pc._v == v.value)
-    assert np.all(pc._m == m.value)
-
-def test_acceleration():
-    r = np.array([[1.,0.],
-                  [0, 1.],
-                  [-1., 0.],
-                  [0., -1.]])*u.kpc
-    v = np.zeros_like(r.value)*u.km/u.s
-    m = np.random.random()*u.M_sun
-
-    pc = Particle(r=r, v=v, m=m, units=units)
-
-    pc.acceleration_at(np.array([0.,0.])*u.kpc)
-
-    a = pc.acceleration_at(np.array([[0.5,0.5], [0.0,0.0], [-0.5, -0.5]])*u.kpc)
-
-def test_merge():
-    # test merging two particle collections
-
-    r = np.random.random(size=(10,3))*u.kpc
-    v = np.random.random(size=(10,3))*u.km/u.s
-    m = np.random.random(10)*u.M_sun
-
-    pc1 = Particle(r=r, v=v, m=m, units=units)
-
-    r = np.random.random(size=(10,3))*u.kpc
-    v = np.random.random(size=(10,3))*u.km/u.s
-    m = np.random.random(10)*u.M_sun
-
-    pc2 = Particle(r=r, v=v, m=m, units=units)
-
-    pc_merged = pc1.merge(pc2)
-
-    assert pc_merged._r.shape == (20,3)
-
-def test_to():
-    r = np.random.random(size=(10,3))*u.kpc
-    v = np.random.random(size=(10,3))*u.kpc/u.Myr
-    m = np.random.random(10)*u.M_sun
-
-    pc = Particle(r=r, v=v, m=m, units=units)
-
-    usys2 = (u.km, u.s, u.kg)
-    pc2 = pc.to(usys2)
-
-    assert np.allclose(pc2._r, r.to(u.km).value)
-    assert np.allclose(pc2._v, v.to(u.km/u.s).value)
-    assert np.allclose(pc2._m, m.to(u.kg).value)
+    with pytest.raises(ValueError):
+        v = np.random.random(size=100)*u.kpc
+        p = Particle((v, v.value), names=("x","y"))
 
 def test_getitem():
-    r = np.random.random(size=(100,3))*u.kpc
-    v = np.random.random(size=(100,3))*u.kpc/u.Myr
-    m = np.random.random(100)*u.M_sun
+    xyz = np.random.random(size=(3,100))*u.km
+    p = Particle(xyz, names=("x","y","z"))
+    assert p.nparticles == 100
 
-    pc = Particle(r=r, v=v, m=m, units=units)
-    pc2 = pc[15:30]
+    p2 = p[15:30]
+    assert p2.nparticles == 15
+    assert (p2._X[:,0] == p._X[:,15]).all()
 
-    assert pc2.nparticles == 15
-    assert (pc2._r[0] == pc._r[15]).all()
+def test_repr_X():
+    x = np.random.random(size=100)
+    vx = np.random.random(size=100)
+    p = Particle((x, vx), names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
+
+    assert np.allclose(p._repr_X[0], x)
+    assert np.allclose(p._repr_X[1], vx)
 
 def test_plot():
-    r = np.random.random(size=(100,3))*u.kpc
-    v = np.random.random(size=(100,3))*u.kpc/u.Myr
-    m = np.random.random(100)*u.M_sun
-    p = Particle(r=r, v=v, m=m, units=units)
+    x = np.random.random(size=1000)
+    vx = np.random.random(size=1000)
+    p = Particle((x, vx), names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
 
-    fig = p.plot_r()
-    fig.savefig(os.path.join(plot_path, "particle_r.png"))
+    fig = p.plot()
+    fig.savefig(os.path.join(plot_path, "particle_2d.png"))
 
-    fig = p.plot_v()
-    fig.savefig(os.path.join(plot_path, "particle_v.png"))
+    # now try 6D case
+    xx = np.random.random(size=(6,100))
+    p = Particle(xx, names=("x","y","z","vx","vy","vz"),
+                 units=[u.kpc, u.kpc, u.kpc, u.km/u.s, u.km/u.s, u.km/u.s])
 
-def test_observe():
+    fig = p.plot()
+    fig.savefig(os.path.join(plot_path, "particle_6d.png"))
 
-    # from LM10 -- copied here so I don't have to read in each time...
-    r = np.array([[-24.7335, -9.35652, 17.7755], [4.04449, -8.58018, 43.6431], [40.7303, -9.38172, -52.45], [31.9827, -0.46618, 3.68191], [-55.4545, 3.40444, -14.4413], [-24.9119, -4.18854, 16.2446], [7.63141, 5.4841, 42.3225], [47.9773, -5.17874, -44.0926], [24.7687, 1.91995, -38.9927], [35.3565, 15.0336, -55.0006]]) * u.kpc
-    v = np.array([[-0.26623800000000003, -0.013696999999999999, -0.00862857], [-0.147417, -0.00453593, -0.0570219], [0.10542100000000001, 0.0255395, 0.0676476], [-0.199363, -0.00786105, 0.16698300000000002], [0.10564799999999999, 0.00946331, -0.0706881], [-0.0358232, 0.0333882, -0.20689400000000002], [-0.238398, -0.02333, -0.0920642], [0.0372335, 0.014637, 0.116505], [0.13775, 0.0183352, 0.0059355599999999994], [0.0649749, -0.018231400000000002, 0.12492600000000001]]) * u.kpc/u.Myr
+def test_decompose():
+    x = np.random.random(size=1000)
+    vx = np.random.random(size=1000)
+    p = Particle((x, vx), names=("x","vx"),
+                 units=[u.kpc, u.km/u.s])
 
-    p = Particle(r=r, v=v, m=1*u.M_sun)
+    p = p.decompose([u.pc, u.radian, u.Gyr, u.M_sun])
 
-    for factor in [0.01, 0.1, 1., 10.]:
-        error_model = RRLyraeErrorModel(units=usys, factor=factor)
-        new_p = p.observe(error_model)
+    fig = p.plot()
+    fig.savefig(os.path.join(plot_path, "particle_2d_decompose.png"))
 
-        fig = p.plot_r()
-        new_p.plot_r(fig=fig, color="r")
-        fig.savefig(os.path.join(plot_path,
-                    "particle_observed_r_fac{0}.png".format(factor)))
+def test_to_units():
+    # now try 6D case
+    xx = np.random.random(size=(6,100))
+    p = Particle(xx, names=("x","y","z","vx","vy","vz"),
+                 units=[u.kpc, u.kpc, u.kpc, u.km/u.s, u.km/u.s, u.km/u.s])
 
-        fig = p.plot_v()
-        new_p.plot_v(fig=fig, color="r")
-        fig.savefig(os.path.join(plot_path,
-                    "particle_observed_v_fac{0}.png".format(factor)))
+    p = p.to_units(u.pc, u.Gpc, u.km, u.kpc/u.Gyr, u.m/u.ms, u.km/u.s)
 
-def test_time_observe():
-    r = np.random.random(size=(100,3))*u.kpc
-    v = np.random.random(size=(100,3))*u.kpc/u.Myr
-    m = np.random.random(100)*u.M_sun
-    p = Particle(r=r, v=v, m=m, units=usys)
+    fig = p.plot()
+    fig.savefig(os.path.join(plot_path, "particle_6d_to_units.png"))
 
-    error_model = RRLyraeErrorModel(units=usys, factor=1.)
-    a = time.time()
-    for ii in range(10):
-        new_p = p.observe(error_model)
-    print((time.time()-a)/10.)
+def test_to_frame():
+    # now try 6D case
+
+    p = Particle(lm10_X, names=("x","y","z","vx","vy","vz"),
+                units=[u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr])
+
+    fig = p.plot(ms=3.)
+    fig.savefig(os.path.join(plot_path, "lm10_particle_original.png"))
+
+    p = p.to_frame('heliocentric')
+    fig = p.plot(ms=3.)
+    fig.savefig(os.path.join(plot_path, "lm10_particle_6d_helio.png"))
+
+    p = p.to_frame('galactocentric')
+    fig = p.plot(ms=3.)
+    fig.savefig(os.path.join(plot_path, "lm10_particle_6d_galacto.png"))
+
+def test_field_of_streams():
+    from ...io import LM10Simulation
+    from astropy.coordinates import Galactic
+
+    sgr = LM10Simulation()
+    p = sgr.particles(N=10000, expr="(Pcol>-1) & (Pcol<8) & (abs(Lmflag)==1)")
+    p2 = p.to_frame("heliocentric")
+
+    icrs = Galactic(p2["l"], p2["b"]).icrs
+
+    g = Galactic(p2["l"], p2["b"], distance=p2["D"])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(icrs.ra.degree, icrs.dec.degree, marker='.',
+            linestyle='none', alpha=0.25)
+    ax.set_xlim(230,110)
+    ax.set_ylim(-2,60)
+    fig.savefig(os.path.join(plot_path, "field_of_streams_test.png"))
+
+@pytest.mark.parametrize("d_err", [
+    (0.02),
+    (0.1),
+    (0.5),
+])
+def test_observe(d_err):
+    from ...io import LM10Simulation
+    from ...observation.gaia import gaia_spitzer_errors
+    sgr = LM10Simulation()
+    p = sgr.particles(N=100, expr="(Pcol>-1) & (Pcol<8) & (abs(Lmflag)==1)")
+    p = p.to_frame("heliocentric")
+
+    err = gaia_spitzer_errors(p)
+    err["D"] = p["D"]*d_err
+    o_p = p.observe(err)
+    assert hasattr(o_p, "errors")
+    assert o_p.errors.has_key("D")
+
+    fig = p.plot()
+    fig = o_p.plot(fig=fig, color='r')
+    fig.savefig(os.path.join(plot_path, "test_observe_hel_{}.png"\
+                                        .format(d_err)))
+
+    p = p.to_frame("galactocentric")
+    o_p = o_p.to_frame("galactocentric")
+    fig = p.plot()
+    fig = o_p.plot(fig=fig, color='r')
+    fig.savefig(os.path.join(plot_path, "test_observe_gal_{}.png"\
+                                        .format(d_err)))

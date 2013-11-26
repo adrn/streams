@@ -15,8 +15,9 @@ import emcee
 import numpy as np
 import astropy.units as u
 
-from ..coordinates import _gc_to_hel
-from ..integrate.satellite_particles import satellite_particles_integrate
+from ..dynamics import Particle
+from ..coordinates import _gc_to_hel, _hel_to_gc
+from ..integrate import ParticleIntegrator
 from .parameter import *
 from .prior import *
 
@@ -24,37 +25,33 @@ __all__ = ["StreamModel"]
 
 logger = logging.getLogger(__name__)
 
-# TODO: would be nice if I could pass in one object that knows:
-#   - star 6d positions in heliocentric
-#   - errors on heliocentric data
-#   - frame (heliocentric)
 class StreamModel(object):
 
-    def __init__(self, potential, satellite, true_particles,
-                 obs_data, obs_error, parameters=[]):
+    def __init__(self, potential, simulation,
+                 satellite, particles, parameters=[]):
         """ ...
 
             Parameters
             ----------
             ...
         """
-        if obs_data.shape != obs_error.shape:
-            raise ValueError("obs_data shape must match obs_errors shape")
 
         self.potential = potential
+        self.simulation = simulation
         self.satellite = satellite
-        self.true_particles = true_particles
+        self.particles = particles
         self.parameters = parameters
-        self.obs_data = obs_data
-        self.obs_error = obs_error
+
+        # TODO HACK because of:
+        self.simulation._table = None
 
     def __call__(self, p, *args):
-        self.vector = p
+        self.vector = np.array(p)
         return self.ln_posterior(*args)
 
     @property
     def vector(self):
-        return np.concatenate(map(np.atleast_1d,
+        return np.concatenate(map(np.ravel,
                                   [p.get() for p in self.parameters]))
 
     @property
@@ -101,42 +98,55 @@ class StreamModel(object):
             velocity dispersion.
         """
 
-        t1, t2, dt = args
+        t1 = self.simulation.t1
+        t2 = self.simulation.t2
+        dt = -1. # TODO HACK
 
         # The true positions/velocities of the particles are parameters
-        Nparticles = len(self.true_particles)
-        x = self.true_particles._X
-        hel = _gc_to_hel(x)
+        Nparticles = self.particles.nparticles
+
+        particles_gc = self.particles.to_frame("galactocentric")
+        satellite_gc = self.satellite.to_frame("galactocentric")
 
         acc = np.zeros((Nparticles+1,3))
-        s,p = satellite_particles_integrate(self.satellite,
-                                        self.true_particles,
-                                        self.potential,
-                                        potential_args=(Nparticles+1, acc),
-                                        time_spec=dict(t1=t1, t2=t2, dt=dt))
+        pi = ParticleIntegrator((particles_gc,satellite_gc),
+                                self.potential,
+                                args=(Nparticles+1, acc))
+        particle_orbit,satellite_orbit = pi.run(t1=t1, t2=t2, dt=dt)
 
-        # These are the unbinding times for each particle
-        t_idx = [np.argmin(np.fabs(s._t - tub)) \
-                    for tub in self.true_particles.tub]
-        #t_idx = -self.true_particles.tub
+        # These are the unbinding time indices for each particle
+        t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
+                            for tub in self.particles.tub])
 
-        Ntimesteps  = p._X.shape[0]
+        Ntimesteps  = len(particle_orbit.t)
 
         sat_var = np.zeros((Ntimesteps,6))
-        sat_var[:,:3] = self.potential._tidal_radius(self.satellite._m, s._r)*1.26
-        sat_var[:,3:] += self.satellite._v_disp
+        sat_var[:,:3] = self.potential._tidal_radius(self.satellite.m,
+                                            satellite_orbit._X[...,:3])*1.26
+        sat_var[:,3:] += self.satellite.v_disp
         cov = sat_var**2
 
         Sigma = np.array([cov[jj] for ii,jj in enumerate(t_idx)])
-        p_x = np.array([p._X[jj,ii] for ii,jj in enumerate(t_idx)])
-        s_x = np.array([s._X[jj,0] for ii,jj in enumerate(t_idx)])
+        p_x = np.array([particle_orbit._X[jj,ii] \
+                            for ii,jj in enumerate(t_idx)])
+        s_x = np.array([satellite_orbit._X[jj,0] \
+                            for ii,jj in enumerate(t_idx)])
         log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) +
                             (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
 
-        log_p_D_given_x = -0.5*np.sum(-2.*np.log(self.obs_error) + \
-                            (hel-self.obs_data)**2/self.obs_error**2, axis=1)
+        return np.sum(log_p_x_given_phi)
 
-        return np.sum(log_p_D_given_x + log_p_x_given_phi)
+        # if self.obs_data is not None:
+        #     log_p_D_given_x = -0.5*np.sum(-2.*np.log(self.obs_error)\
+        #                 + (hel-self.obs_data)**2/self.obs_error**2)
+        # else:
+        #     log_p_D_given_x = 0.
+
+        # if self.obs_data_sat is not None:
+        #     log_p_D_given_x_sat = -0.5*np.sum(-2.*np.log(self.obs_error_sat)\
+        #             + (hel_sat-self.obs_data_sat)**2/self.obs_error_sat**2)
+        # else:
+        #     log_p_D_given_x_sat = 0.
 
     def ln_posterior(self, *args):
         lp = self.ln_prior()

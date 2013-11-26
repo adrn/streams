@@ -24,8 +24,7 @@ import scipy.optimize as so
 
 from streams.util import project_root
 from streams.observation import apparent_magnitude
-from streams.observation.gaia import parallax_error, proper_motion_error, \
-                                     add_uncertainties_to_particles
+from streams.observation.gaia import parallax_error, proper_motion_error
 from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
 
 from streams.inference import relative_normalized_coordinates, generalized_variance, minimum_distance_matrix
@@ -49,7 +48,7 @@ if not os.path.exists(plot_path):
 
 def normed_objective_plot(**kwargs):
     """ Plot our objective function in each of the 4 parameters we vary """
-    
+
     # Read in the LM10 data
     np.random.seed(142)
     Nparticles = 100
@@ -68,18 +67,18 @@ def normed_objective_plot(**kwargs):
 
     if os.path.exists(data_file) and kwargs.get("overwrite", False):
         os.remove(data_file)
-    
+
     if not os.path.exists(data_file):
         variances = dict()
         acc = np.zeros((Nparticles+1,3)) # placeholder
         for param in ['q1','qz','v_halo','phi']:
             if not variances.has_key(param):
                 variances[param] = []
-                
+
             stats = np.linspace(true_params[param]*frac_p_range[0],
-                                true_params[param]*frac_p_range[1], 
+                                true_params[param]*frac_p_range[1],
                                 Nbins)
-        
+
             for stat in stats:
                 params = true_params.copy()
                 params[param] = stat
@@ -89,138 +88,138 @@ def normed_objective_plot(**kwargs):
                                                      potential_args=(Nparticles+1, acc), \
                                                      time_spec=dict(t1=t1, t2=t2, dt=-1.))
                 variances[param].append(generalized_variance(lm10, s_orbit, p_orbits))
-        
+
         # pickle the data to a file
         fnpickle(variances, data_file)
 
     # unpickle data
     variances = fnunpickle(data_file)
-    
+
     fig,ax = plt.subplots(1,1,figsize=(8,8))
-    
+
     nstats = np.linspace(frac_p_range[0], frac_p_range[1], Nbins)
     linestyles = [(2,'-'), (3,'-.'), (3,'--'), (3,':')]
     for ii, name in enumerate(['q1','qz','phi','v_halo']):
         vals = variances[name]
-        ls = linestyles[ii] 
+        ls = linestyles[ii]
         ax.plot(nstats, vals, label=param_to_latex[name], linewidth=ls[0], linestyle=ls[1])
-    
+
     ax.xaxis.tick_bottom()
     ax.yaxis.tick_left()
     ax.legend(loc='upper right', fancybox=True)
-    
+
     #ax.set_yticks([])
     ax.set_xlabel('Normalized parameter value', labelpad=15)
     ax.set_ylabel('$\log$ (Generalized variance)', labelpad=15)
-    
+
     fig.savefig(os.path.join(plot_path, "objective_function.pdf"))
 
 def gaia_spitzer_errors(**kwargs):
     """ Visualize the observational errors from Gaia and Spitzer, along with
-        dispersion and distance scale of Sgr and Orphan. 
+        dispersion and distance scale of Sgr and Orphan.
     """
-    
-    rcparams = {'lines.linestyle' : '-', 
+
+    rcparams = {'lines.linestyle' : '-',
                 'lines.linewidth' : 1.,
                 'lines.color' : 'k',
                 'lines.marker' : None,
                 'axes.facecolor' : '#ffffff'}
-    
+
     sgr_color = '#2B83BA'
     orp_color = '#ABDDA4'
-    
+
     with rc_context(rc=rcparams):
         fig,axes = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
-        
+
         # Distance from 1kpc to ~100kpc
         D = np.logspace(0., 2., 50)*u.kpc
-        
+
         # Sample metallicities from: http://arxiv.org/pdf/1211.7073v1.pdf
         fe_hs = np.random.normal(-1.67, 0.3, size=50)
         fe_hs = np.append(fe_hs, np.random.normal(-2.33, 0.3, size=len(fe_hs)//5))
-        
+
         for fe_h in fe_hs:
             # Johnson/Cousins (V - I_C) color for RR Lyrae at *minimum*
             # Guldenschuh et al. (2005 PASP 117, 721), pg. 725
             rrl_V_minus_I = np.random.normal(0.579, 0.006)
-            
+
             # Compute the apparent magnitude as a function of distance
             M_V = rrl_M_V(fe_h=fe_h)[0]
             m_V = apparent_magnitude(M_V, D)
-            
+
             # Distance error
             dp = parallax_error(m_V, rrl_V_minus_I).arcsecond
             dD = D.to(u.pc).value**2 * dp * u.pc
-            
+
             # Velocity error
             dpm = proper_motion_error(m_V, rrl_V_minus_I)
             dVtan = (dpm*D).to(u.km*u.radian/u.s).value
-        
+
             # Plot Gaia distance errors
-            axes[0].loglog(D.kiloparsec, (dD/D).decompose(), color='#666666', 
+            axes[0].loglog(D.kiloparsec, (dD/D).decompose(), color='#666666',
                            alpha=0.1)
-                
+
             # Plot tangential velocity errors
             axes[1].loglog(D.kiloparsec, dVtan, color='#666666', alpha=0.1)
-    
+
         # Add spitzer 2% line to distance plot
         axes[0].axhline(0.02, linestyle='--', linewidth=4, color='k', alpha=0.75)
-        
+
         # Add photometric 20% line to distance plot
         axes[0].axhline(0.1, linestyle=':', linewidth=4, color='k', alpha=0.75)
-    
+
     # Now add rectangles for Sgr, Orphan
-    sgr_d = Rectangle((10., 0.15), 60., 0.15, 
+    sgr_d = Rectangle((10., 0.15), 60., 0.15,
                       color=sgr_color, alpha=1., label='Sgr stream')
     axes[0].add_patch(sgr_d)
-    
+
     # From fig. 3 in http://mnras.oxfordjournals.org/content/389/3/1391.full.pdf+html
     orp_d = Rectangle((10., 0.03), 35., 0.03,
                       color=orp_color, alpha=1., label='Orp stream')
     axes[0].add_patch(orp_d)
-    
+
     # Dispersion from Majewski 2004: 10 km/s
     sgr_v = Rectangle((10., 10), 60., 1., color=sgr_color)
     axes[1].add_patch(sgr_v)
-    
+
     orp_v = Rectangle((10., 8.), 35., 1., color=orp_color)
     axes[1].add_patch(orp_v)
-    
+
     axes[0].set_ylim(top=10.)
     axes[0].set_xlim(1, 100)
     axes[1].set_ylim(0.01, 100)
-    
+
     axes[0].set_ylabel(r"$\sigma_D/D$ (frac. dist. error)")
     axes[1].set_ylabel(r"$\sigma_\mu \times$ $D$ ($v_{tan}$ error) [km/s]")
     axes[1].set_xlabel("Distance [kpc]")
-    
+
     axes[0].set_xticklabels(["1", "10", "100"])
-    
+
     axes[0].set_yticklabels(["{:g}".format(yt) for yt in axes[0].get_yticks()])
     axes[1].set_yticklabels(["{:g}".format(yt) for yt in axes[1].get_yticks()])
-    
+
     # add Gaia and Spitzer text to first plot
     axes[0].text(15., 1.5, 'Gaia', fontsize=16, rotation=32, fontweight=500)
     axes[0].text(4., 0.011, 'Spitzer', fontsize=16, alpha=0.75, fontweight=500)
-    
+
     # add legends
     axes[0].legend(loc='upper left', fancybox=True)
     #axes[1].legend(loc='upper left', fancybox=True)
-    
+
     fig.subplots_adjust(hspace=0.0)
     plt.tight_layout()
     plt.savefig(os.path.join(plot_path, "gaia.pdf"))
 
 def phase_space_d_vs_time(**kwargs):
     """ Plot the PSD for 10 stars vs. back-integration time. """
-    
+
     N = int(kwargs.get("N", 10))
     seed = int(kwargs.get("seed", 112358))
     N_integrate = 1000
 
     # Read in the LM10 data
     np.random.seed(seed)
-    particles = particles_today(N=N_integrate, 
+    particles = particles_today(N=N_integrate,
                                 expr="(Pcol>-1) & (abs(Lmflag) == 1) & (Pcol < 7)")
     satellite = satellite_today()
     t1,t2 = time()
@@ -229,11 +228,11 @@ def phase_space_d_vs_time(**kwargs):
     wrong_params = true_params.copy()
     wrong_params['qz'] = 1.25*wrong_params['qz']
     #wrong_params['v_halo'] = wrong_params['v_halo']
-    
+
     # define correct potential, and wrong potential
     true_potential = LawMajewski2010(**true_params)
     wrong_potential = LawMajewski2010(**wrong_params)
-    
+
     resolution = 3.
 
     sat_R = list()
@@ -242,21 +241,21 @@ def phase_space_d_vs_time(**kwargs):
     for potential in [true_potential, wrong_potential]:
         integrator = SatelliteParticleIntegrator(potential, satellite, particles)
         s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
-        
-        R,V = relative_normalized_coordinates(potential, s_orbit, p_orbits) 
+
+        R,V = relative_normalized_coordinates(potential, s_orbit, p_orbits)
         D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
         D_pses.append(D_ps)
         sat_R.append(np.sqrt(np.sum(s_orbit._r**2, axis=-1)))
         ts.append(s_orbit._t)
-    
-    rcparams = {'lines.linestyle' : '-', 
+
+    rcparams = {'lines.linestyle' : '-',
                 'lines.linewidth' : 1.,
                 'lines.color' : 'k',
                 'lines.marker' : None,
                 'figure.facecolor' : '#ffffff',
                 'text.color' : '#000000'}
-    
-    dark_rcparams = {'lines.linestyle' : '-', 
+
+    dark_rcparams = {'lines.linestyle' : '-',
                 'lines.linewidth' : 1.,
                 'lines.color' : '#92C5DE',
                 'lines.marker' : None,
@@ -268,8 +267,8 @@ def phase_space_d_vs_time(**kwargs):
                 'ytick.color' : '#dddddd',
                 'axes.labelcolor' : '#dddddd',
                 'axes.labelweight' : 100}
-    
-    with rc_context(rc=rcparams):  
+
+    with rc_context(rc=rcparams):
         #fig,axes = plt.subplots(2,1, sharex=True, sharey=True, figsize=(8,12))
         fig = plt.figure(figsize=(10,12))
         gs = GridSpec(2,4)
@@ -278,7 +277,7 @@ def phase_space_d_vs_time(**kwargs):
                 plt.subplot(gs[0,3]), plt.subplot(gs[1,3])]
         axes[0].axhline(2, linestyle='--', color='#444444')
         axes[1].axhline(2, linestyle='--', color='#444444')
-        
+
         for ii in range(N):
             for jj in range(2):
                 d = D_pses[jj][:,ii]
@@ -286,7 +285,7 @@ def phase_space_d_vs_time(**kwargs):
                 axes[jj].semilogy(ts[jj]/1000, d, alpha=0.25, color=rcparams['lines.color'])
                 axes[jj].semilogy(ts[jj][np.argmin(d)]/1000, np.min(d), marker='+',
                                   markeredgewidth=2, markeredgecolor='k',
-                                  alpha=0.9, color=rcparams['lines.color'], 
+                                  alpha=0.9, color=rcparams['lines.color'],
                                   markersize=10)
 
         axes[0].set_ylim(0.6,20)
@@ -311,82 +310,82 @@ def phase_space_d_vs_time(**kwargs):
 
         axes[2].set_ylim(axes[0].get_ylim())
         axes[3].set_ylim(axes[1].get_ylim())
-        
+
         axes[0].xaxis.tick_bottom()
         axes[1].xaxis.tick_bottom()
         axes[0].xaxis.set_visible(False)
-    
+
     axes[1].set_xlabel("Backwards integration time [Gyr]")
     axes[0].set_ylabel(r"$D_{ps}$", rotation='horizontal')
     axes[1].set_ylabel(r"$D_{ps}$", rotation='horizontal')
-    
+
     fig.subplots_adjust(hspace=0.1)
-    fig.savefig(os.path.join(plot_path, "ps_distance.pdf"), 
+    fig.savefig(os.path.join(plot_path, "ps_distance.pdf"),
                 facecolor=rcparams['figure.facecolor'])
-    
-    return 
+
+    return
 
 def sgr(**kwargs):
-    """ Top-down plot of Sgr particles, with selected stars and then 
+    """ Top-down plot of Sgr particles, with selected stars and then
         re-observed
     """
-    
+
     data_file = os.path.join(plot_path, 'sgr_kde.pickle')
-    
+
     fig,ax = plt.subplots(1, 1, figsize=(8,8))
-    
+
     # read in all particles as a table
     pdata = particle_table(N=0, expr="(Pcol<7) & (abs(Lmflag)==1)")
-    extent = {'x':(-90,55), 
+    extent = {'x':(-90,55),
               'y':(-58,68)}
-    
-    if not os.path.exists(data_file):    
+
+    if not os.path.exists(data_file):
         Z = sgr_kde(pdata, extent=extent)
         fnpickle(Z, data_file)
-    
+
     Z = fnunpickle(data_file)
-    
-    ax.imshow(Z**0.5, interpolation="nearest", 
+
+    ax.imshow(Z**0.5, interpolation="nearest",
               extent=extent['x']+extent['y'],
               cmap=cm.Blues, aspect=1)
-    
+
     np.random.seed(42)
     pdata = particle_table(N=100, expr="(Pcol>-1) & (Pcol<7) & (abs(Lmflag)==1)")
-    
-    rcparams = {'lines.linestyle' : 'none', 
+
+    rcparams = {'lines.linestyle' : 'none',
                 'lines.color' : 'k',
                 'lines.marker' : 'o'}
-    
-    with rc_context(rc=rcparams): 
+
+    with rc_context(rc=rcparams):
         ax.plot(pdata['x'], pdata['z'], marker='.', alpha=0.85, ms=9)
-        
+
         # add solar symbol
         ax.text(-8.-5.75, -3., s=r"$\odot$", fontsize=32)
 
         ax.set_xlabel("$X_{GC}$ [kpc]")
         ax.set_ylabel("$Z_{GC}$ [kpc]")
-    
+
     ax.set_xlim(extent['x'])
     ax.set_ylim(extent['y'])
-    
+
     # turn off right, left ticks respectively
     ax.yaxis.tick_left()
-    
+
     # turn off top ticks
     ax.xaxis.tick_bottom()
-    
+
     ax.set_aspect('equal')
-    
+
     fig.savefig(os.path.join(plot_path, "lm10.pdf"))
 
 def bootstrapped_parameters(**kwargs):
-    data_file = os.path.join(project_root, "plots", "hotfoot", 
+    data_file = os.path.join(project_root, "plots", "hotfoot",
                              "SMASH_aspen", "all_best_parameters.pickle")
     data = fnunpickle(data_file)
-    
+
     rcparams = {'axes.linewidth' : 3.,
                 'xtick.major.size' : 8.}
-    with rc_context(rc=rcparams): 
+    with rc_context(rc=rcparams):
         fig,axes = plt.subplots(3,1,figsize=(5,12))
 
     y_param = 'v_halo'
@@ -395,60 +394,60 @@ def bootstrapped_parameters(**kwargs):
     for ii,x_param in enumerate(x_params):
         ydata = (np.array(data[y_param])-_true_params[y_param]) / _true_params[y_param]
         xdata = (np.array(data[x_param])-_true_params[x_param]) / _true_params[x_param]
-        
+
         axes[ii].axhline(0., linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
         axes[ii].axvline(0., linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
-        
+
         points = np.vstack([ydata, xdata]).T
         plot_point_cov(points, nstd=2, ax=axes[ii], alpha=0.25, color='#777777')
         plot_point_cov(points, nstd=1, ax=axes[ii], alpha=0.5, color='#777777')
         plot_point_cov(points, nstd=2, ax=axes[ii], color='#000000', fill=False)
         plot_point_cov(points, nstd=1, ax=axes[ii], color='#000000', fill=False)
-        
-        axes[ii].plot(ydata, xdata, marker='.', markersize=7, alpha=0.75, 
+
+        axes[ii].plot(ydata, xdata, marker='.', markersize=7, alpha=0.75,
                       color='#2B83BA', linestyle='none')
         axes[ii].set_xlim((-0.12, 0.12))
         axes[ii].set_ylim((-0.12, 0.12))
-        
-        axes[ii].yaxis.tick_left()        
+
+        axes[ii].yaxis.tick_left()
         axes[ii].set_yticks([-0.1, -0.05, 0., 0.05, 0.1])
-    
-    axes[2].set_xlabel(r"$\delta v_{\rm halo}$", 
+
+    axes[2].set_xlabel(r"$\delta v_{\rm halo}$",
                        fontsize=26, rotation='horizontal')
-    
+
     axes[0].xaxis.tick_bottom()
     axes[0].set_xticklabels([])
     axes[1].set_xticklabels([])
     axes[2].set_xticks([-0.1, -0.05, 0., 0.05, 0.1])
-    
+
     axes[0].set_ylabel(r"$\delta q_1$", fontsize=26, rotation='horizontal')
     axes[1].set_ylabel(r"$\delta q_z$", fontsize=26, rotation='horizontal')
     axes[2].set_ylabel(r"$\delta \phi$", fontsize=26, rotation='horizontal')
-    
+
     plt.tight_layout()
     fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
 def bootstrapped_parameters_transpose(**kwargs):
-    data_file = os.path.join(project_root, "plots", "hotfoot", 
+    data_file = os.path.join(project_root, "plots", "hotfoot",
                              "SMASH_aspen", "all_best_parameters.pickle")
-    
+
     with open(data_file) as f:
         data = pickle.load(f)
-    
+
     rcparams = {'axes.linewidth' : 3.,
                 'xtick.major.size' : 8.}
-    with rc_context(rc=rcparams): 
+    with rc_context(rc=rcparams):
         fig,axes = plt.subplots(1,3,figsize=(12,5))
 
     y_param = 'v_halo'
     x_params = ['q1', 'qz', 'phi']
-    
+
     data['phi'] = (data['phi']*u.radian).to(u.degree).value
     _true_params['phi'] = (_true_params['phi']*u.radian).to(u.degree).value
     data['v_halo'] = (data['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
     _true_params['v_halo'] = (_true_params['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
-    
+
     style = dict()
     style['q1'] = dict(ticks=[1.3, 1.38, 1.46],
                        lims=(1.27, 1.49))
@@ -458,55 +457,55 @@ def bootstrapped_parameters_transpose(**kwargs):
                         lims=(90, 104))
     style['v_halo'] = dict(ticks=[115, 122, 129],
                            lims=(110, 134))
-    
+
     for ii,x_param in enumerate(x_params):
-        
+
         true_x = _true_params[x_param]
         true_y = _true_params[y_param]
         xdata = np.array(data[x_param])
         ydata = np.array(data[y_param])
-        
+
         axes[ii].axhline(true_y, linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
         axes[ii].axvline(true_x, linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
-        
+
         points = np.vstack([xdata, ydata]).T
         plot_point_cov(points, nstd=2, ax=axes[ii], alpha=0.25, color='#777777')
         plot_point_cov(points, nstd=1, ax=axes[ii], alpha=0.5, color='#777777')
         plot_point_cov(points, nstd=2, ax=axes[ii], color='#000000', fill=False)
         plot_point_cov(points, nstd=1, ax=axes[ii], color='#000000', fill=False)
-        
-        axes[ii].plot(xdata, ydata, marker='.', markersize=7, alpha=0.75, 
+
+        axes[ii].plot(xdata, ydata, marker='.', markersize=7, alpha=0.75,
                       color='#2B83BA', linestyle='none')
         axes[ii].set_xlim(style[x_param]['lims'])
         axes[ii].set_ylim(style[y_param]['lims'])
-        
-        axes[ii].yaxis.tick_left()        
+
+        axes[ii].yaxis.tick_left()
         axes[ii].set_xticks(style[x_param]['ticks'])
         axes[ii].xaxis.tick_bottom()
-    
-    axes[0].set_ylabel(r"$v_{\rm halo}$", 
+
+    axes[0].set_ylabel(r"$v_{\rm halo}$",
                        fontsize=26, rotation='horizontal')
-    
+
     axes[0].set_yticks(style[y_param]['ticks'])
     axes[1].set_yticklabels([])
     axes[2].set_yticklabels([])
-    
+
     axes[0].set_xlabel(r"$q_1$", fontsize=26, rotation='horizontal')
     axes[1].set_xlabel(r"$q_z$", fontsize=26, rotation='horizontal')
     axes[2].set_xlabel(r"$\phi$", fontsize=26, rotation='horizontal')
-    
+
     fig.text(0.855, 0.07, "[deg]", fontsize=16)
     fig.text(0.025, 0.49, "[km/s]", fontsize=16)
-    
+
     plt.tight_layout()
     fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
 
 def parameter_errors(**kwargs):
-    data_file = os.path.join(project_root, "plots", "hotfoot", 
+    data_file = os.path.join(project_root, "plots", "hotfoot",
                              "SMASH_aspen", "all_best_parameters.pickle")
     data = fnunpickle(data_file)
-    
+
     params = ['q1', 'qz', 'phi', 'v_halo']
     d = np.vstack(tuple([data[p] for p in params]))
     d[2] = np.degrees(d[2])
@@ -514,7 +513,7 @@ def parameter_errors(**kwargs):
     cov = np.cov(d)
 
     errors = np.sqrt(np.diag(cov))
-    
+
     for ii,p in enumerate(params):
         print("{0} = {1:.2f} + {2:.2f}".format(p, np.mean(d[ii]), errors[ii]))
 
@@ -524,10 +523,10 @@ def parameter_errors(**kwargs):
 
 def num_particles_recombine():
     pass
-    
+
 def when_particles_recombine(**kwargs):
-    """ I should plot number of bound particles vs. time over the orbit of 
-        the progenitor vs. time. 
+    """ I should plot number of bound particles vs. time over the orbit of
+        the progenitor vs. time.
     """
 
     N = int(kwargs.get("N",10000))
@@ -537,30 +536,30 @@ def when_particles_recombine(**kwargs):
     from streams.io.sgr import mass_selector, usys_from_file
     from streams.integrate import LeapfrogIntegrator
     particles_today, satellite_today, time = mass_selector("2.5e8")
-    
+
     potential = LawMajewski2010()
     satellite = satellite_today()
     t1,t2 = time()
     plchldr = np.zeros((len(satellite._r), 3))
-    integrator = LeapfrogIntegrator(potential._acceleration_at, 
+    integrator = LeapfrogIntegrator(potential._acceleration_at,
                                     np.array(satellite._r), np.array(satellite._v),
                                     args=(len(satellite._r), plchldr))
     ts, xs, vs = integrator.run(t1=t1, t2=t2, dt=-1.)
-    
+
     _full_path = os.path.join(project_root, "data", "simulation", "Sgr", "2.5e8")
     usys = usys_from_file(os.path.join(_full_path, "SCFPAR"))
     data = read_table("SNAP", path=_full_path, N=0)
 
     tub = (data['tub']*usys['time']).to(u.Myr).value
     R_orbit = np.sqrt(np.sum(xs**2, axis=-1))
-    
+
     from scipy.signal import argrelextrema
     apos,xxx = argrelextrema(R_orbit, np.greater)
-    peris,xxx = argrelextrema(R_orbit, np.less)    
+    peris,xxx = argrelextrema(R_orbit, np.less)
 
     fig,axes = plt.subplots(2,1,sharex=True,figsize=(18,12))
     fig.suptitle("Capture condition: $D_{{ps}}$<{0}".format(D_ps_limit), fontsize=32)
-    
+
     #for D_ps_limit,c in zip([1.5, 2., 2.5, 3.],["#1A9641", "#0571B0","#CA0020","#7B3294"]):
     for D_ps_limit,c in zip([2.],["#1A9641"]):
         tub_file = os.path.join(_full_path, "tub_back{0}_{1}.pickle".format(N,D_ps_limit))
@@ -597,13 +596,13 @@ def when_particles_recombine(**kwargs):
 
         tub_back = fnunpickle(tub_file)
         bound_stars_back = np.array([np.sum(tub_back > t) for t in ts])
-        #axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color=c, 
-        axes[0].semilogy(ts, bound_stars_back/float(p_x.shape[1]), color=c, 
+        #axes[0].semilogy(ts, bound_stars_back/max(bound_stars_back), color=c,
+        axes[0].semilogy(ts, bound_stars_back/float(p_x.shape[1]), color=c,
                          lw=1.5, label="recovered mass-loss",
                          alpha=0.75)
 
     #n,bins,patches = axes[1].hist(tub, normed=True, bins=bins, color='k', histtype="step", alpha=0.25)
-    
+
     bound_stars = [np.sum(tub > t) for t in ts]
     axes[0].semilogy(ts, bound_stars/max(bound_stars), color='#333333', lw=1.5, alpha=0.75, label="true mass-loss")
     axes[0].set_ylabel("Frac. bound stars")
@@ -611,13 +610,13 @@ def when_particles_recombine(**kwargs):
 
     #axes[1].hist(tub_back, normed=True, bins=bins, color='#1A9641', histtype="step", lw=.)
     #axes[1].yaxis.set_ticks([])
-    
+
     axes[-1].plot(ts, R_orbit, lw=2.)
     axes[-1].plot(t1, np.sqrt(np.sum(satellite._r**2, axis=-1)), marker='o', color='r')
     axes[-1].set_xlabel("Time [Myr]")
     axes[-1].set_ylabel("Satellite $R_{GC}$ [kpc]")
     axes[-1].set_xlim(min(ts), max(ts))
-    
+
     for ii,peri in enumerate(peris):
         if ii == 0:
             axes[0].axvline(ts[peri], color='#F4A582', label='peri')
@@ -625,7 +624,7 @@ def when_particles_recombine(**kwargs):
             axes[0].axvline(ts[peri], color='#F4A582')
         for ax in axes[1:]:
             ax.axvline(ts[peri], color='#F4A582')
-    
+
     for ii,apo in enumerate(apos):
         if ii == 0:
             axes[0].axvline(ts[apo], color='#92C5DE', label='apo')
@@ -633,8 +632,8 @@ def when_particles_recombine(**kwargs):
             axes[0].axvline(ts[apo], color='#92C5DE')
         for ax in axes[1:]:
             ax.axvline(ts[apo], color='#92C5DE')
-    
-    
+
+
     axes[0].legend(loc='lower left')
     fig.subplots_adjust(hspace=0.05)
     fig.savefig(os.path.join(plot_path, "when_recombine_N{0}_Dps{1}.png".format(N,D_ps_limit)))
@@ -642,35 +641,35 @@ def when_particles_recombine(**kwargs):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     import logging
-    
+
     # Create logger
     logger = logging.getLogger(__name__)
     ch = logging.StreamHandler()
     formatter = logging.Formatter("%(name)s / %(levelname)s / %(message)s")
     ch.setFormatter(formatter)
     logger.addHandler(ch)
-    
+
     # Define parser object
     parser = ArgumentParser(description="")
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
                         default=False, help="Be chatty! (default = False)")
-    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", 
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
                         default=False, help="Be quiet! (default = False)")
-    parser.add_argument("-l", "--list", action="store_true", dest="list", 
+    parser.add_argument("-l", "--list", action="store_true", dest="list",
                         default=False, help="List all functions")
-    parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite", 
+    parser.add_argument("-o", "--overwrite", action="store_true", dest="overwrite",
                         default=False, help="Overwrite existing files.")
     parser.add_argument("-f", "--function", dest="function", type=str,
                         help="The name of the function to execute.")
     parser.add_argument("--kwargs", dest="kwargs", nargs="+", type=str,
                         help="kwargs passed in to whatever function you call.")
-    
+
     args = parser.parse_args()
     try:
         kwargs = dict([tuple(k.split("=")) for k in args.kwargs])
     except TypeError:
         kwargs = dict()
-    
+
     kwargs["overwrite"] = args.overwrite
 
     # Set logger level based on verbose flags
@@ -680,9 +679,9 @@ if __name__ == '__main__':
         logger.setLevel(logging.ERROR)
     else:
         logger.setLevel(logging.INFO)
-    
+
     def _print_funcs():
-        fs = inspect.getmembers(sys.modules[__name__], 
+        fs = inspect.getmembers(sys.modules[__name__],
                                 lambda member: inspect.isfunction(member) and member.__module__ == __name__ and not member.__name__.startswith("_"))
         print("\n".join([f[0] for f in fs]))
 

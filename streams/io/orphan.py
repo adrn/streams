@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" Classes for accessing simulation data for the Orphan stream. """
+""" Classes for accessing simulation data for an Orphan-like stream """
 
 from __future__ import division, print_function
 
@@ -18,67 +18,69 @@ import astropy.units as u
 from astropy.constants import G
 
 # Project
-from .core import read_table, table_to_particles
-from ..util import project_root, u_galactic
+from .. import usys
+from .core import SimulationData
+from ..util import project_root
 
-__all__ = ["particles", "satellite", "time", "orphan_usys"]
+__all__ = ["OrphanSimulation"]
 
-_orphan_path = os.path.join(project_root, "data", "simulation", "Orphan")
+_path = os.path.join(project_root, "data", "simulation", "Orphan")
 
 X = (G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value / 0.15**3 * 1E7)**-0.5
 length_unit = u.Unit("0.15 kpc")
 mass_unit = u.Unit("1E7 M_sun")
 time_unit = u.Unit("{:08f} Myr".format(X))
-orphan_usys = (length_unit, mass_unit, time_unit)
+orphan_units = dict(length=length_unit,
+                    mass=mass_unit,
+                    time=time_unit)
 
-def particles(N=None, expr=None):
-    """ Read in particles from Kathryn's run of a satellite similar to 
-        the progenitor of the Orphan stream
-    
-        Parameters
-        ----------
-        N : int
-            Number of particles to read. None means 'all'.
-        expr : str
-            String selection condition to be fed to numexpr for selecting 
-            particles.
-        
-    """
-    
-    # Read in particle data -- a snapshot of particle positions, velocities at
-    #   the end of the simulation
-    data = read_table("ORP_SNAP", path=_orphan_path, N=N, expr=expr)
-    pc = table_to_particles(data, orphan_usys,
-                            position_columns=["x","y","z"],
-                            velocity_columns=["vx","vy","vz"])
-    
-    return pc.to(u_galactic)
+class OrphanSimulation(SimulationData):
 
-def satellite_orbit():
-    """ Read in the position and velocity of the Orphan satellite center 
-        over the whole simulation.
-    """
-    data = read_table("ORP_CEN", path=_orphan_path)
-    orbit = table_to_orbits(data, orphan_usys,
-                            position_columns=["x","y","z"],
-                            velocity_columns=["vx","vy","vz"])
-    
-    return orbit
+    def __init__(self, filename=os.path.join(_path,"ORP_SNAP")):
+        """ Data from one of Kathryn's Orphan-like simulations
 
-def satellite():
-    """ Read in the position and velocity of the Orphan satellite center 
-        at the end of the simulation (e.g., present day position to be
-        back-integrated).
-    
-    """
-    return satellite_orbit()[-1]
-    
-def time():
-    """ Read in the time information for Orphan stream simulation 
-    """
-    data = read_table("ORP_CEN", path=_orphan_path)
-    
-    t1 = (max(data["t"])*time_unit).to(u.Myr).value
-    t2 = (min(data["t"])*time_unit).to(u.Myr).value
-    
-    return t1, t2
+            Parameters
+            ----------
+            filename : str
+        """
+
+        # TODO: self.mass = float(mass) ???
+        self._units = orphan_units
+
+        super(OrphanSimulation, self).__init__(filename=filename)
+        self._hel_colnames = ()
+
+        self.t1 = (5.189893E+02 * self._units["time"]).to(u.Myr).value
+        self.t2 = 0
+
+    def table(self, expr=None):
+        if self._table is None:
+            tbl = super(OrphanSimulation, self).table()
+
+            for x in "xyz":
+                tbl[x].unit = self._units["length"]
+
+            for x in ("vx","vy","vz"):
+                tbl[x].unit = self._units["length"]/self._units["time"]
+
+            self._table = tbl
+
+        return super(OrphanSimulation, self).table(expr=expr)
+
+    def satellite(self, bound_expr="tub==0", frame="galactocentric",
+                  column_names=None):
+        s = super(OrphanSimulation, self).satellite(bound_expr=bound_expr,
+                                                 frame=frame,
+                                                 column_names=column_names)
+        # TODO: s.meta["m"] = self.mass
+
+        bound = self.table(bound_expr)
+        s.meta["v_disp"] = np.sqrt(np.std(bound["vx"])**2 + \
+                                   np.std(bound["vy"])**2 + \
+                                   np.std(bound["vz"])**2)
+
+        return s.decompose(usys)
+
+    def particles(self, *args, **kwargs):
+        p = super(OrphanSimulation, self).particles(*args, **kwargs)
+        return p.decompose(usys)

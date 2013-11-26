@@ -13,7 +13,7 @@ import numpy as np
 import astropy.coordinates as coord
 import astropy.units as u
 
-from ..sgr import SgrCoordinates
+from ..sgr import *
 
 def test_simple():
     c = coord.ICRS(coord.Angle(217.2141, u.degree),
@@ -54,3 +54,12 @@ def test_against_David_Law():
 
     sep = sgr_coords.separation(law_sgr_coords).arcsec*u.arcsec
     assert np.all(sep < 1.*u.arcsec)
+
+def test_distance_to_sgr_plane():
+    N = 100
+    ra = coord.Angle(np.random.uniform(0, 360., size=N)*u.degree)
+    dec = coord.Angle(np.random.uniform(-90, 90., size=N)*u.degree)
+    distance = np.random.uniform(10, 60., size=N)*u.kpc
+
+    D = distance_to_sgr_plane(ra, dec, distance)
+    assert hasattr(D, "unit")

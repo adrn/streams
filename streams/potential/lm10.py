@@ -15,65 +15,10 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import G
 
-from .core import CartesianPotential, CompositePotential
+from .core import CartesianPotential, CompositePotential, PotentialParameter
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
 from ._lm10_acceleration import lm10_acceleration
 from .. import usys
-
-class PotentialParameter(object):
-
-    def __init__(self, value=None, truth=None, range=(),
-                 latex="", units=usys):
-
-        if value is None and truth is None:
-            raise ValueError("If value not specified, must specify truth.")
-
-        elif value is None:
-            value = truth
-
-        if hasattr(value, "unit"):
-            q = value.decompose(units)
-            self._value = q.value
-            self._unit = q.unit
-
-            t = truth.decompose(units)
-            self._truth = t.value
-
-            lo,hi = range
-            self._range = (lo.decompose(units).value,
-                           hi.decompose(units).value)
-
-        else:
-            self._value = value
-            self._truth = truth
-            self._unit = u.dimensionless_unscaled
-            self._range = range
-
-        self.latex = latex
-
-    @property
-    def value(self):
-        return self._value*self._unit
-
-    @value.setter
-    def value(self, v):
-        self._value = v.to(self._unit).value
-
-    @property
-    def truth(self):
-        return self._truth*self._unit
-
-    @truth.setter
-    def truth(self, v):
-        self._truth = v.to(self._unit).value
-
-    @property
-    def range(self):
-        return (self._range[0]*self._unit, self._range[1]*self._unit)
-
-    def __float__(self):
-        return self._value
-
 
 class LawMajewski2010(CompositePotential):
 
@@ -140,7 +85,7 @@ class LawMajewski2010(CompositePotential):
         #                                       bulge=bulge,
         #                                       disk=disk,
         #                                       halo=halo)
-
+        self.units = usys
         self._G = G.decompose(bases=usys).value
 
     def _acceleration_at(self, r, n_particles, acc):
@@ -177,7 +122,7 @@ class LawMajewski2010(CompositePotential):
         """
 
         # Radius of Sgr center relative to galactic center
-        R_orbit = np.sqrt(np.sum(r**2., axis=-1))
+        R_orbit = np.sqrt(np.sum(r**2., axis=0))
         m_enc = self._enclosed_mass(R_orbit)
 
         return R_orbit * (m / (m_enc))**(0.33333)

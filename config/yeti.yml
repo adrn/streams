@@ -4,7 +4,7 @@ script: new_infer_potential.py
 name: adrn
 
 # threading
-mpi: False
+mpi: true
 #threads: 2
 
 # plots / output

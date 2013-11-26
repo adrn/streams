@@ -20,14 +20,16 @@ import astropy.units as u
 from astropy.constants import G
 
 # Project
-from .core import read_table, table_to_particles, table_to_orbits
-from ..util import project_root, u_galactic
+from .. import usys
+from ..dynamics import Orbit
+from .core import SimulationData
+from ..util import project_root
 
-__all__ = ["mass_selector", "usys_from_file"]
+__all__ = ["SgrSimulation"]
 
 _path = os.path.join(project_root, "data", "simulation", "Sgr")
 
-def usys_from_file(scfpar):
+def _units_from_file(scfpar):
     """ Generate a unit system from an SCFPAR file. """
 
     with open(scfpar) as f:
@@ -35,82 +37,110 @@ def usys_from_file(scfpar):
         length = float(lines[16].split()[0])
         mass = float(lines[17].split()[0])
 
-    X = (G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value / length**3 * mass)**-0.5
+    GG = G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value
+    X = (GG / length**3 * mass)**-0.5
+
     length_unit = u.Unit("{0} kpc".format(length))
     mass_unit = u.Unit("{0} M_sun".format(mass))
     time_unit = u.Unit("{:08f} Myr".format(X))
-    usys = (length_unit, mass_unit, time_unit)
 
-    return usys
+    return dict(length=length_unit,
+                mass=mass_unit,
+                time=time_unit)
 
-def mass_selector(m):
-    _full_path = os.path.join(_path, m)
-    usys = usys_from_file(os.path.join(_full_path, "SCFPAR"))
+class SgrSimulation(SimulationData):
 
-    def particles_today(N=None, expr=None):
-        """ Read in particles from Kathryn's run of Sgr-like orbits for a
-            variety of masses.
+    def __init__(self, mass):
+        """ Data from one of Kathryn's Sgr simulations
 
             Parameters
             ----------
-            N : int
-                Number of particles to read. None means 'all'.
-            expr : str
-                String selection condition to be fed to numexpr for selecting
-                particles.
-
+            mass : str
+                e.g., 2.5e8
         """
+        filename = os.path.join(_path,mass,"SNAP")
+        self.mass = float(mass)
+        self._units = _units_from_file(os.path.join(_path,mass,"SCFPAR"))
 
-        # Read in particle data -- a snapshot of particle positions, velocities at
-        #   the end of the simulation
-        data = read_table("SNAP", path=_full_path, N=N, expr=expr)
-        pc = table_to_particles(data, usys,
-                                position_columns=["x","y","z"],
-                                velocity_columns=["vx","vy","vz"])
-        pc = pc.to(u_galactic)
+        super(SgrSimulation, self).__init__(filename=filename)
+        self._hel_colnames = ()
 
-        t_unit = filter(lambda x: x.is_equivalent(u.s), usys)[0]
+        self.t1 = (4.189546E+02 * self._units["time"]).to(u.Myr).value
+        self.t2 = 0
 
-        #t1,t2 = time()
-        #tub = StreamParameter(truth=(np.array(data["tub"])*t_unit).to(u.Myr),
-        #                      range=(t2*u.Myr, t1*u.Myr),
-        #                      latex=r"$t_{\rm ub}$")
-        pc.tub = (np.array(data["tub"])*t_unit).to(u.Myr).value
-        return pc
+        sgr_orbit = ascii.read(os.path.join(_path,mass,"SCFCEN"))
+        for x in "xyz":
+            sgr_orbit[x].unit = self._units["length"]
 
-    def satellite_orbit():
-        """ Read in the position and velocity of the Orphan satellite center
-            over the whole simulation.
+        for x in ("vx","vy","vz"):
+            sgr_orbit[x].unit = self._units["length"]/self._units["time"]
+
+        names = ("x","y","z","vx","vy","vz")
+        self.satellite_orbit = Orbit(sgr_orbit["t"]*self._units["time"],
+              [np.atleast_2d(np.array(sgr_orbit[x])) for x in names],
+              names=names,
+              units=[sgr_orbit[x].unit for x in names])
+
+    def table(self, expr=None):
+        # if self._table is None:
+        #     tbl = super(SgrSimulation, self).table()
+
+        #     for x in "xyz":
+        #         tbl[x].unit = self._units["length"]
+
+        #     for x in ("vx","vy","vz"):
+        #         tbl[x].unit = self._units["length"]/self._units["time"]
+
+        #     self._table = tbl
+        #return super(SgrSimulation, self).table(expr=expr)
+
+        tbl = super(SgrSimulation, self).table(expr=expr)
+        for x in "xyz":
+            tbl[x].unit = self._units["length"]
+
+        for x in ("vx","vy","vz"):
+            tbl[x].unit = self._units["length"]/self._units["time"]
+        return tbl
+
+    def satellite(self, bound_expr="tub==0", frame="galactocentric",
+                  column_names=None):
+        s = super(SgrSimulation, self).satellite(bound_expr=bound_expr,
+                                                 frame=frame,
+                                                 column_names=column_names)
+        s.m = s.meta["m"] = self.mass
+
+        bound = self.table(bound_expr)
+        vx = (np.array(bound["vx"])*bound["vx"].unit).to(u.kpc/u.Myr).value
+        vy = (np.array(bound["vy"])*bound["vy"].unit).to(u.kpc/u.Myr).value
+        vz = (np.array(bound["vz"])*bound["vz"].unit).to(u.kpc/u.Myr).value
+
+        s.v_disp =s.meta["v_disp"] = np.sqrt(np.var(vx)+np.var(vy)+np.var(vz))
+
+        return s.decompose(usys)
+
+    def particles(self, N=None, expr=None, frame="galactocentric",
+                  column_names=None, meta_cols=['tub']):
+        """ Return a Particle object with N particles selected from the
+            simulation with expression expr in the specified reference
+            frame / coordinates.
+
+            Parameters
+            ----------
+            N : int or None (optional)
+                Number of particles to return. None or 0 means 'all'
+            expr : str (optional)
+                Use numexpr to select out only rows that match criteria.
+            frame : str (optional)
+                Can be either 'galactocentric' or 'g' or 'heliocentric' or 'h'
+            column_names : iterable (optional)
+                A list of the column names to read from the table and put in
+                Particle.
+            meta_cols : iterable (optional)
+                List of columns to add to meta data.
         """
-
-        data = read_table("SCFCEN", path=_full_path)
-        orbit = table_to_orbits(data, usys,
-                                position_columns=["x","y","z"],
-                                velocity_columns=["vx","vy","vz"])
-
-        return orbit
-
-    def satellite_today():
-        """ Read in the position and velocity of the Orphan satellite center
-            at the end of the simulation (e.g., present day position to be
-            back-integrated).
-
-        """
-        sat = satellite_orbit()[-1]
-        sat._m = float(m)
-
-        bound_particles = particles_today(N=0, expr="(tub==0)")
-        sat._v_disp = np.sqrt(np.sum(np.std(bound_particles._v, axis=0)**2))
-        return sat
-
-    def time():
-        """ Read in the time information for Orphan stream simulation
-        """
-        s = satellite_orbit()
-
-        t1 = np.max(s.t).to(u.Myr).value
-        t2 = np.min(s.t).to(u.Myr).value
-
-        return t1, t2
-
-    return particles_today, satellite_today, time
+        p = super(SgrSimulation, self).particles(N=N, expr=expr, frame=frame,
+                                                 column_names=column_names,
+                                                 meta_cols=meta_cols)
+        p.meta["tub"] = (p.meta["tub"]*self._units["time"])\
+                          .decompose(usys).value
+        return p.decompose(usys)

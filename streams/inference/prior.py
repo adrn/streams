@@ -53,9 +53,9 @@ class LogNormalPrior(LogPrior):
         self.mu = np.atleast_2d(mu)
 
         if sigma is not None:
+            sigma = np.array(sigma)
             if sigma.shape[-1] != mu.shape[-1]:
                 raise ValueError("Shape of std dev vector (sigma) must match"             " shape of mean vector (mu) along axis=-1")
-
             cov = np.diag(sigma**2)
 
         if cov is None:

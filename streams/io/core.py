@@ -21,155 +21,159 @@ import astropy.coordinates as coord
 from ..coordinates import SgrCoordinates, distance_to_sgr_plane
 from ..dynamics import Particle, Orbit
 
-__all__ = ["read_table", "add_sgr_coordinates", "table_to_particles", \
-           "table_to_orbits"]
+__all__ = ["SimulationData"]
 
-def read_table(filename, column_names=None, column_map=dict(),
-               column_scales=dict(), path=None, N=None, expr=None):
-    """ Read in data from an ASCII file.
+def _tbl_to_quantity_list(tbl, column_names):
+    cols = []
+    for cname in column_names:
+        col = np.array(tbl[cname], copy=True) * tbl[cname].unit
+        cols.append(col)
 
-        Parameters
-        ----------
-        filename : str
-        column_names : list (optional)
-            If not specified, will try reading column_names from the data file.
-        column_map : dict (optional)
-            Rename column names from key -> value.
-        column_scales : dict (optional)
-            Multiply column name (key) by value.
-        path : str (optional)
-            Path to data file. If not specified, assumes <project_root>/data
-        N : int (optional)
-            Number of rows to return.
-        expr : str (optional)
-            Use numexpr to select out only rows that match criteria.
-    """
+    return cols
 
-    if path is None:
-        path = os.path.join(project_root, "data")
+# TODO: should be singleton...
+class SimulationData(object):
 
-    full_path = os.path.join(path, filename)
+    def __init__(self, filename):
+        """ Represents data from a simulation.
 
-    # use astropy.io.ascii to read the ascii data
-    data = ascii.read(full_path, names=column_names)
+            Parameters
+            ----------
+            filename : str
+                Full path to the particle snapshot.
 
-    if column_names is None and 'col' in data.colnames[0]:
-        raise IOError("Failed to read column names from file.")
+        """
 
-    # use the column map to rename columns
-    for old_name,new_name in column_map.items():
-        data.rename_column(old_name, new_name)
+        if not os.path.exists(filename):
+            raise IOError("File {} does not exist!".format(filename))
+        self.filename = filename
 
-    # rescale columns using specified dict
-    for name, scale in column_scales.items():
-        data[name] = scale*data[name]
+        # cache
+        #self._table = None
 
-    if expr != None and len(expr.strip()) > 0:
-        idx = numexpr.evaluate(str(expr), data)
-        data = data[idx]
+        self._gal_colnames = ("x","y","z","vx","vy","vz")
+        self._hel_colnames = ("l","b","D","mul","mub","vr")
 
-    if N != None and N > 0:
-        idx = np.random.randint(0, len(data), N)
-        data = data[idx]
+    def table(self, expr=None):
+        #if self._table is None:
+        #    self._table = ascii.read(self.filename)
+        _table = ascii.read(self.filename)
 
-    return data
+        if expr is not None:
+            #idx = numexpr.evaluate(str(expr), self._table)
+            #return self._table[idx]
+            idx = numexpr.evaluate(str(expr), _table)
+            return _table[idx]
 
-def table_to_particles(table, units,
-                       position_columns=["x","y","z"],
-                       velocity_columns=["vx","vy","vz"]):
-    """ Convert a astropy.table.Table-like object into a
-        Particle.
+        return _table
 
-        Parameters
-        ----------
-        table : astropy.table.Table-like
-        units : list
-        position_columns : list
-        velocity_columns_columns : list
-    """
+    def satellite(self, bound_expr, frame="galactocentric",
+                  column_names=None):
+        """ Return a Particle object for the present-day position of the
+            Satellite in the specified reference frame / coordinates.
 
-    nparticles = len(table)
-    ndim = len(position_columns)
+            Parameters
+            ----------
+            bound_expr : str
+                numexpr expression picking out the still-bound particles.
+            frame : str (optional)
+                Can be either 'galactocentric' or 'g' or 'heliocentric' or 'h'
+            column_names : iterable (optional)
+                A list of the column names to read from the table and put in
+                Particle.
+        """
 
-    r = np.zeros((nparticles, ndim))
-    v = np.zeros((nparticles, ndim))
+        if frame.lower().startswith("g"):
+            if column_names is None:
+                column_names = self._gal_colnames
 
-    for ii in range(ndim):
-        r[:,ii] = np.array(table[position_columns[ii]])
-        v[:,ii] = np.array(table[velocity_columns[ii]])
+        elif frame.lower().startswith("h"):
+            if column_names is None:
+                column_names = self._hel_colnames
 
-    r_unit = filter(lambda x: x.is_equivalent(u.km), units)[0]
-    t_unit = filter(lambda x: x.is_equivalent(u.s), units)[0]
-    r = r*r_unit
-    v = v*r_unit/t_unit
+        else:
+            raise ValueError("Invalid reference frame.")
 
-    particles = Particle(r=r.to(u.kpc),
-                         v=v.to(u.kpc/u.Myr),
-                         m=np.zeros(len(r))*u.M_sun)
+        # get the satellite position / velocity from the median of the
+        #   bound particle positions/velocities
+        bound = self.table(bound_expr)
+        cols = _tbl_to_quantity_list(bound, column_names)
+        return Particle([np.median(np.array(c.value)) for c in cols],
+                        names=column_names,
+                        units=[c.unit for c in cols],
+                        meta=dict(expr=bound_expr))
 
-    return particles
+    def particles(self, N=None, expr=None, frame="galactocentric",
+                  column_names=None, meta_cols=[]):
+        """ Return a Particle object with N particles selected from the
+            simulation with expression expr in the specified reference
+            frame / coordinates.
 
-def table_to_orbits(table, units,
-                    position_columns=["x","y","z"],
-                    velocity_columns=["vx","vy","vz"]):
-    """ Convert a astropy.table.Table-like object into an
-        Orbit. Assumes one particle.
+            Parameters
+            ----------
+            N : int or None (optional)
+                Number of particles to return. None or 0 means 'all'
+            expr : str (optional)
+                Use numexpr to select out only rows that match criteria.
+            frame : str (optional)
+                Can be either 'galactocentric' or 'g' or 'heliocentric' or 'h'
+            column_names : iterable (optional)
+                A list of the column names to read from the table and put in
+                Particle.
+            meta_cols : iterable (optional)
+                List of columns to add to meta data.
+        """
 
-        Parameters
-        ----------
-        table : astropy.table.Table-like
-        units : list
-        position_columns : list
-        velocity_columns_columns : list
-    """
+        if frame.lower().startswith("g"):
+            if column_names is None:
+                column_names = self._gal_colnames
 
-    ntimesteps = len(table)
-    nparticles = 1
-    ndim = len(position_columns)
+        elif frame.lower().startswith("h"):
+            if column_names is None:
+                column_names = self._hel_colnames
 
-    r = np.zeros((ntimesteps, nparticles, ndim))
-    v = np.zeros((ntimesteps, nparticles, ndim))
+        else:
+            raise ValueError("Invalid reference frame.")
 
-    for ii in range(ndim):
-        r[...,ii] = np.array(table[position_columns[ii]])[...,np.newaxis]
-        v[...,ii] = np.array(table[velocity_columns[ii]])[...,np.newaxis]
+        tbl = self.table(expr)
 
-    r_unit = filter(lambda x: x.is_equivalent(u.km), units)[0]
-    t_unit = filter(lambda x: x.is_equivalent(u.s), units)[0]
-    r = r*r_unit
-    v = v*r_unit/t_unit
-    t = np.array(table['t']) * t_unit
+        if N != None and N > 0:
+            idx = np.random.randint(0, len(tbl), N)
+            tbl = tbl[idx]
 
-    particles = Orbit(t=t.to(u.Myr),
-                      r=r.to(u.kpc),
-                      v=v.to(u.kpc/u.Myr),
-                      m=np.zeros(len(r))*u.M_sun)
+        cols = _tbl_to_quantity_list(tbl, column_names)
+        meta = dict(expr=expr)
 
-    return particles
+        for col in meta_cols:
+            meta[col] = np.array(tbl[col].data, copy=True)
 
-def add_sgr_coordinates(data):
-    """ Given a table of catalog data, add columns with Sagittarius
-        Lambda and Beta coordinates.
+        return Particle(cols, names=column_names,
+                        meta=meta)
 
-        Parameters
-        ----------
-        data : astropy.table.Table
-            Must contain ra, dec or l, b, and dist columns.
-    """
+    def add_sgr_coordinates(self):
+        # TODO: this is broken
+        """ Given a table of catalog data, add columns with Sagittarius
+            Lambda and Beta coordinates.
 
-    try:
-        pre = coord.Galactic(data['l'],data['b'],unit=(u.deg,u.deg))
-    except KeyError:
-        pre = coord.ICRS(data['ra'],data['dec'],unit=(u.deg,u.deg))
+            Parameters
+            ----------
+            data : astropy.table.Table
+                Must contain ra, dec or l, b, and dist columns.
+        """
 
-    sgr = pre.transform_to(SgrCoordinates)
-    sgr_plane_dist = np.array(data['dist']) * np.sin(sgr.Beta.radian)
+        try:
+            pre = coord.Galactic(data['l'],data['b'],unit=(u.deg,u.deg))
+        except KeyError:
+            pre = coord.ICRS(data['ra'],data['dec'],unit=(u.deg,u.deg))
 
-    Lambda = Column(sgr.Lambda.degree, name='Lambda', unit=u.degree)
-    Beta = Column(sgr.Beta.degree, name='Beta', unit=u.degree)
-    sgr_plane_D = Column(sgr_plane_dist, name='Z_sgr', unit=u.kpc)
-    data.add_column(Lambda)
-    data.add_column(Beta)
-    data.add_column(sgr_plane_D)
+        sgr = pre.transform_to(SgrCoordinates)
+        sgr_plane_dist = np.array(data['dist']) * np.sin(sgr.Beta.radian)
 
-    return data
+        Lambda = Column(sgr.Lambda.degree, name='Lambda', unit=u.degree)
+        Beta = Column(sgr.Beta.degree, name='Beta', unit=u.degree)
+        sgr_plane_D = Column(sgr_plane_dist, name='Z_sgr', unit=u.kpc)
+        data.add_column(Lambda)
+        data.add_column(Beta)
+        data.add_column(sgr_plane_D)
+
+        return data

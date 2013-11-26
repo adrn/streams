@@ -13,235 +13,219 @@ import copy
 # Third-party
 import numpy as np
 import astropy.units as u
-from astropy.constants import G
 import triangle
 
 # Project
-from .core import _validate_quantity, DynamicalBase
+from .. import usys
 from ..coordinates import _gc_to_hel, _hel_to_gc
 
 __all__ = ["Particle"]
 
-class Particle(DynamicalBase):
+class Particle(object):
 
-    def __init__(self, r, v, m=None, units=None):
-        """ A represents a dynamical particle or collection of particles.
-            Particles can have mass or be massless.
+    def __init__(self, coords, names, units=None, meta=dict()):
+        """ Represents a dynamical particle or collection of particles.
+            Particles can have associated metadata, e.g., mass or for
+            a Satellite, velocity dispersion.
 
             Parameters
             ----------
-            r : astropy.units.Quantity
-                Position of the particle(s). Should have shape
-                (nparticles, ndim).
-            v : astropy.units.Quantity
-                Velocity of the particle(s). Should have shape
-                (nparticles, ndim).
-            m : astropy.units.Quantity (optional)
-                Mass of the particle(s). Should have shape (nparticles, ).
-            units : list (optional)
-                A list of units defining the desired unit system for
-                the particles. If not provided, will use the units of
-                the input Quantities to define a system of units. Mainly
-                used for internal representations.
+            coords : iterable
+                Can either be an iterable (e.g., list or tuple) of Quantity
+                objects, in which case their units are grabbed from the
+                objects themselves, or an array_like object with the first
+                axis as the separate coordinate dimensions, and the units
+                parameter specifying the units along each dimension.
+            names : iterable
+                Names of each coordinate dimension. These end up being
+                attributes of the object.
+            units : iterable (optional)
+                Must be specified if q is an array_like object, otherwise this
+                is constructed from the Quantity objects in q.
+            meta : dict (optional)
+                Any additional metadata.
         """
 
-        # Make sure position has position-like units, same for velocity
-        _validate_quantity(r, unit_like=u.km)
-        _validate_quantity(v, unit_like=u.km/u.s)
+        self.ndim = len(coords)
 
-        if r.value.ndim == 1:
-            r = r.reshape((1, len(r)))
-            v = v.reshape((1, len(v)))
+        _X = None
+        _repr_units = []
+        for ii in range(self.ndim):
+            q = coords[ii]
 
-        try:
-            self.nparticles, self.ndim = r.value.shape
-        except ValueError:
-            raise ValueError("Position and velocity should have shape "
-                             "(nparticles, ndim)")
+            if _X is None:
+                _X = np.zeros((self.ndim,) + q.shape)
 
-        if units is None and m is None:
-            raise ValueError("If not specifying a list of units, you must "
-                             "specify a mass Quantity for the particles to"
-                             "complete the unit system specification.")
-        elif units is not None and m is None:
-            m = ([0.] * self.nparticles * u.kg).decompose(units)
+            if hasattr(q, "unit") and q.unit != u.dimensionless_unscaled:
+                unit = q.unit
+                value = q.decompose(usys).value
+            else:
+                try:
+                    unit = units[ii]
+                except TypeError:
+                    raise ValueError("Must specify units for each"
+                                     "coordinate dimension.")
+                value = (q*unit).decompose(usys).value
 
-        _validate_quantity(m, unit_like=u.kg)
+            _repr_units.append(unit)
+            _X[ii] = value
 
-        if units is None:
-            _units = [r.unit, m.unit] + v.unit.bases + [u.radian]
-            self.units = set(_units)
-        else:
-            self.units = units
+        self._repr_units = _repr_units
+        self._X = _X.T
 
-        unq_types = np.unique([x.physical_type for x in self.units])
-        if len(self.units) != len(unq_types):
-            raise ValueError("Multiple units specify the same physical type!")
+        #if self._X.ndim > 2:
+        #    raise ValueError("Particle coordinates must be 1D.")
 
-        if r.value.shape != v.value.shape:
-            raise ValueError("Position and velocity must have same shape.")
+        # find units in usys that match the physical types of each units
+        self._internal_units = []
+        for unit in self._repr_units:
+            self._internal_units.append((1*unit).decompose(usys).unit)
 
-        # decompose each input into the specified unit system
-        _r = r.decompose(self.units).value
-        _v = v.decompose(self.units).value
+        if len(names) != self.ndim:
+            raise ValueError("Must specify coordinate name for each "
+                             "dimension.")
+        self.names = names
+        self.meta = meta
+        for k,v in self.meta.items():
+            setattr(self,k,v)
 
-        # create container for all 6 phasespace
-        self._X = np.zeros((self.nparticles, self.ndim*2))
-        self._X[:,:self.ndim] = _r
-        self._X[:,self.ndim:] = _v
-        self._m = m.decompose(self.units).value
-
-        # Create internal G in the correct unit system for speedy acceleration
-        #   computation
-        self._G = G.decompose(self.units).value
-
-    def observe(self, error_model):
-        """ Given an error model, transform to heliocentric coordinates,
-            apply errors models, transform back and return a new Particle
-            object.
-        """
-        _X = self._X[:]
-        hel = _gc_to_hel(_X)
-        hel_err = error_model(hel)
-
-        O = np.random.normal(hel, hel_err) # observed
-        return O, hel_err
-
-    def to(self, units):
-        """ Return a new Particle in the specified unit system. """
-
-        return Particle(r=self.r, v=self.v, m=self.m, units=units)
+    def __repr__(self):
+        return "<Particle N={0}, coords={1}>".format(self.nparticles, \
+                                                     self.names)
 
     def copy(self):
+        """ Return a copy of the current instance. I'm just a copy
+            of a copy of a copy...
+        """
         return copy.deepcopy(self)
 
-    def acceleration_at(self, r):
-        """ Compute the acceleration at a given position due to the
-            collection of particles. Inputs must be Quantity objects.
-
-            Parameters
-            ----------
-            r : astropy.units.Quantity
-                Position.
-
-        """
-        _validate_quantity(r, unit_like=u.km)
-
-        r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
-        t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
-
-        a = self._acceleration_at(r.decompose(self.units).value)
-        return a * r_unit / t_unit**2
-
-    def _acceleration_at(self, _r):
-        """ Compute the acceleration at a given position due to the
-            collection of particles. Inputs are arrays, and assumes they
-            are in the correct system of units.
-        """
-        if _r.ndim == 1:
-            rr = _r - self._r
-            a = self._G * self._m * rr / np.linalg.norm(rr)**3
-            return np.sum(a, axis=0)
-
-        elif _r.ndim == 2:
-            # could do: (np.repeat(_r[np.newaxis], self._r.shape[0], axis=0) - \
-            #                self._r[...,np.newaxis]).sum(axis=0)
-            #   but this involves making a potentially big array in memory...
-            a = np.zeros_like(_r)
-            for ii in range(_r.shape[0]):
-                rr = _r[ii] - self._r
-                a[ii] = (self._G * self._m * rr / np.sum(rr**2,axis=0)**1.5)\
-                        .sum(axis=0)
-
-            return a
+    def __getitem__(self, slc):
+        if isinstance(slc, (int,slice)):
+            cpy = self.copy()
+            cpy._X = cpy._X[:,slc]
+            return cpy
 
         else:
-            raise ValueError()
+            try:
+                ii = self.names.index(slc)
+            except ValueError:
+                raise AttributeError("Invalid coordinate name {}".format(slc))
 
-    def plot_r(self, coord_names=['x','y','z'], **kwargs):
-        """ Make a scatter-plot of 3 projections of the positions of the
-            particle coordinates.
-
-            Parameters
-            ----------
-            coord_names : list
-                Name of each axis, e.g. ['x','y','z']
-            kwargs (optional)
-                Keyword arguments that get passed to triangle.corner()
-        """
-        from ..plot.data import scatter_plot_matrix
-        if not len(coord_names) == self.ndim:
-            raise ValueError("Must pass a coordinate name for each dimension.")
-
-        labels = [r"{0} [{1}]".format(nm, self.r.unit)
-                    for nm in coord_names]
-
-        kwargs["ms"] = kwargs.get("ms", 2.)
-        kwargs["alpha"] = kwargs.get("alpha", 0.5)
-
-        fig = triangle.corner(self._r, labels=labels,
-                              plot_contours=False, plot_datapoints=True,
-                              **kwargs)
-        return fig
-
-    def plot_v(self, coord_names=['vx','vy','vz'], **kwargs):
-        """ Make a scatter-plot of 3 projections of the velocities of the
-            particle coordinates.
-
-            Parameters
-            ----------
-            coord_names : list
-                Name of each axis, e.g. ['Vx','Vy','Vz']
-            kwargs (optional)
-                Keyword arguments that get passed to triangle.corner()
-        """
-        from ..plot.data import scatter_plot_matrix
-        assert len(coord_names) == self.ndim, "Must pass a coordinate name for each dimension."
-
-        labels = [r"{0} [{1}]".format(nm, self.v.unit)
-                    for nm in coord_names]
-
-        kwargs["ms"] = kwargs.get("ms", 2.)
-        kwargs["alpha"] = kwargs.get("alpha", 0.5)
-
-        fig = triangle.corner(self._v, labels=labels,
-                              plot_contours=False, plot_datapoints=True,
-                              **kwargs)
-        return fig
-
-    def merge(self, other):
-        """ Merge two particle collections. Takes unit system from the first
-            Particle object.
-        """
-
-        if not isinstance(other, Particle):
-            raise TypeError("Can only merge two Particle objects!")
-
-        other_r = other.r.decompose(self.units).value
-        other_v = other.v.decompose(self.units).value
-        other_m = other.m.decompose(self.units).value
-
-        r = np.vstack((self._r,other_r)) * self.r.unit
-        v = np.vstack((self._v,other_v)) * self.v.unit
-        m = np.append(self._m,other_m) * self.m.unit
-
-        return Particle(r=r, v=v, m=m, units=self.units)
+            return (self._X[...,ii]*self._internal_units[ii])\
+                        .to(self._repr_units[ii])
 
     @property
-    def flat_X(self):
-        return self._X.flat
+    def _repr_X(self):
+        """ Return the 6D array of all coordinates in the repr units """
 
-    @flat_X.setter
-    def flat_X(self, val):
-        val = np.array(val)
-        self._X = val.reshape(self.nparticles, 6)
+        _repr_X = []
+        for ii in range(self.ndim):
+            _repr_X.append((self._X[...,ii]*self._internal_units[ii])\
+                               .to(self._repr_units[ii]).value.tolist())
 
-    def __getitem__(self, key):
-        r = self.r[key]
-        v = self.v[key]
-        m = self.m[key]
+        return np.array(_repr_X).T
 
-        return Particle(r=r, v=v, m=m, units=self.units)
+    @property
+    def nparticles(self):
+        try:
+            return self._X.shape[0]
+        except IndexError:
+            return 1
 
-    def __len__(self):
-        return self.nparticles
+    def plot(self, fig=None, labels=None, \
+             plot_kwargs=dict(), hist_kwargs=dict(),
+             **kwargs):
+        """ Make a corner plot showing all dimensions.
+
+        """
+
+        if labels is None:
+            labels = ["{0} [{1}]".format(n,uu) \
+                        for n,uu in zip(self.names, self._repr_units)]
+
+        plot_kwargs["alpha"] = plot_kwargs.get("alpha", 0.75)
+
+        fig = triangle.corner(self._repr_X,
+                              labels=labels,
+                              plot_contours=False,
+                              plot_datapoints=True,
+                              fig=fig,
+                              plot_kwargs=plot_kwargs,
+                              hist_kwargs=hist_kwargs,
+                              **kwargs)
+
+        return fig
+
+    def to_frame(self, frame_name):
+        """ Transform coordinates and reference frame.
+
+            TODO: With astropy 0.4 (or 1.0) this will need to be
+                  seriously updated.
+
+            Parameters
+            ----------
+            frame_name : str
+                Can be 'heliocentric' or 'galactocentric'.
+        """
+
+        # TODO: need to make these units lists from default GC and Helio.
+        #       units defined in top level __init__ (e.g., usys)
+        if frame_name.lower() == 'heliocentric':
+            _O = _gc_to_hel(self._X)
+            units = [u.rad,u.rad,u.kpc,u.rad/u.Myr,u.rad/u.Myr,u.kpc/u.Myr]
+            p = Particle(_O.T, units=units,
+                         names=("l","b","D","mul","mub","vr"),
+                         meta=self.meta)
+            return p.to_units(u.deg,u.deg,u.kpc,\
+                              u.mas/u.yr,u.mas/u.yr,u.km/u.s)
+
+        elif frame_name.lower() == 'galactocentric':
+            _X = _hel_to_gc(self._X)
+            units = [u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr]
+            p = Particle(_X.T, units=units,
+                         names=("x","y","z","vx","vy","vz"),
+                         meta=self.meta)
+            return p.to_units(u.kpc,u.kpc,u.kpc,\
+                              u.km/u.s,u.km/u.s,u.km/u.s)
+
+        else:
+            raise ValueError("Invalid reference frame {}".format(frame_name))
+
+    def decompose(self, units):
+        """ Decompose each coordinate axis to the given unit system """
+
+        q = [self[n].decompose(units) for n in self.names]
+        return Particle(q, self.names, meta=self.meta)
+
+    def to_units(self, *units):
+        """ Convert each coordinate axis to corresponding unit in given
+            list.
+        """
+
+        if len(units) == 1:
+            units = units[0]
+
+        if len(units) != self.ndim:
+            raise ValueError("Must specify a unit for each dimension ({})."\
+                             .format(self.ndim))
+
+        q = [self[n].to(units[ii]) for ii,n in enumerate(self.names)]
+        return Particle(q, self.names, meta=self.meta)
+
+    def observe(self, errors):
+        """ Assuming the current Particle object is in heliocentric
+            coordinates, "observe" the positions given the errors
+            specified in the dictionary "errors". The error dictionary
+            should have keys == particles.names.
+        """
+
+        new_qs = []
+        for name in self.names:
+            new_q = np.random.normal(self[name].value,
+                                     errors[name].to(self[name].unit).value)
+            new_q = new_q * self[name].unit
+            new_qs.append(new_q)
+
+        meta = self.meta.copy()
+        meta["errors"] = errors
+        return Particle(new_qs, names=self.names, meta=meta)

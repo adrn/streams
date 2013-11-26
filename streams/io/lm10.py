@@ -16,98 +16,55 @@ import astropy.units as u
 from astropy.constants import G
 
 # Project
-from .core import read_table, table_to_particles, table_to_orbits
-from ..util import project_root, u_galactic
-from ..dynamics import Particle, Orbit
-from ..integrate.leapfrog import LeapfrogIntegrator
-from ..potential.lm10 import LawMajewski2010
+from .core import SimulationData
+from ..util import project_root
 
-__all__ = ["particle_table", "particles_today", "satellite_today", "time", "satellite_orbit"]
+__all__ = ["LM10Simulation"]
 
 _lm10_path = os.path.join(project_root, "data", "simulation", "LM10")
 
-# These are used for the orbit file David Law sent me
-X = (G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value / 0.85**3 * 6.4E8)**-0.5
-length_unit = u.Unit("0.85 kpc")
-mass_unit = u.Unit("6.4E8 M_sun")
-time_unit = u.Unit("{:08f} Myr".format(X))
+class LM10Simulation(SimulationData):
 
-# This is used for the SgrTriax*.dat files
-lm10_usys = (u.kpc, u.M_sun, u.Gyr)
+    def __init__(self,
+                 filename=os.path.join(_lm10_path,"SgrTriax_DYN.dat")):
+        """ ...
 
-def particle_table(N=None, expr=None):
-    """ Read in particles from Law & Majewski 2010.
-    
-        Parameters
-        ----------
-        N : int
-            Number of particles to read. None means 'all'.
-        expr : str
-            String selection condition to be fed to numexpr for selecting 
-            particles.
-        
-    """
-    
-    # Read in particle data -- a snapshot of particle positions, velocities at
-    #   the end of the simulation
-    col_map = dict(xgc="x", ygc="y", zgc="z", u="vx", v="vy", w="vz")
-    col_scales = dict(x=-1., vx=-1.)
-    data = read_table("SgrTriax_DYN.dat", path=_lm10_path, 
-                      column_map=col_map, column_scales=col_scales,
-                      N=N, expr=expr)
-    
-    return data
+            Parameters
+            ----------
+            filename : str (optional)
+                Path to the Sgr particle snapshot data from LM10.
+        """
+        super(LM10Simulation, self).__init__(filename=filename)
+        self._hel_colnames = ("l","b","D","mul","mub","vr") # TODO: FIX
+        self.t1 = 0.
+        self.t2 = -8000.
 
-def particles_today(N=None, expr=None):
-    """ Read in particles from Law & Majewski 2010.
-    
-        Parameters
-        ----------
-        N : int
-            Number of particles to read. None means 'all'.
-        expr : str
-            String selection condition to be fed to numexpr for selecting 
-            particles.
-        
-    """
-    data = particle_table(N=N, expr=expr)
-    pc = table_to_particles(data, lm10_usys,
-                            position_columns=["x","y","z"],
-                            velocity_columns=["vx","vy","vz"])
-    
-    return pc.to(u_galactic)
+    def table(self, expr=None):
+        if self._table is None:
+            tbl = super(LM10Simulation, self).table()
+            tbl.rename_column("xgc","x")
+            tbl.rename_column("ygc","y")
+            tbl.rename_column("zgc","z")
 
-def satellite_today():
-    """ Read in the position and velocity of the Sgr satellite at the end of
-        the Law & Majewski 2010 simulation (e.g., present day position to be
-        back-integrated).
-    
-    """    
-    
-    # Here are the true parameters from the last block in R601LOG
-    r0 = np.array([[2.3279727753E+01,2.8190329987,-6.8798148785]])*length_unit
-    v0 = np.array([[3.9481694047,-6.1942673069E-01,3.4555581435]])*length_unit/time_unit
-    
-    satellite = Particle(r=r0.to(u.kpc), 
-                         v=v0.to(u.kpc/u.Myr), 
-                         m=[6E8]*u.M_sun)
-    
-    return satellite
+            tbl.rename_column("u","vx")
+            tbl.rename_column("v","vy")
+            tbl.rename_column("w","vz")
 
-def satellite_orbit():
-    """ Read in the full orbit of the satellite. """
-    sat_colnames = ["t","x","y","z","vx","vy","vz","col8","col9","col10"]
-    data = read_table(filename="orb780.dat", expr="t<0", path=_lm10_path)
-    
-    oc = table_to_orbits(data, lm10_usys,
-                         position_columns=["x","y","z"],
-                         velocity_columns=["vx","vy","vz"])
-    
-    return oc.to(u_galactic)
-    
-def time():
-    """ Time information for the Law & Majewski 2010 simulation """    
-    t1 = 0.
-    t2 = -8000.
-    
-    return t1, t2
+            tbl["x"] = -tbl["x"]
+            tbl["vx"] = -tbl["vx"]
+
+            for x in "xyz":
+                tbl[x].unit = u.kpc
+
+            for x in ("vx","vy","vz"):
+                tbl[x].unit = u.km/u.s
+
+            self._table = tbl
+
+        return super(LM10Simulation, self).table(expr=expr)
+
+    def satellite(self, bound_expr="Pcol==-1", frame="galactocentric",
+                  column_names=None):
+        return super(LM10Simulation, self).satellite(bound_expr=bound_expr,
+                                                    frame=frame,
+                                                    column_names=column_names)
