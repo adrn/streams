@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import gc
 import shutil
 import copy
 import logging
@@ -35,7 +36,6 @@ except ImportError:
 
 # Project
 from streams import usys
-from streams.coordinates import _gc_to_hel, _hel_to_gc
 from streams.inference import (ModelParameter, StreamModel,
                                LogNormalPrior, LogUniformPrior)
 import streams.io as s_io
@@ -168,7 +168,6 @@ def main(config_file, job_name=None):
     # read particles from the simulation class
     particles = simulation.particles(N=config["particles"]["N"],
                                 expr=config["particles"]["selection_expr"])
-
     particles = particles.to_frame('heliocentric')
 
     logger.debug("Read in {} particles with expr='{}'"\
@@ -181,6 +180,8 @@ def main(config_file, job_name=None):
                  .format(satellite))
     simulation._table = None # HACK
     # Note: now particles and satellite are in heliocentric coordinates!
+
+    gc.collect()
 
     ##########################################################################
     # Observational errors
