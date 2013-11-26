@@ -146,6 +146,10 @@ class SimulationData(object):
 
         for col in meta_cols:
             meta[col] = np.array(tbl[col].data.tolist())
+        
+        import gc
+        del tbl
+        gc.collect()
 
         return Particle(cols, names=column_names,
                         meta=meta)

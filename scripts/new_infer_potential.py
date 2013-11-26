@@ -51,6 +51,9 @@ logger = logging.getLogger(__name__)
 def _null(*args, **kwargs):
     return 0.
 
+class A(object):
+    pass
+
 def get_pool(config):
     """ Given a config structure, return an MPIPool, a Python
         multiprocessing.Pool, or None.
@@ -165,7 +168,9 @@ def main(config_file, job_name=None):
     # read particles from the simulation class
     particles = simulation.particles(N=config["particles"]["N"],
                                 expr=config["particles"]["selection_expr"])
+
     particles = particles.to_frame('heliocentric')
+
     logger.debug("Read in {} particles with expr='{}'"\
                  .format(particles.nparticles, particles.expr))
 
@@ -176,6 +181,12 @@ def main(config_file, job_name=None):
                  .format(satellite))
     simulation._table = None # HACK
     # Note: now particles and satellite are in heliocentric coordinates!
+    
+    import gc
+    gc.collect()
+
+    raw_input("adsffd")
+    return
 
     ##########################################################################
     # Observational errors

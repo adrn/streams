@@ -50,7 +50,7 @@ def _units_from_file(scfpar):
 
 class SgrSimulation(SimulationData):
 
-    def __init__(self, mass):
+    def __init__(self, mass, orbit=False):
         """ Data from one of Kathryn's Sgr simulations
 
             Parameters
@@ -67,16 +67,17 @@ class SgrSimulation(SimulationData):
 
         self.t1 = (4.189546E+02 * self._units["time"]).to(u.Myr).value
         self.t2 = 0
+        
+        if orbit:
+            sgr_orbit = ascii.read(os.path.join(_path,mass,"SCFCEN"))
+            for x in "xyz":
+                sgr_orbit[x].unit = self._units["length"]
 
-        sgr_orbit = ascii.read(os.path.join(_path,mass,"SCFCEN"))
-        for x in "xyz":
-            sgr_orbit[x].unit = self._units["length"]
+            for x in ("vx","vy","vz"):
+                sgr_orbit[x].unit = self._units["length"]/self._units["time"]
 
-        for x in ("vx","vy","vz"):
-            sgr_orbit[x].unit = self._units["length"]/self._units["time"]
-
-        names = ("x","y","z","vx","vy","vz")
-        self.satellite_orbit = Orbit(sgr_orbit["t"]*self._units["time"],
+            names = ("x","y","z","vx","vy","vz")
+            self.satellite_orbit = Orbit(sgr_orbit["t"]*self._units["time"],
               [np.atleast_2d(np.array(sgr_orbit[x])) for x in names],
               names=names,
               units=[sgr_orbit[x].unit for x in names])
@@ -110,10 +111,11 @@ class SgrSimulation(SimulationData):
         s.m = s.meta["m"] = self.mass
 
         bound = self.table(bound_expr)
-        vx = (np.array(bound["vx"])*bound["vx"].unit).to(u.kpc/u.Myr).value
-        vy = (np.array(bound["vy"])*bound["vy"].unit).to(u.kpc/u.Myr).value
-        vz = (np.array(bound["vz"])*bound["vz"].unit).to(u.kpc/u.Myr).value
+        vx = np.array((bound["vx"].data*bound["vx"].unit).to(u.kpc/u.Myr).value, copy=True)
+        vy = np.array((bound["vy"].data*bound["vy"].unit).to(u.kpc/u.Myr).value, copy=True)
+        vz = np.array((bound["vz"].data*bound["vz"].unit).to(u.kpc/u.Myr).value, copy=True)
 
+        del bound
         s.v_disp =s.meta["v_disp"] = np.sqrt(np.var(vx)+np.var(vy)+np.var(vz))
 
         return s.decompose(usys)
