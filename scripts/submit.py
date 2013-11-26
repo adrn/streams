@@ -35,7 +35,7 @@ job_sh = """#!/bin/sh
 date
 
 #Command to execute Python program
-mpirun -n {walkers:d} /vega/astro/users/amp2217/yt-x86_64/bin/python /vega/astro/users/amp2217/projects/streams/scripts/{script} -f /vega/astro/users/amp2217/projects/streams/config/{config_file}
+mpirun -n {walkers:d} /vega/astro/users/amp2217/yt-x86_64/bin/python /vega/astro/users/amp2217/projects/streams/scripts/{script} -f /vega/astro/users/amp2217/projects/streams/config/{config_file} -v
 
 date
 
