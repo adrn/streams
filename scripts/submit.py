@@ -61,7 +61,7 @@ def main(config_file, walltime, memory, job_name):
     else:
         name = job_name
     
-    config["walkers"] = min(config["walkers"], 128)
+    config["walkers"] = min(config["walkers"], 32)
     d = config["walkers"] / 8
     if int(d) != d:
         raise ValueError()
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.DEBUG)
 
-    filename = os.path.join("/vega/astro/users/amp2217/projects/streams/config", args.file)
+    filename = os.path.join("/vega/astro/users/amp2217/projects/streams/", args.file)
     main(filename, walltime=args.time, memory=args.memory, job_name=args.job_name)
     sys.exit(0)
 

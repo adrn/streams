@@ -1,4 +1,4 @@
-#!/hpc/astro/users/amp2217/yt-x86_64/bin/python
+#!/vega/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
 """ Script for using the Rewinder to infer the Galactic host potential """
@@ -300,8 +300,6 @@ def main(config_file, job_name=None):
     model = StreamModel(potential, simulation, satellite, particles,
                         parameters=model_parameters)
     logger.info("Model has {} parameters".format(model.ndim))
-
-    return
 
     ##########################################################################
     # Emcee!
