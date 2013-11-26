@@ -422,6 +422,8 @@ def main(config_file, job_name=None):
                                      .format(ii)))
             plt.clf()
 
+        sys.exit(0)
+
         return
 
         # ---------
@@ -463,8 +465,6 @@ def main(config_file, job_name=None):
         #         ax.plot(sampler.chain[ii,:,jj], drawstyle='step')
 
         #     fig.savefig(os.path.join(path, "{0}.png".format(jj)))
-
-    sys.exit(0)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
