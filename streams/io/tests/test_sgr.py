@@ -11,6 +11,7 @@ import os, sys
 # Third-party
 import astropy.units as u
 from astropy.constants import G
+from astropy.io.misc import fnpickle
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -130,3 +131,9 @@ class Test10E8(object):
         axes[0,0].legend(fontsize=10)
         fig.subplots_adjust(hspace=0.02,wspace=0.02)
         fig.savefig(os.path.join(plot_path, "sat_ptcl_velocities_2.5e8.png"))
+
+    def test_pickle(self):
+        particles = self.sgr.particles(N=25, expr="tub==0")
+        fnpickle(particles, os.path.join(plot_path, "test.pickle"))
+        p = particles.to_frame("heliocentric")
+        fnpickle(p, os.path.join(plot_path, "test2.pickle"))
