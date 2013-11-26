@@ -61,7 +61,7 @@ def main(config_file, walltime, memory, job_name):
     else:
         name = job_name
     
-    config["walkers"] = min(config["walkers"], 32)
+    config["walkers"] = min(config["walkers"], 128)
     d = config["walkers"] / 8
     if int(d) != d:
         raise ValueError()
