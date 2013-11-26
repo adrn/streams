@@ -26,7 +26,7 @@ __all__ = ["SimulationData"]
 def _tbl_to_quantity_list(tbl, column_names):
     cols = []
     for cname in column_names:
-        col = np.array(tbl[cname]) * tbl[cname].unit
+        col = np.array(tbl[cname], copy=True) * tbl[cname].unit
         cols.append(col)
 
     return cols
