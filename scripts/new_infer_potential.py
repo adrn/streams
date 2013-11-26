@@ -400,6 +400,7 @@ def main(config_file, job_name=None):
 
         # ---------
         # Now make 7x7 corner plots for each particle
+        Nparticles = o_particles.nparticles
         for ii in range(Nparticles):
             tub = flatchain[:,Npp+ii]
 
