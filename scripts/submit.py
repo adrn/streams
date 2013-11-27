@@ -64,7 +64,7 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
 
     if mpi_threads is None:
         mpi_threads = 999999
-    mpi_threads = min(config.get("walkers"), 128, mpi_threads)
+    mpi_threads = min(config.get("walkers"), 256, mpi_threads)
     d = mpi_threads / 8
     if int(d) != d:
         raise ValueError()

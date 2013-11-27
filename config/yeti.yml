@@ -8,12 +8,13 @@ mpi: true
 #threads: 2
 
 # plots / output
-make_plots: False
-output_path: /tmp
+make_plots: true
+#output_path: /tmp
 #output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
-#output_path: /vega/astro/users/amp2217/output_data # yeti
+output_path: /vega/astro/users/amp2217/output_data # yeti
 #output_path: /Users/adrian/projects/streams/plots # laptop
 #output_path: /home/adrian/projects/streams/plots # deimos
+overwrite: true
 
 potential:
     class_name: LawMajewski2010
@@ -34,7 +35,7 @@ simulation:
         mass: 2.5e8 # this is specific to sgr
 
 particles:
-    N: 2
+    N: 50
     selection_expr: tub != 0
     #parameters:
     #    - tub
@@ -47,8 +48,8 @@ satellite:
 
 # emcee
 walkers: 16 # or auto (2 x number of parameters)
-burn_in: 0
-steps: 10
+burn_in: 25
+steps: 50
 
 # observational errors
 # below: with no units specified, it's a fractional error
