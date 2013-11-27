@@ -412,6 +412,8 @@ def main(config_file, job_name=None):
             #              units=o_particles._internal_units,
             #              names=o_particles.names)
             truths = np.append(particles.tub[ii], particles._X[ii])
+            extents = [(truth-0.2*truth,truth+0.2*truth) \
+                        for truth in truths]
 
             #err = np.array([o_particles.error[] for
             #extents = zip(obs_data[ii] - 3*obs_error[ii], \
@@ -421,7 +423,8 @@ def main(config_file, job_name=None):
             fig = triangle.corner(np.hstack((tub[:,np.newaxis], OO)),
                                   labels=['tub','l','b','D',\
                                           r'$\mu_l$', r'$\mu_l$','$v_r$'],
-                                  truths=truths)
+                                  truths=truths,
+                                  extents=extents)
             fig.suptitle("Particle {0}".format(ii))
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
@@ -429,32 +432,31 @@ def main(config_file, job_name=None):
 
         # ---------
         # Now make 6x6 corner plot for satellite
-        true_obs_data = _gc_to_hel(_satellite._X)
         start = Npp + Nparticles + 6*Nparticles
         stop = start + 6
 
-        XX = sampler.flatchain[:,start:stop]
-        OO = _gc_to_hel(XX)
-        truths = np.squeeze(true_obs_data)
+        OO = flatchain[:,start:stop]
+        truths = np.squeeze(satellite._X)
 
-        so = np.squeeze(sat_obs_data)
-        se = np.squeeze(sat_obs_error)
-        extents = zip(so - 3*se, \
-                      so + 3*se)
+        # so = np.squeeze(sat_obs_data)
+        # se = np.squeeze(sat_obs_error)
+        # extents = zip(so - 3*se, \
+        #               so + 3*se)
 
         # First, just samples from the priors:
-        fig = triangle.corner(p0[:,start:stop],
+        fig1 = triangle.corner(p0[:,start:stop],
                     truths=truths,
-                    extents=extents,
                     labels=['l','b','D',\
                             r'$\mu_l$', r'$\mu_l$','$v_r$'],)
-        fig.savefig(os.path.join(path, "satellite_corner_prior.png"))
+        fig1.savefig(os.path.join(path, "satellite_corner_prior.png"))
 
         fig = triangle.corner(OO,
                               labels=['l','b','D',\
                                       r'$\mu_l$', r'$\mu_l$','$v_r$'],
-                              extents=extents,
                               truths=truths)
+        for ii,ax in fig1.axes.flat():
+            fig.axes[ii].set_xlim(ax.get_xlim())
+            fig.axes[ii].set_ylim(ax.get_ylim())
         fig.suptitle("Satellite")
         fig.savefig(os.path.join(path, "satellite_corner.png"))
 
