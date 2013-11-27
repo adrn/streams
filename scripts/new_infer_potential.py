@@ -316,6 +316,7 @@ def main(config_file, job_name=None):
     p0 = model.sample(size=Nwalkers)
 
     if not os.path.exists(chain_file):
+        logger.debug("Cache files don't exist...")
         logger.debug("Initializing sampler...")
         sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
                                         pool=pool)
@@ -345,6 +346,7 @@ def main(config_file, job_name=None):
         del sampler
 
     else:
+        logger.debug("Cache files exist, reading in save files...")
         chain = np.load(chain_file)
         flatchain = np.load(flatchain_file)
         lnprobability = np.load(lnprob_file)
@@ -412,7 +414,7 @@ def main(config_file, job_name=None):
             #              units=o_particles._internal_units,
             #              names=o_particles.names)
             truths = np.append(particles.tub[ii], particles._X[ii])
-            extents = [(truth-0.2*truth,truth+0.2*truth) \
+            extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) \
                         for truth in truths]
 
             #err = np.array([o_particles.error[] for
