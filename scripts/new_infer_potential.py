@@ -279,10 +279,10 @@ def main(config_file, job_name=None):
         if no_progenitor:
             los = [-180*u.deg, -90*u.deg, 10.*u.kpc,
                    -5.*u.mas/u.yr, -5.*u.mas/u.yr, -400.*u.km/u.s]
-            los = np.array([l.decompose(usys) for l in los])
+            los = np.array([l.decompose(usys).value for l in los])
             his = [180*u.deg, 90*u.deg, 100.*u.kpc,
                    5.*u.mas/u.yr, 5.*u.mas/u.yr, 400.*u.km/u.s]
-            his = np.array([l.decompose(usys) for l in los])
+            his = np.array([l.decompose(usys).value for l in los])
             prior = LogUniformPrior(los, his)
         else:
             sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
