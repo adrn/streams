@@ -404,6 +404,7 @@ def main(config_file, job_name=None):
         # Now make 7x7 corner plots for each particle
         Nparticles = o_particles.nparticles
         for ii in range(Nparticles):
+            break
             tub = flatchain[:,Npp+ii]
 
             start = Npp + Nparticles + 6*ii
@@ -430,7 +431,7 @@ def main(config_file, job_name=None):
             fig.suptitle("Particle {0}".format(ii))
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
-            plt.clf()
+            fig.close()
 
         # ---------
         # Now make 6x6 corner plot for satellite
@@ -456,7 +457,7 @@ def main(config_file, job_name=None):
                               labels=['l','b','D',\
                                       r'$\mu_l$', r'$\mu_l$','$v_r$'],
                               truths=truths)
-        for ii,ax in fig1.axes.flat():
+        for ii,ax in fig1.axes:
             fig.axes[ii].set_xlim(ax.get_xlim())
             fig.axes[ii].set_ylim(ax.get_ylim())
         fig.suptitle("Satellite")
