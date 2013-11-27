@@ -291,14 +291,14 @@ def main(config_file, job_name=None):
 
             prior = LogNormalPrior(np.array(o_satellite._X),
                                    cov=np.array(covs))
-        p = ModelParameter(target=satellite,
+        p = ModelParameter(target=o_satellite,
                            attr="_X",
                            ln_prior=prior)
         #p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
 
     # now create the model
-    model = StreamModel(potential, simulation, satellite, particles,
+    model = StreamModel(potential, simulation, o_satellite, o_particles,
                         parameters=model_parameters)
     logger.info("Model has {} parameters".format(model.ndim))
 
@@ -407,8 +407,13 @@ def main(config_file, job_name=None):
             start = Npp + Nparticles + 6*ii
             stop = start + 6
             OO = flatchain[:,start:stop]
-            truths = np.append(particles.tub[ii], particles._repr_X[ii])
+            # TODO: plot in good units
+            # p = Particle(OO.T,
+            #              units=o_particles._internal_units,
+            #              names=o_particles.names)
+            truths = np.append(particles.tub[ii], particles._X[ii])
 
+            #err = np.array([o_particles.error[] for
             #extents = zip(obs_data[ii] - 3*obs_error[ii], \
             #              obs_data[ii] + 3*obs_error[ii])
             #extents = [(t2,t1)] + extents
@@ -421,10 +426,6 @@ def main(config_file, job_name=None):
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
             plt.clf()
-
-        sys.exit(0)
-
-        return
 
         # ---------
         # Now make 6x6 corner plot for satellite
@@ -456,6 +457,9 @@ def main(config_file, job_name=None):
                               truths=truths)
         fig.suptitle("Satellite")
         fig.savefig(os.path.join(path, "satellite_corner.png"))
+
+        sys.exit(0)
+        return
 
         # fig = plt.figure(figsize=(6,4))
         # ax = fig.add_subplot(111)
