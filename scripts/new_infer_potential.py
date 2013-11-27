@@ -310,7 +310,7 @@ def main(config_file, job_name=None):
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
         Nwalkers = model.ndim*2 + 2
-    logger.debug("Running with {} walkers".format(Nwalkers))
+    logger.debug("{} walkers".format(Nwalkers))
 
     # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
