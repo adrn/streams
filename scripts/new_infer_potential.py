@@ -262,6 +262,8 @@ def main(config_file, job_name=None):
 
     # Satellite parameters
     satellite_config = config.get("satellite", dict())
+    if satellite_config is None:
+        satellite_config = dict()
     satellite_params = satellite_config.get("parameters", [])
     no_progenitor = satellite_config.get("no_progenitor", False)
 
