@@ -206,20 +206,6 @@ def main(config_file, job_name=None):
         else:
             particle_errors[k] = np.ones_like(particle_errors[k].value) * err
 
-    o_particles = particles.observe(particle_errors)
-    # now has o_particles.errors["D"] etc.
-
-    # satellite has different errors from individual stars...
-    # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
-    satellite_errors = dict(l=10*u.milliarcsecond,
-                            b=10*u.milliarcsecond,
-                            D=1.2*u.kpc,
-                            mul=1.2*u.mas/u.yr,
-                            mub=1.2*u.mas/u.yr,
-                            vr=5*u.km/u.s)
-    o_satellite = satellite.observe(satellite_errors)
-    logger.debug("Satellite: {}".format(o_satellite))
-
     ##########################################################################
     # Setting up the Model
     #
@@ -257,6 +243,9 @@ def main(config_file, job_name=None):
                                                ln_prior=prior))
 
     if "_X" in particle_params:
+        o_particles = particles.observe(particle_errors)
+        # now has o_particles.errors["D"] etc.
+
         sigmas = np.array([o_particles.errors[n].decompose(usys).value \
                     for n in o_particles.names]).T
         covs = [np.diag(s**2) for s in sigmas]
@@ -268,6 +257,8 @@ def main(config_file, job_name=None):
                            ln_prior=prior)
         #p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
+    else:
+        o_particles = particles
 
     # Satellite parameters
     satellite_config = config.get("satellite", dict())
@@ -276,6 +267,16 @@ def main(config_file, job_name=None):
 
     # true position of the satellite
     if "_X" in satellite_params:
+        # satellite has different errors from individual stars...
+        # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
+        satellite_errors = dict(l=10*u.milliarcsecond,
+                                b=10*u.milliarcsecond,
+                                D=1.2*u.kpc,
+                                mul=1.2*u.mas/u.yr,
+                                mub=1.2*u.mas/u.yr,
+                                vr=5*u.km/u.s)
+        o_satellite = satellite.observe(satellite_errors)
+
         if no_progenitor:
             los = [-180*u.deg, -90*u.deg, 10.*u.kpc,
                    -5.*u.mas/u.yr, -5.*u.mas/u.yr, -400.*u.km/u.s]
@@ -296,6 +297,8 @@ def main(config_file, job_name=None):
                            ln_prior=prior)
         #p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
+    else:
+        o_satellite = satellite
 
     # now create the model
     model = StreamModel(potential, simulation, o_satellite, o_particles,
