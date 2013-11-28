@@ -1,0 +1,57 @@
+# general
+seed: 42
+script: new_infer_potential.py
+name: with_progenitor_perfect
+
+# threading
+mpi: true
+
+# plots / output
+make_plots: true
+output_path: /vega/astro/users/amp2217/output_data # yeti
+overwrite: true
+
+potential:
+    class_name: LawMajewski2010
+    parameters:
+        q1:
+            range: [0.7, 2.]
+        qz:
+            range: [0.7, 2.]
+        phi:
+            range: [80. degree, 120. degree]
+        v_halo:
+            range: [100 km/s, 150 km/s]
+
+simulation:
+    # can be sgr, lm10, pal5
+    class_name: SgrSimulation
+    kwargs:
+        mass: 2.5e8 # this is specific to sgr
+
+particles:
+    N: 25
+    selection_expr: tub != 0
+    parameters:
+        - tub
+        - _X
+
+satellite:
+    name: Sgr
+    parameters:
+        - _X
+    #no_progenitor: false
+
+# emcee
+walkers: 1024 # or auto (2 x number of parameters)
+burn_in: 1000
+steps: 2000
+
+# observational errors
+# below: with no units specified, it's a fractional error
+errors:
+    factor: 1. # multplies all errors
+    vr: 10. km/s
+    # mu_l: 1. milliarcsecond/year
+    # mu_b: 1. milliarcsecond/year
+    D: 0.02
