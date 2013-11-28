@@ -21,7 +21,7 @@ job_sh = """#!/bin/sh
 
 # Directives
 #PBS -N {name}
-#PBS -W group_list=yetiastro
+#PBS -W group_list={group:s}astro
 #PBS -l nodes={nodes:d}:ppn=8,walltime={time},mem={memory}
 #PBS -M amp2217@columbia.edu
 #PBS -m abe
@@ -64,6 +64,8 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
     if int(d) != d:
         raise ValueError()
 
+    group = astro.split("/")[1]
+
     sh = job_sh.format(mpi_threads=mpi_threads,
                        nodes=mpi_threads//8,
                        time=walltime,
@@ -71,7 +73,8 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
                        config_file=os.path.basename(config_file),
                        name=name,
                        script=config["script"],
-                       astro=astro)
+                       astro=astro,
+                       group=group)
 
     yn = raw_input("About to submit the following job: \n\n{0}\n\n Is "
                    "this right? [y]/n: ".format(sh))
