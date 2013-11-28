@@ -28,19 +28,14 @@ job_sh = """#!/bin/sh
 #PBS -V
 
 # Set output and error directories
-#PBS -o localhost:/vega/astro/users/amp2217/pbs_output
-#PBS -e localhost:/vega/astro/users/amp2217/pbs_output
+#PBS -o localhost:{astro:s}/pbs_output
+#PBS -e localhost:{astro:s}/pbs_output
 
 # print date and time to file
 date
 
 #Command to execute Python program
-mpirun -n {mpi_threads:d} /vega/astro/users/amp2217/yt-x86_64/bin/python /vega/astro/users/amp2217/projects/streams/scripts/{script} -f /vega/astro/users/amp2217/projects/streams/config/{config_file} -v
-
-date
-
-#sync plot directory
-/vega/astro/users/amp2217/bin/syncplots
+mpirun -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v
 
 date
 
@@ -48,7 +43,7 @@ date
 """
 
 def main(config_file, mpi_threads=None, walltime=None, memory=None,
-         job_name=None):
+         job_name=None, astro=None):
 
     # Read in simulation parameters from config file
     with open(config_file) as f:
@@ -75,7 +70,8 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
                        memory=memory,
                        config_file=os.path.basename(config_file),
                        name=name,
-                       script=config["script"])
+                       script=config["script"],
+                       astro=astro)
 
     yn = raw_input("About to submit the following job: \n\n{0}\n\n Is "
                    "this right? [y]/n: ".format(sh))
@@ -107,8 +103,9 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.DEBUG)
 
-    filename = os.path.join("/vega/astro/users/amp2217/projects/streams/", args.file)
+    ASTRO = os.environ['ASTRO']
+    filename = os.path.join(ASTRO, "projects/streams/", args.file)
     main(filename, mpi_threads=args.mpi_threads, walltime=args.time,
-         memory=args.memory, job_name=args.job_name)
+         memory=args.memory, job_name=args.job_name, astro=ASTRO)
     sys.exit(0)
 
