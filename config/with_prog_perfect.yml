@@ -8,7 +8,8 @@ mpi: true
 
 # plots / output
 make_plots: true
-output_path: /vega/astro/users/amp2217/output_data # yeti
+#output_path: /vega/astro/users/amp2217/output_data # yeti
+output_path: /hpc/astro/users/amp2217/output_data # hotfoot
 overwrite: true
 
 potential:
@@ -43,9 +44,9 @@ satellite:
     #no_progenitor: false
 
 # emcee
-walkers: 1024 # or auto (2 x number of parameters)
-burn_in: 1000
-steps: 2000
+walkers: 512 # or auto (2 x number of parameters)
+burn_in: 0
+steps: 200
 
 # observational errors
 # below: with no units specified, it's a fractional error
