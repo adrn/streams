@@ -20,11 +20,10 @@ def test_function(arr):
     return w
 
 def main():
-    N = 128
-    v = np.random.random(size=(N,100000))
+
+    v = np.random.random(size=(128,100000))
 
     pool = MPIPool()
-
     if not pool.is_master():
         pool.wait()
         sys.exit(0)
