@@ -16,12 +16,12 @@ from emcee.utils import MPIPool
 import numpy as np
 
 def test_function(arr):
-    return 0.
+    w = arr * 10.
+    return w
 
 def main():
-    Npool = 4
-    x = [np.random.random(size=(25,10,6)) for ii in range(Npool)]
-    v = np.random.random(size=(100000,100))
+    N = 128
+    v = np.random.random(size=(N,100000))
 
     pool = MPIPool()
 
@@ -29,7 +29,7 @@ def main():
         pool.wait()
         sys.exit(0)
 
-    y = pool.map(test_function, x)
+    y = pool.map(test_function, v)
     pool.close()
 
 if __name__ == "__main__":
