@@ -435,7 +435,7 @@ def main(config_file, job_name=None):
             fig.suptitle("Particle {0}".format(ii))
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
-            fig.close()
+            del fig
 
         # ---------
         # Now make 6x6 corner plot for satellite
