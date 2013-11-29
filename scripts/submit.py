@@ -65,6 +65,8 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
         raise ValueError()
 
     group = astro.split("/")[1]
+    if group == "vega":
+        group = 'yeti'
 
     sh = job_sh.format(mpi_threads=mpi_threads,
                        nodes=mpi_threads//8,
