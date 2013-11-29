@@ -20,10 +20,17 @@ def test_function(arr):
 
 def main():
     Npool = 4
-    x = [np.random.random(25,10,6) for ii in range(Npool)]
+    x = [np.random.random(size=(25,10,6)) for ii in range(Npool)]
+    v = np.random.random(size=(100000,100))
 
     pool = MPIPool()
-    pool.map(test_function, )
+
+    if not pool.is_master():
+        pool.wait()
+        sys.exit(0)
+
+    y = pool.map(test_function, x)
+    pool.close()
 
 if __name__ == "__main__":
     main()
