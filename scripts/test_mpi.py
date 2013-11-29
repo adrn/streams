@@ -17,11 +17,11 @@ import numpy as np
 
 def test_function(arr):
     w = arr * 10.
-    return w
+    return 0.
 
 def main():
 
-    v = np.random.random(size=(128,100000))
+    v = [np.random.random(size=(100000,)) for ii in range(100)]
 
     pool = MPIPool()
     if not pool.is_master():
