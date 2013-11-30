@@ -11,6 +11,7 @@ import os, sys
 import re
 import logging
 from datetime import datetime
+import resource
 import shutil
 
 # Third-party
@@ -43,3 +44,20 @@ def _validate_coord(x):
         return np.array([x])
 
 u_galactic = [u.kpc, u.Myr, u.M_sun, u.radian]
+
+def get_memory_usage():
+    """
+    Returning resident size in megabytes
+    """
+    pid = os.getpid()
+    try:
+        pagesize = resource.getpagesize()
+    except NameError:
+        return -1024
+    status_file = "/proc/%s/statm" % (pid)
+    if not os.path.isfile(status_file):
+        return -1024
+    line = open(status_file).read()
+    size, resident, share, text, library, data, dt = [int(i) for i in
+line.split()]
+    return resident * pagesize / (1024 * 1024) # return in megs
