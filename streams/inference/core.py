@@ -20,6 +20,7 @@ from ..coordinates import _gc_to_hel, _hel_to_gc
 from ..integrate import ParticleIntegrator
 from .parameter import *
 from .prior import *
+from ..util import get_memory_usage
 
 __all__ = ["StreamModel"]
 
@@ -99,6 +100,8 @@ class StreamModel(object):
             described by just two scales -- the tidal radius and
             velocity dispersion.
         """
+
+        print("mem", get_memory_usage())
 
         t1 = self.simulation.t1
         t2 = self.simulation.t2

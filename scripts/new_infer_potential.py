@@ -41,6 +41,7 @@ from streams.inference import (ModelParameter, StreamModel,
 import streams.io as s_io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
+from streams.util import get_memory_usage
 
 global pool
 pool = None
@@ -50,34 +51,6 @@ logger = logging.getLogger(__name__)
 
 def _null(*args, **kwargs):
     return 0.
-
-class A(object):
-    pass
-
-def get_pool(config):
-    """ Given a config structure, return an MPIPool, a Python
-        multiprocessing.Pool, or None.
-    """
-
-    if config.get("mpi", False):
-        # Initialize the MPI pool
-        pool = MPIPool()
-
-        # Make sure the thread we're running on is the master
-        if not pool.is_master():
-            pool.wait()
-            sys.exit(0)
-        logger.debug("Running with MPI.")
-
-    elif config.get("threads", 0) > 1:
-        logger.debug("Running with multiprocessing on {} cores."\
-                    .format(config["threads"]))
-        pool = multiprocessing.Pool(config["threads"])
-    else:
-        logger.debug("Running serial...parallel panda is sad :(")
-        pool = None
-
-    return pool
 
 def make_path(config):
 
@@ -115,7 +88,6 @@ def main(config_file, job_name=None):
 
     # This needs to go here so I don't read in the particle file N times!!
     # get a pool object given the configuration parameters
-    #pool = get_pool(config)
     if config.get("mpi", False):
         # Initialize the MPI pool
         pool = MPIPool()
@@ -135,6 +107,7 @@ def main(config_file, job_name=None):
         pool = None
 
     # TODO: write a separate script just for plotting...
+    print("mem", get_memory_usage())
 
     # determine the output data path
     path = make_path(config)
@@ -181,7 +154,9 @@ def main(config_file, job_name=None):
     simulation._table = None # HACK
     # Note: now particles and satellite are in heliocentric coordinates!
 
+    print("mem", get_memory_usage())
     gc.collect()
+    print("mem", get_memory_usage())
 
     ##########################################################################
     # Observational errors
@@ -317,8 +292,12 @@ def main(config_file, job_name=None):
         Nwalkers = model.ndim*2 + 2
     logger.debug("{} walkers".format(Nwalkers))
 
+    print("mem", get_memory_usage())
+
     # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
+
+    print("mem", get_memory_usage())
 
     if not os.path.exists(chain_file):
         logger.debug("Cache files don't exist...")
