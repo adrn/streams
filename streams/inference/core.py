@@ -101,8 +101,6 @@ class StreamModel(object):
             velocity dispersion.
         """
 
-        print("mem", get_memory_usage())
-
         t1 = self.simulation.t1
         t2 = self.simulation.t2
         dt = -1. # TODO HACK
