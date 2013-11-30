@@ -8,7 +8,7 @@ mpi: True
 
 # plots / output
 output_path: /home/adrian/projects/streams/plots # deimos
-make_plots: false
+make_plots: True
 overwrite: True
 
 potential:
@@ -32,12 +32,16 @@ simulation:
 particles:
     N: 10
     selection_expr: tub != 0
-    parameters:
-        - tub
-        - _X
+    #parameters:
+    #    - tub
+    #    - _X
+
+satellite:
+    #parameters:
+    #    - _X
 
 # emcee
-walkers: 256
+walkers: 32
 burn_in: 2
 steps: 4
 
