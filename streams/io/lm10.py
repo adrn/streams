@@ -43,6 +43,18 @@ class LM10Simulation(object):
         return tbl
 
     def particles(self, N=None, expr=None, meta_cols=[]):
+        """ Return a Particle object with N particles selected from the
+            simulation with expression expr.
+
+            Parameters
+            ----------
+            N : int or None (optional)
+                Number of particles to return. None or 0 means 'all'
+            expr : str (optional)
+                Use numexpr to select out only rows that match criteria.
+            meta_cols : iterable (optional)
+                List of columns to add to meta data.
+        """
         tbl = self.raw_particle_table(N=N, expr=expr)
 
         q = []
@@ -57,6 +69,9 @@ class LM10Simulation(object):
         return p
 
     def satellite(self):
+        """ Return a Particle object with the present-day position of the
+            satellite, computed from the still-bound particles.
+        """
         expr = "Pcol==-1"
         tbl = self.raw_particle_table(expr=expr)
 
