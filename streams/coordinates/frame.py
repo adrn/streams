@@ -16,12 +16,13 @@ import numpy as np
 import astropy.units as u
 
 # project
+from .. import usys
 from ..coordinates import _gc_to_hel, _hel_to_gc
 
 # Create logger
 logger = logging.getLogger(__name__)
 
-_transform_graph = dict()
+_transform_graph = defaultdict(dict)
 _transform_graph["heliocentric"]["galactocentric"] = _hel_to_gc
 _transform_graph["galactocentric"]["heliocentric"] = _gc_to_hel
 
