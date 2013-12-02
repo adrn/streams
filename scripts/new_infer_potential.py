@@ -393,20 +393,15 @@ def main(config_file, job_name=None):
             start = Npp + Nparticles + 6*ii
             stop = start + 6
             OO = flatchain[:,start:stop]
-            # TODO: plot in good units
-            # p = Particle(OO.T,
-            #              units=o_particles._internal_units,
-            #              names=o_particles.names)
-            truths = np.append(particles.tub[ii], particles._X[ii])
-            extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) \
+
+            p = Particle(OO.T, units=usys, names=o_particles.names)
+            p = p.to_units(o_particles._repr_units)
+
+            truths = particles._repr_X[ii]
+            extents = [(t2,t1)]+[(truth-0.2*abs(truth),truth+0.2*abs(truth)) \
                         for truth in truths]
 
-            #err = np.array([o_particles.error[] for
-            #extents = zip(obs_data[ii] - 3*obs_error[ii], \
-            #              obs_data[ii] + 3*obs_error[ii])
-            #extents = [(t2,t1)] + extents
-            #extents=extents,
-            fig = triangle.corner(np.hstack((tub[:,np.newaxis], OO)),
+            fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
                                   labels=['tub','l','b','D',\
                                           r'$\mu_l$', r'$\mu_l$','$v_r$'],
                                   truths=truths,
@@ -415,6 +410,8 @@ def main(config_file, job_name=None):
             fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
                                      .format(ii)))
             del fig
+
+        return
 
         # ---------
         # Now make 6x6 corner plot for satellite
