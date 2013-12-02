@@ -34,53 +34,71 @@ orphan_units = dict(length=length_unit,
                     mass=mass_unit,
                     time=time_unit)
 
-class OrphanSimulation(SimulationData):
+class OrphanSimulation(object):
 
-    def __init__(self, filename=os.path.join(_path,"ORP_SNAP")):
-        """ Data from one of Kathryn's Orphan-like simulations
+    def __init__(self):
+
+        self.particle_filename = os.path.join(_path,"ORP_SNAP")
+        self.particle_columns = ("x","y","z","vx","vy","vz")
+
+        self._units = _units_from_file(os.path.join(_path,"SCFPAR"))
+        self.particle_units = [self._units["length"]]*3 + \
+                              [self._units["length"]/self._units["time"]]*3
+
+        self.mass = float(mass)
+        self.t1 = (5.189893E+02 * self._units["time"]).decompose(usys).value
+        self.t2 = 0
+
+    def raw_particle_table(self, N=None, expr=None):
+        tbl = read_table(self.particle_filename, N=N, expr=expr)
+        return tbl
+
+    def particles(self, N=None, expr=None, meta_cols=[]):
+        """ Return a Particle object with N particles selected from the
+            simulation with expression expr.
 
             Parameters
             ----------
-            filename : str
+            N : int or None (optional)
+                Number of particles to return. None or 0 means 'all'
+            expr : str (optional)
+                Use numexpr to select out only rows that match criteria.
+            meta_cols : iterable (optional)
+                List of columns to add to meta data.
         """
+        tbl = self.raw_particle_table(N=N, expr=expr)
 
-        # TODO: self.mass = float(mass) ???
-        self._units = orphan_units
+        q = []
+        for colname,unit in zip(self.particle_columns, self.particle_units):
+            q.append(np.array(tbl[colname])*unit)
 
-        super(OrphanSimulation, self).__init__(filename=filename)
-        self._hel_colnames = ()
+        meta = dict(expr=expr)
+        for col in meta_cols:
+            meta[col] = np.array(tbl[col])
 
-        self.t1 = (5.189893E+02 * self._units["time"]).to(u.Myr).value
-        self.t2 = 0
+        p = Particle(q, frame=galactocentric, meta=meta)
+        return p.decompose(usys)
 
-    def table(self, expr=None):
-        if self._table is None:
-            tbl = super(OrphanSimulation, self).table()
+    def satellite(self):
+        """ Return a Particle object with the present-day position of the
+            satellite, computed from the still-bound particles.
+        """
+        expr = "tub==0"
+        tbl = self.raw_particle_table(expr=expr)
 
-            for x in "xyz":
-                tbl[x].unit = self._units["length"]
+        q = []
+        for colname in self.particle_columns:
+            q.append(tbl[colname].tolist())
 
-            for x in ("vx","vy","vz"):
-                tbl[x].unit = self._units["length"]/self._units["time"]
+        q = np.array(q)
 
-            self._table = tbl
+        meta = dict(expr=expr)
+        v_disp = np.sqrt(np.sum(np.var(q[3:],axis=1)))
+        meta["v_disp"] = (v_disp*self.particle_units[-1]).decompose(usys).value
+        meta["mass"] = self.mass
 
-        return super(OrphanSimulation, self).table(expr=expr)
-
-    def satellite(self, bound_expr="tub==0", frame="galactocentric",
-                  column_names=None):
-        s = super(OrphanSimulation, self).satellite(bound_expr=bound_expr,
-                                                 frame=frame,
-                                                 column_names=column_names)
-        # TODO: s.meta["m"] = self.mass
-
-        bound = self.table(bound_expr)
-        s.meta["v_disp"] = np.sqrt(np.std(bound["vx"])**2 + \
-                                   np.std(bound["vy"])**2 + \
-                                   np.std(bound["vz"])**2)
-
-        return s.decompose(usys)
-
-    def particles(self, *args, **kwargs):
-        p = super(OrphanSimulation, self).particles(*args, **kwargs)
+        q = np.median(q, axis=1)
+        p = Particle(q, frame=galactocentric,
+                     units=self.particle_units,
+                     meta=meta)
         return p.decompose(usys)

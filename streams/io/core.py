@@ -22,7 +22,7 @@ import astropy.coordinates as coord
 from ..coordinates import SgrCoordinates, distance_to_sgr_plane
 from ..dynamics import Particle, Orbit
 
-__all__ = ["SimulationData"]
+__all__ = ["read_table"]
 
 def read_table(filename, expr=None, N=None):
     _table = np.genfromtxt(filename, names=True)

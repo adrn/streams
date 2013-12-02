@@ -98,7 +98,7 @@ class SgrSimulation(object):
         """ Return a Particle object with the present-day position of the
             satellite, computed from the still-bound particles.
         """
-        expr = "tub!=0"
+        expr = "tub==0"
         tbl = self.raw_particle_table(expr=expr)
 
         q = []

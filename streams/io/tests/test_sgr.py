@@ -18,6 +18,7 @@ import pytest
 
 from ... import usys
 from ..sgr import SgrSimulation
+from ...coordinates.frame import heliocentric
 
 plot_path = "plots/tests/io/sgr"
 
@@ -135,5 +136,5 @@ class Test10E8(object):
     def test_pickle(self):
         particles = self.sgr.particles(N=25, expr="tub==0")
         fnpickle(particles, os.path.join(plot_path, "test.pickle"))
-        p = particles.to_frame("heliocentric")
+        p = particles.to_frame(heliocentric)
         fnpickle(p, os.path.join(plot_path, "test2.pickle"))
