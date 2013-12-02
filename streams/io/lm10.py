@@ -37,7 +37,10 @@ class LM10Simulation(object):
         self.t2 = -8000.
 
     def raw_particle_table(self, N=None, expr=None):
-        return read_table(self.particle_filename, N=N, expr=expr)
+        tbl = read_table(self.particle_filename, N=N, expr=expr)
+        tbl["xgc"] = -tbl["xgc"]
+        tbl["u"] = -tbl["u"]
+        return tbl
 
     def particles(self, N=None, expr=None, meta_cols=[]):
         tbl = self.raw_particle_table(N=N, expr=expr)
