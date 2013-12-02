@@ -171,7 +171,7 @@ def test_observe(d_err):
     from ...io import LM10Simulation
     from ...observation.gaia import gaia_spitzer_errors
     sgr = LM10Simulation()
-    p = sgr.particles(N=100, expr="(Pcol>-1) & (Pcol<8) & (abs(Lmflag)==1)")
+    p = sgr.particles(N=100, expr="(Pcol>0) & (Pcol<8) & (abs(Lmflag)==1)")
     p = p.to_frame(heliocentric)
 
     err = gaia_spitzer_errors(p)
@@ -181,13 +181,13 @@ def test_observe(d_err):
     assert o_p.errors.has_key("D")
 
     fig = p.plot()
-    fig = o_p.plot(fig=fig, color='r')
+    fig = o_p.plot(fig=fig, plot_kwargs=dict(color='r'))
     fig.savefig(os.path.join(plot_path, "test_observe_hel_{}.png"\
                                         .format(d_err)))
 
     p = p.to_frame(galactocentric)
     o_p = o_p.to_frame(galactocentric)
     fig = p.plot()
-    fig = o_p.plot(fig=fig, color='r')
+    fig = o_p.plot(fig=fig, plot_kwargs=dict(color='r'))
     fig.savefig(os.path.join(plot_path, "test_observe_gal_{}.png"\
                                         .format(d_err)))

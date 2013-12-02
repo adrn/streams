@@ -193,7 +193,7 @@ class Particle(object):
             should have keys == particles.names.
         """
 
-        if frame.name != "heliocentric":
+        if self.frame.name != "heliocentric":
             raise ValueError("Particle must be in heliocentric frame.")
 
         new_qs = []
