@@ -20,6 +20,8 @@ from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPoten
 from ._lm10_acceleration import lm10_acceleration
 from .. import usys
 from ..util import _parse_quantity
+
+from ..inference import ModelParameter
 from ..inference.prior import LogUniformPrior, LogPrior
 
 class LawMajewski2010(CompositePotential):
@@ -213,7 +215,6 @@ class LawMajewski2010(CompositePotential):
 
     def model_parameter(self, name, a=None, b=None):
         """ TODO: """
-        from ..inference.prior import LogUniformPrior
 
         p = getattr(self, name)
         if a is not None and b is not None:
