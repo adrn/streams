@@ -21,9 +21,10 @@ from astropy.constants import G
 
 # Project
 from .. import usys
-from ..dynamics import Orbit
-from .core import SimulationData, read_table
+from ..dynamics import Particle
+from .core import read_table
 from ..util import project_root
+from ..coordinates.frame import galactocentric
 
 __all__ = ["SgrSimulation"]
 
@@ -48,91 +49,56 @@ def _units_from_file(scfpar):
                 mass=mass_unit,
                 time=time_unit)
 
-class SgrSimulation(SimulationData):
+class SgrSimulation(object):
 
-    def __init__(self, mass, orbit=False):
-        """ Data from one of Kathryn's Sgr simulations
+    def __init__(self, mass):
 
-            Parameters
-            ----------
-            mass : str
-                e.g., 2.5e8
-        """
-        filename = os.path.join(_path,mass,"SNAP")
-        self.mass = float(mass)
+        self.particle_filename = os.path.join(_path,mass,"SNAP")
+        self.particle_columns = ("x","y","z","vx","vy","vz")
+
         self._units = _units_from_file(os.path.join(_path,mass,"SCFPAR"))
+        self.particle_units = [self._units["length"]]*3 + \
+                              [self._units["length"]/self._units["time"]]*3
 
-        super(SgrSimulation, self).__init__(filename=filename)
-        self._hel_colnames = ()
-
-        self.t1 = (4.189546E+02 * self._units["time"]).to(u.Myr).value
+        self.mass = float(mass)
+        self.t1 = (4.189546E+02 * self._units["time"]).decompose(usys).value
         self.t2 = 0
 
-        if orbit:
-            sgr_orbit = ascii.read(os.path.join(_path,mass,"SCFCEN"))
-            for x in "xyz":
-                sgr_orbit[x].unit = self._units["length"]
+    def raw_particle_table(self, N=None, expr=None):
+        tbl = read_table(self.particle_filename, N=N, expr=expr)
+        return tbl
 
-            for x in ("vx","vy","vz"):
-                sgr_orbit[x].unit = self._units["length"]/self._units["time"]
+    def particles(self, N=None, expr=None, meta_cols=[]):
+        tbl = self.raw_particle_table(N=N, expr=expr)
 
-            names = ("x","y","z","vx","vy","vz")
-            self.satellite_orbit = Orbit(sgr_orbit["t"]*self._units["time"],
-              [np.atleast_2d(np.array(sgr_orbit[x])) for x in names],
-              names=names,
-              units=[sgr_orbit[x].unit for x in names])
+        q = []
+        for colname,unit in zip(self.particle_columns, self.particle_units):
+            q.append(np.array(tbl[colname])*unit)
 
-    def satellite(self, bound_expr="tub==0", frame="galactocentric",
-                  column_names=None):
+        meta = dict(expr=expr)
+        for col in meta_cols:
+            meta[col] = np.array(tbl[col])
 
-        col_units = [self._units["length"]]*3 + \
-                    [self._units["length"]/self._units["time"]]*3
-        s = super(SgrSimulation, self).satellite(bound_expr=bound_expr,
-                                                 frame=frame,
-                                                 column_names=column_names,
-                                                 column_units=col_units)
-        s.m = s.meta["m"] = self.mass
+        p = Particle(q, frame=galactocentric, meta=meta)
+        return p.decompose(usys)
 
-        bound = read_table(self.filename, expr=bound_expr)
-        vx = np.array((bound["vx"]*col_units[3]).to(u.kpc/u.Myr).value, \
-                      copy=True)
-        vy = np.array((bound["vy"]*col_units[3]).to(u.kpc/u.Myr).value, \
-                      copy=True)
-        vz = np.array((bound["vz"]*col_units[3]).to(u.kpc/u.Myr).value, \
-                      copy=True)
+    def satellite(self):
+        expr = "tub!=0"
+        tbl = self.raw_particle_table(expr=expr)
 
-        del bound
-        s.v_disp =s.meta["v_disp"] = np.sqrt(np.var(vx)+np.var(vy)+np.var(vz))
+        q = []
+        for colname in self.particle_columns:
+            q.append(tbl[colname].tolist())
 
-        return s.decompose(usys)
+        q = np.array(q)
 
-    def particles(self, N=None, expr=None, frame="galactocentric",
-                  column_names=None, meta_cols=['tub']):
-        """ Return a Particle object with N particles selected from the
-            simulation with expression expr in the specified reference
-            frame / coordinates.
+        meta = dict(expr=expr)
+        v_disp = np.sqrt(np.sum(np.var(q[3:],axis=1)))
+        meta["v_disp"] = (v_disp*self.particle_units[-1]).decompose(usys).value
+        meta["mass"] = self.mass
 
-            Parameters
-            ----------
-            N : int or None (optional)
-                Number of particles to return. None or 0 means 'all'
-            expr : str (optional)
-                Use numexpr to select out only rows that match criteria.
-            frame : str (optional)
-                Can be either 'galactocentric' or 'g' or 'heliocentric' or 'h'
-            column_names : iterable (optional)
-                A list of the column names to read from the table and put in
-                Particle.
-            meta_cols : iterable (optional)
-                List of columns to add to meta data.
-        """
-
-        col_units = [self._units["length"]]*3 + \
-                    [self._units["length"]/self._units["time"]]*3
-        p = super(SgrSimulation, self).particles(N=N, expr=expr, frame=frame,
-                                                 column_names=column_names,
-                                                 column_units=col_units,
-                                                 meta_cols=meta_cols)
-        p.meta["tub"] = (p.meta["tub"]*self._units["time"])\
-                          .decompose(usys).value
+        q = np.median(q, axis=1)
+        p = Particle(q, frame=galactocentric,
+                     units=self.particle_units,
+                     meta=meta)
         return p.decompose(usys)
