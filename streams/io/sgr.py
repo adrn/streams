@@ -68,7 +68,7 @@ class SgrSimulation(object):
         tbl = read_table(self.particle_filename, N=N, expr=expr)
         return tbl
 
-    def particles(self, N=None, expr=None, meta_cols=[]):
+    def particles(self, N=None, expr=None, meta_cols=["tub"]):
         """ Return a Particle object with N particles selected from the
             simulation with expression expr.
 

@@ -19,8 +19,10 @@ from astropy.constants import G
 
 # Project
 from .. import usys
-from .core import SimulationData
+from ..dynamics import Particle
+from .core import read_table
 from ..util import project_root
+from ..coordinates.frame import galactocentric
 
 __all__ = ["OrphanSimulation"]
 
@@ -41,11 +43,10 @@ class OrphanSimulation(object):
         self.particle_filename = os.path.join(_path,"ORP_SNAP")
         self.particle_columns = ("x","y","z","vx","vy","vz")
 
-        self._units = _units_from_file(os.path.join(_path,"SCFPAR"))
+        self._units = orphan_units
         self.particle_units = [self._units["length"]]*3 + \
                               [self._units["length"]/self._units["time"]]*3
 
-        self.mass = float(mass)
         self.t1 = (5.189893E+02 * self._units["time"]).decompose(usys).value
         self.t2 = 0
 
@@ -95,7 +96,6 @@ class OrphanSimulation(object):
         meta = dict(expr=expr)
         v_disp = np.sqrt(np.sum(np.var(q[3:],axis=1)))
         meta["v_disp"] = (v_disp*self.particle_units[-1]).decompose(usys).value
-        meta["mass"] = self.mass
 
         q = np.median(q, axis=1)
         p = Particle(q, frame=galactocentric,
