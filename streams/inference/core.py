@@ -159,3 +159,14 @@ class StreamModel(object):
         if not np.isfinite(ll):
             return -np.inf
         return lp + ll
+
+    def param_idx_to_chain_idx(self, idx):
+        """ Convert the index of a parameter in self.parameters into a
+            tuple of indices for the sampler chain.
+        """
+
+        lens = [p.get().size for p in self.parameters]
+        ix1 = sum(lens[:idx])
+        ix2 = ix1 + lens[idx]
+
+        return (ix1,ix2)

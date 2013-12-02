@@ -105,6 +105,25 @@ class TestStreamModel(object):
         assert model.vector[0] == self.potential.q1.value
         assert self.potential.q1.value == self.potential.parameters["q1"].value
 
+    def test_indices(self):
+        particles = self.particles.copy()
+
+        params = []
+        params.append(ModelParameter(target=self.potential.q1,
+                                attr="_value",
+                                ln_prior=LogUniformPrior(*self.potential.q1._range)))
+        params.append(ModelParameter(target=particles,
+                                attr="_X"))
+        params.append(ModelParameter(target=particles,
+                                attr="tub"))
+
+        model = StreamModel(self.potential, self.simulation,
+                            self.satellite, particles,
+                            parameters=params)
+
+        for ii in range(len(params)):
+            print(model.param_idx_to_chain_idx(ii))
+
     def test_potential_likelihood(self):
 
         fig = plt.figure()
