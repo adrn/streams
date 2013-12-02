@@ -25,7 +25,6 @@ from ..dynamics import Particle, Orbit
 __all__ = ["SimulationData"]
 
 def read_table(filename, expr=None, N=None):
-    #_table = ascii.read(filename)
     _table = np.genfromtxt(filename, names=True)
 
     if expr is not None:
@@ -36,7 +35,7 @@ def read_table(filename, expr=None, N=None):
         np.random.shuffle(_table)
         _table = _table[:min(N,len(_table))]
 
-    return _table.copy()
+    return _table
 
 # TODO: should be singleton...
 class SimulationData(object):
@@ -55,13 +54,7 @@ class SimulationData(object):
             raise IOError("File {} does not exist!".format(filename))
         self.filename = filename
 
-        # cache
-        #self._table = None
-
-        self._gal_colnames = ("x","y","z","vx","vy","vz")
-        self._hel_colnames = ("l","b","D","mul","mub","vr")
-
-    def satellite(self, bound_expr, frame="galactocentric",
+    def satellite(self, bound_expr, frame,
                   column_names=None, column_units=None):
         """ Return a Particle object for the present-day position of the
             Satellite in the specified reference frame / coordinates.
@@ -70,8 +63,7 @@ class SimulationData(object):
             ----------
             bound_expr : str
                 numexpr expression picking out the still-bound particles.
-            frame : str (optional)
-                Can be either 'galactocentric' or 'g' or 'heliocentric' or 'h'
+            frame : ReferenceFrame
             column_names : iterable (optional)
                 A list of the column names to read from the table and put in
                 Particle.
@@ -79,33 +71,22 @@ class SimulationData(object):
                 A list of the column units.
         """
 
-        if frame.lower().startswith("g"):
-            if column_names is None:
-                column_names = self._gal_colnames
-
-        elif frame.lower().startswith("h"):
-            if column_names is None:
-                column_names = self._hel_colnames
-
-        else:
-            raise ValueError("Invalid reference frame.")
-
         # get the satellite position / velocity from the median of the
         #   bound particle positions/velocities
         tbl = read_table(self.filename, expr=bound_expr)
 
         cols = []
-        for cname,cunit in zip(column_names,column_units):
+        for cname,cunit in zip(frame.coord_names,column_units):
             col = tbl[cname].copy() * cunit
             cols.append(col)
 
         return Particle([np.median(c.value) for c in cols],
-                        names=column_names,
+                        frame=frame,
                         units=[c.unit for c in cols],
                         meta=dict(expr=bound_expr))
 
-    def particles(self, N=None, expr=None, frame="galactocentric",
-                  column_names=None, column_units=None, meta_cols=[]):
+    def particles(self, N=None, expr=None, frame=None,
+                  column_units=None, meta_cols=[]):
         """ Return a Particle object with N particles selected from the
             simulation with expression expr in the specified reference
             frame / coordinates.
@@ -116,8 +97,7 @@ class SimulationData(object):
                 Number of particles to return. None or 0 means 'all'
             expr : str (optional)
                 Use numexpr to select out only rows that match criteria.
-            frame : str (optional)
-                Can be either 'galactocentric' or 'g' or 'heliocentric' or 'h'
+            frame : ReferenceFrame
             column_names : iterable (optional)
                 A list of the column names to read from the table and put in
                 Particle.
@@ -127,27 +107,16 @@ class SimulationData(object):
                 List of columns to add to meta data.
         """
 
-        if frame.lower().startswith("g"):
-            if column_names is None:
-                column_names = self._gal_colnames
-
-        elif frame.lower().startswith("h"):
-            if column_names is None:
-                column_names = self._hel_colnames
-
-        else:
-            raise ValueError("Invalid reference frame.")
-
         tbl = read_table(self.filename, expr=expr, N=N)
         #tbl = np.genfromtxt(self.filename, names=True)
 
         # if no column units specified, try to get them from the table
         # TODO:
-        #if column_units is None:
-        #    column_units = [tbl[c].unit for c in column_names]
+        if column_units is None:
+           column_units = [tbl[c].unit for c in frame.coord_names]
 
         cols = []
-        for cname,cunit in zip(column_names,column_units):
+        for cname,cunit in zip(frame.coord_names,column_units):
             col = tbl[cname].copy() * cunit
             cols.append(col)
 
@@ -155,7 +124,8 @@ class SimulationData(object):
         for col in meta_cols:
             meta[col] = tbl[col].copy()
 
-        return Particle(cols, names=column_names,
+        return Particle(cols,
+                        frame=frame,
                         meta=meta)
 
     def add_sgr_coordinates(self):

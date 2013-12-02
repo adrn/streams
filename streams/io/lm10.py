@@ -16,55 +16,54 @@ import astropy.units as u
 from astropy.constants import G
 
 # Project
-from .core import SimulationData
+from .core import read_table
 from ..util import project_root
+from ..dynamics import Particle
+from ..coordinates.frame import galactocentric
 
 __all__ = ["LM10Simulation"]
 
 _lm10_path = os.path.join(project_root, "data", "simulation", "LM10")
 
-class LM10Simulation(SimulationData):
+class LM10Simulation(object):
 
-    def __init__(self,
-                 filename=os.path.join(_lm10_path,"SgrTriax_DYN.dat")):
-        """ ...
+    def __init__(self):
+        self.particle_filename = os.path.join(_lm10_path,"SgrTriax_DYN.dat")
+        self.particle_columns = ("xgc","ygc","zgc","u","v","w")
+        self.particle_units = (u.kpc, u.kpc, u.kpc,
+                               u.km/u.s, u.km/u.s, u.km/u.s)
 
-            Parameters
-            ----------
-            filename : str (optional)
-                Path to the Sgr particle snapshot data from LM10.
-        """
-        super(LM10Simulation, self).__init__(filename=filename)
-        self._hel_colnames = ("l","b","D","mul","mub","vr") # TODO: FIX
         self.t1 = 0.
         self.t2 = -8000.
 
-    def table(self, expr=None):
-        if self._table is None:
-            tbl = super(LM10Simulation, self).table()
-            tbl.rename_column("xgc","x")
-            tbl.rename_column("ygc","y")
-            tbl.rename_column("zgc","z")
+    def raw_particle_table(self, N=None, expr=None):
+        return read_table(self.particle_filename, N=N, expr=expr)
 
-            tbl.rename_column("u","vx")
-            tbl.rename_column("v","vy")
-            tbl.rename_column("w","vz")
+    def particles(self, N=None, expr=None, meta_cols=[]):
+        tbl = self.raw_particle_table(N=N, expr=expr)
 
-            tbl["x"] = -tbl["x"]
-            tbl["vx"] = -tbl["vx"]
+        q = []
+        for colname,unit in zip(self.particle_columns, self.particle_units):
+            q.append(np.array(tbl[colname])*unit)
 
-            for x in "xyz":
-                tbl[x].unit = u.kpc
+        meta = dict(expr=expr)
+        for col in meta_cols:
+            meta[col] = np.array(tbl[col])
 
-            for x in ("vx","vy","vz"):
-                tbl[x].unit = u.km/u.s
+        p = Particle(q, frame=galactocentric, meta=meta)
+        return p
 
-            self._table = tbl
+    def satellite(self):
+        expr = "Pcol==-1"
+        tbl = self.raw_particle_table(expr=expr)
 
-        return super(LM10Simulation, self).table(expr=expr)
+        q = []
+        for colname in self.particle_columns:
+            q.append(tbl[colname].tolist())
 
-    def satellite(self, bound_expr="Pcol==-1", frame="galactocentric",
-                  column_names=None):
-        return super(LM10Simulation, self).satellite(bound_expr=bound_expr,
-                                                    frame=frame,
-                                                    column_names=column_names)
+        q = np.array(q)
+        q = np.median(q, axis=1)
+
+        p = Particle(q, frame=galactocentric, units=self.particle_units,
+                     meta=dict(expr=expr))
+        return p
