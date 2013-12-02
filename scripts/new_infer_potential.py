@@ -41,7 +41,6 @@ from streams.inference import (ModelParameter, StreamModel,
 import streams.io as s_io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
-from streams.util import get_memory_usage
 
 global pool
 pool = None
@@ -107,7 +106,6 @@ def main(config_file, job_name=None):
         pool = None
 
     # TODO: write a separate script just for plotting...
-    print("mem", get_memory_usage())
 
     # determine the output data path
     path = make_path(config)
@@ -154,9 +152,7 @@ def main(config_file, job_name=None):
     simulation._table = None # HACK
     # Note: now particles and satellite are in heliocentric coordinates!
 
-    print("mem", get_memory_usage())
     gc.collect()
-    print("mem", get_memory_usage())
 
     ##########################################################################
     # Observational errors
@@ -292,12 +288,8 @@ def main(config_file, job_name=None):
         Nwalkers = model.ndim*2 + 2
     logger.debug("{} walkers".format(Nwalkers))
 
-    print("mem", get_memory_usage())
-
     # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
-
-    print("mem", get_memory_usage())
 
     if not os.path.exists(chain_file):
         logger.debug("Cache files don't exist...")
