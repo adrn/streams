@@ -15,8 +15,8 @@ import emcee
 import numpy as np
 import astropy.units as u
 
+from ..coordinates.frame import galactocentric
 from ..dynamics import Particle
-from ..coordinates import _gc_to_hel, _hel_to_gc
 from ..integrate import ParticleIntegrator
 from .parameter import *
 from .prior import *
@@ -108,8 +108,8 @@ class StreamModel(object):
         # The true positions/velocities of the particles are parameters
         Nparticles = self.particles.nparticles
 
-        particles_gc = self.particles.to_frame("galactocentric")
-        satellite_gc = self.satellite.to_frame("galactocentric")
+        particles_gc = self.particles.to_frame(galactocentric)
+        satellite_gc = self.satellite.to_frame(galactocentric)
 
         pi = ParticleIntegrator((particles_gc,satellite_gc),
                                 self.potential,
