@@ -15,9 +15,45 @@ from collections import defaultdict
 import numpy as np
 import astropy.units as u
 
+# project
+from ..coordinates import _gc_to_hel, _hel_to_gc
+
 # Create logger
 logger = logging.getLogger(__name__)
 
+_transform_graph = dict()
+_transform_graph["heliocentric"]["galactocentric"] = _hel_to_gc
+_transform_graph["galactocentric"]["heliocentric"] = _gc_to_hel
+
+class ReferenceFrame(object):
+
+    def __init__(self, name, coord_names):
+        self.name = name
+        self.coord_names = coord_names
+        self.ndim = len(self.coord_names)
+
+    def __repr__(self):
+        return "<Frame: {}, {}D>".format(self.name, self.ndim)
+
+    def to(self, other, X):
+        """ Transform the coordinates X to the reference frame 'other'.
+            X should have units of the global usys.
+
+            Parameters
+            ----------
+            other : ReferenceFrame
+            X : array_like
+        """
+        new_X = _transform_graph[self.name][other.name](X)
+        return new_X
+
+heliocentric = ReferenceFrame(name="heliocentric",
+                              coord_names=("l","b","D","mul","mub","vr"))
+
+galactocentric = ReferenceFrame(name="galactocentric",
+                                coord_names=("x","y","z","vx","vy","vz"))
+
+'''
 def cartesian_to_spherical_position(x,y,z):
     pass
 
@@ -84,3 +120,4 @@ class Heliocentric(object):
         pass
 
 Heliocentric(Spherical(lon=..., lat=..., distance=...))
+'''
