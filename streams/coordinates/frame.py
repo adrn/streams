@@ -27,9 +27,10 @@ _transform_graph["galactocentric"]["heliocentric"] = _gc_to_hel
 
 class ReferenceFrame(object):
 
-    def __init__(self, name, coord_names):
+    def __init__(self, name, coord_names, units):
         self.name = name
         self.coord_names = coord_names
+        self.units = units
         self.ndim = len(self.coord_names)
 
     def __repr__(self):
@@ -47,11 +48,21 @@ class ReferenceFrame(object):
         new_X = _transform_graph[self.name][other.name](X)
         return new_X
 
-heliocentric = ReferenceFrame(name="heliocentric",
-                              coord_names=("l","b","D","mul","mub","vr"))
+angle_unit = [x for x in usys if x.is_equivalent(u.degree)][0]
+length_unit = [x for x in usys if x.is_equivalent(u.meter)][0]
+time_unit = [x for x in usys if x.is_equivalent(u.second)][0]
 
+h_units = [angle_unit,angle_unit,length_unit,
+           angle_unit/time_unit,angle_unit/time_unit,length_unit/time_unit]
+heliocentric = ReferenceFrame(name="heliocentric",
+                              coord_names=("l","b","D","mul","mub","vr"),
+                              units=h_units)
+
+g_units = [length_unit,length_unit,length_unit,
+           length_unit/time_unit,length_unit/time_unit,length_unit/time_unit]
 galactocentric = ReferenceFrame(name="galactocentric",
-                                coord_names=("x","y","z","vx","vy","vz"))
+                                coord_names=("x","y","z","vx","vy","vz"),
+                                units=g_units)
 
 '''
 def cartesian_to_spherical_position(x,y,z):
