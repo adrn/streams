@@ -19,6 +19,7 @@ import pytest
 from ..particles import *
 from ...observation.error_model import SpitzerGaiaErrorModel
 from ... import usys
+from ...coordinates.frame import ReferenceFrame, galactocentric, heliocentric
 
 plot_path = "plots/tests/dynamics"
 if not os.path.exists(plot_path):
@@ -36,66 +37,72 @@ lm10_X =np.array([[-24.7335,-9.35652,17.7755,-0.266238,-0.013697,-0.00862857],
  [24.7687, 1.91995, -38.9927, 0.13775, 0.0183352, 0.0059355599999999994],
  [35.3565, 15.0336, -55.0006, 0.0649749, -0.0182314,0.124926]]).T
 
+f1 = ReferenceFrame(name="test",
+                    coord_names=("x","vx"),
+                    units=[u.kpc, u.km/u.s])
+
+f2 = ReferenceFrame(name="cartesian",
+                    coord_names=("x","y","z"),
+                    units=[u.kpc, u.kpc, u.kpc])
+
 def test_init():
 
     x = np.random.random(size=100)
     vx = np.random.random(size=100)
-    p = Particle((x, vx), names=("x","vx"),
-                 units=[u.kpc, u.km/u.s])
-    p = Particle((x*u.kpc, vx*u.km/u.s), names=("x","vx"))
+    p = Particle((x, vx), frame=f1)
+    p = Particle((x*u.kpc, vx*u.km/u.s), frame=f1)
     assert np.all(p["x"].value == x)
     assert np.allclose(p["vx"].value, vx, rtol=1E-15, atol=1E-15)
 
     x_vx = np.random.random(size=(2,100))
-    p = Particle(x_vx, names=("x","vx"),
-                 units=[u.kpc, u.km/u.s])
+    p = Particle(x_vx, frame=f1)
 
     xyz = np.random.random(size=(3,100))*u.km
-    p = Particle(xyz, names=("x","y","z"))
+    p = Particle(xyz, frame=f2)
     assert p["x"].unit == u.km
     assert p["y"].unit == u.km
     assert p["z"].unit == u.km
     assert np.allclose(p["z"].value, xyz[2], rtol=1E-15, atol=1E-15)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         xyz = np.random.random(size=(3,100))
-        p = Particle(xyz, names=("x","y","z"))
+        p = Particle(xyz)
 
     with pytest.raises(ValueError):
         v = np.random.random(size=100)*u.kpc
-        p = Particle((v, v.value), names=("x","y"))
+        p = Particle((v, v.value), frame=f2)
 
 def test_getitem():
+    f = ReferenceFrame(name="cartesian",
+                       coord_names=("x","y","z"),
+                       units=[u.kpc, u.kpc, u.kpc])
+
     xyz = np.random.random(size=(3,100))*u.km
-    p = Particle(xyz, names=("x","y","z"))
+    p = Particle(xyz, frame=f2)
     assert p.nparticles == 100
 
-    p2 = p[15:30]
-    assert p2.nparticles == 15
-    assert (p2._X[:,0] == p._X[:,15]).all()
+    with pytest.raises(ValueError):
+        p2 = p[15:30]
 
 def test_repr_X():
     x = np.random.random(size=100)
     vx = np.random.random(size=100)
-    p = Particle((x, vx), names=("x","vx"),
-                 units=[u.kpc, u.km/u.s])
+    p = Particle((x, vx), frame=f1)
 
-    assert np.allclose(p._repr_X[0], x)
-    assert np.allclose(p._repr_X[1], vx)
+    assert np.allclose(p._repr_X[:,0], x)
+    assert np.allclose(p._repr_X[:,1], vx)
 
 def test_plot():
     x = np.random.random(size=1000)
     vx = np.random.random(size=1000)
-    p = Particle((x, vx), names=("x","vx"),
-                 units=[u.kpc, u.km/u.s])
+    p = Particle((x, vx), frame=f1)
 
     fig = p.plot()
     fig.savefig(os.path.join(plot_path, "particle_2d.png"))
 
     # now try 6D case
     xx = np.random.random(size=(6,100))
-    p = Particle(xx, names=("x","y","z","vx","vy","vz"),
-                 units=[u.kpc, u.kpc, u.kpc, u.km/u.s, u.km/u.s, u.km/u.s])
+    p = Particle(xx, frame=galactocentric)
 
     fig = p.plot()
     fig.savefig(os.path.join(plot_path, "particle_6d.png"))
@@ -103,9 +110,7 @@ def test_plot():
 def test_decompose():
     x = np.random.random(size=1000)
     vx = np.random.random(size=1000)
-    p = Particle((x, vx), names=("x","vx"),
-                 units=[u.kpc, u.km/u.s])
-
+    p = Particle((x, vx), frame=f1)
     p = p.decompose([u.pc, u.radian, u.Gyr, u.M_sun])
 
     fig = p.plot()
@@ -114,9 +119,7 @@ def test_decompose():
 def test_to_units():
     # now try 6D case
     xx = np.random.random(size=(6,100))
-    p = Particle(xx, names=("x","y","z","vx","vy","vz"),
-                 units=[u.kpc, u.kpc, u.kpc, u.km/u.s, u.km/u.s, u.km/u.s])
-
+    p = Particle(xx, frame=galactocentric)
     p = p.to_units(u.pc, u.Gpc, u.km, u.kpc/u.Gyr, u.m/u.ms, u.km/u.s)
 
     fig = p.plot()
@@ -125,18 +128,18 @@ def test_to_units():
 def test_to_frame():
     # now try 6D case
 
-    p = Particle(lm10_X, names=("x","y","z","vx","vy","vz"),
+    p = Particle(lm10_X, frame=galactocentric,
                 units=[u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr])
 
-    fig = p.plot(ms=3.)
+    fig = p.plot(plot_kwargs=plot_kwargs)
     fig.savefig(os.path.join(plot_path, "lm10_particle_original.png"))
 
-    p = p.to_frame('heliocentric')
-    fig = p.plot(ms=3.)
+    p = p.to_frame(heliocentric)
+    fig = p.plot(plot_kwargs=plot_kwargs)
     fig.savefig(os.path.join(plot_path, "lm10_particle_6d_helio.png"))
 
-    p = p.to_frame('galactocentric')
-    fig = p.plot(ms=3.)
+    p = p.to_frame(galactocentric)
+    fig = p.plot(plot_kwargs=plot_kwargs)
     fig.savefig(os.path.join(plot_path, "lm10_particle_6d_galacto.png"))
 
 def test_field_of_streams():
@@ -145,7 +148,7 @@ def test_field_of_streams():
 
     sgr = LM10Simulation()
     p = sgr.particles(N=10000, expr="(Pcol>-1) & (Pcol<8) & (abs(Lmflag)==1)")
-    p2 = p.to_frame("heliocentric")
+    p2 = p.to_frame(heliocentric)
 
     icrs = Galactic(p2["l"], p2["b"]).icrs
 
@@ -169,7 +172,7 @@ def test_observe(d_err):
     from ...observation.gaia import gaia_spitzer_errors
     sgr = LM10Simulation()
     p = sgr.particles(N=100, expr="(Pcol>-1) & (Pcol<8) & (abs(Lmflag)==1)")
-    p = p.to_frame("heliocentric")
+    p = p.to_frame(heliocentric)
 
     err = gaia_spitzer_errors(p)
     err["D"] = p["D"]*d_err
@@ -182,8 +185,8 @@ def test_observe(d_err):
     fig.savefig(os.path.join(plot_path, "test_observe_hel_{}.png"\
                                         .format(d_err)))
 
-    p = p.to_frame("galactocentric")
-    o_p = o_p.to_frame("galactocentric")
+    p = p.to_frame(galactocentric)
+    o_p = o_p.to_frame(galactocentric)
     fig = p.plot()
     fig = o_p.plot(fig=fig, color='r')
     fig.savefig(os.path.join(plot_path, "test_observe_gal_{}.png"\

@@ -51,6 +51,9 @@ class Particle(object):
                              "coordinates ({} vs. {})".format(frame.ndim,
                                                               self.ndim))
 
+        if units is None:
+            units = frame.units
+
         _X = None
         _repr_units = []
         for ii in range(self.ndim):
@@ -86,9 +89,6 @@ class Particle(object):
         for unit in self._repr_units:
             self._internal_units.append((1*unit).decompose(usys).unit)
 
-        if len(names) != self.ndim:
-            raise ValueError("Must specify coordinate name for each "
-                             "dimension.")
         self.meta = meta
         for k,v in self.meta.items():
             setattr(self,k,v)
@@ -105,9 +105,8 @@ class Particle(object):
 
     def __getitem__(self, slc):
         if isinstance(slc, (int,slice)):
-            cpy = self.copy()
-            cpy._X = cpy._X[:,slc]
-            return cpy
+            raise ValueError("Slicing not supported by index, only "
+                             "coordinate name.")
 
         else:
             try:
@@ -159,7 +158,7 @@ class Particle(object):
         if frame.name == "heliocentric":
             return p.to_units(u.deg,u.deg,u.kpc,\
                               u.mas/u.yr,u.mas/u.yr,u.km/u.s)
-        elif frame_name == "galactocentric":
+        elif frame.name == "galactocentric":
             return p.to_units(u.kpc,u.kpc,u.kpc,\
                               u.km/u.s,u.km/u.s,u.km/u.s)
         else:
