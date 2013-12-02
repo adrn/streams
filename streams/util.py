@@ -61,3 +61,12 @@ def get_memory_usage():
     size, resident, share, text, library, data, dt = [int(i) for i in
 line.split()]
     return resident * pagesize / (1024 * 1024) # return in megs
+
+def _parse_quantity(q):
+    try:
+        val,unit = q.split()
+    except AttributeError:
+        val = q
+        unit = u.dimensionless_unscaled
+
+    return u.Quantity(float(val), unit)
