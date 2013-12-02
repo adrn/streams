@@ -124,6 +124,25 @@ class TestStreamModel(object):
         for ii in range(len(params)):
             print(model.param_idx_to_chain_idx(ii))
 
+    def test_indices2(self):
+        particles = self.particles.copy()
+
+        params = []
+        params.append(ModelParameter(target=particles,
+                                attr="_X"))
+        params.append(ModelParameter(target=self.potential.q1,
+                                attr="_value",
+                                ln_prior=LogUniformPrior(*self.potential.q1._range)))
+        params.append(ModelParameter(target=particles,
+                                attr="tub"))
+
+        model = StreamModel(self.potential, self.simulation,
+                            self.satellite, particles,
+                            parameters=params)
+
+        for ii in range(len(params)):
+            print(model.param_idx_to_chain_idx(ii))
+
     def test_potential_likelihood(self):
 
         fig = plt.figure()
