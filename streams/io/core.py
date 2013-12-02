@@ -37,121 +37,30 @@ def read_table(filename, expr=None, N=None):
 
     return _table
 
-# TODO: should be singleton...
-class SimulationData(object):
+def add_sgr_coordinates(self):
+    # TODO: this is broken
+    """ Given a table of catalog data, add columns with Sagittarius
+        Lambda and Beta coordinates.
 
-    def __init__(self, filename):
-        """ Represents data from a simulation.
+        Parameters
+        ----------
+        data : astropy.table.Table
+            Must contain ra, dec or l, b, and dist columns.
+    """
 
-            Parameters
-            ----------
-            filename : str
-                Full path to the particle snapshot.
+    try:
+        pre = coord.Galactic(data['l'],data['b'],unit=(u.deg,u.deg))
+    except KeyError:
+        pre = coord.ICRS(data['ra'],data['dec'],unit=(u.deg,u.deg))
 
-        """
+    sgr = pre.transform_to(SgrCoordinates)
+    sgr_plane_dist = np.array(data['dist']) * np.sin(sgr.Beta.radian)
 
-        if not os.path.exists(filename):
-            raise IOError("File {} does not exist!".format(filename))
-        self.filename = filename
+    Lambda = Column(sgr.Lambda.degree, name='Lambda', unit=u.degree)
+    Beta = Column(sgr.Beta.degree, name='Beta', unit=u.degree)
+    sgr_plane_D = Column(sgr_plane_dist, name='Z_sgr', unit=u.kpc)
+    data.add_column(Lambda)
+    data.add_column(Beta)
+    data.add_column(sgr_plane_D)
 
-    def satellite(self, bound_expr, frame,
-                  column_names=None, column_units=None):
-        """ Return a Particle object for the present-day position of the
-            Satellite in the specified reference frame / coordinates.
-
-            Parameters
-            ----------
-            bound_expr : str
-                numexpr expression picking out the still-bound particles.
-            frame : ReferenceFrame
-            column_names : iterable (optional)
-                A list of the column names to read from the table and put in
-                Particle.
-            column_units : iterable (optional)
-                A list of the column units.
-        """
-
-        # get the satellite position / velocity from the median of the
-        #   bound particle positions/velocities
-        tbl = read_table(self.filename, expr=bound_expr)
-
-        cols = []
-        for cname,cunit in zip(frame.coord_names,column_units):
-            col = tbl[cname].copy() * cunit
-            cols.append(col)
-
-        return Particle([np.median(c.value) for c in cols],
-                        frame=frame,
-                        units=[c.unit for c in cols],
-                        meta=dict(expr=bound_expr))
-
-    def particles(self, N=None, expr=None, frame=None,
-                  column_units=None, meta_cols=[]):
-        """ Return a Particle object with N particles selected from the
-            simulation with expression expr in the specified reference
-            frame / coordinates.
-
-            Parameters
-            ----------
-            N : int or None (optional)
-                Number of particles to return. None or 0 means 'all'
-            expr : str (optional)
-                Use numexpr to select out only rows that match criteria.
-            frame : ReferenceFrame
-            column_names : iterable (optional)
-                A list of the column names to read from the table and put in
-                Particle.
-            column_units : iterable (optional)
-                A list of the column units.
-            meta_cols : iterable (optional)
-                List of columns to add to meta data.
-        """
-
-        tbl = read_table(self.filename, expr=expr, N=N)
-        #tbl = np.genfromtxt(self.filename, names=True)
-
-        # if no column units specified, try to get them from the table
-        # TODO:
-        if column_units is None:
-           column_units = [tbl[c].unit for c in frame.coord_names]
-
-        cols = []
-        for cname,cunit in zip(frame.coord_names,column_units):
-            col = tbl[cname].copy() * cunit
-            cols.append(col)
-
-        meta = dict(expr=expr)
-        for col in meta_cols:
-            meta[col] = tbl[col].copy()
-
-        return Particle(cols,
-                        frame=frame,
-                        meta=meta)
-
-    def add_sgr_coordinates(self):
-        # TODO: this is broken
-        """ Given a table of catalog data, add columns with Sagittarius
-            Lambda and Beta coordinates.
-
-            Parameters
-            ----------
-            data : astropy.table.Table
-                Must contain ra, dec or l, b, and dist columns.
-        """
-
-        try:
-            pre = coord.Galactic(data['l'],data['b'],unit=(u.deg,u.deg))
-        except KeyError:
-            pre = coord.ICRS(data['ra'],data['dec'],unit=(u.deg,u.deg))
-
-        sgr = pre.transform_to(SgrCoordinates)
-        sgr_plane_dist = np.array(data['dist']) * np.sin(sgr.Beta.radian)
-
-        Lambda = Column(sgr.Lambda.degree, name='Lambda', unit=u.degree)
-        Beta = Column(sgr.Beta.degree, name='Beta', unit=u.degree)
-        sgr_plane_D = Column(sgr_plane_dist, name='Z_sgr', unit=u.kpc)
-        data.add_column(Lambda)
-        data.add_column(Beta)
-        data.add_column(sgr_plane_D)
-
-        return data
+    return data
