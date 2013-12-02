@@ -17,13 +17,13 @@ import triangle
 
 # Project
 from .. import usys
-from ..coordinates import _gc_to_hel, _hel_to_gc
+from ..coordinates.frame import ReferenceFrame
 
 __all__ = ["Particle"]
 
 class Particle(object):
 
-    def __init__(self, coords, names, units=None, meta=dict()):
+    def __init__(self, coords, frame, units=None, meta=dict()):
         """ Represents a dynamical particle or collection of particles.
             Particles can have associated metadata, e.g., mass or for
             a Satellite, velocity dispersion.
@@ -36,9 +36,8 @@ class Particle(object):
                 objects themselves, or an array_like object with the first
                 axis as the separate coordinate dimensions, and the units
                 parameter specifying the units along each dimension.
-            names : iterable
-                Names of each coordinate dimension. These end up being
-                attributes of the object.
+            frame : ReferenceFrame
+                The reference frame that the particles are in.
             units : iterable (optional)
                 Must be specified if q is an array_like object, otherwise this
                 is constructed from the Quantity objects in q.
@@ -47,6 +46,10 @@ class Particle(object):
         """
 
         self.ndim = len(coords)
+        if frame.ndim != self.ndim:
+            raise ValueError("ReferenceFrame must have same dimensions as "
+                             "coordinates ({} vs. {})".format(frame.ndim,
+                                                              self.ndim))
 
         _X = None
         _repr_units = []
@@ -73,8 +76,10 @@ class Particle(object):
         self._repr_units = _repr_units
         self._X = _X.T.copy()
 
-        #if self._X.ndim > 2:
-        #    raise ValueError("Particle coordinates must be 1D.")
+        # validate reference frame
+        if not isinstance(frame, ReferenceFrame):
+            raise TypeError("frame must be a valid ReferenceFrame object.")
+        self.frame = frame
 
         # find units in usys that match the physical types of each units
         self._internal_units = []
@@ -84,14 +89,13 @@ class Particle(object):
         if len(names) != self.ndim:
             raise ValueError("Must specify coordinate name for each "
                              "dimension.")
-        self.names = names
         self.meta = meta
         for k,v in self.meta.items():
             setattr(self,k,v)
 
     def __repr__(self):
-        return "<Particle N={0}, coords={1}>".format(self.nparticles, \
-                                                     self.names)
+        return "<Particle N={0}, frame={1}>".format(self.nparticles, \
+                                                    self.frame)
 
     def copy(self):
         """ Return a copy of the current instance. I'm just a copy
@@ -107,7 +111,7 @@ class Particle(object):
 
         else:
             try:
-                ii = self.names.index(slc)
+                ii = self.frame.coord_names.index(slc)
             except ValueError:
                 raise AttributeError("Invalid coordinate name {}".format(slc))
 
@@ -132,31 +136,7 @@ class Particle(object):
         except IndexError:
             return 1
 
-    def plot(self, fig=None, labels=None, \
-             plot_kwargs=dict(), hist_kwargs=dict(),
-             **kwargs):
-        """ Make a corner plot showing all dimensions.
-
-        """
-
-        if labels is None:
-            labels = ["{0} [{1}]".format(n,uu) \
-                        for n,uu in zip(self.names, self._repr_units)]
-
-        plot_kwargs["alpha"] = plot_kwargs.get("alpha", 0.75)
-
-        fig = triangle.corner(self._repr_X,
-                              labels=labels,
-                              plot_contours=False,
-                              plot_datapoints=True,
-                              fig=fig,
-                              plot_kwargs=plot_kwargs,
-                              hist_kwargs=hist_kwargs,
-                              **kwargs)
-
-        return fig
-
-    def to_frame(self, frame_name):
+    def to_frame(self, frame):
         """ Transform coordinates and reference frame.
 
             TODO: With astropy 0.4 (or 1.0) this will need to be
@@ -164,38 +144,32 @@ class Particle(object):
 
             Parameters
             ----------
-            frame_name : str
-                Can be 'heliocentric' or 'galactocentric'.
+            frame : ReferenceFrame
         """
 
-        # TODO: need to make these units lists from default GC and Helio.
-        #       units defined in top level __init__ (e.g., usys)
-        if frame_name.lower() == 'heliocentric':
-            _O = _gc_to_hel(self._X)
-            units = [u.rad,u.rad,u.kpc,u.rad/u.Myr,u.rad/u.Myr,u.kpc/u.Myr]
-            p = Particle(_O.T, units=units,
-                         names=("l","b","D","mul","mub","vr"),
-                         meta=self.meta)
+        if self.frame == frame:
+            return self.copy()
+
+        new_X = self.frame.to(frame, self._X)
+        p = Particle(new_X.T,
+                     frame=frame,
+                     units=frame.units,
+                     meta=self.meta)
+
+        if frame.name == "heliocentric":
             return p.to_units(u.deg,u.deg,u.kpc,\
                               u.mas/u.yr,u.mas/u.yr,u.km/u.s)
-
-        elif frame_name.lower() == 'galactocentric':
-            _X = _hel_to_gc(self._X)
-            units = [u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr]
-            p = Particle(_X.T, units=units,
-                         names=("x","y","z","vx","vy","vz"),
-                         meta=self.meta)
+        elif frame_name == "galactocentric":
             return p.to_units(u.kpc,u.kpc,u.kpc,\
                               u.km/u.s,u.km/u.s,u.km/u.s)
-
         else:
-            raise ValueError("Invalid reference frame {}".format(frame_name))
+            return p
 
     def decompose(self, units):
         """ Decompose each coordinate axis to the given unit system """
 
-        q = [self[n].decompose(units) for n in self.names]
-        return Particle(q, self.names, meta=self.meta)
+        q = [self[n].decompose(units) for n in self.frame.coord_names]
+        return Particle(q, frame=self.frame, meta=self.meta)
 
     def to_units(self, *units):
         """ Convert each coordinate axis to corresponding unit in given
@@ -209,8 +183,9 @@ class Particle(object):
             raise ValueError("Must specify a unit for each dimension ({})."\
                              .format(self.ndim))
 
-        q = [self[n].to(units[ii]) for ii,n in enumerate(self.names)]
-        return Particle(q, self.names, meta=self.meta)
+        q = [self[n].to(units[ii]) \
+                for ii,n in enumerate(self.frame.coord_names)]
+        return Particle(q, frame=self.frame, meta=self.meta)
 
     def observe(self, errors):
         """ Assuming the current Particle object is in heliocentric
@@ -219,8 +194,11 @@ class Particle(object):
             should have keys == particles.names.
         """
 
+        if frame.name != "heliocentric":
+            raise ValueError("Particle must be in heliocentric frame.")
+
         new_qs = []
-        for name in self.names:
+        for name in self.frame.coord_names:
             new_q = np.random.normal(self[name].value,
                                      errors[name].to(self[name].unit).value)
             new_q = new_q * self[name].unit
@@ -228,4 +206,27 @@ class Particle(object):
 
         meta = self.meta.copy()
         meta["errors"] = errors
-        return Particle(new_qs, names=self.names, meta=meta)
+        return Particle(new_qs, frame=self.frame, meta=meta)
+
+    def plot(self, fig=None, labels=None, \
+             plot_kwargs=dict(), hist_kwargs=dict(),
+             **kwargs):
+        """ Make a corner plot showing all dimensions. """
+
+        if labels is None:
+            args = zip(self.frame.coord_names, self._repr_units)
+            labels = ["{0} [{1}]".format(n,uu) \
+                        for n,uu in args]
+
+        plot_kwargs["alpha"] = plot_kwargs.get("alpha", 0.75)
+
+        fig = triangle.corner(self._repr_X,
+                              labels=labels,
+                              plot_contours=False,
+                              plot_datapoints=True,
+                              fig=fig,
+                              plot_kwargs=plot_kwargs,
+                              hist_kwargs=hist_kwargs,
+                              **kwargs)
+
+        return fig
