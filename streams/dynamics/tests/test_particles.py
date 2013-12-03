@@ -131,6 +131,7 @@ def test_to_frame():
     p = Particle(lm10_X, frame=galactocentric,
                 units=[u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr])
 
+    plot_kwargs = dict()
     fig = p.plot(plot_kwargs=plot_kwargs)
     fig.savefig(os.path.join(plot_path, "lm10_particle_original.png"))
 
