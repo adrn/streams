@@ -68,7 +68,7 @@ class SgrSimulation(object):
         tbl = read_table(self.particle_filename, N=N, expr=expr)
         return tbl
 
-    def particles(self, N=None, expr=None, meta_cols=["tub"]):
+    def particles(self, N=None, expr=None, meta_cols=[]):
         """ Return a Particle object with N particles selected from the
             simulation with expression expr.
 
@@ -88,6 +88,7 @@ class SgrSimulation(object):
             q.append(np.array(tbl[colname])*unit)
 
         meta = dict(expr=expr)
+        meta["tub"] = (np.array(tbl["tub"])*self._units["time"]).decompose(usys).value
         for col in meta_cols:
             meta[col] = np.array(tbl[col])
 
