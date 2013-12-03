@@ -110,7 +110,7 @@ class SgrSimulation(object):
         meta = dict(expr=expr)
         v_disp = np.sqrt(np.sum(np.var(q[3:],axis=1)))
         meta["v_disp"] = (v_disp*self.particle_units[-1]).decompose(usys).value
-        meta["mass"] = self.mass
+        meta["m"] = self.mass
 
         q = np.median(q, axis=1)
         p = Particle(q, frame=galactocentric,
