@@ -36,11 +36,13 @@ except ImportError:
 
 # Project
 from streams import usys
+from streams.coordinates.frame import heliocentric, galactocentric
 from streams.inference import (ModelParameter, StreamModel,
                                LogNormalPrior, LogUniformPrior)
 import streams.io as s_io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
+from streams.util import _parse_quantity
 
 global pool
 pool = None
@@ -68,15 +70,6 @@ def make_path(config):
         os.mkdir(path)
 
     return path
-
-def _parse_quantity(q):
-    try:
-        val,unit = q.split()
-    except AttributeError:
-        val = q
-        unit = u.dimensionless_unscaled
-
-    return u.Quantity(float(val), unit)
 
 def main(config_file, job_name=None):
     """ TODO: """
@@ -133,49 +126,24 @@ def main(config_file, job_name=None):
     #
     # read the simulation data from the specified class
     np.random.seed(config["seed"])
-    Simulation = getattr(s_io, config["simulation"]["class_name"])
-    simulation = Simulation(**config["simulation"].get("kwargs", dict()))
+    Simulation = getattr(s_io, config["data"]["class_name"])
+    simulation = Simulation(**config["data"].get("kwargs", dict()))
 
     # read particles from the simulation class
     particles = simulation.particles(N=config["particles"]["N"],
                                 expr=config["particles"]["selection_expr"])
-    particles = particles.to_frame('heliocentric')
+    particles = particles.to_frame(heliocentric)
 
     logger.debug("Read in {} particles with expr='{}'"\
                  .format(particles.nparticles, particles.expr))
 
     # read the satellite position
     satellite = simulation.satellite()
-    satellite = satellite.to_frame('heliocentric')
+    satellite = satellite.to_frame(heliocentric)
     logger.debug("Read in present position of satellite {}..."\
                  .format(satellite))
-    simulation._table = None # HACK
-    # Note: now particles and satellite are in heliocentric coordinates!
 
     gc.collect()
-
-    ##########################################################################
-    # Observational errors
-    #
-    # first get the Gaia + Spitzer errors as default
-    particle_errors = gaia_spitzer_errors(particles)
-
-    # now get errors specified by user in the yml configuration
-    factor = config["errors"].get("factor", 1.)
-    for k,v in config["errors"].items():
-        if not particle_errors.has_key(k):
-            logger.debug("Skipping error key {} because not found "
-                         "in particle_errors...".format(k))
-            continue
-
-        err = _parse_quantity(v)
-        logger.debug("Dimension {}, error {}...".format(k, err))
-
-        if err.unit == u.dimensionless_unscaled:
-            # fractional error
-            particle_errors[k] = err.value * particles[k]
-        else:
-            particle_errors[k] = np.ones_like(particle_errors[k].value) * err
 
     ##########################################################################
     # Setting up the Model
@@ -183,42 +151,42 @@ def main(config_file, job_name=None):
     model_parameters = []
 
     # Potential parameters
-    potential_params = config["potential"].get("parameters", dict())
-    for name,meta in potential_params.items():
-        p = getattr(potential, name)
-
-        if meta.has_key("range"):
-            # TODO: fix when astropy fixed...
-            #lo,hi = map(u.Quantity, meta["range"])
-            lo = _parse_quantity(meta["range"][0])
-            hi = _parse_quantity(meta["range"][1])
-            prior = LogUniformPrior(lo.decompose(usys).value,
-                                    hi.decompose(usys).value)
-        else:
-            prior = LogPrior()
-
-        model_parameters.append(ModelParameter(target=p,
-                                               attr="_value",
-                                               ln_prior=prior))
+    potential_params = config["model_parameters"].get("potential", dict())
+    for name,kwargs in potential_params.items():
+        model_p = potential.model_parameter(name, **kwargs)
+        model_parameters.append(model_p)
 
     # Particle parameters
-    particle_params = config["particles"].get("parameters", [])
+    if config["model_parameters"].has_key("particles"):
+        # Observational errors
+        # first get the Gaia + Spitzer errors as default
+        particle_errors = gaia_spitzer_errors(particles)
 
-    # time unbound / escape time (tub)
-    if "tub" in particle_params:
-        lo = [simulation.t2] * particles.nparticles
-        hi = [simulation.t1] * particles.nparticles
-        prior = LogUniformPrior(lo, hi)
-        model_parameters.append(ModelParameter(target=particles,
-                                               attr="tub",
-                                               ln_prior=prior))
+        particle_config = config["model_parameters"]["particles"]
+        errors = particle_config["_X"].get("errors",dict())
 
-    if "_X" in particle_params:
+        # now get errors specified by user in the yml configuration
+        factor = errors.get("factor", 1.)
+        for k,v in errors.items():
+            if not particle_errors.has_key(k):
+                logger.debug("Skipping error key {} because not found "
+                             "in particle_errors...".format(k))
+                continue
+
+            err = _parse_quantity(v)
+            logger.debug("Dimension {}, error {}...".format(k, err))
+
+            if err.unit == u.dimensionless_unscaled:
+                # fractional error
+                particle_errors[k] = err.value * particles[k]
+            else:
+                particle_errors[k] = np.ones_like(particle_errors[k].value) * err
+
         o_particles = particles.observe(particle_errors)
         # now has o_particles.errors["D"] etc.
 
         sigmas = np.array([o_particles.errors[n].decompose(usys).value \
-                    for n in o_particles.names]).T
+                    for n in o_particles.frame.coord_names]).T
         covs = [np.diag(s**2) for s in sigmas]
 
         prior = LogNormalPrior(np.array(o_particles._X),
@@ -226,50 +194,59 @@ def main(config_file, job_name=None):
         p = ModelParameter(target=o_particles,
                            attr="_X",
                            ln_prior=prior)
-        #p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
+
+        # time unbound / escape time (tub)
+        if "tub" in particle_config.keys():
+            lo = [simulation.t2] * particles.nparticles
+            hi = [simulation.t1] * particles.nparticles
+            prior = LogUniformPrior(lo, hi)
+            model_parameters.append(ModelParameter(target=particles,
+                                                   attr="tub",
+                                                   ln_prior=prior))
     else:
         o_particles = particles
 
     # Satellite parameters
-    satellite_config = config.get("satellite", dict())
-    if satellite_config is None:
-        satellite_config = dict()
-    satellite_params = satellite_config.get("parameters", [])
-    no_progenitor = satellite_config.get("no_progenitor", False)
+    if config["model_parameters"].has_key("satellite"):
+        satellite_config = config["model_parameters"]["satellite"]
+        errors = satellite_config["_X"].get("errors",dict())
 
-    # true position of the satellite
-    if "_X" in satellite_params:
+        # first get the Gaia + Spitzer errors as default
+        satellite_errors = gaia_spitzer_errors(satellite)
+
+        # now get errors specified by user in the yml configuration
+        factor = errors.get("factor", 1.)
+        for k,v in errors.items():
+            if not satellite_errors.has_key(k):
+                logger.debug("Skipping error key {} because not found "
+                             "in satellite_errors...".format(k))
+                continue
+
+            err = _parse_quantity(v)
+            logger.debug("Dimension {}, error {}...".format(k, err))
+
+            if err.unit == u.dimensionless_unscaled:
+                # fractional error
+                satellite_errors[k] = err.value * satellite[k]
+            else:
+                satellite_errors[k] = np.ones_like(satellite_errors[k].value) * err
+
         # satellite has different errors from individual stars...
         # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
-        satellite_errors = dict(l=10*u.milliarcsecond,
-                                b=10*u.milliarcsecond,
-                                D=1.2*u.kpc,
-                                mul=1.2*u.mas/u.yr,
-                                mub=1.2*u.mas/u.yr,
-                                vr=5*u.km/u.s)
+
         o_satellite = satellite.observe(satellite_errors)
+        sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
+                        for n in o_satellite.frame.coord_names])
+        covs = [np.diag(s**2) for s in sigmas[np.newaxis]]
 
-        if no_progenitor:
-            los = [-180*u.deg, -90*u.deg, 10.*u.kpc,
-                   -5.*u.mas/u.yr, -5.*u.mas/u.yr, -400.*u.km/u.s]
-            los = np.array([l.decompose(usys).value for l in los])
-            his = [180*u.deg, 90*u.deg, 100.*u.kpc,
-                   5.*u.mas/u.yr, 5.*u.mas/u.yr, 400.*u.km/u.s]
-            his = np.array([l.decompose(usys).value for l in his])
-            prior = LogUniformPrior(los, his)
-        else:
-            sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
-                        for n in o_satellite.names])[np.newaxis]
-            covs = [np.diag(s**2) for s in sigmas]
-
-            prior = LogNormalPrior(np.array(o_satellite._X),
-                                   cov=np.array(covs))
+        prior = LogNormalPrior(np.array(o_satellite._X),
+                               cov=np.array(covs))
         p = ModelParameter(target=o_satellite,
                            attr="_X",
                            ln_prior=prior)
-        #p.ln_prior = _null # THIS IS A HACK?
         model_parameters.append(p)
+
     else:
         o_satellite = satellite
 
@@ -403,8 +380,6 @@ def main(config_file, job_name=None):
                                      .format(ii)))
             del fig
 
-        return
-
         # ---------
         # Now make 6x6 corner plot for satellite
         start = Npp + Nparticles + 6*Nparticles
@@ -437,15 +412,6 @@ def main(config_file, job_name=None):
 
         sys.exit(0)
         return
-
-        # fig = plt.figure(figsize=(6,4))
-        # ax = fig.add_subplot(111)
-        # for jj in range(Npp) + [10]:
-        #     ax.cla()
-        #     for ii in range(Nwalkers):
-        #         ax.plot(sampler.chain[ii,:,jj], drawstyle='step')
-
-        #     fig.savefig(os.path.join(path, "{0}.png".format(jj)))
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

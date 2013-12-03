@@ -1,31 +1,21 @@
 # general
 seed: 42
 script: new_infer_potential.py
-name: with_progenitor_perfect
+name: adrn
 
 # threading
-mpi: true
+mpi: false
+#threads: 2
 
 # plots / output
-make_plots: true
-#output_path: /vega/astro/users/amp2217/output_data # yeti
-output_path: /hpc/astro/users/amp2217/output_data # hotfoot
-overwrite: true
+make_plots: false
+output_path: /tmp
+#output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
 
 potential:
     class_name: LawMajewski2010
-    parameters:
-        q1:
-            range: [0.7, 2.]
-        qz:
-            range: [0.7, 2.]
-        phi:
-            range: [80. degree, 120. degree]
-        v_halo:
-            range: [100 km/s, 150 km/s]
 
-simulation:
-    # can be sgr, lm10, pal5
+data:
     class_name: SgrSimulation
     kwargs:
         mass: 2.5e8 # this is specific to sgr
@@ -33,26 +23,23 @@ simulation:
 particles:
     N: 25
     selection_expr: tub != 0
-    parameters:
-        - tub
-        - _X
 
-satellite:
-    name: Sgr
-    parameters:
-        - _X
-    #no_progenitor: false
+model_parameters:
+    potential:
+        q1:
+            a: 0.7
+            b: 2.
+        qz:
+            a: 0.7
+            b: 2.
+        phi:
+            a: 80. degree
+            b: 120. degree
+        v_halo:
+            a: 100 km/s
+            b: 150 km/s
 
 # emcee
-walkers: 512 # or auto (2 x number of parameters)
+walkers: 16 # or auto (2 x number of parameters)
 burn_in: 0
-steps: 200
-
-# observational errors
-# below: with no units specified, it's a fractional error
-errors:
-    factor: 1. # multplies all errors
-    vr: 10. km/s
-    # mu_l: 1. milliarcsecond/year
-    # mu_b: 1. milliarcsecond/year
-    D: 0.02
+steps: 5
