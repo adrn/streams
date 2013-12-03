@@ -353,6 +353,8 @@ def main(config_file, job_name=None):
                     hist_kwargs=dict(color='k'))
         fig.savefig(os.path.join(path, "potential_corner.png"))
 
+        sys.exit(0)
+
         # ---------
         # Now make 7x7 corner plots for each particle
         Nparticles = o_particles.nparticles
