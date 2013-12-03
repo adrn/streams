@@ -60,7 +60,7 @@ class ParticleIntegrator(LeapfrogIntegrator):
             X = np.vstack((r[:,ix:ix+p.nparticles].T,
                            v[:,ix:ix+p.nparticles].T))
             o = Orbit(t, X,
-                      names=p.names,
+                      frame=p.frame,
                       units=p._internal_units,
                       meta=p.meta)
             ix += p.nparticles
