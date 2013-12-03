@@ -60,7 +60,7 @@ class SgrSimulation(object):
         self.particle_units = [self._units["length"]]*3 + \
                               [self._units["length"]/self._units["time"]]*3
 
-        self.mass = float(mass)
+        self.mass = mass
         self.t1 = (4.189546E+02 * self._units["time"]).decompose(usys).value
         self.t2 = 0
 
@@ -110,10 +110,23 @@ class SgrSimulation(object):
         meta = dict(expr=expr)
         v_disp = np.sqrt(np.sum(np.var(q[3:],axis=1)))
         meta["v_disp"] = (v_disp*self.particle_units[-1]).decompose(usys).value
-        meta["m"] = self.mass
+        meta["m"] = float(self.mass)
 
         q = np.median(q, axis=1)
         p = Particle(q, frame=galactocentric,
                      units=self.particle_units,
                      meta=meta)
         return p.decompose(usys)
+
+    @property
+    def satellite_orbit(self):
+        """ TODO: """
+
+        orbit_table = np.genfromtxt(os.path.join(_path,self.mass,"SCFCEN"), names=True)
+
+        q = []
+        for colname,unit in zip(self.particle_columns, self.particle_units):
+            q.append(np.array(tbl[colname])*unit)
+
+        return Orbit(orbit_table["t"]*self._units["time"], q,
+                     frame=galactocentric)
