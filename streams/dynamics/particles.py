@@ -121,12 +121,12 @@ class Particle(object):
     def _repr_X(self):
         """ Return the 6D array of all coordinates in the repr units """
 
-        _repr_X = []
+        _repr_X = np.zeros_like(self._X)
         for ii in range(self.ndim):
-            _repr_X.append((self._X[...,ii]*self._internal_units[ii])\
-                               .to(self._repr_units[ii]).value.tolist())
+            _repr_X[...,ii] = (self._X[...,ii]*self._internal_units[ii])\
+                               .to(self._repr_units[ii]).value
 
-        return np.array(_repr_X).T
+        return _repr_X
 
     @property
     def nparticles(self):
