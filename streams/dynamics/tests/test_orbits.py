@@ -64,8 +64,8 @@ def test_repr_X():
     o = Orbit(t, (x, vx), frame=f1,
                           units=[u.kpc, u.km/u.s])
 
-    assert np.allclose(o._repr_X[...,0], x)
-    assert np.allclose(o._repr_X[...,1], vx)
+    assert np.allclose(o._repr_X[...,0], x.T)
+    assert np.allclose(o._repr_X[...,1], vx.T)
 
 def test_plot():
     Ntime = 100
