@@ -39,24 +39,33 @@ lm10_X =np.array([[-24.7335,-9.35652,17.7755,-0.266238,-0.013697,-0.00862857],
 
 f1 = ReferenceFrame(name="test",
                     coord_names=("x","vx"),
-                    units=[u.kpc, u.km/u.s])
+                    units=[u.km,u.km/u.s])
 
 f2 = ReferenceFrame(name="cartesian",
                     coord_names=("x","y","z"),
-                    units=[u.kpc, u.kpc, u.kpc])
+                    units=[u.km,u.km,u.km/u.s])
 
 def test_init():
 
+    # create with two separate arrays
     x = np.random.random(size=100)
     vx = np.random.random(size=100)
-    p = Particle((x, vx), frame=f1)
+    p = Particle((x, vx), frame=f1, units=f1.units)
     p = Particle((x*u.kpc, vx*u.km/u.s), frame=f1)
+
     assert np.all(p["x"].value == x)
     assert np.allclose(p["vx"].value, vx, rtol=1E-15, atol=1E-15)
 
+    # create with one array
     x_vx = np.random.random(size=(2,100))
-    p = Particle(x_vx, frame=f1)
+    p = Particle(x_vx, frame=f1, units=f1.units)
 
+    # create with numbers
+    x_vx = [1., 5.]
+    p = Particle(x_vx, frame=f1, units=f1.units)
+    assert p._X.ndim == 2
+
+    # make a 3D array, make sure units are correct
     xyz = np.random.random(size=(3,100))*u.km
     p = Particle(xyz, frame=f2)
     assert p["x"].unit == u.km
