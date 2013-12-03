@@ -1,16 +1,17 @@
 # general
 seed: 42
 script: new_infer_potential.py
-name: adrn
+name: just_potential
 
 # threading
-mpi: false
+mpi: True
 #threads: 2
 
 # plots / output
-make_plots: false
-output_path: /tmp
-#output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
+make_plots: True
+#output_path: /tmp
+output_path: /vega/astro/users/amp2217/output_data # yeti
+#overwrite: True
 
 potential:
     class_name: LawMajewski2010
@@ -40,6 +41,6 @@ model_parameters:
             b: 150 km/s
 
 # emcee
-walkers: 16 # or auto (2 x number of parameters)
-burn_in: 0
-steps: 5
+walkers: 256 # or auto (2 x number of parameters)
+burn_in: 200
+steps: 2000
