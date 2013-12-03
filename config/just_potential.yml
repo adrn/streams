@@ -1,6 +1,6 @@
 # general
 seed: 42
-script: new_infer_potential.py
+script: infer_potential.py
 name: just_potential
 
 # threading
@@ -10,8 +10,9 @@ mpi: True
 # plots / output
 make_plots: True
 #output_path: /tmp
+#output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
 output_path: /vega/astro/users/amp2217/output_data # yeti
-#overwrite: True
+overwrite: True
 
 potential:
     class_name: LawMajewski2010
@@ -28,19 +29,19 @@ particles:
 model_parameters:
     potential:
         q1:
-            a: 0.7
-            b: 2.
+            a: 1.1
+            b: 1.5
         qz:
-            a: 0.7
-            b: 2.
+            a: 1.1
+            b: 1.5
         phi:
-            a: 80. degree
-            b: 120. degree
+            a: 85. degree
+            b: 110. degree
         v_halo:
             a: 100 km/s
             b: 150 km/s
 
 # emcee
-walkers: 256 # or auto (2 x number of parameters)
-burn_in: 200
-steps: 2000
+walkers: 128 # or auto (2 x number of parameters)
+burn_in: 0
+steps: 100
