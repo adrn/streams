@@ -21,7 +21,7 @@ from astropy.constants import G
 
 # Project
 from .. import usys
-from ..dynamics import Particle
+from ..dynamics import Particle, Orbit
 from .core import read_table
 from ..util import project_root
 from ..coordinates.frame import galactocentric
@@ -126,7 +126,7 @@ class SgrSimulation(object):
 
         q = []
         for colname,unit in zip(self.particle_columns, self.particle_units):
-            q.append(np.array(tbl[colname])*unit)
+            q.append(np.array(orbit_table[colname])[np.newaxis]*unit)
 
         return Orbit(orbit_table["t"]*self._units["time"], q,
                      frame=galactocentric)
