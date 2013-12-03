@@ -33,8 +33,8 @@ if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
 np.random.seed(52)
-Nparticles = 2
-colors = ["#F1A340", "#998EC3", "#67A9CF"]
+Nparticles = 4
+colors = ["#F1A340", "#998EC3", "#67A9CF", "#fff000"]
 dt = -1.
 
 true_potential = LawMajewski2010()
@@ -49,6 +49,7 @@ def orbits_from_potential(potential):
     pi = ParticleIntegrator((particles,satellite), potential,
                             args=(Nparticles+1, acc))
     return pi.run(t1=simulation.t1, t2=simulation.t2, dt=dt)
+
 
 particle_orbit,satellite_orbit = orbits_from_potential(true_potential)
 
@@ -70,8 +71,8 @@ def test_orbits():
     sgr_fig.savefig(os.path.join(plot_path, "sgr_orbit.png"))
 
     for ii in range(Nparticles):
-        x = particle_orbit["x"][ii].to(u.kpc).value
-        z = particle_orbit["z"][ii].to(u.kpc).value
+        x = particle_orbit["x"][:,ii].to(u.kpc).value
+        z = particle_orbit["z"][:,ii].to(u.kpc).value
         ax.plot(x, z, color=colors[ii], alpha=0.75)
 
     fig.savefig(os.path.join(plot_path, "orbits.png"))
@@ -100,11 +101,28 @@ def test_dps():
 
 def test_likelihood_shape():
 
-    qs = np.linspace(1.,1.5,25)
+    this_plot_path = os.path.join(plot_path, "likelihood_shape")
+    if not os.path.exists(this_plot_path):
+        os.makedirs(this_plot_path)
+
+    np.random.seed(52)
+    Nparticles = 10
+    _particles = simulation.particles(N=Nparticles,
+                                     expr="tub!=0")
+    _satellite = simulation.satellite()
+
+    qs = np.linspace(0.9,1.1,45)*true_potential.qz._truth
     Ls = []
-    for qz in qs:
+    for ii,qz in enumerate(qs):
         potential = LawMajewski2010(qz=qz)
-        particle_orbit,satellite_orbit = orbits_from_potential(potential)
+
+        acc = np.zeros((Nparticles+1,3))
+        particles = _particles.copy()
+        satellite = _satellite.copy()
+        pi = ParticleIntegrator((particles,satellite), potential,
+                                args=(Nparticles+1, acc))
+        particle_orbit,satellite_orbit = pi.run(t1=simulation.t1, t2=simulation.t2, dt=dt)
+
         sat_var = np.zeros((len(particle_orbit.t),6))
         sat_var[:,:3] = potential._tidal_radius(satellite.m,
                                                 satellite_orbit._X[...,:3])*1.26
@@ -114,10 +132,20 @@ def test_likelihood_shape():
         diff = (particle_orbit._X - satellite_orbit._X)
         D_ps = np.sqrt(np.sum(diff**2/cov, axis=-1))
 
+        if ii % 5 == 0:
+            plt.clf()
+            for ii in range(particles.nparticles):
+                plt.plot(satellite_orbit.t.value, D_ps[:,ii])
+            plt.ylim(0.,2.)
+            plt.title("Num. min(D_ps) < 1.4: {}".format(sum(np.min(D_ps,axis=0) < 1.4)))
+            plt.savefig(os.path.join(this_plot_path, "qz{}.png".format(qz)))
+
         t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
                             for tub in particles.tub], dtype=int)
 
         Ls.append(np.sum(D_ps[t_idx]))
 
+    plt.clf()
     plt.plot(qs,Ls)
-    plt.savefig(os.path.join(plot_path, "really_stupid_test.png"))
+    plt.axvline(potential.qz._truth)
+    plt.savefig(os.path.join(this_plot_path, "L_vs_qz.png"))
