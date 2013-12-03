@@ -126,7 +126,7 @@ class SgrSimulation(object):
 
         q = []
         for colname,unit in zip(self.particle_columns, self.particle_units):
-            q.append(np.array(orbit_table[colname])[np.newaxis]*unit)
+            q.append(np.array(orbit_table[colname])[:,np.newaxis]*unit)
 
         return Orbit(orbit_table["t"]*self._units["time"], q,
                      frame=galactocentric)
