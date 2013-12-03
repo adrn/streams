@@ -308,3 +308,59 @@ class TestStreamModel(object):
                             parameters=params)
 
         fnpickle(model, os.path.join(self.plot_path, "test.pickle"))
+
+    def test_time_likelihood(self):
+        import time
+        potential = LawMajewski2010()
+
+        particles = self.particles.copy()
+        satellite = self.satellite.copy()
+
+        p = potential.q1
+
+        params = []
+        params.append(ModelParameter(target=p,
+                                attr="_value",
+                                ln_prior=LogUniformPrior(*p._range)))
+
+        model = StreamModel(potential, self.simulation,
+                            satellite, particles,
+                            parameters=params)
+
+        N = 10
+        a = time.time()
+        for ii in range(N):
+            model([1.5])
+
+        print("{} sec. per likelihood call".format((time.time()-a)/float(N)))
+
+    def test_time_sampler(self):
+        import time, emcee
+        potential = LawMajewski2010()
+
+        particles = self.particles.copy()
+        satellite = self.satellite.copy()
+
+        p = potential.q1
+
+        params = []
+        params.append(ModelParameter(target=p,
+                                attr="_value",
+                                ln_prior=LogUniformPrior(*p._range)))
+
+        model = StreamModel(potential, self.simulation,
+                            satellite, particles,
+                            parameters=params)
+
+        Nwalkers = 8
+        Nsteps = 10
+        p0 = np.random.random(size=Nwalkers)*2
+        p0 = p0.reshape(Nwalkers,1)
+
+        a = time.time()
+        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model)
+        pos, xx, yy = sampler.run_mcmc(p0, Nsteps)
+        b = time.time()
+
+        print("{} sec. for sampler test".format(b-a))
+        print("{} sec. per call".format( (b-a)/Nsteps/float(Nwalkers)))
