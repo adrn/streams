@@ -21,7 +21,7 @@ __all__ = ["Orbit"]
 
 class Orbit(Particle):
 
-    def __init__(self, t, coords, names, units=None, meta=dict()):
+    def __init__(self, t, coords, frame, units=None, meta=dict()):
         """ Represents a particle orbit or collection of orbits.
 
             Parameters
@@ -35,9 +35,8 @@ class Orbit(Particle):
                 objects themselves, or an array_like object with the first
                 axis as the separate coordinate dimensions, and the units
                 parameter specifying the units along each dimension.
-            names : iterable
-                Names of each coordinate dimension. These end up being
-                attributes of the object.
+            frame : ReferenceFrame
+                The reference frame that the particles are in.
             units : iterable (optional)
                 Must be specified if q is an array_like object, otherwise this
                 is constructed from the Quantity objects in q.
@@ -45,7 +44,7 @@ class Orbit(Particle):
                 Any additional metadata.
         """
 
-        super(Orbit, self).__init__(coords, names, units=units, meta=meta)
+        super(Orbit, self).__init__(coords, frame, units=units, meta=meta)
         if not hasattr(t, "unit"):
             raise TypeError("'t' must be a quantity-like object with a .unit"
                             " attribute")
@@ -59,12 +58,16 @@ class Orbit(Particle):
             raise ValueError("Shape of t ({}) should match last axis of each "             "coordinate ({})".format(self.t.shape[0], \
                                                       self._X.shape[0]))
 
+    @property
+    def nparticles(self):
+        return self._X.shape[1]
+
     def plot(self, fig=None, labels=None, **kwargs):
         """ Make a corner plot showing all dimensions. """
 
         if labels is None:
             labels = ["{0} [{1}]".format(n,uu) \
-                        for n,uu in zip(self.names, self._repr_units)]
+                        for n,uu in zip(self.frame.coord_names, self._repr_units)]
 
         if fig is not None:
             kwargs["fig"] = fig
@@ -72,13 +75,13 @@ class Orbit(Particle):
         for ii in range(self.nparticles):
             # TODO: each should get a different color?
             if kwargs.get("fig", None) is None:
-                kwargs["fig"] = triangle.corner(self._repr_X[:,ii].T,
+                kwargs["fig"] = triangle.corner(self._repr_X[:,ii],
                                          labels=labels,
                                          plot_contours=False,
                                          plot_datapoints=True,
                                          **kwargs)
             else:
-                kwargs["fig"] = triangle.corner(self._repr_X[:,ii].T,
+                kwargs["fig"] = triangle.corner(self._repr_X[:,ii],
                                     labels=labels,
                                     plot_contours=False,
                                     plot_datapoints=True,
