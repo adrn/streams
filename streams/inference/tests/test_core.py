@@ -38,7 +38,7 @@ class TestStreamModel(object):
         from streams.io import SgrSimulation
 
         np.random.seed(52)
-        self.Nparticles = 10
+        self.Nparticles = 25
         self.simulation = SgrSimulation(mass="2.5e8")
 
         self.particles = self.simulation.particles(N=self.Nparticles,
@@ -290,7 +290,7 @@ class TestStreamModel(object):
                                      ln_prior=LogPrior()))
 
         sigmas = np.array([particles.errors[n].decompose(usys).value \
-                    for n in particles.names]).T
+                    for n in particles.frame.coord_names]).T
         covs = [np.diag(s**2) for s in sigmas]
 
         prior = LogNormalPrior(np.array(particles._X),
