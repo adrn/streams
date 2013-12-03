@@ -47,20 +47,15 @@ class Particle(object):
 
         self.ndim = len(coords)
         if frame.ndim != self.ndim:
-            raise ValueError("ReferenceFrame must have same dimensions as "
-                             "coordinates ({} vs. {})".format(frame.ndim,
-                                                              self.ndim))
+            raise ValueError("ReferenceFrame must have same dimensions as coordinates "
+                             "({} vs. {})".format(frame.ndim, self.ndim))
 
-        if units is None:
-            units = frame.units
-
-        _X = None
-        _repr_units = []
+        # now build an internal contiguous numpy array to store the coordinate
+        #   data in the system 'usys'
+        self._repr_units = []
         for ii in range(self.ndim):
-            q = coords[ii]
-
-            if _X is None:
-                _X = np.zeros((self.ndim,) + q.shape)
+            # make sure this dimension's data is at least 1D
+            q = np.atleast_1d(coords[ii])
 
             if hasattr(q, "unit") and q.unit != u.dimensionless_unscaled:
                 unit = q.unit
@@ -69,15 +64,18 @@ class Particle(object):
                 try:
                     unit = units[ii]
                 except TypeError:
-                    raise ValueError("Must specify units for each"
-                                     "coordinate dimension.")
+                    raise ValueError("Must specify units for each coordinate dimension "
+                                     "if the data are not Quantities.")
                 value = (q*unit).decompose(usys).value
 
-            _repr_units.append(unit)
-            _X[ii] = value
+            # preserve the input units to display with
+            self._repr_units.append(unit)
 
-        self._repr_units = _repr_units
-        self._X = _X.T.copy()
+            try:
+                self._X[...,ii] = value
+            except AttributeError:
+                self._X = np.zeros(q.shape + (self.ndim,))
+                self._X[...,ii] = value
 
         # validate reference frame
         if not isinstance(frame, ReferenceFrame):
@@ -89,24 +87,20 @@ class Particle(object):
         for unit in self._repr_units:
             self._internal_units.append((1*unit).decompose(usys).unit)
 
-        self.meta = meta
+        self.meta = meta.copy()
         for k,v in self.meta.items():
             setattr(self,k,v)
 
     def __repr__(self):
-        return "<Particle N={0}, frame={1}>".format(self.nparticles, \
-                                                    self.frame)
+        return "<Particle N={0}, frame={1}>".format(self.nparticles, self.frame)
 
     def copy(self):
-        """ Return a copy of the current instance. I'm just a copy
-            of a copy of a copy...
-        """
+        """ Return a copy of the current instance """
         return copy.deepcopy(self)
 
     def __getitem__(self, slc):
         if isinstance(slc, (int,slice)):
-            raise ValueError("Slicing not supported by index, only "
-                             "coordinate name.")
+            raise ValueError("Slicing not supported by index, only coordinate name.")
 
         else:
             try:
@@ -114,8 +108,7 @@ class Particle(object):
             except ValueError:
                 raise AttributeError("Invalid coordinate name {}".format(slc))
 
-            return (self._X[...,ii]*self._internal_units[ii])\
-                        .to(self._repr_units[ii])
+            return (self._X[...,ii]*self._internal_units[ii]).to(self._repr_units[ii])
 
     @property
     def _repr_X(self):
@@ -149,20 +142,15 @@ class Particle(object):
         if self.frame == frame:
             return self.copy()
 
+        # frame transformation happens with usys units
         new_X = self.frame.to(frame, self._X)
         p = Particle(new_X.T,
                      frame=frame,
                      units=frame.units,
                      meta=self.meta)
+        p.to_units(frame.repr_units)
 
-        if frame.name == "heliocentric":
-            return p.to_units(u.deg,u.deg,u.kpc,\
-                              u.mas/u.yr,u.mas/u.yr,u.km/u.s)
-        elif frame.name == "galactocentric":
-            return p.to_units(u.kpc,u.kpc,u.kpc,\
-                              u.km/u.s,u.km/u.s,u.km/u.s)
-        else:
-            return p
+        return p
 
     def decompose(self, units):
         """ Decompose each coordinate axis to the given unit system """
