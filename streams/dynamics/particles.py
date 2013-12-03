@@ -148,9 +148,7 @@ class Particle(object):
                      frame=frame,
                      units=frame.units,
                      meta=self.meta)
-        p.to_units(frame.repr_units)
-
-        return p
+        return p.to_units(frame.repr_units)
 
     def decompose(self, units):
         """ Decompose each coordinate axis to the given unit system """

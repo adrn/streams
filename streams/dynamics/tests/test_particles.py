@@ -96,7 +96,7 @@ def test_getitem():
 def test_repr_X():
     x = np.random.random(size=100)
     vx = np.random.random(size=100)
-    p = Particle((x, vx), frame=f1)
+    p = Particle((x, vx), frame=f1, units=f1.units)
 
     assert np.allclose(p._repr_X[:,0], x)
     assert np.allclose(p._repr_X[:,1], vx)
@@ -104,14 +104,14 @@ def test_repr_X():
 def test_plot():
     x = np.random.random(size=1000)
     vx = np.random.random(size=1000)
-    p = Particle((x, vx), frame=f1)
+    p = Particle((x, vx), frame=f1, units=f1.units)
 
     fig = p.plot()
     fig.savefig(os.path.join(plot_path, "particle_2d.png"))
 
     # now try 6D case
     xx = np.random.random(size=(6,100))
-    p = Particle(xx, frame=galactocentric)
+    p = Particle(xx, frame=galactocentric, units=galactocentric.units)
 
     fig = p.plot()
     fig.savefig(os.path.join(plot_path, "particle_6d.png"))
@@ -119,7 +119,7 @@ def test_plot():
 def test_decompose():
     x = np.random.random(size=1000)
     vx = np.random.random(size=1000)
-    p = Particle((x, vx), frame=f1)
+    p = Particle((x, vx), frame=f1, units=f1.units)
     p = p.decompose([u.pc, u.radian, u.Gyr, u.M_sun])
 
     fig = p.plot()
@@ -128,7 +128,7 @@ def test_decompose():
 def test_to_units():
     # now try 6D case
     xx = np.random.random(size=(6,100))
-    p = Particle(xx, frame=galactocentric)
+    p = Particle(xx, frame=galactocentric, units=galactocentric.units)
     p = p.to_units(u.pc, u.Gpc, u.km, u.kpc/u.Gyr, u.m/u.ms, u.km/u.s)
 
     fig = p.plot()
@@ -137,8 +137,8 @@ def test_to_units():
 def test_to_frame():
     # now try 6D case
 
-    p = Particle(lm10_X, frame=galactocentric,
-                units=[u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr])
+    p = Particle(lm10_X, frame=galactocentric, units=galactocentric.units)
+    p = p.to_units(galactocentric.repr_units)
 
     plot_kwargs = dict()
     fig = p.plot(plot_kwargs=plot_kwargs)
