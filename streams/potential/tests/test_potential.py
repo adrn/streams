@@ -41,7 +41,7 @@ class TestPointMass(object):
                                        r_0=[0.,0.,0.]*u.au)
 
         # Test with a single position
-        r = ([1.,0.,0.]*u.au).reshape(3,1)
+        r = ([1.,0.,0.]*u.au).reshape(1,3)
         pot_val = potential.value_at(r)
         assert pot_val.unit.is_equivalent(u.J/u.kg)
         _pot_val = potential._value_at(r.value)
@@ -99,7 +99,7 @@ class TestComposite(object):
                                               r_0=[1.,1.,0.]*u.au)
 
         # Where forces cancel
-        pos = ([0.,0.,0.]*u.au).reshape(3,1)
+        pos = ([0.,0.,0.]*u.au).reshape(1,3)
         np.testing.assert_array_almost_equal(
                         np.squeeze(potential.acceleration_at(pos).value),
                         np.array([0.,0.,0.]), decimal=5)
@@ -147,7 +147,7 @@ class TestMiyamotoNagai(object):
                                            b=0.26*u.kpc,
                                            r_0=[0.,0.,0.]*u.kpc)
 
-        r = ([1.,0.,0.]*u.kpc).reshape(3,1)
+        r = ([1.,0.,0.]*u.kpc).reshape(1,3)
         pot_val = potential.value_at(r)
         acc_val = potential.acceleration_at(r)
 
@@ -178,7 +178,7 @@ class TestHernquist(object):
                                        m=1.E11*u.M_sun,
                                        c=10.*u.kpc)
 
-        r = ([1.,0.,0.]*u.kpc).reshape(3,1)
+        r = ([1.,0.,0.]*u.kpc).reshape(1,3)
         pot_val = potential.value_at(r)
         acc_val = potential.acceleration_at(r)
 
@@ -198,7 +198,7 @@ class TestLogarithmicPotentialLJ(object):
                                            v_halo=120.*u.km/u.s,
                                            R_halo=12.*u.kpc)
 
-        r = ([1.,0.,0.]*u.kpc).reshape(3,1)
+        r = ([1.,0.,0.]*u.kpc).reshape(1,3)
         pot_val = potential.value_at(r)
         acc_val = potential.acceleration_at(r)
 
@@ -228,7 +228,7 @@ class TestCompositeGalaxy(object):
                                            v_halo=120.*u.km/u.s,
                                            R_halo=12.*u.kpc)
 
-        r = ([1.,0.,0.]*u.kpc).reshape(3,1)
+        r = ([1.,0.,0.]*u.kpc).reshape(1,3)
         pot_val = potential.value_at(r)
         acc_val = potential.acceleration_at(r)
 
@@ -244,7 +244,7 @@ class TestIsochrone(object):
                                        m=1.E11*u.M_sun,
                                        b=5.*u.kpc)
 
-        r = ([1.,0.,0.]*u.kpc).reshape(3,1)
+        r = ([1.,0.,0.]*u.kpc).reshape(1,3)
         pot_val = potential.value_at(r)
         acc_val = potential.acceleration_at(r)
 
@@ -261,7 +261,7 @@ class TestAxisymmetricNFWPotential(object):
                                            qz=0.71,
                                            Rs=5.*u.kpc)
 
-        r = ([1.,0.,0.]*u.kpc).reshape(3,1)
+        r = ([1.,0.,0.]*u.kpc).reshape(1,3)
         pot_val = potential.value_at(r)
         acc_val = potential.acceleration_at(r)
 
@@ -277,7 +277,7 @@ class TestAxisymmetricLogarithmicPotential(object):
                                            v_c=10.*u.km/u.s,
                                            qz=0.71)
 
-        r = ([1.,0.,0.]*u.kpc).reshape(3,1)
+        r = ([1.,0.,0.]*u.kpc).reshape(1,3)
         pot_val = potential.value_at(r)
         acc_val = potential.acceleration_at(r)
 

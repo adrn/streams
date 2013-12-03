@@ -117,7 +117,7 @@ class CartesianPotential(Potential):
             parameters["r_0"] = ([0.,0.,0.]*u.km).decompose(self.units)
 
         if not parameters["r_0"].ndim == 2:
-            parameters["r_0"] = parameters["r_0"][:,np.newaxis]
+            parameters["r_0"] = parameters["r_0"][np.newaxis]
 
         self._parameters = self._rescale_parameters(parameters)
 
@@ -275,7 +275,7 @@ class CartesianPotential(Potential):
                     r[jj] = X1.ravel()
                     r[i] = X2.ravel()
 
-                    Z = self._value_at(r).reshape(X1.shape)
+                    Z = self._value_at(r.T).reshape(X1.shape)
                     cs = axes[ii,jj].contourf(X1, X2, Z, cmap=cm.bone_r, **kwargs)
 
             cax = fig.add_axes([0.91, 0.1, 0.02, 0.8])
