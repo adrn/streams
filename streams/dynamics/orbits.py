@@ -56,7 +56,8 @@ class Orbit(DynamicalBase):
 
         self.t = t
         if self._X.shape[0] != self.t.shape[0]:
-            raise ValueError("Shape of t ({}) should match last axis of each "             "coordinate ({})".format(self.t.shape[0], \
+            raise ValueError("Shape of t ({}) should match last axis of each "
+                             "coordinate ({})".format(self.t.shape[0], \
                                                       self._X.shape[0]))
 
     def decompose(self, usys):
