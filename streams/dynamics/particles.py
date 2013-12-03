@@ -17,11 +17,12 @@ import triangle
 
 # Project
 from .. import usys
+from .core import DynamicalBase
 from ..coordinates.frame import ReferenceFrame
 
 __all__ = ["Particle"]
 
-class Particle(object):
+class Particle(DynamicalBase):
 
     def __init__(self, coords, frame, units=None, meta=dict()):
         """ Represents a dynamical particle or collection of particles.
@@ -45,88 +46,7 @@ class Particle(object):
                 Any additional metadata.
         """
 
-        self.ndim = len(coords)
-        if frame.ndim != self.ndim:
-            raise ValueError("ReferenceFrame must have same dimensions as coordinates "
-                             "({} vs. {})".format(frame.ndim, self.ndim))
-
-        # now build an internal contiguous numpy array to store the coordinate
-        #   data in the system 'usys'
-        self._repr_units = []
-        for ii in range(self.ndim):
-            # make sure this dimension's data is at least 1D
-            q = np.atleast_1d(coords[ii])
-
-            if hasattr(q, "unit") and q.unit != u.dimensionless_unscaled:
-                unit = q.unit
-                value = q.decompose(usys).value
-            else:
-                try:
-                    unit = units[ii]
-                except TypeError:
-                    raise ValueError("Must specify units for each coordinate dimension "
-                                     "if the data are not Quantities.")
-                value = (q*unit).decompose(usys).value
-
-            # preserve the input units to display with
-            self._repr_units.append(unit)
-
-            try:
-                self._X[...,ii] = value
-            except AttributeError:
-                self._X = np.zeros(q.shape + (self.ndim,))
-                self._X[...,ii] = value
-
-        # validate reference frame
-        if not isinstance(frame, ReferenceFrame):
-            raise TypeError("frame must be a valid ReferenceFrame object.")
-        self.frame = frame
-
-        # find units in usys that match the physical types of each units
-        self._internal_units = []
-        for unit in self._repr_units:
-            self._internal_units.append((1*unit).decompose(usys).unit)
-
-        self.meta = meta.copy()
-        for k,v in self.meta.items():
-            setattr(self,k,v)
-
-    def __repr__(self):
-        return "<Particle N={0}, frame={1}>".format(self.nparticles, self.frame)
-
-    def copy(self):
-        """ Return a copy of the current instance """
-        return copy.deepcopy(self)
-
-    def __getitem__(self, slc):
-        if isinstance(slc, (int,slice)):
-            raise ValueError("Slicing not supported by index, only coordinate name.")
-
-        else:
-            try:
-                ii = self.frame.coord_names.index(slc)
-            except ValueError:
-                raise AttributeError("Invalid coordinate name {}".format(slc))
-
-            return (self._X[...,ii]*self._internal_units[ii]).to(self._repr_units[ii])
-
-    @property
-    def _repr_X(self):
-        """ Return the 6D array of all coordinates in the repr units """
-
-        _repr_X = np.zeros_like(self._X)
-        for ii in range(self.ndim):
-            _repr_X[...,ii] = (self._X[...,ii]*self._internal_units[ii])\
-                               .to(self._repr_units[ii]).value
-
-        return _repr_X
-
-    @property
-    def nparticles(self):
-        try:
-            return self._X.shape[0]
-        except IndexError:
-            return 1
+        super(Particle, self).__init__(coords, frame, units=units, meta=meta)
 
     def to_frame(self, frame):
         """ Transform coordinates and reference frame.
@@ -157,9 +77,7 @@ class Particle(object):
         return Particle(q, frame=self.frame, meta=self.meta)
 
     def to_units(self, *units):
-        """ Convert each coordinate axis to corresponding unit in given
-            list.
-        """
+        """ Convert each coordinate axis to corresponding unit in given list. """
 
         if len(units) == 1:
             units = units[0]

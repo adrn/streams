@@ -15,11 +15,12 @@ import astropy.units as u
 from astropy.constants import G
 import triangle
 
-from .particles import Particle
+# project
+from .core import DynamicalBase
 
 __all__ = ["Orbit"]
 
-class Orbit(Particle):
+class Orbit(DynamicalBase):
 
     def __init__(self, t, coords, frame, units=None, meta=dict()):
         """ Represents a particle orbit or collection of orbits.
@@ -45,6 +46,10 @@ class Orbit(Particle):
         """
 
         super(Orbit, self).__init__(coords, frame, units=units, meta=meta)
+
+        if self._X.ndim != 3:
+            raise ValueError("Orbit coordinate data must contain 2 dimensions.")
+
         if not hasattr(t, "unit"):
             raise TypeError("'t' must be a quantity-like object with a .unit"
                             " attribute")
@@ -58,9 +63,25 @@ class Orbit(Particle):
             raise ValueError("Shape of t ({}) should match last axis of each "             "coordinate ({})".format(self.t.shape[0], \
                                                       self._X.shape[0]))
 
-    @property
-    def nparticles(self):
-        return self._X.shape[1]
+    def decompose(self, usys):
+        """ Decompose each coordinate axis to the given unit system """
+
+        q = [self[n].decompose(usys) for n in self.frame.coord_names]
+        return Orbit(self.t.decompose(usys), q, frame=self.frame, meta=self.meta)
+
+    def to_units(self, *units):
+        """ Convert each coordinate axis to corresponding unit in given list. """
+
+        if len(units) == 1:
+            units = units[0]
+
+        if len(units) != self.ndim:
+            raise ValueError("Must specify a unit for each dimension ({})."\
+                             .format(self.ndim))
+
+        q = [self[n].to(units[ii]) \
+                for ii,n in enumerate(self.frame.coord_names)]
+        return Orbit(self.t, q, frame=self.frame, meta=self.meta)
 
     def plot(self, fig=None, labels=None, **kwargs):
         """ Make a corner plot showing all dimensions. """
