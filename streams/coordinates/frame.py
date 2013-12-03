@@ -33,7 +33,7 @@ class ReferenceFrame(object):
         self.coord_names = coord_names
         self.ndim = len(self.coord_names)
         self.units = units
-        self.repr_units = repr_units if repr_units is None else self.units
+        self.repr_units = repr_units if repr_units is not None else self.units
 
     def __repr__(self):
         return "<Frame: {}, {}D>".format(self.name, self.ndim)
