@@ -22,6 +22,7 @@ from ... import usys
 from ...dynamics import Particle
 from ..particle import ParticleIntegrator
 from ...potential import AxisymmetricNFWPotential, PointMassPotential
+from ...coordinates.frame import galactocentric, heliocentric
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -32,16 +33,14 @@ if not os.path.exists(plot_path):
 
 def test_init():
     X = np.random.random(size=(6,100))
-    p = Particle(X,
-                 names=("x","y","z","vx","vy","vz"),
+    p = Particle(X, frame=galactocentric,
                  units=(u.kpc,u.kpc,u.kpc,u.km/u.s,u.km/u.s,u.km/u.s))
     potential = PointMassPotential(units=usys, m=1E12*u.M_sun)
     pi = ParticleIntegrator(p,potential)
 
     X = np.random.random(size=(6,100))
     X[3:] = X[3:]*50
-    p2 = Particle(X,
-                  names=("x","y","z","vx","vy","vz"),
+    p2 = Particle(X, frame=galactocentric,
                   units=(u.kpc,u.kpc,u.kpc,u.km/u.s,u.km/u.s,u.km/u.s))
     pi = ParticleIntegrator((p,p2),potential)
 
@@ -62,8 +61,7 @@ def test_simple_run():
     X[3] = -V*np.sin(phi)
     X[4] = V*np.cos(phi)
 
-    p = Particle(X,
-                names=("x","y","z","vx","vy","vz"),
+    p = Particle(X, frame=galactocentric,
                 units=(u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr))
     potential = PointMassPotential(units=usys, m=m)
     pi = ParticleIntegrator(p,potential)
@@ -92,8 +90,7 @@ def test_run_pretty():
     X[3] = -V*np.sin(phi)
     X[4] = V*np.cos(phi)
 
-    p = Particle(X,
-                names=("x","y","z","vx","vy","vz"),
+    p = Particle(X, frame=galactocentric,
                 units=(u.kpc,u.kpc,u.kpc,u.kpc/u.Myr,u.kpc/u.Myr,u.kpc/u.Myr))
     potential = AxisymmetricNFWPotential(units=usys,
                                          log_m=np.log(m.value),

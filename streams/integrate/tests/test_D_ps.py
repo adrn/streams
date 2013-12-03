@@ -33,7 +33,7 @@ if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
 np.random.seed(52)
-Nparticles = 3
+Nparticles = 2
 colors = ["#F1A340", "#998EC3", "#67A9CF"]
 dt = -1.
 
@@ -70,8 +70,8 @@ def test_orbits():
     sgr_fig.savefig(os.path.join(plot_path, "sgr_orbit.png"))
 
     for ii in range(Nparticles):
-        x = particle_orbit[ii]["x"].to(u.kpc).value
-        z = particle_orbit[ii]["z"].to(u.kpc).value
+        x = particle_orbit["x"][ii].to(u.kpc).value
+        z = particle_orbit["z"][ii].to(u.kpc).value
         ax.plot(x, z, color=colors[ii], alpha=0.75)
 
     fig.savefig(os.path.join(plot_path, "orbits.png"))

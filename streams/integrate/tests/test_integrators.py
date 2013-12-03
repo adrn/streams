@@ -25,7 +25,7 @@ if not os.path.exists(plot_path):
     os.makedirs(plot_path)
 
 def plot_energies(potential, ts, xs, vs, axes1=None):
-    E_kin = np.squeeze(0.5*np.sum(vs**2, axis=0))
+    E_kin = np.squeeze(0.5*np.sum(vs**2, axis=-1))
     E_pot = potential._value_at(xs[:,0,:])
 
     if axes1 == None:
@@ -44,9 +44,9 @@ def plot_energies(potential, ts, xs, vs, axes1=None):
 
     grid = np.linspace(np.min(xs)-1., np.max(xs)+1., 100)*u.kpc
     fig2, axes2 = potential.plot(ndim=3, grid=grid)
-    axes2[0,0].plot(xs[0,0], xs[1,0], color='w', marker=None)
-    axes2[1,0].plot(xs[0,0], xs[2,0], color='w', marker=None)
-    axes2[1,1].plot(xs[1,0], xs[2,0], color='w', marker=None)
+    axes2[0,0].plot(xs[...,0], xs[...,1], color='w', marker=None)
+    axes2[1,0].plot(xs[...,0], xs[...,2], color='w', marker=None)
+    axes2[1,1].plot(xs[...,1], xs[...,2], color='w', marker=None)
 
     return fig1,fig2
 
@@ -66,7 +66,7 @@ class TestBoxOnSpring(object):
         ts, xs, vs = integrator.run(dt=dt, Nsteps=1000)
 
         plt.clf()
-        plt.plot(ts, xs[0,0,:], 'k-')
+        plt.plot(ts, xs[...,0], 'k-')
         plt.savefig(os.path.join(plot_path,"box_spring_{0}.png".format(name)))
 
 class TestIntegrate(object):
@@ -99,7 +99,7 @@ class TestIntegrate(object):
                                     .to(u.kpc/u.Myr).value # kpc/Myr
 
         integrator = Integrator(potential._acceleration_at,
-                                initial_position, initial_velocity)
+                                initial_position.T, initial_velocity.T)
         ts, xs, vs = integrator.run(t1=0., t2=1000., dt=1.)
 
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
@@ -118,7 +118,7 @@ class TestIntegrate(object):
                                     .to(u.kpc/u.Myr).value # kpc/Myr
 
         integrator = Integrator(potential._acceleration_at,
-                                initial_position, initial_velocity)
+                                initial_position.T, initial_velocity.T)
         ts, xs, vs = integrator.run(t1=0., t2=1000., dt=1.)
 
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
@@ -136,7 +136,7 @@ class TestIntegrate(object):
                                     .to(u.kpc/u.Myr).value # kpc/Myr
 
         integrator = Integrator(potential._acceleration_at,
-                                initial_position, initial_velocity)
+                                initial_position.T, initial_velocity.T)
         ts, xs, vs = integrator.run(t1=0., t2=1000., dt=1.)
 
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
@@ -158,7 +158,7 @@ class TestIntegrate(object):
                                     .to(u.kpc/u.Myr).value # kpc/Myr
 
         integrator = Integrator(potential._acceleration_at,
-                                initial_position, initial_velocity)
+                                initial_position.T, initial_velocity.T)
         ts, xs, vs = integrator.run(t1=0., t2=6000., dt=1.)
 
         plot_energies(potential,ts, xs, vs)
@@ -178,7 +178,7 @@ class TestIntegrate(object):
                                     .to(u.kpc/u.Myr).value # kpc/Myr
 
         integrator = Integrator(potential._acceleration_at,
-                                initial_position, initial_velocity)
+                                initial_position.T, initial_velocity.T)
         ts, xs, vs = integrator.run(t1=0., t2=6000., dt=1.)
 
         plot_energies(potential,ts, xs, vs)
