@@ -320,11 +320,11 @@ def main(config_file, job_name=None):
         fig.savefig(os.path.join(path,"particles_hc.png"))
 
         extents = [(-75,60)]*3 + [(-200,200)]*3
-        fig = particles.to_frame("galactocentric")\
+        fig = particles.to_frame(galactocentric)\
                        .plot(plot_kwargs=dict(markersize=4, color='k'),
                              hist_kwargs=dict(color='k'),
                              extents=extents)
-        fig = o_particles.to_frame("galactocentric")\
+        fig = o_particles.to_frame(galactocentric)\
                          .plot(fig=fig,
                                plot_kwargs=dict(markersize=4, color='r'),
                                hist_kwargs=dict(color='r'),
