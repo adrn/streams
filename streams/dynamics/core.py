@@ -77,7 +77,7 @@ class DynamicalBase(object):
                 self._X = np.zeros(q.shape + (self.ndim,))
                 self._X[...,ii] = value
 
-        self.nparticles = self._X.shape[1]
+        self.nparticles = self._X.shape[-2]
 
         # validate reference frame
         if not isinstance(frame, ReferenceFrame):
