@@ -42,6 +42,6 @@ model_parameters:
             b: 150 km/s
 
 # emcee
-walkers: 16 # or auto (2 x number of parameters)
+walkers: 128 # or auto (2 x number of parameters)
 burn_in: 0
-steps: 10
+steps: 100
