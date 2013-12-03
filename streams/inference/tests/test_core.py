@@ -19,36 +19,13 @@ import matplotlib.pyplot as plt
 from ... import usys
 from ..core import *
 from ...potential.lm10 import LawMajewski2010
-from ...coordinates import _gc_to_hel
+from ...coordinates.frame import galactocentric, heliocentric
 from ..parameter import *
 from ..prior import *
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
     os.makedirs(plot_path)
-
-'''
-def test_statistical_model():
-    """ Test with example from main Emcee docs """
-
-    def lnprob(x, ivar=1.7):
-        return -0.5 * np.sum(ivar * x ** 2)
-
-    parameters = ['x']
-    ndim, nwalkers = 1, 100
-    ivar = 1. / np.random.rand(ndim)
-    p0 = [np.random.rand(ndim) for i in range(nwalkers)]
-
-    sm = StatisticalModel(parameters,
-                          ln_likelihood=lnprob,
-                          likelihood_args=(1.7,),
-                          parameter_bounds={'x':(-1,100)})
-
-    sampler = sm.run(p0, 100, 0)
-
-    plt.hist(sampler.flatchain, bins=100)
-    plt.savefig(os.path.join(plot_path, "emcee_test.png"))
-'''
 
 class TestStreamModel(object):
 
@@ -66,9 +43,11 @@ class TestStreamModel(object):
 
         self.particles = self.simulation.particles(N=self.Nparticles,
                                                    expr="tub!=0")
+        self.particles = self.particles.to_frame(heliocentric)
 
         self.potential = LawMajewski2010()
         self.satellite = self.simulation.satellite()
+        self.satellite = self.satellite.to_frame(heliocentric)
 
     def test_call(self):
 
@@ -85,6 +64,7 @@ class TestStreamModel(object):
 
     def test_vector(self):
         particles = self.particles.copy()
+        satellite = self.satellite.copy()
 
         params = []
         params.append(ModelParameter(target=self.potential.q1,
@@ -96,7 +76,7 @@ class TestStreamModel(object):
                                 attr="tub"))
 
         model = StreamModel(self.potential, self.simulation,
-                            self.satellite, particles,
+                            satellite, particles,
                             parameters=params)
 
         model([1.4] + list(np.random.random(size=self.Nparticles*6)) + \
@@ -107,6 +87,7 @@ class TestStreamModel(object):
 
     def test_indices(self):
         particles = self.particles.copy()
+        satellite = self.satellite.copy()
 
         params = []
         params.append(ModelParameter(target=self.potential.q1,
@@ -118,7 +99,7 @@ class TestStreamModel(object):
                                 attr="tub"))
 
         model = StreamModel(self.potential, self.simulation,
-                            self.satellite, particles,
+                            satellite, particles,
                             parameters=params)
 
         for ii in range(len(params)):
@@ -126,6 +107,7 @@ class TestStreamModel(object):
 
     def test_indices2(self):
         particles = self.particles.copy()
+        satellite = self.satellite.copy()
 
         params = []
         params.append(ModelParameter(target=particles,
@@ -137,7 +119,7 @@ class TestStreamModel(object):
                                 attr="tub"))
 
         model = StreamModel(self.potential, self.simulation,
-                            self.satellite, particles,
+                            satellite, particles,
                             parameters=params)
 
         for ii in range(len(params)):
@@ -151,8 +133,8 @@ class TestStreamModel(object):
         for p_name in self.potential.parameters.keys():
             potential = LawMajewski2010()
 
-            particles = self.particles.to_frame("heliocentric")
-            satellite = self.satellite.to_frame("heliocentric")
+            particles = self.particles.copy()
+            satellite = self.satellite.copy()
 
             p = potential.parameters[p_name]
 
@@ -166,7 +148,7 @@ class TestStreamModel(object):
                                 parameters=params)
 
             Ls = []
-            vals = np.linspace(0.8, 1.2, 31)*p._truth
+            vals = np.linspace(0.9, 1.1, 31)*p._truth
             for q in vals:
                 Ls.append(model([q]))
 
@@ -186,8 +168,8 @@ class TestStreamModel(object):
         for p_name in self.potential.parameters.keys():
             potential = LawMajewski2010()
 
-            particles = self.particles.to_frame("heliocentric")
-            satellite = self.satellite.to_frame("heliocentric")
+            particles = self.particles.copy()
+            satellite = self.satellite.copy()
 
             p = potential.parameters[p_name]
 
@@ -222,9 +204,9 @@ class TestStreamModel(object):
 
         potential = LawMajewski2010()
 
-        _particles = self.particles.to_frame("heliocentric")
-        particles = self.particles.to_frame("heliocentric")
-        satellite = self.satellite.to_frame("heliocentric")
+        _particles = self.particles.copy()
+        particles = self.particles.copy()
+        satellite = self.satellite.copy()
 
         params = []
         params.append(ModelParameter(target=particles,
@@ -251,12 +233,12 @@ class TestStreamModel(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        _particles = self.particles.to_frame("heliocentric")
+        _particles = self.particles.copy()
         for ii in range(self.Nparticles):
             potential = LawMajewski2010()
 
-            particles = self.particles.to_frame("heliocentric")
-            satellite = self.satellite.to_frame("heliocentric")
+            particles = self.particles.copy()
+            satellite = self.satellite.copy()
 
             params = []
             params.append(ModelParameter(target=particles,
@@ -290,8 +272,8 @@ class TestStreamModel(object):
 
         potential = LawMajewski2010()
 
-        particles = self.particles.to_frame("heliocentric")
-        satellite = self.satellite.to_frame("heliocentric")
+        particles = self.particles.copy()
+        satellite = self.satellite.copy()
 
         particle_errors = gaia_spitzer_errors(particles)
         particles = particles.observe(particle_errors)
