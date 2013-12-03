@@ -45,7 +45,11 @@ class DynamicalBase(object):
                 Any additional metadata.
         """
 
-        self.ndim = len(coords)
+        try:
+            self.ndim = coords.shape[0]
+        except AttributeError:
+            self.ndim = len(coords)
+
         if frame.ndim != self.ndim:
             raise ValueError("ReferenceFrame must have same dimensions as coordinates "
                              "({} vs. {})".format(frame.ndim, self.ndim))
@@ -55,7 +59,7 @@ class DynamicalBase(object):
         self._repr_units = []
         for ii in range(self.ndim):
             # make sure this dimension's data is at least 1D
-            q = np.atleast_1d(coords[ii])
+            q = np.atleast_1d(coords[ii]).copy()
 
             if hasattr(q, "unit") and q.unit != u.dimensionless_unscaled:
                 unit = q.unit
