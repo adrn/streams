@@ -50,9 +50,6 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def _null(*args, **kwargs):
-    return 0.
-
 def make_path(config):
 
     try:
@@ -94,11 +91,10 @@ def main(config_file, job_name=None):
         logger.debug("Running with multiprocessing on {} cores."\
                     .format(config["threads"]))
         pool = multiprocessing.Pool(config["threads"])
-    else:
-        logger.debug("Running serial...parallel panda is sad :(")
-        pool = None
 
-    # TODO: write a separate script just for plotting...
+    else:
+        logger.debug("Running serial.")
+        pool = None
 
     # determine the output data path
     path = make_path(config)
@@ -108,9 +104,9 @@ def main(config_file, job_name=None):
 
     make_plots = config.get("make_plots", False)
     if make_plots:
-        logger.info("Will write output to '{0}'...".format(path))
+        logger.info("Will make plots and save to '{0}'...".format(path))
     else:
-        logger.info("OK fine, I won't write anything to disk...")
+        logger.info("OK fine, I won't make plots...")
 
     ##########################################################################
     # Potential
@@ -118,7 +114,7 @@ def main(config_file, job_name=None):
     # get the potential object specified from the potential subpackage
     Potential = getattr(s_potential, config["potential"]["class_name"])
     potential = Potential()
-    logger.debug("Using {} potential..."\
+    logger.debug("Using potential '{}'..."\
                  .format(config["potential"]["class_name"]))
 
     ##########################################################################
