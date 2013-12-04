@@ -126,7 +126,7 @@ class LawMajewski2010(CompositePotential):
         """
 
         # Radius of Sgr center relative to galactic center
-        R_orbit = np.sqrt(np.sum(r**2., axis=0))
+        R_orbit = np.sqrt(np.sum(r**2., axis=-1))
         m_enc = self._enclosed_mass(R_orbit)
 
         return R_orbit * (m / (m_enc))**(0.33333)
