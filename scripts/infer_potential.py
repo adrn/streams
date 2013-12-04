@@ -234,7 +234,8 @@ def main(config_file, job_name=None):
         o_satellite = satellite.observe(satellite_errors)
         sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
                         for n in o_satellite.frame.coord_names])
-        covs = [np.diag(s**2) for s in sigmas[np.newaxis]]
+
+        covs = [np.diag(s**2) for s in sigmas.T]
 
         prior = LogNormalPrior(np.array(o_satellite._X),
                                cov=np.array(covs))
@@ -349,64 +350,67 @@ def main(config_file, job_name=None):
                     hist_kwargs=dict(color='k'))
         fig.savefig(os.path.join(path, "potential_corner.png"))
 
-        sys.exit(0)
+        if config["model_parameters"].has_key("particles"):
 
-        # ---------
-        # Now make 7x7 corner plots for each particle
-        Nparticles = o_particles.nparticles
-        for ii in range(Nparticles):
-            tub = flatchain[:,Npp+ii]
+            # ---------
+            # Now make 7x7 corner plots for each particle
+            Nparticles = o_particles.nparticles
+            for ii in range(Nparticles):
+                tub = flatchain[:,Npp+ii]
 
-            start = Npp + Nparticles + 6*ii
+                start = Npp + Nparticles + 6*ii
+                stop = start + 6
+                OO = flatchain[:,start:stop]
+
+                p = Particle(OO.T, units=usys, names=o_particles.names)
+                p = p.to_units(o_particles._repr_units)
+                print(p._repr_units)
+                sys.exit(0)
+
+                truths = particles._repr_X[ii]
+                extents = [(t2,t1)]+[(truth-0.2*abs(truth),truth+0.2*abs(truth)) \
+                            for truth in truths]
+
+                fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
+                                      labels=['tub','l','b','D',\
+                                              r'$\mu_l$', r'$\mu_l$','$v_r$'],
+                                      truths=truths,
+                                      extents=extents)
+                fig.suptitle("Particle {0}".format(ii))
+                fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
+                                         .format(ii)))
+                del fig
+
+        if config["model_parameters"].has_key("satellite"):
+            # ---------
+            # Now make 6x6 corner plot for satellite
+            start = Npp + Nparticles + 6*Nparticles
             stop = start + 6
+
             OO = flatchain[:,start:stop]
+            truths = np.squeeze(satellite._X)
 
-            p = Particle(OO.T, units=usys, names=o_particles.names)
-            p = p.to_units(o_particles._repr_units)
+            # so = np.squeeze(sat_obs_data)
+            # se = np.squeeze(sat_obs_error)
+            # extents = zip(so - 3*se, \
+            #               so + 3*se)
 
-            truths = particles._repr_X[ii]
-            extents = [(t2,t1)]+[(truth-0.2*abs(truth),truth+0.2*abs(truth)) \
-                        for truth in truths]
+            # First, just samples from the priors:
+            fig1 = triangle.corner(p0[:,start:stop],
+                        truths=truths,
+                        labels=['l','b','D',\
+                                r'$\mu_l$', r'$\mu_l$','$v_r$'],)
+            fig1.savefig(os.path.join(path, "satellite_corner_prior.png"))
 
-            fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
-                                  labels=['tub','l','b','D',\
+            fig = triangle.corner(OO,
+                                  labels=['l','b','D',\
                                           r'$\mu_l$', r'$\mu_l$','$v_r$'],
-                                  truths=truths,
-                                  extents=extents)
-            fig.suptitle("Particle {0}".format(ii))
-            fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
-                                     .format(ii)))
-            del fig
-
-        # ---------
-        # Now make 6x6 corner plot for satellite
-        start = Npp + Nparticles + 6*Nparticles
-        stop = start + 6
-
-        OO = flatchain[:,start:stop]
-        truths = np.squeeze(satellite._X)
-
-        # so = np.squeeze(sat_obs_data)
-        # se = np.squeeze(sat_obs_error)
-        # extents = zip(so - 3*se, \
-        #               so + 3*se)
-
-        # First, just samples from the priors:
-        fig1 = triangle.corner(p0[:,start:stop],
-                    truths=truths,
-                    labels=['l','b','D',\
-                            r'$\mu_l$', r'$\mu_l$','$v_r$'],)
-        fig1.savefig(os.path.join(path, "satellite_corner_prior.png"))
-
-        fig = triangle.corner(OO,
-                              labels=['l','b','D',\
-                                      r'$\mu_l$', r'$\mu_l$','$v_r$'],
-                              truths=truths)
-        for ii,ax in enumerate(np.array(fig1.axes)):
-            fig.axes[ii].set_xlim(ax.get_xlim())
-            fig.axes[ii].set_ylim(ax.get_ylim())
-        fig.suptitle("Satellite")
-        fig.savefig(os.path.join(path, "satellite_corner.png"))
+                                  truths=truths)
+            for ii,ax in enumerate(np.array(fig1.axes)):
+                fig.axes[ii].set_xlim(ax.get_xlim())
+                fig.axes[ii].set_ylim(ax.get_ylim())
+            fig.suptitle("Satellite")
+            fig.savefig(os.path.join(path, "satellite_corner.png"))
 
         sys.exit(0)
         return
