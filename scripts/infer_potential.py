@@ -150,7 +150,7 @@ def main(config_file, job_name=None):
     potential_params = config["model_parameters"].get("potential", dict())
     for name,kwargs in potential_params.items():
         model_p = potential.model_parameter(name, **kwargs)
-        logger.debug(model_p.name, model_p._ln_prior.a, model_p._ln_prior.b)
+        logger.debug(name, model_p._ln_prior.a, model_p._ln_prior.b)
         model_parameters.append(model_p)
 
     # Particle parameters
