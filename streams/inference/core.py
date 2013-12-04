@@ -133,6 +133,7 @@ class StreamModel(object):
                             for ii,jj in enumerate(t_idx)])
         s_x = np.array([satellite_orbit._X[jj,0] \
                             for ii,jj in enumerate(t_idx)])
+
         log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) +
                             (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
 
