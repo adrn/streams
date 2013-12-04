@@ -37,6 +37,7 @@ except ImportError:
 # Project
 from streams import usys
 from streams.coordinates.frame import heliocentric, galactocentric
+from streams.dynamics import Particle, Orbit
 from streams.inference import (ModelParameter, StreamModel,
                                LogNormalPrior, LogUniformPrior)
 import streams.io as s_io
@@ -150,7 +151,7 @@ def main(config_file, job_name=None):
     potential_params = config["model_parameters"].get("potential", dict())
     for name,kwargs in potential_params.items():
         model_p = potential.model_parameter(name, **kwargs)
-        logger.debug(name, model_p._ln_prior.a, model_p._ln_prior.b)
+        logger.debug("{} {} {}".format(name, model_p._ln_prior.a, model_p._ln_prior.b))
         model_parameters.append(model_p)
 
     # Particle parameters
@@ -202,7 +203,7 @@ def main(config_file, job_name=None):
                                                    attr="tub",
                                                    ln_prior=prior))
     else:
-        o_particles = particles
+        o_particles = particles.copy()
 
     # Satellite parameters
     if config["model_parameters"].has_key("satellite"):
@@ -246,7 +247,7 @@ def main(config_file, job_name=None):
         model_parameters.append(p)
 
     else:
-        o_satellite = satellite
+        o_satellite = satellite.copy()
 
     # now create the model
     model = StreamModel(potential, simulation, o_satellite, o_particles,
@@ -378,23 +379,40 @@ def main(config_file, job_name=None):
                 stop = start + 6
                 OO = flatchain[:,start:stop]
 
-                p = Particle(OO.T, units=usys, names=o_particles.names)
+                p = Particle(OO.T, units=o_particles._internal_units,
+                             frame=heliocentric)
                 p = p.to_units(o_particles._repr_units)
-                print(p._repr_units)
-                sys.exit(0)
 
                 truths = particles._repr_X[ii]
-                extents = [(t2,t1)]+[(truth-0.2*abs(truth),truth+0.2*abs(truth)) \
-                            for truth in truths]
+                X_extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) for truth in truths]
+                extents = [(simulation.t2,simulation.t1)] + X_extents
 
                 fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
                                       labels=['tub','l','b','D',\
-                                              r'$\mu_l$', r'$\mu_l$','$v_r$'],
-                                      truths=truths,
-                                      extents=extents)
+                                              r'$\mu_l$', r'$\mu_l$','$v_r$'])
+                # fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
+                #                       labels=['tub','l','b','D',\
+                #                               r'$\mu_l$', r'$\mu_l$','$v_r$'],
+                #                       truths=truths,
+                #                       extents=extents)
                 fig.suptitle("Particle {0}".format(ii))
                 fig.savefig(os.path.join(path, "particle_{0}_corner.pdf"\
                                          .format(ii)))
+                del fig
+
+                # now make trace plots
+                fig,axes = plt.subplots(7,1,figsize=(10,14))
+                for kk in range(7):
+                    for jj in range(chain.shape[0]):
+                        axes[kk].plot(chain[jj,:,start+kk], drawstyle="steps",
+                                      color='k', alpha=0.1)
+
+                    axes[kk].axhline(p.target._truth, linewidth=4., alpha=0.5,
+                               linestyle="--", color="#2B8CBE")
+                    axes[kk].set_ylim(extents[kk])
+
+                fig.suptitle(p.target.latex)
+                fig.savefig(os.path.join(path, "particle{}_trace.pdf".format(ii)))
                 del fig
 
         if config["model_parameters"].has_key("satellite"):
