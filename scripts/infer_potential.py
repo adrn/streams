@@ -150,6 +150,7 @@ def main(config_file, job_name=None):
     potential_params = config["model_parameters"].get("potential", dict())
     for name,kwargs in potential_params.items():
         model_p = potential.model_parameter(name, **kwargs)
+        logger.debug(model_p.name, model_p._ln_prior.a, model_p._ln_prior.b)
         model_parameters.append(model_p)
 
     # Particle parameters
@@ -353,11 +354,15 @@ def main(config_file, job_name=None):
 
             # now make trace plots
             for ii in range(Npp):
+                p = pparams[ii]
                 fig,ax = plt.subplots(1,1,figsize=(10,6))
                 for jj in range(chain.shape[0]):
                     ax.plot(chain[jj,:,ii], drawstyle="steps", color='k', alpha=0.1)
 
-                fig.suptitle(pparams[ii].target.latex)
+                ax.axhline(p.target._truth, linewidth=4., alpha=0.5,
+                           linestyle="--", color="#2B8CBE")
+                ax.set_ylim(p._ln_prior.a,p._ln_prior.b)
+                fig.suptitle(p.target.latex)
                 fig.savefig(os.path.join(path, "{}_trace.png".format(ii)))
                 del fig
 
