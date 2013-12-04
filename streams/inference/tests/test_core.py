@@ -310,7 +310,6 @@ class TestStreamModel(object):
         fnpickle(model, os.path.join(self.plot_path, "test.pickle"))
 
     def test_time_likelihood(self):
-        import time
         potential = LawMajewski2010()
 
         particles = self.particles.copy()
@@ -328,14 +327,14 @@ class TestStreamModel(object):
                             parameters=params)
 
         N = 10
-        a = time.time()
+        a = pytime.time()
         for ii in range(N):
             model([1.5])
 
-        print("{} sec. per likelihood call".format((time.time()-a)/float(N)))
+        print("{} sec. per likelihood call".format((pytime.time()-a)/float(N)))
 
     def test_time_sampler(self):
-        import time, emcee
+        import emcee
         potential = LawMajewski2010()
 
         particles = self.particles.copy()
@@ -357,10 +356,42 @@ class TestStreamModel(object):
         p0 = np.random.random(size=Nwalkers)*2
         p0 = p0.reshape(Nwalkers,1)
 
-        a = time.time()
+        a = pytime.time()
         sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model)
         pos, xx, yy = sampler.run_mcmc(p0, Nsteps)
-        b = time.time()
+        b = pytime.time()
 
         print("{} sec. for sampler test".format(b-a))
         print("{} sec. per call".format( (b-a)/Nsteps/float(Nwalkers)))
+
+
+    def test_likelihood_shape(self):
+
+        this_plot_path = os.path.join(plot_path, "likelihood_shape")
+        if not os.path.exists(this_plot_path):
+            os.makedirs(this_plot_path)
+
+        for p_name in self.potential.parameters.keys():
+            particles = self.particles.copy()
+            satellite = self.satellite.copy()
+            potential = LawMajewski2010()
+
+            p = potential.parameters[p_name]
+            vals = np.linspace(0.75,1.25,51)*p._truth
+
+            params = []
+            params.append(ModelParameter(target=p, attr="_value",
+                                         ln_prior=LogUniformPrior(*p._range)))
+
+            model = StreamModel(potential, self.simulation,
+                                satellite, particles,
+                                parameters=params)
+
+            Ls = []
+            for val in vals:
+                Ls.append(model([val]))
+
+            plt.clf()
+            plt.plot(vals,Ls)
+            plt.axvline(p._truth)
+            plt.savefig(os.path.join(this_plot_path, "L_vs_{}.png".format(p_name)))

@@ -66,14 +66,14 @@ class TestStreamModel(object):
                             parameters=params)
 
         Nwalkers = 4
-        Nsteps = 100
+        Nsteps = 25
         p0 = np.random.random(size=Nwalkers)*2
         p0 = p0.reshape(Nwalkers,1)
 
-        a = time.time()
+        a = pytime.time()
         sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model)
         pos, xx, yy = sampler.run_mcmc(p0, Nsteps)
-        b = time.time()
+        b = pytime.time()
 
         print("{} sec. for sampler test".format(b-a))
         print("{} sec. per call".format( (b-a)/Nsteps/float(Nwalkers)))
