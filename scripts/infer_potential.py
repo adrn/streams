@@ -315,7 +315,7 @@ def main(config_file, job_name=None):
         fig = o_particles.plot(fig=fig,
                                plot_kwargs=dict(markersize=4, color='r'),
                                hist_kwargs=dict(color='r'))
-        fig.savefig(os.path.join(path,"particles_hc.png"))
+        fig.savefig(os.path.join(path,"particles_hc.pdf"))
 
         extents = [(-75,60)]*3 + [(-200,200)]*3
         fig = particles.to_frame(galactocentric)\
@@ -327,7 +327,7 @@ def main(config_file, job_name=None):
                                plot_kwargs=dict(markersize=4, color='r'),
                                hist_kwargs=dict(color='r'),
                                extents=extents)
-        fig.savefig(os.path.join(path,"particles_gc.png"))
+        fig.savefig(os.path.join(path,"particles_gc.pdf"))
 
         if config["model_parameters"].has_key("potential"):
             # Make a corner plot for the potential parameters
@@ -341,7 +341,7 @@ def main(config_file, job_name=None):
                         labels=[p.target.latex for p in pparams],
                         plot_kwargs=dict(color='k'),
                         hist_kwargs=dict(color='k'))
-            fig.savefig(os.path.join(path, "potential_corner_prior.png"))
+            fig.savefig(os.path.join(path, "potential_corner_prior.pdf"))
 
             # Now the actual chains, extents from the priors
             fig = triangle.corner(flatchain[:,:Npp],
@@ -350,7 +350,7 @@ def main(config_file, job_name=None):
                         labels=[p.target.latex for p in pparams],
                         plot_kwargs=dict(color='k'),
                         hist_kwargs=dict(color='k'))
-            fig.savefig(os.path.join(path, "potential_corner.png"))
+            fig.savefig(os.path.join(path, "potential_corner.pdf"))
 
             # now make trace plots
             for ii in range(Npp):
@@ -363,7 +363,7 @@ def main(config_file, job_name=None):
                            linestyle="--", color="#2B8CBE")
                 ax.set_ylim(p._ln_prior.a,p._ln_prior.b)
                 fig.suptitle(p.target.latex)
-                fig.savefig(os.path.join(path, "{}_trace.png".format(ii)))
+                fig.savefig(os.path.join(path, "{}_trace.pdf".format(ii)))
                 del fig
 
         if config["model_parameters"].has_key("particles"):
@@ -393,7 +393,7 @@ def main(config_file, job_name=None):
                                       truths=truths,
                                       extents=extents)
                 fig.suptitle("Particle {0}".format(ii))
-                fig.savefig(os.path.join(path, "particle_{0}_corner.png"\
+                fig.savefig(os.path.join(path, "particle_{0}_corner.pdf"\
                                          .format(ii)))
                 del fig
 
@@ -416,7 +416,7 @@ def main(config_file, job_name=None):
                         truths=truths,
                         labels=['l','b','D',\
                                 r'$\mu_l$', r'$\mu_l$','$v_r$'],)
-            fig1.savefig(os.path.join(path, "satellite_corner_prior.png"))
+            fig1.savefig(os.path.join(path, "satellite_corner_prior.pdf"))
 
             fig = triangle.corner(OO,
                                   labels=['l','b','D',\
@@ -426,7 +426,7 @@ def main(config_file, job_name=None):
                 fig.axes[ii].set_xlim(ax.get_xlim())
                 fig.axes[ii].set_ylim(ax.get_ylim())
             fig.suptitle("Satellite")
-            fig.savefig(os.path.join(path, "satellite_corner.png"))
+            fig.savefig(os.path.join(path, "satellite_corner.pdf"))
 
         sys.exit(0)
         return
