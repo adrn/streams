@@ -328,27 +328,38 @@ def main(config_file, job_name=None):
                                extents=extents)
         fig.savefig(os.path.join(path,"particles_gc.png"))
 
-        # Make a corner plot for the potential parameters
-        Npp = len(potential_params) # number of potential parameters
-        pparams = model.parameters[:Npp]
+        if config["model_parameters"].has_key("potential"):
+            # Make a corner plot for the potential parameters
+            Npp = len(potential_params) # number of potential parameters
+            pparams = model.parameters[:Npp]
 
-        # First, just samples from the priors:
-        fig = triangle.corner(p0[:,:Npp],
-                    truths=[p.target._truth for p in pparams],
-                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
-                    labels=[p.target.latex for p in pparams],
-                    plot_kwargs=dict(color='k'),
-                    hist_kwargs=dict(color='k'))
-        fig.savefig(os.path.join(path, "potential_corner_prior.png"))
+            # First, just samples from the priors:
+            fig = triangle.corner(p0[:,:Npp],
+                        truths=[p.target._truth for p in pparams],
+                        extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
+                        labels=[p.target.latex for p in pparams],
+                        plot_kwargs=dict(color='k'),
+                        hist_kwargs=dict(color='k'))
+            fig.savefig(os.path.join(path, "potential_corner_prior.png"))
 
-        # Now the actual chains, extents from the priors
-        fig = triangle.corner(flatchain[:,:Npp],
-                    truths=[p.target._truth for p in pparams],
-                    extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
-                    labels=[p.target.latex for p in pparams],
-                    plot_kwargs=dict(color='k'),
-                    hist_kwargs=dict(color='k'))
-        fig.savefig(os.path.join(path, "potential_corner.png"))
+            # Now the actual chains, extents from the priors
+            fig = triangle.corner(flatchain[:,:Npp],
+                        truths=[p.target._truth for p in pparams],
+                        extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
+                        labels=[p.target.latex for p in pparams],
+                        plot_kwargs=dict(color='k'),
+                        hist_kwargs=dict(color='k'))
+            fig.savefig(os.path.join(path, "potential_corner.png"))
+
+            # now make trace plots
+            for ii in range(Npp):
+                fig,ax = plt.subplots(1,1,figsize=(10,6))
+                for jj in range(chain.shape[0]):
+                    ax.plot(chain[jj,:,ii], drawstyle="steps", color='k', alpha=0.1)
+
+                fig.suptitle(pparams[ii].target.latex)
+                fig.savefig(os.path.join(path, "{}_trace.png".format(ii)))
+                del fig
 
         if config["model_parameters"].has_key("particles"):
 
