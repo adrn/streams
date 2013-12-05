@@ -161,6 +161,16 @@ def main(config_file, job_name=None):
         particle_errors = gaia_spitzer_errors(particles)
 
         particle_config = config["model_parameters"]["particles"]
+
+        # time unbound / escape time (tub)
+        if "tub" in particle_config.keys():
+            lo = [simulation.t2] * particles.nparticles
+            hi = [simulation.t1] * particles.nparticles
+            prior = LogUniformPrior(lo, hi)
+            model_parameters.append(ModelParameter(target=particles,
+                                                   attr="tub",
+                                                   ln_prior=prior))
+
         errors = particle_config["_X"].get("errors",dict())
 
         # now get errors specified by user in the yml configuration
@@ -194,14 +204,6 @@ def main(config_file, job_name=None):
                            ln_prior=prior)
         model_parameters.append(p)
 
-        # time unbound / escape time (tub)
-        if "tub" in particle_config.keys():
-            lo = [simulation.t2] * particles.nparticles
-            hi = [simulation.t1] * particles.nparticles
-            prior = LogUniformPrior(lo, hi)
-            model_parameters.append(ModelParameter(target=particles,
-                                                   attr="tub",
-                                                   ln_prior=prior))
     else:
         o_particles = particles.copy()
 
@@ -330,6 +332,7 @@ def main(config_file, job_name=None):
                                extents=extents)
         fig.savefig(os.path.join(path,"particles_gc.pdf"))
 
+        ix = 0
         if config["model_parameters"].has_key("potential"):
             # Make a corner plot for the potential parameters
             Npp = len(potential_params) # number of potential parameters
@@ -367,15 +370,18 @@ def main(config_file, job_name=None):
                 fig.savefig(os.path.join(path, "{}_trace.pdf".format(ii)))
                 del fig
 
+            ix += Npp
+
         if config["model_parameters"].has_key("particles"):
 
             # ---------
             # Now make 7x7 corner plots for each particle
             Nparticles = o_particles.nparticles
             for ii in range(Nparticles):
+                # TODO: what if tub not there?
                 tub = flatchain[:,Npp+ii]
 
-                start = Npp + Nparticles + 6*ii
+                start = ix + Nparticles + 6*ii
                 stop = start + 6
                 OO = flatchain[:,start:stop]
 
@@ -383,18 +389,16 @@ def main(config_file, job_name=None):
                              frame=heliocentric)
                 p = p.to_units(o_particles._repr_units)
 
-                truths = particles._repr_X[ii]
-                X_extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) for truth in truths]
+                X_truths = particles._repr_X[ii].tolist()
+                X_extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) for truth in X_truths]
                 extents = [(simulation.t2,simulation.t1)] + X_extents
+                truths = [o_particles.tub[ii]] + X_truths
 
                 fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
                                       labels=['tub','l','b','D',\
-                                              r'$\mu_l$', r'$\mu_l$','$v_r$'])
-                # fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
-                #                       labels=['tub','l','b','D',\
-                #                               r'$\mu_l$', r'$\mu_l$','$v_r$'],
-                #                       truths=truths,
-                #                       extents=extents)
+                                              r'$\mu_l$', r'$\mu_l$','$v_r$'],
+                                      truths=truths,
+                                      extents=extents)
                 fig.suptitle("Particle {0}".format(ii))
                 fig.savefig(os.path.join(path, "particle_{0}_corner.pdf"\
                                          .format(ii)))
@@ -404,14 +408,20 @@ def main(config_file, job_name=None):
                 fig,axes = plt.subplots(7,1,figsize=(10,14))
                 for kk in range(7):
                     for jj in range(chain.shape[0]):
-                        axes[kk].plot(chain[jj,:,start+kk], drawstyle="steps",
-                                      color='k', alpha=0.1)
+                        if kk == 0:
+                            axes[kk].plot(chain[jj,:,Npp+ii],
+                                          drawstyle="steps", color='k',
+                                          alpha=0.1)
+                        else:
+                            axes[kk].plot(chain[jj,:,start+kk-1],
+                                          drawstyle="steps", color='k',
+                                          alpha=0.1)
 
-                    axes[kk].axhline(p.target._truth, linewidth=4., alpha=0.5,
+                    axes[kk].axhline(truths[kk], linewidth=4., alpha=0.5,
                                linestyle="--", color="#2B8CBE")
                     axes[kk].set_ylim(extents[kk])
 
-                fig.suptitle(p.target.latex)
+                fig.suptitle("Particle {}".format(ii))
                 fig.savefig(os.path.join(path, "particle{}_trace.pdf".format(ii)))
                 del fig
 
