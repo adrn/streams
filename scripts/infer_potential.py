@@ -400,7 +400,7 @@ def main(config_file, job_name=None):
                                       truths=truths,
                                       extents=extents)
                 fig.suptitle("Particle {0}".format(ii))
-                fig.savefig(os.path.join(path, "particle_{0}_corner.pdf"\
+                fig.savefig(os.path.join(path, "particle{0}_corner.pdf"\
                                          .format(ii)))
                 del fig
 
