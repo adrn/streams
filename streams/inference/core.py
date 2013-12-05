@@ -82,6 +82,7 @@ class StreamModel(object):
                 d[ii] = x
             except NameError:
                 d = np.zeros((size,) + x.shape)
+                d[ii] = x
 
         return d
 
