@@ -53,13 +53,13 @@ class StreamModel(object):
         return self.ln_posterior(*args)
 
     @property
+    def ndim(self):
+        return len(self.sample())
+
+    @property
     def vector(self):
         return np.concatenate(map(np.ravel,
                                   [p.get() for p in self.parameters]))
-
-    @property
-    def ndim(self):
-        return len(self.sample())
 
     @vector.setter
     def vector(self, values):
