@@ -313,14 +313,17 @@ def main(config_file, job_name=None):
     if make_plots:
 
         # plot observed data / true particles
+        extents = [(-180,180), (-90,90), (0.,75.), (-10.,10.), (-10.,10), (-200,200)]
         fig = particles.plot(plot_kwargs=dict(markersize=4, color='k'),
-                             hist_kwargs=dict(color='k'))
+                             hist_kwargs=dict(color='k'),
+                             extents=extents)
         fig = o_particles.plot(fig=fig,
                                plot_kwargs=dict(markersize=4, color='r'),
-                               hist_kwargs=dict(color='r'))
+                               hist_kwargs=dict(color='r'),
+                               extents=extents)
         fig.savefig(os.path.join(path,"particles_hc.pdf"))
 
-        extents = [(-75,60)]*3 + [(-200,200)]*3
+        extents = [(-75,60)]*3 + [(-300,300)]*3
         fig = particles.to_frame(galactocentric)\
                        .plot(plot_kwargs=dict(markersize=4, color='k'),
                              hist_kwargs=dict(color='k'),
@@ -413,7 +416,8 @@ def main(config_file, job_name=None):
                                           drawstyle="steps", color='k',
                                           alpha=0.1)
                         else:
-                            axes[kk].plot(chain[jj,:,start+kk-1],
+                            q = (chain[jj,:,start+kk-1]*o_particles._internal_units[kk-1])
+                            axes[kk].plot(q.to(o_particles._repr_units[kk-1]).value,
                                           drawstyle="steps", color='k',
                                           alpha=0.1)
 
