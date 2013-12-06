@@ -22,6 +22,7 @@ from ...potential.lm10 import LawMajewski2010
 from ...coordinates.frame import galactocentric, heliocentric
 from ..parameter import *
 from ..prior import *
+from ...io import SgrSimulation
 
 plot_path = "plots/tests/inference"
 if not os.path.exists(plot_path):
@@ -34,8 +35,6 @@ class TestStreamModel(object):
         self.plot_path = os.path.join(plot_path, "StreamModel")
         if not os.path.exists(self.plot_path):
             os.mkdir(self.plot_path)
-
-        from streams.io import SgrSimulation
 
         np.random.seed(52)
         self.Nparticles = 25
@@ -395,3 +394,61 @@ class TestStreamModel(object):
             plt.plot(vals,Ls)
             plt.axvline(p._truth)
             plt.savefig(os.path.join(this_plot_path, "L_vs_{}.png".format(p_name)))
+
+def test_likelihood_observed_particles():
+    from streams.observation.gaia import gaia_spitzer_errors
+
+    np.random.seed(52)
+    simulation = SgrSimulation(mass="2.5e8")
+
+    particles = simulation.particles(N=1, expr="tub!=0")
+    particles = particles.to_frame(heliocentric)
+
+    potential = LawMajewski2010()
+    satellite = simulation.satellite()
+    satellite = satellite.to_frame(heliocentric)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    particle_errors = gaia_spitzer_errors(particles)
+    o_particles = particles.observe(particle_errors)
+    sigmas = np.array([o_particles.errors[n].decompose(usys).value \
+                for n in o_particles.frame.coord_names]).T
+    covs = [np.diag(s**2) for s in sigmas]
+
+    prior = LogNormalPrior(np.array(o_particles._X),
+                           cov=np.array(covs))
+
+    potential = LawMajewski2010()
+
+    o_particles = o_particles.copy()
+    satellite = satellite.copy()
+
+    p = ModelParameter(target=o_particles,
+                       attr="_X",
+                       ln_prior=prior)
+    params = [p]
+    model = StreamModel(potential, simulation, satellite, particles, parameters=params)
+
+    assert p.ln_prior() == (-0.5*6*np.log(2*np.pi) - 0.5*np.array([np.linalg.slogdet(c)[1]
+                                                                    for c in covs]))[0]
+
+    facs = np.linspace(0.5,1.5,11)
+    Ps = []
+
+    _X = o_particles._X
+    arr = np.ones_like(o_particles._X)
+    for fac in facs:
+        arr[:,2:] = fac
+        X = arr*_X
+        print("posterior", model(np.ravel(X)))
+        print("prior", model.ln_prior())
+        print("likelihood", model.ln_likelihood())
+        print()
+        Ps.append(model(np.ravel(X)))
+
+    ax.plot(facs, Ps)
+    ax.set_xlabel("Err. Factor")
+    ax.set_ylabel("Posterior")
+    fig.savefig(os.path.join(plot_path, "observed_particle_prior.png"))
