@@ -92,7 +92,7 @@ class StreamModel(object):
         if not np.all(np.isfinite(ppar)):
             return -np.inf
 
-        return ppar
+        return np.sum(ppar)
 
     def ln_likelihood(self, *args):
         """ This is a simplified version of the likelihood laid out by Hogg in
