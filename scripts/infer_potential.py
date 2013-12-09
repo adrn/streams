@@ -51,17 +51,25 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def make_path(config):
+def make_path(output_data_path, name=None, overwrite=False):
+    """ Make or return path for saving plots and sampler data files.
 
-    try:
-        path = config["output_path"]
-    except KeyError:
-        raise ValueError("You must specify 'output_path' in the config file.")
+        Parameters
+        ----------
+        output_data_path : str
+        name : str (optional)
+        overwrite : bool (optional)
+    """
 
-    iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    path = os.path.join(path, config.get("name", iso_now))
+    if name is None:
+        iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        logger.debug("Name not specified, using current time...")
+        name = iso_now
 
-    if os.path.exists(path) and config.get("overwrite", False):
+    path = os.path.join(output_data_path, name)
+    logger.debug("Writing output to '{}'".format(path))
+
+    if os.path.exists(path) and overwrite:
         shutil.rmtree(path)
 
     if not os.path.exists(path):
@@ -69,16 +77,21 @@ def make_path(config):
 
     return path
 
-def main(config_file, job_name=None):
-    """ TODO: """
+def get_parallel_pool(mpi=False, threads=None):
+    """ Get a pool object to pass to emcee for parallel processing.
+        If mpi is False and threads is None, pool is None.
 
-    # read in configurable parameters
-    with open(config_file) as f:
-        config = yaml.load(f.read())
-
+        Parameters
+        ----------
+        mpi : bool
+            Use MPI or not. If specified, ignores the threads kwarg.
+        threads : int (optional)
+            If mpi is False and threads is specified, use a Python
+            multiprocessing pool with the specified number of threads.
+    """
     # This needs to go here so I don't read in the particle file N times!!
     # get a pool object given the configuration parameters
-    if config.get("mpi", False):
+    if mpi:
         # Initialize the MPI pool
         pool = MPIPool()
 
@@ -86,19 +99,34 @@ def main(config_file, job_name=None):
         if not pool.is_master():
             pool.wait()
             sys.exit(0)
-        logger.debug("Running with MPI.")
+        logger.debug("Running with MPI...")
 
-    elif config.get("threads", 0) > 1:
-        logger.debug("Running with multiprocessing on {} cores."\
-                    .format(config["threads"]))
-        pool = multiprocessing.Pool(config["threads"])
+    elif threads > 1:
+        logger.debug("Running with multiprocessing on {} cores..."\
+                    .format(threads))
+        pool = multiprocessing.Pool(threads)
 
     else:
-        logger.debug("Running serial.")
+        logger.debug("Running serial...")
         pool = None
 
+    return pool
+
+def main(config_file, mpi=False, threads=None):
+    """ TODO: """
+
+    pool = get_parallel_pool(mpi=mpi, threads=threads)
+
+    return
+
+    # read in configurable parameters
+    with open(config_file) as f:
+        config = yaml.load(f.read())
+
     # determine the output data path
-    path = make_path(config)
+    path = make_path(config["output_path"],
+                     name=config["name"],
+                     overwrite=config["overwrite"])
     chain_file = os.path.join(path, "chain.npy")
     flatchain_file = os.path.join(path, "flatchain.npy")
     lnprob_file = os.path.join(path, "lnprobability.npy")
@@ -476,6 +504,13 @@ if __name__ == "__main__":
 
     parser.add_argument("-f", "--file", dest="file", default="streams.cfg",
                     help="Path to the configuration file to run with.")
+
+    # threading
+    parser.add_argument("--mpi", dest="mpi", default=False, action="store_true",
+                        help="Run with MPI.")
+    parser.add_argument("--threads", dest="threads", default=None, type=int,
+                        help="Number of multiprocessing threads to run on.")
+
     parser.add_argument("-n", "--name", dest="job_name", default=None,
                     help="Name of the output.")
 
@@ -489,7 +524,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
     try:
-        main(args.file, args.job_name)
+        main(args.file, mpi=args.mpi, threads=args.threads)
     except:
         raise
         sys.exit(1)
