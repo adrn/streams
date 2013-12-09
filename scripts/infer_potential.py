@@ -194,7 +194,7 @@ def main(config_file, job_name=None):
         # now has o_particles.errors["D"] etc.
 
         sigmas = np.array([o_particles.errors[n].decompose(usys).value \
-                    for n in o_particles.frame.coord_names]).T
+                    for n in o_particles.frame.coord_names]).T*factor
         covs = [np.diag(s**2) for s in sigmas]
 
         prior = LogNormalPrior(np.array(o_particles._X),
@@ -237,7 +237,7 @@ def main(config_file, job_name=None):
 
         o_satellite = satellite.observe(satellite_errors)
         sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
-                        for n in o_satellite.frame.coord_names])
+                        for n in o_satellite.frame.coord_names])*factor
 
         covs = [np.diag(s**2) for s in sigmas.T]
 
