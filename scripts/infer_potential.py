@@ -131,12 +131,6 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
     return
 
-    make_plots = config.get("make_plots", False)
-    if make_plots:
-        logger.info("Will make plots and save to '{0}'...".format(path))
-    else:
-        logger.info("OK fine, I won't make plots...")
-
     ##########################################################################
     # Potential
     #
@@ -339,7 +333,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     except AttributeError:
         pass
 
-    if make_plots:
+    if config.get("make_plots", False):
+        logger.info("Generating plots and writing to {}...".format(path))
 
         # plot observed data / true particles
         extents = [(-180,180), (-90,90), (0.,75.), (-10.,10.), (-10.,10), (-200,200)]
