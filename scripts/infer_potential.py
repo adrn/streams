@@ -112,12 +112,10 @@ def get_parallel_pool(mpi=False, threads=None):
 
     return pool
 
-def main(config_file, mpi=False, threads=None):
+def main(config_file, mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
     pool = get_parallel_pool(mpi=mpi, threads=threads)
-
-    return
 
     # read in configurable parameters
     with open(config_file) as f:
@@ -126,10 +124,12 @@ def main(config_file, mpi=False, threads=None):
     # determine the output data path
     path = make_path(config["output_path"],
                      name=config["name"],
-                     overwrite=config["overwrite"])
+                     overwrite=overwrite)
     chain_file = os.path.join(path, "chain.npy")
     flatchain_file = os.path.join(path, "flatchain.npy")
     lnprob_file = os.path.join(path, "lnprobability.npy")
+
+    return
 
     make_plots = config.get("make_plots", False)
     if make_plots:
@@ -502,8 +502,10 @@ if __name__ == "__main__":
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
                     default=False, help="Be quiet! (default = False)")
 
-    parser.add_argument("-f", "--file", dest="file", default="streams.cfg",
-                    help="Path to the configuration file to run with.")
+    parser.add_argument("-f", "--file", dest="file", required=True,
+                        help="Path to the configuration file to run with.")
+    parser.add_argument("-o", "--overwrite", dest="overwrite", default=False, action="store_true",
+                        help="Overwrite any existing data.")
 
     # threading
     parser.add_argument("--mpi", dest="mpi", default=False, action="store_true",
@@ -524,7 +526,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
     try:
-        main(args.file, mpi=args.mpi, threads=args.threads)
+        main(args.file, mpi=args.mpi, threads=args.threads,
+             overwrite=args.overwrite)
     except:
         raise
         sys.exit(1)
