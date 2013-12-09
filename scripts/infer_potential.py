@@ -233,7 +233,7 @@ def main(config_file, job_name=None):
                 satellite_errors[k] = np.ones_like(satellite_errors[k].value) * err
 
         # satellite has different errors from individual stars...
-        # from: http://iopscience.iop.org/1538-4357/618/1/L25/pdf/18807.web.pdf
+        # from: http://iopscience.iop.org/1538-4357/618/1/L25/png/18807.web.png
 
         o_satellite = satellite.observe(satellite_errors)
         sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
@@ -321,7 +321,7 @@ def main(config_file, job_name=None):
                                plot_kwargs=dict(markersize=4, color='r'),
                                hist_kwargs=dict(color='r'),
                                extents=extents)
-        fig.savefig(os.path.join(path,"particles_hc.pdf"))
+        fig.savefig(os.path.join(path,"particles_hc.png"))
 
         extents = [(-75,60)]*3 + [(-300,300)]*3
         fig = particles.to_frame(galactocentric)\
@@ -333,7 +333,7 @@ def main(config_file, job_name=None):
                                plot_kwargs=dict(markersize=4, color='r'),
                                hist_kwargs=dict(color='r'),
                                extents=extents)
-        fig.savefig(os.path.join(path,"particles_gc.pdf"))
+        fig.savefig(os.path.join(path,"particles_gc.png"))
 
         ix = 0
         if config["model_parameters"].has_key("potential"):
@@ -348,7 +348,7 @@ def main(config_file, job_name=None):
                         labels=[p.target.latex for p in pparams],
                         plot_kwargs=dict(color='k'),
                         hist_kwargs=dict(color='k'))
-            fig.savefig(os.path.join(path, "potential_corner_prior.pdf"))
+            fig.savefig(os.path.join(path, "potential_corner_prior.png"))
 
             # Now the actual chains, extents from the priors
             fig = triangle.corner(flatchain[:,:Npp],
@@ -357,7 +357,7 @@ def main(config_file, job_name=None):
                         labels=[p.target.latex for p in pparams],
                         plot_kwargs=dict(color='k'),
                         hist_kwargs=dict(color='k'))
-            fig.savefig(os.path.join(path, "potential_corner.pdf"))
+            fig.savefig(os.path.join(path, "potential_corner.png"))
 
             # now make trace plots
             for ii in range(Npp):
@@ -370,7 +370,7 @@ def main(config_file, job_name=None):
                            linestyle="--", color="#2B8CBE")
                 ax.set_ylim(p._ln_prior.a,p._ln_prior.b)
                 fig.suptitle(p.target.latex)
-                fig.savefig(os.path.join(path, "{}_trace.pdf".format(ii)))
+                fig.savefig(os.path.join(path, "{}_trace.png".format(ii)))
                 del fig
 
             ix += Npp
@@ -403,7 +403,7 @@ def main(config_file, job_name=None):
                                       truths=truths,
                                       extents=extents)
                 fig.suptitle("Particle {0}".format(ii))
-                fig.savefig(os.path.join(path, "particle{0}_corner.pdf"\
+                fig.savefig(os.path.join(path, "particle{0}_corner.png"\
                                          .format(ii)))
                 del fig
 
@@ -426,7 +426,7 @@ def main(config_file, job_name=None):
                     axes[kk].set_ylim(extents[kk])
 
                 fig.suptitle("Particle {}".format(ii))
-                fig.savefig(os.path.join(path, "particle{}_trace.pdf".format(ii)))
+                fig.savefig(os.path.join(path, "particle{}_trace.png".format(ii)))
                 del fig
 
         if config["model_parameters"].has_key("satellite"):
@@ -448,7 +448,7 @@ def main(config_file, job_name=None):
                         truths=truths,
                         labels=['l','b','D',\
                                 r'$\mu_l$', r'$\mu_l$','$v_r$'],)
-            fig1.savefig(os.path.join(path, "satellite_corner_prior.pdf"))
+            fig1.savefig(os.path.join(path, "satellite_corner_prior.png"))
 
             fig = triangle.corner(OO,
                                   labels=['l','b','D',\
@@ -458,7 +458,7 @@ def main(config_file, job_name=None):
                 fig.axes[ii].set_xlim(ax.get_xlim())
                 fig.axes[ii].set_ylim(ax.get_ylim())
             fig.suptitle("Satellite")
-            fig.savefig(os.path.join(path, "satellite_corner.pdf"))
+            fig.savefig(os.path.join(path, "satellite_corner.png"))
 
         sys.exit(0)
         return
