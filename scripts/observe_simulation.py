@@ -34,9 +34,16 @@ from streams.util import _parse_quantity, make_path
 # Create logger
 logger = logging.getLogger(__name__)
 
-def main(class_name, error_model, missing_dims=[], selection_expr=None, N=None,
-         output_file=None, overwrite=False, seed=None, class_kwargs=dict()):
-    """ TODO: """
+def observe_simulation(class_name, error_model, missing_dims=[], selection_expr=None, N=None,
+                       output_file=None, overwrite=False, seed=None, class_kwargs=dict()):
+    """ Observe simulation data and write the output to a standard HDF5 format.
+
+        TODO: handle missing dimensions
+
+        Parameters
+        ----------
+
+    """
 
     if os.path.exists(output_file) and overwrite:
         os.remove(output_file)
