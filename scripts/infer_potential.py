@@ -20,6 +20,7 @@ import multiprocessing
 import astropy.units as u
 from astropy.utils.console import color_print
 import emcee
+import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 np.seterr(all="ignore")
@@ -67,7 +68,7 @@ def make_path(output_data_path, name=None, overwrite=False):
         name = iso_now
 
     path = os.path.join(output_data_path, name)
-    logger.debug("Writing output to '{}'".format(path))
+    logger.debug("Output path: '{}'".format(path))
 
     if os.path.exists(path) and overwrite:
         shutil.rmtree(path)
@@ -125,11 +126,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     path = make_path(config["output_path"],
                      name=config["name"],
                      overwrite=overwrite)
-    chain_file = os.path.join(path, "chain.npy")
-    flatchain_file = os.path.join(path, "flatchain.npy")
-    lnprob_file = os.path.join(path, "lnprobability.npy")
-
-    return
+    h5file = os.path.join(path, "simulation.hdf5")
 
     ##########################################################################
     # Potential
@@ -150,7 +147,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
     # read particles from the simulation class
     particles = simulation.particles(N=config["particles"]["N"],
-                                expr=config["particles"]["selection_expr"])
+                                     expr=config["particles"]["selection_expr"])
     particles = particles.to_frame(heliocentric)
 
     logger.debug("Read in {} particles with expr='{}'"\
@@ -162,7 +159,19 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     logger.debug("Read in present position of satellite {}..."\
                  .format(satellite))
 
-    gc.collect()
+    # TODO: need better shtuff here...if hdf5file has particles, should read in from there!
+    with h5py.File(h5file, "a") as f:
+        # add particle positions to file
+        grp = f.create_group("particles")
+        grp["data"] = particles._repr_X
+        grp["coordinates"] = particles.frame.coord_names
+        grp["units"] = [str(x) for x in particles._repr_units]
+        grp["tub"] = particles.tub
+
+        grp = f.create_group("satellite")
+        grp["data"] = satellite._repr_X
+        grp["coordinates"] = satellite.frame.coord_names
+        grp["units"] = [str(x) for x in satellite._repr_units]
 
     ##########################################################################
     # Setting up the Model

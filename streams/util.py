@@ -19,7 +19,7 @@ from astropy.utils.misc import isiterable
 import astropy.units as u
 import numpy as np
 
-__all__ = ["_validate_coord", "project_root", "u_galactic"]
+__all__ = ["_validate_coord", "project_root", "u_galactic", "make_path"]
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -70,3 +70,29 @@ def _parse_quantity(q):
         unit = u.dimensionless_unscaled
 
     return u.Quantity(float(val), unit)
+
+def make_path(output_data_path, name=None, overwrite=False):
+    """ Make or return path for saving plots and sampler data files.
+
+        Parameters
+        ----------
+        output_data_path : str
+        name : str (optional)
+        overwrite : bool (optional)
+    """
+
+    if name is None:
+        iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        logger.debug("Name not specified, using current time...")
+        name = iso_now
+
+    path = os.path.join(output_data_path, name)
+    logger.debug("Output path: '{}'".format(path))
+
+    if os.path.exists(path) and overwrite:
+        shutil.rmtree(path)
+
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
