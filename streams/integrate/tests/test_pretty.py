@@ -77,7 +77,7 @@ def test_sgr_sun():
                             args=(2, acc))
     sgr_orbit,sun_orbit = pi.run(t1=0., t2=-2000., dt=-1.)
 
-    D = np.sqrt(np.sum((sgr_orbit._X[:,:3] - sun_orbit._X[:,:3])**2, axis=-1))
+    D = np.squeeze(np.sqrt(np.sum((sgr_orbit._X[:,:3] - sun_orbit._X[:,:3])**2, axis=-1)))
 
     sgr_orbit_hel = sgr_orbit.to_frame(heliocentric)
     l,b = np.squeeze(sgr_orbit_hel._X[...,:2]).T
@@ -98,10 +98,12 @@ def test_sgr_sun():
     fig,axes = plt.subplots(2,2,figsize=(10,10),sharex=True,sharey=True)
 
     x,y,z = np.squeeze(sgr_orbit._X[...,:3].T)
+    D_gc = np.sqrt(x**2 + y**2 + z**2)
     axes[0,0].plot(x,y,marker=None,linestyle='-')
     axes[1,0].plot(x,z,marker=None,linestyle='-')
     axes[1,1].plot(y,z,marker=None,linestyle='-')
     axes[0,1].set_visible(False)
+    z_sgr = z
 
     x,y,z = np.squeeze(sun_orbit._X[...,:3].T)
     axes[0,0].plot(x,y,marker=None,linestyle='-')
@@ -111,23 +113,36 @@ def test_sgr_sun():
     axes[0,0].set_xlim(-60,60)
     axes[0,0].set_ylim(-60,60)
 
+    fig.savefig(os.path.join(plot_path, "orbits.pdf"))
+
     fig,axes = plt.subplots(2,1,figsize=(12,8), sharex=True)
     V = np.squeeze(apparent_magnitude(-13.27, D*u.kpc))
-    tbl = ascii.read(os.path.join(plot_path, "extinction.tbl"))
-    AV = np.array(tbl['AV_SFD'].data)
+    # tbl = ascii.read(os.path.join(plot_path, "extinction.tbl"))
+    # AV = np.array(tbl['AV_SFD'].data)
+    theta = np.arccos(z_sgr / D)
+    AV = 0.2/np.fabs(np.cos(theta))
 
-    fig.suptitle("Sgr dwarf core heliocentric distance and V-band magnitude")
-    axes[0].plot(sgr_orbit.t.value, D, lw=2.)
-    axes[0].set_ylabel(r"$D_\odot$ [kpc]", rotation='horizontal', labelpad=35)
-    axes[0].set_ylim(15,70)
+    # distance
+    # fig.suptitle("Sgr dwarf core heliocentric distance and V-band magnitude")
+    # axes[0].plot(sgr_orbit.t.value, D, lw=2.)
+    # axes[0].set_ylabel(r"$D_\odot$ [kpc]", rotation='horizontal', labelpad=35)
+    # axes[0].set_ylim(15,70)
+
+    # apparent size
+    fig.suptitle("Sgr dwarf core angular size and V-band magnitude for the last Gyr")
+    r_tide = np.squeeze(potential._tidal_radius(2.5E8, sgr_orbit._X[...,:3]))
+    axes[0].plot(sgr_orbit.t.value, np.degrees(2*np.arctan(r_tide/D)), lw=2.)
+    axes[0].set_ylabel(r"$\theta$ [deg]", rotation='horizontal', labelpad=35)
+    axes[0].set_ylim(7.5,14.5)
+
     axes[1].plot(sgr_orbit.t.value, V, lw=2., label='uncorrected')
     axes[1].plot(sgr_orbit.t.value, V + AV, lw=2.,
-                  label='w/ SFD extinction')
+                  label=r'w/ $\sec(z)$ extinction')
     axes[1].set_ylabel("$V$ [mag]", rotation='horizontal', labelpad=35)
     axes[1].set_xlabel("time [Myr]")
-    axes[1].legend(loc='upper left', fontsize=12)
+    axes[1].legend(loc='upper center', fontsize=12)
     axes[1].set_xlim(-1000., 0.)
-    axes[1].set_ylim(2., 15)
+    axes[1].set_ylim(12., 2)
 
-    fig.subplots_adjust(hspace=0.02)
+    fig.subplots_adjust(hspace=0.03)
     fig.savefig(os.path.join(plot_path, "sgr_mag.pdf"))
