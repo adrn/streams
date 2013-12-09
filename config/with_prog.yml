@@ -1,7 +1,7 @@
 # general
 seed: 42
 script: infer_potential.py
-name: with_progenitor
+name: with_progenitor_low_err
 
 # threading
 mpi: True
@@ -10,7 +10,7 @@ mpi: True
 # plots / output
 make_plots: True
 #output_path: /tmp
-output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
+output_path: /hpc/astro/users/amp2217/output_data # hotfoot
 #output_path: /vega/astro/users/amp2217/output_data # yeti
 #output_path: /Users/adrian/projects/streams/plots # laptop
 #output_path: /home/adrian/projects/streams/plots # deimos
@@ -25,7 +25,7 @@ data:
         mass: 2.5e8 # this is specific to sgr
 
 particles:
-    N: 25
+    N: 50
     selection_expr: tub != 0
 
 model_parameters:
@@ -45,7 +45,7 @@ model_parameters:
     particles:
         _X:
             errors: # with no units specified, fractional error
-                factor: 1. # multiplies all errors
+                factor: 0.01 # multiplies all errors
                 vr: 10. km/s
                 # mu_l: 1. milliarcsecond/year
                 # mu_b: 1. milliarcsecond/year
@@ -69,6 +69,6 @@ model_parameters:
             # b: [180 deg, 90 deg, 100 kpc, 20 mas/yr, 20 mas/yr, 400 km/s]
 
 # emcee
-walkers: 16 # or auto (2 x number of parameters)
-burn_in: 0
-steps: 100
+walkers: 1024 # or auto (2 x number of parameters)
+burn_in: 1000
+steps: 500

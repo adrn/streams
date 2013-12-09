@@ -190,7 +190,7 @@ def main(config_file, job_name=None):
             else:
                 particle_errors[k] = np.ones_like(particle_errors[k].value) * err
 
-        particle_errors = particle_errors*factor
+        particle_errors = dict([(k,v*factor) for k,v in particle_errors.items()])
         o_particles = particles.observe(particle_errors)
         # now has o_particles.errors["D"] etc.
 
@@ -235,7 +235,7 @@ def main(config_file, job_name=None):
 
         # satellite has different errors from individual stars...
         # from: http://iopscience.iop.org/1538-4357/618/1/L25/png/18807.web.png
-        satellite_errors = satellite_errors*factor
+        satellite_errors = dict([(k,v*factor) for k,v in satellite_errors.items()])
         o_satellite = satellite.observe(satellite_errors)
         sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
                         for n in o_satellite.frame.coord_names])

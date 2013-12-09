@@ -10,8 +10,8 @@ mpi: True
 # plots / output
 make_plots: True
 #output_path: /tmp
-#output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
-output_path: /vega/astro/users/amp2217/output_data # yeti
+output_path: /hpc/astro/users/amp2217/jobs/output_data # hotfoot
+#output_path: /vega/astro/users/amp2217/output_data # yeti
 overwrite: True
 
 potential:
@@ -23,7 +23,7 @@ data:
         mass: 2.5e8 # this is specific to sgr
 
 particles:
-    N: 25
+    N: 50
     selection_expr: tub != 0
 
 model_parameters:
@@ -42,6 +42,6 @@ model_parameters:
             b: 150 km/s
 
 # emcee
-walkers: 128 # or auto (2 x number of parameters)
-burn_in: 0
-steps: 100
+walkers: 32 # or auto (2 x number of parameters)
+burn_in: 25
+steps: 25

@@ -1,4 +1,4 @@
-#!/vega/astro/users/amp2217/yt-x86_64/bin/python
+#!/hpc/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
 """ Create and submit a job to the cluster given a streams config file. """
