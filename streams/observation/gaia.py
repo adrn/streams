@@ -123,6 +123,6 @@ def gaia_spitzer_errors(particles):
     D = 0.02*particles["D"]
 
     # radial velocity
-    vr = 10.*u.km/u.s * np.ones_like(particles["vr"].value)
+    vr = 5.*u.km/u.s * np.ones_like(particles["vr"].value)
 
     return dict(l=l, b=b, D=D, mul=mul,mub=mub,vr=vr)
