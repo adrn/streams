@@ -46,6 +46,7 @@ class Orbit(DynamicalBase):
         """
 
         super(Orbit, self).__init__(coords, frame, units=units, meta=meta)
+        self.ndim = self._X.shape[-1]
 
         if self._X.ndim != 3:
             raise ValueError("Orbit coordinate data must contain 2 dimensions.")
@@ -79,6 +80,28 @@ class Orbit(DynamicalBase):
         q = [self[n].to(units[ii]) \
                 for ii,n in enumerate(self.frame.coord_names)]
         return Orbit(self.t, q, frame=self.frame, meta=self.meta)
+
+    def to_frame(self, frame):
+        """ Transform coordinates and reference frame.
+
+            TODO: With astropy 0.4 (or 1.0) this will need to be
+                  seriously updated.
+
+            Parameters
+            ----------
+            frame : ReferenceFrame
+        """
+
+        if self.frame == frame:
+            return self.copy()
+
+        # frame transformation happens with usys units
+        new_X = self.frame.to(frame, self._X)
+        o = Orbit(self.t.copy(), np.rollaxis(new_X, -1, 0),
+                     frame=frame,
+                     units=frame.units,
+                     meta=self.meta)
+        return o.to_units(frame.repr_units)
 
     def plot(self, fig=None, labels=None, **kwargs):
         """ Make a corner plot showing all dimensions. """
