@@ -98,52 +98,22 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     path = make_path(config["output_path"],
                      name=config["name"],
                      overwrite=overwrite)
-    h5file = os.path.join(path, "simulation.hdf5")
+    output_file = os.path.join(path, "inference.hdf5")
 
-    ##########################################################################
-    # Potential
-    #
     # get the potential object specified from the potential subpackage
     Potential = getattr(s_potential, config["potential"]["class_name"])
     potential = Potential()
     logger.debug("Using potential '{}'..."\
                  .format(config["potential"]["class_name"]))
 
-    ##########################################################################
-    # Simulation data
-    #
-    # read the simulation data from the specified class
-    np.random.seed(config["seed"])
-    Simulation = getattr(s_io, config["data"]["class_name"])
-    simulation = Simulation(**config["data"].get("kwargs", dict()))
-
-    # read particles from the simulation class
-    particles = simulation.particles(N=config["particles"]["N"],
-                                     expr=config["particles"]["selection_expr"])
-    particles = particles.to_frame(heliocentric)
-
-    logger.debug("Read in {} particles with expr='{}'"\
-                 .format(particles.nparticles, particles.expr))
-
-    # read the satellite position
-    satellite = simulation.satellite()
-    satellite = satellite.to_frame(heliocentric)
-    logger.debug("Read in present position of satellite {}..."\
-                 .format(satellite))
-
-    # TODO: need better shtuff here...if hdf5file has particles, should read in from there!
-    with h5py.File(h5file, "a") as f:
-        # add particle positions to file
-        grp = f.create_group("particles")
-        grp["data"] = particles._repr_X
-        grp["coordinates"] = particles.frame.coord_names
-        grp["units"] = [str(x) for x in particles._repr_units]
-        grp["tub"] = particles.tub
-
-        grp = f.create_group("satellite")
-        grp["data"] = satellite._repr_X
-        grp["coordinates"] = satellite.frame.coord_names
-        grp["units"] = [str(x) for x in satellite._repr_units]
+    # read data from an input HDF5 file
+    # TODO: make several input files
+    #   - perfect_data.hdf5 (no errors on particles or satellite)
+    #   - perfectSatellite_observedParticles.hdf5 (no errors on satellite, gaia+spitzer on particles)
+    #   - observedSatellite_observedParticles.hdf5 (errors on everything)
+    #   - noSatellite_observedParticles.hdf5 (no satellite data all 0's, observed particles)
+    # TODO: knows if hdf5 has 'errors' to return ObservedParticle, else Particle
+    s_io.read_hdf5(input_file) # contains stars/satellite info
 
     ##########################################################################
     # Setting up the Model
@@ -153,50 +123,25 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     # Potential parameters
     potential_params = config["model_parameters"].get("potential", dict())
     for name,kwargs in potential_params.items():
+        # TODO: not so great
         model_p = potential.model_parameter(name, **kwargs)
-        logger.debug("{} {} {}".format(name, model_p._ln_prior.a, model_p._ln_prior.b))
+        logger.debug("Prior on {}: U({},{})".format(name, model_p._ln_prior.a,
+                                                          model_p._ln_prior.b))
         model_parameters.append(model_p)
 
-    # Particle parameters
-    if config["model_parameters"].has_key("particles"):
-        # Observational errors
-        # first get the Gaia + Spitzer errors as default
-        particle_errors = gaia_spitzer_errors(particles)
+    if particles is an ObservedParticle instance:
 
-        particle_config = config["model_parameters"]["particles"]
+        # prior on the time the particle came unbound
+        # TODO: get t1,t2 from config file
+        # TODO: all observed simulation particles must have tub attribute?
+        lo = [t2] * particles.nparticles
+        hi = [t1] * particles.nparticles
+        prior = LogUniformPrior(lo, hi)
+        model_parameters.append(ModelParameter(target=particles,
+                                               attr="tub",
+                                               ln_prior=prior))
 
-        # time unbound / escape time (tub)
-        if "tub" in particle_config.keys():
-            lo = [simulation.t2] * particles.nparticles
-            hi = [simulation.t1] * particles.nparticles
-            prior = LogUniformPrior(lo, hi)
-            model_parameters.append(ModelParameter(target=particles,
-                                                   attr="tub",
-                                                   ln_prior=prior))
-
-        errors = particle_config["_X"].get("errors",dict())
-
-        # now get errors specified by user in the yml configuration
-        factor = errors.get("factor", 1.)
-        for k,v in errors.items():
-            if not particle_errors.has_key(k):
-                logger.debug("Skipping error key {} because not found "
-                             "in particle_errors...".format(k))
-                continue
-
-            err = _parse_quantity(v)
-            logger.debug("Dimension {}, error {}...".format(k, err))
-
-            if err.unit == u.dimensionless_unscaled:
-                # fractional error
-                particle_errors[k] = err.value * particles[k]
-            else:
-                particle_errors[k] = np.ones_like(particle_errors[k].value) * err
-
-        particle_errors = particle_errors*factor
-        o_particles = particles.observe(particle_errors)
-        # now has o_particles.errors["D"] etc.
-
+        # TODO: replace below with particles._error_X
         sigmas = np.array([o_particles.errors[n].decompose(usys).value \
                     for n in o_particles.frame.coord_names]).T
         covs = [np.diag(s**2) for s in sigmas]
@@ -208,41 +153,11 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                            ln_prior=prior)
         model_parameters.append(p)
 
-    else:
-        o_particles = particles.copy()
-
     # Satellite parameters
-    if config["model_parameters"].has_key("satellite"):
-        satellite_config = config["model_parameters"]["satellite"]
-        errors = satellite_config["_X"].get("errors",dict())
-
-        # first get the Gaia + Spitzer errors as default
-        satellite_errors = gaia_spitzer_errors(satellite)
-
-        # now get errors specified by user in the yml configuration
-        factor = errors.get("factor", 1.)
-        for k,v in errors.items():
-            if not satellite_errors.has_key(k):
-                logger.debug("Skipping error key {} because not found "
-                             "in satellite_errors...".format(k))
-                continue
-
-            err = _parse_quantity(v)
-            logger.debug("Dimension {}, error {}...".format(k, err))
-
-            if err.unit == u.dimensionless_unscaled:
-                # fractional error
-                satellite_errors[k] = err.value * satellite[k]
-            else:
-                satellite_errors[k] = np.ones_like(satellite_errors[k].value) * err
-
-        # satellite has different errors from individual stars...
-        # from: http://iopscience.iop.org/1538-4357/618/1/L25/png/18807.web.png
-        satellite_errors = satellite_errors*factor
-        o_satellite = satellite.observe(satellite_errors)
+    if satellite is an ObservedParticle instance:
+        # TODO: replace below with satellite._error_X
         sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
                         for n in o_satellite.frame.coord_names])
-
         covs = [np.diag(s**2) for s in sigmas.T]
 
         prior = LogNormalPrior(np.array(o_satellite._X),
@@ -252,29 +167,24 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                            ln_prior=prior)
         model_parameters.append(p)
 
-    else:
-        o_satellite = satellite.copy()
-
     # now create the model
-    model = StreamModel(potential, simulation, o_satellite, o_particles,
+    # TODO: fix stream model args
+    model = StreamModel(potential, satellite, particles,
                         parameters=model_parameters)
     logger.info("Model has {} parameters".format(model.ndim))
 
-    ##########################################################################
     # Emcee!
-    #
-
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
     if str(Nwalkers).lower() == "auto":
-        Nwalkers = model.ndim*2 + 2
+        Nwalkers = model.ndim*4
     logger.debug("{} walkers".format(Nwalkers))
 
     # sample starting points for the walkers from the prior
     p0 = model.sample(size=Nwalkers)
 
-    if not os.path.exists(chain_file):
-        logger.debug("Cache files don't exist...")
+    if not os.path.exists(output_file):
+        logger.debug("Output file '{}' doesn't exist...".format(output_file))
         logger.debug("Initializing sampler...")
         sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
                                         pool=pool)
@@ -292,28 +202,23 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         pos, prob, state = sampler.run_mcmc(pos, Nsteps)
 
         # write the sampler data to numpy save files
-        logger.info("Writing sampler data to files in {}".format(path))
-        np.save(chain_file, sampler.chain)
-        np.save(flatchain_file, sampler.flatchain)
-        np.save(lnprob_file, sampler.lnprobability)
+        logger.info("Writing sampler data to '{}'...".format(output_file))
 
-        chain = np.array(sampler.chain)
-        flatchain = np.array(sampler.flatchain)
-        lnprobability = np.array(sampler.lnprobability)
-
-        del sampler
-
-    else:
-        logger.debug("Cache files exist, reading in save files...")
-        chain = np.load(chain_file)
-        flatchain = np.load(flatchain_file)
-        lnprobability = np.load(lnprob_file)
+        with h5py.File(output_file, "w") as f:
+            #grp = f.create_group("sampler")
+            f["chain"] = sampler.chain
+            f["flatchain"] = sampler.flatchain
+            f["lnprobability"] = sampler.lnprobability
+            f["p0"] = p0
 
     try:
         pool.close()
     except AttributeError:
         pass
 
+    return output_file
+
+def plot_whatever():
     if config.get("make_plots", False):
         logger.info("Generating plots and writing to {}...".format(path))
 
