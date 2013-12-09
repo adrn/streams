@@ -10,10 +10,8 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import gc
-import shutil
 import copy
 import logging
-from datetime import datetime
 import multiprocessing
 
 # Third-party
@@ -44,39 +42,13 @@ from streams.inference import (ModelParameter, StreamModel,
 import streams.io as s_io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
-from streams.util import _parse_quantity
+from streams.util import _parse_quantity, make_path
 
 global pool
 pool = None
 
 # Create logger
 logger = logging.getLogger(__name__)
-
-def make_path(output_data_path, name=None, overwrite=False):
-    """ Make or return path for saving plots and sampler data files.
-
-        Parameters
-        ----------
-        output_data_path : str
-        name : str (optional)
-        overwrite : bool (optional)
-    """
-
-    if name is None:
-        iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        logger.debug("Name not specified, using current time...")
-        name = iso_now
-
-    path = os.path.join(output_data_path, name)
-    logger.debug("Output path: '{}'".format(path))
-
-    if os.path.exists(path) and overwrite:
-        shutil.rmtree(path)
-
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-    return path
 
 def get_parallel_pool(mpi=False, threads=None):
     """ Get a pool object to pass to emcee for parallel processing.
