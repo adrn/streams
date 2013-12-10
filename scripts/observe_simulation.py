@@ -103,6 +103,7 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
 
         if isinstance(o_particles, ObservedParticle):
             grp["error"] = o_particles._repr_error_X
+            grp["true_data"] = particles._repr_X
         grp["coordinate_names"] = o_particles.frame.coord_names
         grp["units"] = [str(x) for x in o_particles._repr_units]
         grp["tub"] = o_particles.tub
@@ -111,6 +112,7 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
         grp["data"] = o_satellite._repr_X
         if isinstance(o_satellite, ObservedParticle):
             grp["error"] = o_satellite._repr_error_X
+            grp["true_data"] = satellite._repr_X
         grp["coordinate_names"] = o_satellite.frame.coord_names
         grp["units"] = [str(x) for x in o_satellite._repr_units]
         grp["m"] = o_satellite.m
@@ -153,7 +155,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
     # TODO: class kwargs
+    #particle_error_model=gaia_spitzer_errors, satellite_error_model=None,
     observe_simulation(args.class_name,
-        particle_error_model=None, satellite_error_model=None,
+        particle_error_model=gaia_spitzer_errors, satellite_error_model=None,
         selection_expr=args.expr, N=args.N, output_file=args.output_file,
         overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass="2.5e8"))
