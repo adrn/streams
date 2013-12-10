@@ -217,7 +217,9 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         prior = LogNormalPrior(np.array(satellite._X),
                                cov=np.array(covs))
         logger.info("Added true satellite position as model parameter:")
-        logger.debug("\t X={} err={}".format(satellite._repr_X,satellite._repr_error_X))
+        with print_options(precision=2):
+            logger.debug("\t X={}\n\t\terr={}".format(satellite._repr_X,
+                                                      satellite._repr_error_X))
         p = ModelParameter(target=satellite,
                            attr="_X",
                            ln_prior=prior)
@@ -443,6 +445,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             fig.savefig(os.path.join(path, "satellite_prior."))
             del fig
 
+            logger.debug("Plotting satellite posterior")
             fig = triangle.corner(s._repr_X,
                                   labels=labels,
                                   truths=truths,
