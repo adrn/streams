@@ -26,6 +26,7 @@ import yaml
 # Project
 from streams import usys
 from streams.coordinates.frame import heliocentric, galactocentric
+from streams.dynamics import ObservedParticle
 import streams.io as s_io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
@@ -34,8 +35,9 @@ from streams.util import _parse_quantity, make_path
 # Create logger
 logger = logging.getLogger(__name__)
 
-def observe_simulation(class_name, error_model, missing_dims=[], selection_expr=None, N=None,
-                       output_file=None, overwrite=False, seed=None, class_kwargs=dict()):
+def observe_simulation(class_name, particle_error_model=None, satellite_error_model=None,
+                       selection_expr=None, N=None, output_file=None, overwrite=False,
+                       seed=None, class_kwargs=dict()):
     """ Observe simulation data and write the output to a standard HDF5 format.
 
         TODO: handle missing dimensions
@@ -80,28 +82,39 @@ def observe_simulation(class_name, error_model, missing_dims=[], selection_expr=
     satellite = satellite.to_frame(heliocentric)
     logger.debug("Read in present position of satellite...")
 
-    # # first get the Gaia + Spitzer errors as default
-    # particle_errors = gaia_spitzer_errors(particles)
-    particle_errors = error_model(particles)
-    o_particles = particles.observe(particle_errors)
+    # observe the particles if necessary
+    if particle_error_model is not None:
+        particle_errors = particle_error_model(particles)
+        o_particles = particles.observe(particle_errors)
+    else:
+        o_particles = particles
 
-    error_X = np.zeros_like(o_particles._repr_X)
-    for ii,n in enumerate(o_particles.frame.coord_names):
-        error_X[...,ii] = o_particles.errors[n].to(o_particles._repr_units[ii]).value
+    # observe the satellite if necessary
+    if satellite_error_model:
+        satellite_errors = satellite_error_model(satellite)
+        o_satellite = satellite.observe(satellite_errors)
+    else:
+        o_satellite = satellite
 
     with h5py.File(output_file, "w") as f:
         # add particle positions to file
         grp = f.create_group("particles")
         grp["data"] = o_particles._repr_X
-        grp["error"] = o_particles._repr_error_X
+
+        if isinstance(o_particles, ObservedParticle):
+            grp["error"] = o_particles._repr_error_X
         grp["coordinate_names"] = o_particles.frame.coord_names
         grp["units"] = [str(x) for x in o_particles._repr_units]
         grp["tub"] = o_particles.tub
 
         grp = f.create_group("satellite")
-        grp["data"] = satellite._repr_X
-        grp["coordinate_names"] = satellite.frame.coord_names
-        grp["units"] = [str(x) for x in satellite._repr_units]
+        grp["data"] = o_satellite._repr_X
+        if isinstance(o_satellite, ObservedParticle):
+            grp["error"] = o_satellite._repr_error_X
+        grp["coordinate_names"] = o_satellite.frame.coord_names
+        grp["units"] = [str(x) for x in o_satellite._repr_units]
+        grp["m"] = o_satellite.m
+        grp["v_disp"] = o_satellite.v_disp
 
         grp = f.create_group("simulation")
         grp["t1"] = simulation.t1
@@ -139,8 +152,8 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
 
-    # TODO: missing dimensions
     # TODO: class kwargs
-    observe_simulation(args.class_name, gaia_spitzer_errors, missing_dims=[],
-         selection_expr=args.expr, N=args.N, output_file=args.output_file,
-         overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass="2.5e8"))
+    observe_simulation(args.class_name,
+        particle_error_model=None, satellite_error_model=None,
+        selection_expr=args.expr, N=args.N, output_file=args.output_file,
+        overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass="2.5e8"))
