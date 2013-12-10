@@ -189,7 +189,6 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                            ln_prior=prior)
         model_parameters.append(p)
 
-    '''
     # now create the model
     # TODO: fix stream model args
     model = StreamModel(potential, satellite, particles,
@@ -209,7 +208,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     if not os.path.exists(output_file):
         logger.debug("Output file '{}' doesn't exist...".format(output_file))
         logger.debug("Initializing sampler...")
-        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model, pool=pool)
+        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
+                                        pool=pool, args=(t1,t2,dt))
 
         Nburn_in = config.get("burn_in", 0)
         Nsteps = config["steps"]
@@ -232,6 +232,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             f["flatchain"] = sampler.flatchain
             f["lnprobability"] = sampler.lnprobability
             f["p0"] = p0
+
+    '''
 
     try:
         pool.close()
