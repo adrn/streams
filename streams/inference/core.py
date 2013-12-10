@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class StreamModel(object):
 
     def __init__(self, potential, satellite, particles,
-                 parameters=[], Npotential=0):
+                 parameters=[]):
         """ ...
 
             Parameters
@@ -43,9 +43,6 @@ class StreamModel(object):
         self.parameters = parameters
 
         self.acc = np.zeros((particles.nparticles+1,3))
-
-        # TODO: this sucks
-        self._Npotential = Npotential
 
     def __call__(self, p, *args):
         self.vector = np.array(p)
@@ -157,7 +154,7 @@ class StreamModel(object):
         ll = self.ln_likelihood(*args)
         if not np.isfinite(ll):
             return -np.inf
-        return lp + l
+        return lp + ll
 
     @property
     def parameter_idx_to_plot_idx(self):
@@ -175,13 +172,12 @@ class StreamModel(object):
         # group the particles in to 6D + tub
         if isinstance(particles, ObservedParticle):
             for ii in range(particles.nparticles):
-                _map[p_stop+ii] = plot_idx # tub
+                _map[Npp+ii] = plot_idx # tub
 
-                start = p_stop + particles.nparticles + 6*ii
+                start = Npp + particles.nparticles + 6*ii
                 stop = start + 6
                 _map[start:stop] = plot_idx
                 plot_idx += 1
-            p_stop = stop
 
         if isinstance(satellite, ObservedParticle):
             start = stop

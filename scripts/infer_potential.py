@@ -225,14 +225,9 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
     # now create the model
     # TODO: don't specify number of potential parameters
-    model = StreamModel(potential, satellite, particles,
-                        parameters=model_parameters, Npotential=len(potential_params))
+    model = StreamModel(potential, satellite.copy(), particles.copy(),
+                        parameters=model_parameters)
     logger.info("Model has {} parameters".format(model.ndim))
-
-    for xx in np.unique(model.parameter_idx_to_plot_idx):
-        print(sum(model.parameter_idx_to_plot_idx == xx))
-
-    return
 
     # Emcee!
     # read in the number of walkers to use
@@ -266,6 +261,11 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         pool.close()
 
     if make_plots:
+        with h5py.File(output_file, "r") as f:
+            chain = f["chain"].value
+            flatchain = f["flatchain"].value
+            p0 = f["p0"].value
+
         logger.info("Making plots and writing to {}...".format(path))
 
         # plot observed data / true particles
@@ -284,46 +284,48 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                              extents=extents)
         fig.savefig(os.path.join(path,"particles_gc.png"))
 
-    '''
-        ix = 0
-        if config["model_parameters"].has_key("potential"):
+        # plot the potential parameters
+        Npp = len(potential_params)
+        if Npp > 0:
             # Make a corner plot for the potential parameters
-            Npp = len(potential_params) # number of potential parameters
             pparams = model.parameters[:Npp]
 
             # First, just samples from the priors:
+            logger.debug("Plotting prior over potential parameters")
             fig = triangle.corner(p0[:,:Npp],
                         truths=[p.target._truth for p in pparams],
                         extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
                         labels=[p.target.latex for p in pparams],
                         plot_kwargs=dict(color='k'),
                         hist_kwargs=dict(color='k'))
-            fig.savefig(os.path.join(path, "potential_corner_prior.png"))
+            fig.savefig(os.path.join(path, "potential_prior.png"))
 
             # Now the actual chains, extents from the priors
+            logger.debug("Plotting posterior over potential parameters")
             fig = triangle.corner(flatchain[:,:Npp],
                         truths=[p.target._truth for p in pparams],
                         extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
                         labels=[p.target.latex for p in pparams],
                         plot_kwargs=dict(color='k'),
                         hist_kwargs=dict(color='k'))
-            fig.savefig(os.path.join(path, "potential_corner.png"))
+            fig.savefig(os.path.join(path, "potential.png"))
 
             # now make trace plots
+            fig,axes = plt.subplots(Npp,1,figsize=(8,12))
             for ii in range(Npp):
+                ax = axes[ii]
                 p = pparams[ii]
-                fig,ax = plt.subplots(1,1,figsize=(10,6))
                 for jj in range(chain.shape[0]):
                     ax.plot(chain[jj,:,ii], drawstyle="steps", color='k', alpha=0.1)
 
                 ax.axhline(p.target._truth, linewidth=4., alpha=0.5,
                            linestyle="--", color="#2B8CBE")
                 ax.set_ylim(p._ln_prior.a,p._ln_prior.b)
-                fig.suptitle(p.target.latex)
-                fig.savefig(os.path.join(path, "{}_trace.png".format(ii)))
-                del fig
+                ax.set_ylabel(p.target.latex)
+            fig.savefig(os.path.join(path, "potential_trace.png"))
+            del fig
 
-            ix += Npp
+        '''
 
         if config["model_parameters"].has_key("particles"):
 
