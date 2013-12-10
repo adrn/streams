@@ -11,6 +11,7 @@ import os, sys
 import gc
 
 # Third-party
+import h5py
 import numpy as np
 import numexpr
 import astropy.units as u
@@ -22,7 +23,7 @@ import astropy.coordinates as coord
 from ..coordinates import SgrCoordinates, distance_to_sgr_plane
 from ..dynamics import Particle, Orbit
 
-__all__ = ["read_table"]
+__all__ = ["read_table", "read_hdf5"]
 
 def read_table(filename, expr=None, N=None):
     _table = np.genfromtxt(filename, names=True)
@@ -37,30 +38,16 @@ def read_table(filename, expr=None, N=None):
 
     return _table
 
-def add_sgr_coordinates(self):
-    # TODO: this is broken
-    """ Given a table of catalog data, add columns with Sagittarius
-        Lambda and Beta coordinates.
+def read_hdf5(h5file):
+    """ Read particles and satellite from a given HDF5 file. """
 
-        Parameters
-        ----------
-        data : astropy.table.Table
-            Must contain ra, dec or l, b, and dist columns.
-    """
+    with h5py.File(h5file, "r") as f:
+        try:
+            ptcl = f["particles"]
+            satl = f["satellite"]
+        except KeyError:
+            raise ValueError("Invalid HDF5 file. Missing 'particles' or "
+                             "'satellite' group.")
 
-    try:
-        pre = coord.Galactic(data['l'],data['b'],unit=(u.deg,u.deg))
-    except KeyError:
-        pre = coord.ICRS(data['ra'],data['dec'],unit=(u.deg,u.deg))
-
-    sgr = pre.transform_to(SgrCoordinates)
-    sgr_plane_dist = np.array(data['dist']) * np.sin(sgr.Beta.radian)
-
-    Lambda = Column(sgr.Lambda.degree, name='Lambda', unit=u.degree)
-    Beta = Column(sgr.Beta.degree, name='Beta', unit=u.degree)
-    sgr_plane_D = Column(sgr_plane_dist, name='Z_sgr', unit=u.kpc)
-    data.add_column(Lambda)
-    data.add_column(Beta)
-    data.add_column(sgr_plane_D)
-
-    return data
+        print(ptcl)
+        print(satl)
