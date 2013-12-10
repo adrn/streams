@@ -60,6 +60,14 @@ def read_hdf5(h5file):
                          units=[u.Unit(x) for x in ptcl["units"]])
             p.tub = ptcl["tub"].value
 
+        if "error" in satl.keys():
+            s = ObservedParticle(satl["data"].value.T, satl["error"].value.T,
+                                 frame=heliocentric,
+                                 units=[u.Unit(x) for x in satl["units"]])
+        else:
+            s = Particle(satl["data"].value.T,
+                         frame=heliocentric,
+                         units=[u.Unit(x) for x in satl["units"]])
+
         print(p)
-        print(ptcl.keys())
-        print(satl.keys())
+        print(s)
