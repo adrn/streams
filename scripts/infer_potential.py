@@ -186,8 +186,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     if not os.path.exists(output_file):
         logger.debug("Output file '{}' doesn't exist...".format(output_file))
         logger.debug("Initializing sampler...")
-        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
-                                        pool=pool)
+        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model, pool=pool)
 
         Nburn_in = config.get("burn_in", 0)
         Nsteps = config["steps"]

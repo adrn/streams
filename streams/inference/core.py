@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 class StreamModel(object):
 
-    def __init__(self, potential, simulation,
-                 satellite, particles, parameters=[]):
+    def __init__(self, potential, satellite, particles,
+                 parameters=[]):
         """ ...
 
             Parameters
@@ -38,13 +38,9 @@ class StreamModel(object):
         """
 
         self.potential = potential
-        self.simulation = simulation
         self.satellite = satellite
         self.particles = particles
         self.parameters = parameters
-
-        # TODO HACK because of:
-        self.simulation._table = None
 
         self.acc = np.zeros((particles.nparticles+1,3))
 
@@ -102,9 +98,7 @@ class StreamModel(object):
             velocity dispersion.
         """
 
-        t1 = self.simulation.t1
-        t2 = self.simulation.t2
-        dt = -1. # TODO HACK
+        t1,t2,dt = args
 
         # The true positions/velocities of the particles are parameters
         Nparticles = self.particles.nparticles
