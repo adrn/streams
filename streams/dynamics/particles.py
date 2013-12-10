@@ -164,17 +164,26 @@ class ObservedParticle(Particle):
         """
         super(ObservedParticle, self).__init__(coords, frame, units=units, meta=meta)
 
-        # TODO: should parse errors same way as coords...
+        # parse errors same as coords
         self.errors = dict()
         self._error_X = np.zeros_like(self._X)
-        for ii,name in enumerate(self.frame.coord_names):
-            try:
-                val = errors[name].to(self._internal_units[ii]).value
-            except:
-                raise ValueError("Invalid error specification.")
+        for ii in range(self.ndim):
+            # make sure this dimension's data is at least 1D
+            q = np.atleast_1d(errors[ii]).copy()
 
-            self.errors[name] = errors[name].to(self._repr_units[ii])
-            self._error_X[...,ii] = val
+            if hasattr(q, "unit") and q.unit != u.dimensionless_unscaled:
+                unit = q.unit
+                value = q.decompose(usys).value
+            else:
+                unit = self._repr_units[ii]
+                value = (q*unit).decompose(usys).value
+
+            self._error_X[...,ii] = value
+
+            # set error dictionary
+            name = self.frame.coord_names[ii]
+            self.errors[name] = (self._error_X[...,ii]*self._internal_units[ii])\
+                                    .to(self._repr_units[ii])
 
     @property
     def _repr_error_X(self):
