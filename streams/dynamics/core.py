@@ -19,8 +19,6 @@ import triangle
 from .. import usys
 from ..coordinates.frame import ReferenceFrame
 
-__all__ = ["Particle"]
-
 class DynamicalBase(object):
 
     def __init__(self, coords, frame, units=None, meta=dict()):
