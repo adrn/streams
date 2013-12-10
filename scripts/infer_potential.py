@@ -224,41 +224,13 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         model_parameters.append(p)
 
     # now create the model
-    # TODO: fix stream model args
+    # TODO: don't specify number of potential parameters
     model = StreamModel(potential, satellite, particles,
-                        parameters=model_parameters)
+                        parameters=model_parameters, Npotential=len(potential_params))
     logger.info("Model has {} parameters".format(model.ndim))
 
-    # make an index map array to go from chain parameter index to plot index
-    parameter_idx_to_plot_idx = np.zeros(model.ndim, dtype=int)
-
-    # group the potential parameters
-    plot_idx = 0
-    p_start = 0
-    p_stop = len(potential_params)
-    if p_stop > 0:
-        parameter_idx_to_plot_idx[p_start:p_stop] = plot_idx
-        plot_idx += 1
-
-    # group the particles in to 6D + tub
-    if isinstance(particles, ObservedParticle):
-        for ii in range(particles.nparticles):
-            parameter_idx_to_plot_idx[p_stop+ii] = plot_idx # tub
-
-            start = p_stop + particles.nparticles + 6*ii
-            stop = start + 6
-            parameter_idx_to_plot_idx[start:stop] = plot_idx
-            plot_idx += 1
-        p_stop = stop
-
-    if isinstance(satellite, ObservedParticle):
-        start = stop
-        stop = start + 6
-        parameter_idx_to_plot_idx[start:stop] = plot_idx
-        plot_idx += 1
-
-    for xx in np.unique(parameter_idx_to_plot_idx):
-        print(sum(parameter_idx_to_plot_idx == xx))
+    for xx in np.unique(model.parameter_idx_to_plot_idx):
+        print(sum(model.parameter_idx_to_plot_idx == xx))
 
     return
 
