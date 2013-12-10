@@ -57,6 +57,9 @@ particles:
             # a: [-180 deg,-90 deg,10 kpc,-20 mas/yr,-20 mas/yr,-400 km/s]
             # b: [180 deg, 90 deg, 100 kpc, 20 mas/yr, 20 mas/yr, 400 km/s]
 
+# integration
+dt: -1.
+
 # emcee
 walkers: 16 # or auto (2 x number of parameters)
 burn_in: 0

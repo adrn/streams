@@ -36,7 +36,7 @@ except ImportError:
 # Project
 from streams import usys
 from streams.coordinates.frame import heliocentric, galactocentric
-from streams.dynamics import Particle, Orbit
+from streams.dynamics import Particle, Orbit, ObservedParticle
 from streams.inference import (ModelParameter, StreamModel,
                                LogNormalPrior, LogUniformPrior)
 import streams.io as io
@@ -112,7 +112,30 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     #   - observedSatellite_observedParticles.hdf5 (errors on everything)
     #   - noSatellite_observedParticles.hdf5 (no satellite data all 0's, observed particles)
     # TODO: knows if hdf5 has 'errors' to return ObservedParticle, else Particle
-    io.read_hdf5(config["input_file"]) # contains stars/satellite info
+    d = io.read_hdf5(config["input_file"]) # contains stars/satellite info
+    satellite = d["satellite"]
+    particles = d["particles"]
+    logger.debug("Read in particles: {}".format(particles))
+    logger.debug("Read in satellite: {}".format(satellite))
+
+    # get integration bounding times
+    if d.has_key("t1"):
+        t1 = float(d["t1"])
+    elif config.has_key("t1"):
+        t1 = float(config["t1"])
+    else:
+        raise ValueError("Must specify t1 in input HDF5 or config file.")
+
+    if d.has_key("t2"):
+        t2 = float(d["t2"])
+    elif config.has_key("t2"):
+        t2 = float(config["t2"])
+    else:
+        raise ValueError("Must specify t2 in input HDF5 or config file.")
+
+    dt = config.get("dt", -1.)
+    if dt > 0.:
+        raise ValueError("Are you sure you want a positive dt? {}".format(dt))
 
     # Set up the Model
     model_parameters = []
@@ -129,11 +152,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         model_p = ModelParameter(target=p, attr="_value", ln_prior=prior)
         model_parameters.append(model_p)
 
-    return
-
-    '''
-    if particles is an ObservedParticle instance:
-
+    if isinstance(particles, ObservedParticle):
         # prior on the time the particle came unbound
         # TODO: get t1,t2 from config file
         # TODO: all observed simulation particles must have tub attribute?
@@ -145,17 +164,17 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                                                ln_prior=prior))
 
         # TODO: replace below with particles._error_X
-        sigmas = np.array([o_particles.errors[n].decompose(usys).value \
-                    for n in o_particles.frame.coord_names]).T
-        covs = [np.diag(s**2) for s in sigmas]
+        covs = [np.diag(s**2) for s in particles._error_X]
 
-        prior = LogNormalPrior(np.array(o_particles._X),
+        prior = LogNormalPrior(np.array(particles._X),
                                cov=np.array(covs))
-        p = ModelParameter(target=o_particles,
+        p = ModelParameter(target=particles,
                            attr="_X",
                            ln_prior=prior)
         model_parameters.append(p)
 
+
+    '''
     # Satellite parameters
     if satellite is an ObservedParticle instance:
         # TODO: replace below with satellite._error_X

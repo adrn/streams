@@ -103,6 +103,10 @@ def observe_simulation(class_name, error_model, missing_dims=[], selection_expr=
         grp["coordinate_names"] = satellite.frame.coord_names
         grp["units"] = [str(x) for x in satellite._repr_units]
 
+        grp = f.create_group("simulation")
+        grp["t1"] = simulation.t1
+        grp["t2"] = simulation.t2
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 

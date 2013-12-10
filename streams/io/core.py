@@ -41,6 +41,7 @@ def read_table(filename, expr=None, N=None):
 def read_hdf5(h5file):
     """ Read particles and satellite from a given HDF5 file. """
 
+    return_dict = dict()
     with h5py.File(h5file, "r") as f:
         try:
             ptcl = f["particles"]
@@ -59,6 +60,7 @@ def read_hdf5(h5file):
                          frame=heliocentric,
                          units=[u.Unit(x) for x in ptcl["units"]])
             p.tub = ptcl["tub"].value
+        return_dict["particles"] = p
 
         if "error" in satl.keys():
             s = ObservedParticle(satl["data"].value.T, satl["error"].value.T,
@@ -68,5 +70,10 @@ def read_hdf5(h5file):
             s = Particle(satl["data"].value.T,
                          frame=heliocentric,
                          units=[u.Unit(x) for x in satl["units"]])
+        return_dict["satellite"] = s
 
-    return dict(satellite=s, particles=p)
+        if "simulation" in f.keys():
+            return_dict["t1"] = float(f["simulation"]["t1"].value)
+            return_dict["t2"] = float(f["simulation"]["t2"].value)
+
+    return return_dict
