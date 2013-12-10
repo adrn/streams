@@ -112,25 +112,26 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     #   - observedSatellite_observedParticles.hdf5 (errors on everything)
     #   - noSatellite_observedParticles.hdf5 (no satellite data all 0's, observed particles)
     # TODO: knows if hdf5 has 'errors' to return ObservedParticle, else Particle
-    io.read_hdf5(input_file) # contains stars/satellite info
-
+    io.read_hdf5(config["input_file"]) # contains stars/satellite info
 
     # Set up the Model
     model_parameters = []
 
     # Potential parameters
-    potential_params = config["model_parameters"].get("potential", dict())
+    potential_params = config["potential"].get("parameters", dict())
     for name,kwargs in potential_params.items():
         a,b = kwargs["a"],kwargs["b"]
-        logger.debug("Prior on {}: U({},{})".format(name, a, b))
+        p = getattr(potential, name)
+        logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
 
         prior = LogUniformPrior(_parse_quantity(a).decompose(usys).value,
                                 _parse_quantity(b).decompose(usys).value)
-        p = ModelParameter(target=p, attr="_value", ln_prior=prior)
-        model_parameters.append(p)
+        model_p = ModelParameter(target=p, attr="_value", ln_prior=prior)
+        model_parameters.append(model_p)
 
     return
 
+    '''
     if particles is an ObservedParticle instance:
 
         # prior on the time the particle came unbound
@@ -374,6 +375,8 @@ def plot_whatever():
         sys.exit(0)
         return
 
+    '''
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
@@ -394,9 +397,6 @@ if __name__ == "__main__":
                         help="Run with MPI.")
     parser.add_argument("--threads", dest="threads", default=None, type=int,
                         help="Number of multiprocessing threads to run on.")
-
-    parser.add_argument("-n", "--name", dest="job_name", default=None,
-                    help="Name of the output.")
 
     args = parser.parse_args()
 
