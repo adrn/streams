@@ -20,7 +20,7 @@ from .. import usys
 from .core import DynamicalBase
 from ..coordinates.frame import ReferenceFrame
 
-__all__ = ["Particle"]
+__all__ = ["Particle", "ObservedParticle"]
 
 class Particle(DynamicalBase):
 
