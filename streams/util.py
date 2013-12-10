@@ -7,6 +7,7 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
+import contextlib
 import os, sys
 import re
 import logging
@@ -70,6 +71,13 @@ def _parse_quantity(q):
         unit = u.dimensionless_unscaled
 
     return u.Quantity(float(val), unit)
+
+@contextlib.contextmanager
+def print_options(*args, **kwargs):
+    original = np.get_printoptions()
+    np.set_printoptions(*args, **kwargs)
+    yield
+    np.set_printoptions(**original)
 
 def make_path(output_data_path, name=None, overwrite=False):
     """ Make or return path for saving plots and sampler data files.
