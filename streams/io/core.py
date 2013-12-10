@@ -69,5 +69,4 @@ def read_hdf5(h5file):
                          frame=heliocentric,
                          units=[u.Unit(x) for x in satl["units"]])
 
-        print(p)
-        print(s)
+    return dict(satellite=s, particles=p)
