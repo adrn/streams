@@ -168,8 +168,13 @@ class ObservedParticle(Particle):
         self.errors = dict()
         self._error_X = np.zeros_like(self._X)
         for ii in range(self.ndim):
+            name = self.frame.coord_names[ii]
+
             # make sure this dimension's data is at least 1D
-            q = np.atleast_1d(errors[ii]).copy()
+            try:
+                q = np.atleast_1d(errors[ii]).copy()
+            except KeyError:
+                q = np.atleast_1d(errors[name]).copy()
 
             if hasattr(q, "unit") and q.unit != u.dimensionless_unscaled:
                 unit = q.unit
@@ -181,7 +186,6 @@ class ObservedParticle(Particle):
             self._error_X[...,ii] = value
 
             # set error dictionary
-            name = self.frame.coord_names[ii]
             self.errors[name] = (self._error_X[...,ii]*self._internal_units[ii])\
                                     .to(self._repr_units[ii])
 
