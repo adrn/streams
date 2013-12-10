@@ -55,6 +55,9 @@ def read_hdf5(h5file):
                                  frame=heliocentric,
                                  units=[u.Unit(x) for x in ptcl["units"]])
             p.tub = ptcl["tub"].value
+            return_dict["true_particles"] = Particle(ptcl["true_data"].value.T,
+                                                     frame=heliocentric,
+                                                     units=[u.Unit(x) for x in ptcl["units"]])
         else:
             p = Particle(ptcl["data"].value.T,
                          frame=heliocentric,
@@ -66,6 +69,10 @@ def read_hdf5(h5file):
             s = ObservedParticle(satl["data"].value.T, satl["error"].value.T,
                                  frame=heliocentric,
                                  units=[u.Unit(x) for x in satl["units"]])
+            return_dict["true_satellite"] = Particle(satl["true_data"].value.T,
+                                                     frame=heliocentric,
+                                                     units=[u.Unit(x) for x in satl["units"]])
+
         else:
             s = Particle(satl["data"].value.T,
                          frame=heliocentric,
