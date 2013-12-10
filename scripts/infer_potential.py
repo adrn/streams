@@ -112,6 +112,7 @@ def infer_potential(model, Nsteps, Nburn_in=None, Nwalkers='auto', args=()):
         logger.info("Running sampler for {} steps...".format(Nsteps))
         pos, prob, state = sampler.run_mcmc(pos, Nsteps)
 
+        sampler.p0 = p0
         return sampler
 
 def main(config_file, mpi=False, threads=None, overwrite=False):
@@ -122,6 +123,9 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     # read in configurable parameters
     with open(config_file) as f:
         config = yaml.load(f.read())
+
+    # plot stuff
+    make_plots = config.get("make_plots", False)
 
     # determine the output data path
     path = make_path(config["output_path"], name=config["name"],
@@ -168,10 +172,11 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
     # Set up the Model
     model_parameters = []
+    parameter_idx_to_plot_idx = np.array([], dtype=int)
 
     # Potential parameters
     potential_params = config["potential"].get("parameters", dict())
-    for name,kwargs in potential_params.items():
+    for ii,(name,kwargs) in enumerate(potential_params.items()):
         a,b = kwargs["a"],kwargs["b"]
         p = getattr(potential, name)
         logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
@@ -224,6 +229,39 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                         parameters=model_parameters)
     logger.info("Model has {} parameters".format(model.ndim))
 
+    # make an index map array to go from chain parameter index to plot index
+    parameter_idx_to_plot_idx = np.zeros(model.ndim, dtype=int)
+
+    # group the potential parameters
+    plot_idx = 0
+    p_start = 0
+    p_stop = len(potential_params)
+    if p_stop > 0:
+        parameter_idx_to_plot_idx[p_start:p_stop] = plot_idx
+        plot_idx += 1
+
+    # group the particles in to 6D + tub
+    if isinstance(particles, ObservedParticle):
+        for ii in range(particles.nparticles):
+            parameter_idx_to_plot_idx[p_stop+ii] = plot_idx # tub
+
+            start = p_stop + particles.nparticles + 6*ii
+            stop = start + 6
+            parameter_idx_to_plot_idx[start:stop] = plot_idx
+            plot_idx += 1
+        p_stop = stop
+
+    if isinstance(satellite, ObservedParticle):
+        start = stop
+        stop = start + 6
+        parameter_idx_to_plot_idx[start:stop] = plot_idx
+        plot_idx += 1
+
+    for xx in np.unique(parameter_idx_to_plot_idx):
+        print(sum(parameter_idx_to_plot_idx == xx))
+
+    return
+
     # Emcee!
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
@@ -232,53 +270,49 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
     if not os.path.exists(output_file):
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
-        sampler = infer_potential(model, Nsteps=Nsteps, Nburn_in=Nburn_in,
-                                  Nwalkers=Nwalkers, args=(t1,t2,dt))
+        try:
+            sampler = infer_potential(model, Nsteps=Nsteps, Nburn_in=Nburn_in,
+                                      Nwalkers=Nwalkers, args=(t1,t2,dt))
+        except:
+            color_print("ERROR","red")
+            logger.error("infer_potential FAILED!")
+            if pool is not None:
+                pool.close()
+            sys.exit(1)
 
         # write the sampler data to numpy save files
         logger.info("Writing sampler data to '{}'...".format(output_file))
         with h5py.File(output_file, "w") as f:
-            #grp = f.create_group("sampler")
             f["chain"] = sampler.chain
             f["flatchain"] = sampler.flatchain
             f["lnprobability"] = sampler.lnprobability
-            f["p0"] = p0
+            f["p0"] = sampler.p0
     else:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
 
     if pool is not None:
         pool.close()
 
-    return output_file
-
-'''
-def plot_whatever():
-    if config.get("make_plots", False):
-        logger.info("Generating plots and writing to {}...".format(path))
+    if make_plots:
+        logger.info("Making plots and writing to {}...".format(path))
 
         # plot observed data / true particles
-        extents = [(-180,180), (-90,90), (0.,75.), (-10.,10.), (-10.,10), (-200,200)]
+        extents = [(-180,180), (-90,90), (0.,75.), (-10.,10.), (-10.,10), (-300,300)]
+        logger.debug("Plotting particles in heliocentric coordinates")
         fig = particles.plot(plot_kwargs=dict(markersize=4, color='k'),
                              hist_kwargs=dict(color='k'),
                              extents=extents)
-        fig = o_particles.plot(fig=fig,
-                               plot_kwargs=dict(markersize=4, color='r'),
-                               hist_kwargs=dict(color='r'),
-                               extents=extents)
         fig.savefig(os.path.join(path,"particles_hc.png"))
 
-        extents = [(-75,60)]*3 + [(-300,300)]*3
+        extents = [(-85,85)]*3 + [(-300,300)]*3
+        logger.debug("Plotting particles in galactocentric coordinates")
         fig = particles.to_frame(galactocentric)\
                        .plot(plot_kwargs=dict(markersize=4, color='k'),
                              hist_kwargs=dict(color='k'),
                              extents=extents)
-        fig = o_particles.to_frame(galactocentric)\
-                         .plot(fig=fig,
-                               plot_kwargs=dict(markersize=4, color='r'),
-                               hist_kwargs=dict(color='r'),
-                               extents=extents)
         fig.savefig(os.path.join(path,"particles_gc.png"))
 
+    '''
         ix = 0
         if config["model_parameters"].has_key("potential"):
             # Make a corner plot for the potential parameters
