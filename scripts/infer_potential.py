@@ -308,10 +308,10 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                         labels=[p.target.latex for p in pparams],
                         plot_kwargs=dict(color='k'),
                         hist_kwargs=dict(color='k'))
-            fig.savefig(os.path.join(path, "potential.png"))
+            fig.savefig(os.path.join(path, "potential_posterior.png"))
 
             # now make trace plots
-            fig,axes = plt.subplots(Npp,1,figsize=(8,12))
+            fig,axes = plt.subplots(Npp,1,figsize=(8,12),sharex=True)
             for ii in range(Npp):
                 ax = axes[ii]
                 p = pparams[ii]
@@ -324,38 +324,60 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                 ax.set_ylabel(p.target.latex)
             fig.savefig(os.path.join(path, "potential_trace.png"))
             del fig
+        stop = Npp
 
-        '''
-
-        if config["model_parameters"].has_key("particles"):
-
-            # ---------
-            # Now make 7x7 corner plots for each particle
-            Nparticles = o_particles.nparticles
-            for ii in range(Nparticles):
-                # TODO: what if tub not there?
+        # if particles are in the model / have been observed
+        if isinstance(particles, ObservedParticle):
+            true_particles = d["true_particles"]
+            for ii in range(particles.nparticles):
                 tub = flatchain[:,Npp+ii]
 
-                start = ix + Nparticles + 6*ii
+                start = Npp + particles.nparticles + 6*ii
                 stop = start + 6
-                OO = flatchain[:,start:stop]
+                _X = flatchain[:,start:stop]
 
-                p = Particle(OO.T, units=o_particles._internal_units,
+                p = Particle(_X.T, units=particles._internal_units,
                              frame=heliocentric)
-                p = p.to_units(o_particles._repr_units)
+                p = p.to_units(particles._repr_units)
 
-                X_truths = particles._repr_X[ii].tolist()
-                X_extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) for truth in X_truths]
-                extents = [(simulation.t2,simulation.t1)] + X_extents
-                truths = [o_particles.tub[ii]] + X_truths
+                prior_p = Particle(p0[:,start:stop].T,
+                                   units=particles._internal_units,
+                                   frame=heliocentric)
+                prior_p = prior_p.to_units(particles._repr_units)
 
-                fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
-                                      labels=['tub','l','b','D',\
-                                              r'$\mu_l$', r'$\mu_l$','$v_r$'],
+                # plot the posterior
+                truths = [true_particles.tub[ii]] + true_particles._repr_X[ii].tolist()
+                X_extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) for truth in truths[1:]]
+                truth_extents = [(t2,t1)] + X_extents
+
+                this_p0 = np.hstack((p0[:,Npp+ii][:,np.newaxis], prior_p._repr_X))
+                prior_extents = zip(np.min(this_p0, axis=0), np.max(this_p0, axis=0))
+
+                extents = []
+                for jj in range(7):
+                    lo = min(truth_extents[jj][0], prior_extents[jj][0])
+                    hi = max(truth_extents[jj][1], prior_extents[jj][1])
+                    extents.append((lo,hi))
+
+                labels = ['$t_{ub}$ [Myr]','l [deg]','b [deg]','D [kpc]',\
+                          r'$\mu_l$ [mas/yr]', r'$\mu_l$ [mas/yr]','$v_r$ [km/s]']
+
+                logger.debug("Plotting particle {} prior".format(ii))
+                fig = triangle.corner(this_p0,
+                                      labels=labels,
                                       truths=truths,
                                       extents=extents)
                 fig.suptitle("Particle {0}".format(ii))
-                fig.savefig(os.path.join(path, "particle{0}_corner.png"\
+                fig.savefig(os.path.join(path, "particle{0}_prior.png"\
+                                         .format(ii)))
+                del fig
+
+                fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
+                                      labels=labels,
+                                      truths=truths,
+                                      extents=extents)
+                fig.suptitle("Particle {0}".format(ii))
+                fig.savefig(os.path.join(path, "particle{0}_posterior.png"\
                                          .format(ii)))
                 del fig
 
@@ -368,8 +390,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                                           drawstyle="steps", color='k',
                                           alpha=0.1)
                         else:
-                            q = (chain[jj,:,start+kk-1]*o_particles._internal_units[kk-1])
-                            axes[kk].plot(q.to(o_particles._repr_units[kk-1]).value,
+                            q = (chain[jj,:,start+kk-1]*particles._internal_units[kk-1])
+                            axes[kk].plot(q.to(particles._repr_units[kk-1]).value,
                                           drawstyle="steps", color='k',
                                           alpha=0.1)
 
@@ -381,41 +403,70 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                 fig.savefig(os.path.join(path, "particle{}_trace.png".format(ii)))
                 del fig
 
-        if config["model_parameters"].has_key("satellite"):
-            # ---------
-            # Now make 6x6 corner plot for satellite
-            start = Npp + Nparticles + 6*Nparticles
+        # if satellite position is in the model / have been observed
+        if isinstance(satellite, ObservedParticle):
+            true_satellite = d["true_satellite"]
+
+            start = stop
             stop = start + 6
+            _X = flatchain[:,start:stop]
 
-            OO = flatchain[:,start:stop]
-            truths = np.squeeze(satellite._X)
+            s = Particle(_X.T, units=satellite._internal_units,
+                         frame=heliocentric)
+            s = s.to_units(satellite._repr_units)
 
-            # so = np.squeeze(sat_obs_data)
-            # se = np.squeeze(sat_obs_error)
-            # extents = zip(so - 3*se, \
-            #               so + 3*se)
+            prior_s = Particle(p0[:,start:stop].T,
+                               units=satellite._internal_units,
+                               frame=heliocentric)
+            prior_s = prior_s.to_units(satellite._repr_units)
 
-            # First, just samples from the priors:
-            fig1 = triangle.corner(p0[:,start:stop],
-                        truths=truths,
-                        labels=['l','b','D',\
-                                r'$\mu_l$', r'$\mu_l$','$v_r$'],)
-            fig1.savefig(os.path.join(path, "satellite_corner_prior.png"))
+            # plot the posterior
+            truths = np.squeeze(true_satellite._repr_X).tolist()
+            truth_extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) for truth in truths]
+            prior_extents = zip(np.min(prior_s._repr_X, axis=0), np.max(prior_s._repr_X, axis=0))
 
-            fig = triangle.corner(OO,
-                                  labels=['l','b','D',\
-                                          r'$\mu_l$', r'$\mu_l$','$v_r$'],
-                                  truths=truths)
-            for ii,ax in enumerate(np.array(fig1.axes)):
-                fig.axes[ii].set_xlim(ax.get_xlim())
-                fig.axes[ii].set_ylim(ax.get_ylim())
+            extents = []
+            for jj in range(6):
+                lo = min(truth_extents[jj][0], prior_extents[jj][0])
+                hi = max(truth_extents[jj][1], prior_extents[jj][1])
+                extents.append((lo,hi))
+
+            labels = ['l [deg]','b [deg]','D [kpc]',
+                      r'$\mu_l$ [mas/yr]', r'$\mu_l$ [mas/yr]','$v_r$ [km/s]']
+
+            logger.debug("Plotting satellite prior")
+            fig = triangle.corner(prior_s._repr_X,
+                                  labels=labels,
+                                  truths=truths,
+                                  extents=extents)
             fig.suptitle("Satellite")
-            fig.savefig(os.path.join(path, "satellite_corner.png"))
+            fig.savefig(os.path.join(path, "satellite_prior."))
+            del fig
 
-        sys.exit(0)
-        return
+            fig = triangle.corner(s._repr_X,
+                                  labels=labels,
+                                  truths=truths,
+                                  extents=extents)
+            fig.suptitle("Particle {0}".format(ii))
+            fig.savefig(os.path.join(path, "satellite_posterior.png"))
+            del fig
 
-    '''
+            # now make trace plots
+            fig,axes = plt.subplots(6,1,figsize=(10,14))
+            for kk in range(6):
+                for jj in range(chain.shape[0]):
+                    q = (chain[jj,:,start+kk]*satellite._internal_units[kk])
+                    axes[kk].plot(q.to(satellite._repr_units[kk]).value,
+                                  drawstyle="steps", color='k',
+                                  alpha=0.1)
+
+                axes[kk].axhline(truths[kk], linewidth=4., alpha=0.5,
+                           linestyle="--", color="#2B8CBE")
+                axes[kk].set_ylim(extents[kk])
+
+            fig.suptitle("Satellite")
+            fig.savefig(os.path.join(path, "satellite_trace.png"))
+            del fig
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
