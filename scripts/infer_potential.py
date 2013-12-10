@@ -42,7 +42,7 @@ from streams.inference import (ModelParameter, StreamModel,
 import streams.io as io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
-from streams.util import _parse_quantity, make_path
+from streams.util import _parse_quantity, make_path, print_options
 
 global pool
 pool = None
@@ -152,9 +152,9 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         model_p = ModelParameter(target=p, attr="_value", ln_prior=prior)
         model_parameters.append(model_p)
 
+    # Particle parameters
     if isinstance(particles, ObservedParticle):
         # prior on the time the particle came unbound
-        # TODO: get t1,t2 from config file
         # TODO: all observed simulation particles must have tub attribute?
         lo = [t2] * particles.nparticles
         hi = [t1] * particles.nparticles
@@ -162,33 +162,34 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         model_parameters.append(ModelParameter(target=particles,
                                                attr="tub",
                                                ln_prior=prior))
+        logger.info("Added particle tub as model parameter.")
 
-        # TODO: replace below with particles._error_X
         covs = [np.diag(s**2) for s in particles._error_X]
-
         prior = LogNormalPrior(np.array(particles._X),
                                cov=np.array(covs))
         p = ModelParameter(target=particles,
                            attr="_X",
                            ln_prior=prior)
         model_parameters.append(p)
+        logger.info("Added true particle positions as model parameter.")
+        with print_options(precision=2):
+            for ii in range(particles.nparticles):
+                logger.debug("\t  X={}\n\t\terr={}".format(particles._repr_X[ii],
+                                                     particles._repr_error_X[ii]))
 
-
-    '''
     # Satellite parameters
-    if satellite is an ObservedParticle instance:
-        # TODO: replace below with satellite._error_X
-        sigmas = np.array([o_satellite.errors[n].decompose(usys).value \
-                        for n in o_satellite.frame.coord_names])
-        covs = [np.diag(s**2) for s in sigmas.T]
-
-        prior = LogNormalPrior(np.array(o_satellite._X),
+    if isinstance(satellite, ObservedParticle):
+        covs = [np.diag(s**2) for s in satellite._error_X]
+        prior = LogNormalPrior(np.array(satellite._X),
                                cov=np.array(covs))
-        p = ModelParameter(target=o_satellite,
+        logger.info("Added true satellite position as model parameter:")
+        logger.debug("\t X={} err={}".format(satellite._repr_X,satellite._repr_error_X))
+        p = ModelParameter(target=satellite,
                            attr="_X",
                            ln_prior=prior)
         model_parameters.append(p)
 
+    '''
     # now create the model
     # TODO: fix stream model args
     model = StreamModel(potential, satellite, particles,
