@@ -20,8 +20,8 @@ from astropy.table import vstack, Table, Column
 import astropy.coordinates as coord
 
 # Project
-from ..coordinates import SgrCoordinates, distance_to_sgr_plane
-from ..dynamics import Particle, Orbit
+from ..coordinates.frame import heliocentric, galactocentric
+from ..dynamics import Particle, ObservedParticle, Orbit
 
 __all__ = ["read_table", "read_hdf5"]
 
@@ -49,5 +49,17 @@ def read_hdf5(h5file):
             raise ValueError("Invalid HDF5 file. Missing 'particles' or "
                              "'satellite' group.")
 
-        print(ptcl)
-        print(satl)
+        if "error" in ptcl.keys():
+            p = ObservedParticle(ptcl["data"].value.T, ptcl["error"].value.T,
+                                 frame=heliocentric,
+                                 units=[u.Unit(x) for x in ptcl["units"]])
+            p.tub = ptcl["tub"].value
+        else:
+            p = Particle(ptcl["data"].value.T,
+                         frame=heliocentric,
+                         units=[u.Unit(x) for x in ptcl["units"]])
+            p.tub = ptcl["tub"].value
+
+        print(p)
+        print(ptcl.keys())
+        print(satl.keys())
