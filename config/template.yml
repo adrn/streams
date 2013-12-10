@@ -14,18 +14,7 @@ input_file: /tmp/test.hdf5
 
 potential:
     class_name: LawMajewski2010
-
-data:
-    class_name: SgrSimulation
-    kwargs:
-        mass: 2.5e8 # this is specific to sgr
-
-particles:
-    N: 25
-    selection_expr: tub != 0
-
-model_parameters:
-    potential:
+    parameters:
         q1:
             a: 1.1
             b: 1.5
@@ -38,15 +27,19 @@ model_parameters:
         v_halo:
             a: 100 km/s
             b: 150 km/s
-    particles:
-        _X:
-            errors: # with no units specified, fractional error
-                factor: 1. # multiplies all errors
-                vr: 10. km/s
-                # mu_l: 1. milliarcsecond/year
-                # mu_b: 1. milliarcsecond/year
-                D: 0.02
-        tub:
+
+particles:
+    N: 25
+    selection_expr: tub != 0
+
+        # _X:
+        #     errors: # with no units specified, fractional error
+        #         factor: 1. # multiplies all errors
+        #         vr: 10. km/s
+        #         # mu_l: 1. milliarcsecond/year
+        #         # mu_b: 1. milliarcsecond/year
+        #         D: 0.02
+        # tub:
 
     # satellite:
     #     _X:
