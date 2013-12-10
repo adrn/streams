@@ -84,16 +84,20 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
 
     # observe the particles if necessary
     if particle_error_model is not None:
+        logger.info("Observing particles with {}".format(particle_error_model))
         particle_errors = particle_error_model(particles)
         o_particles = particles.observe(particle_errors)
     else:
+        logger.info("Not observing particles")
         o_particles = particles
 
     # observe the satellite if necessary
     if satellite_error_model:
+        logger.info("Observing satellite with {}".format(satellite_error_model))
         satellite_errors = satellite_error_model(satellite)
         o_satellite = satellite.observe(satellite_errors)
     else:
+        logger.info("Not observing satellite")
         o_satellite = satellite
 
     with h5py.File(output_file, "w") as f:
@@ -157,6 +161,6 @@ if __name__ == "__main__":
     # TODO: class kwargs
     #particle_error_model=gaia_spitzer_errors, satellite_error_model=None,
     observe_simulation(args.class_name,
-        particle_error_model=gaia_spitzer_errors, satellite_error_model=None,
+        particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
         selection_expr=args.expr, N=args.N, output_file=args.output_file,
         overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass="2.5e8"))
