@@ -16,7 +16,7 @@ import numpy as np
 import astropy.units as u
 
 from ..coordinates.frame import galactocentric
-from ..dynamics import Particle
+from ..dynamics import Particle, ObservedParticle
 from ..integrate import ParticleIntegrator
 from .parameter import *
 from .prior import *
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class StreamModel(object):
 
     def __init__(self, potential, satellite, particles,
-                 parameters=[]):
+                 parameters=[], Npotential=0):
         """ ...
 
             Parameters
@@ -43,6 +43,9 @@ class StreamModel(object):
         self.parameters = parameters
 
         self.acc = np.zeros((particles.nparticles+1,3))
+
+        # TODO: this sucks
+        self._Npotential = Npotential
 
     def __call__(self, p, *args):
         self.vector = np.array(p)
@@ -154,15 +157,38 @@ class StreamModel(object):
         ll = self.ln_likelihood(*args)
         if not np.isfinite(ll):
             return -np.inf
-        return lp + ll
+        return lp + l
 
-    def param_idx_to_chain_idx(self, idx):
-        """ Convert the index of a parameter in self.parameters into a
-            tuple of indices for the sampler chain.
-        """
+    @property
+    def parameter_idx_to_plot_idx(self):
+        """ Make an index map array to go from chain parameter index to plot index """
+        _map = np.zeros(model.ndim, dtype=int)
 
-        lens = [p.get().size for p in self.parameters]
-        ix1 = sum(lens[:idx])
-        ix2 = ix1 + lens[idx]
+        # group the potential parameters
+        plot_idx = 0
+        p_start = 0
+        p_stop = self._Npotential
+        if p_stop > 0:
+            _map[p_start:p_stop] = plot_idx
+            plot_idx += 1
 
-        return (ix1,ix2)
+        # group the particles in to 6D + tub
+        if isinstance(particles, ObservedParticle):
+            for ii in range(particles.nparticles):
+                _map[p_stop+ii] = plot_idx # tub
+
+                start = p_stop + particles.nparticles + 6*ii
+                stop = start + 6
+                _map[start:stop] = plot_idx
+                plot_idx += 1
+            p_stop = stop
+
+        if isinstance(satellite, ObservedParticle):
+            start = stop
+            stop = start + 6
+            _map[start:stop] = plot_idx
+            plot_idx += 1
+
+        return _map
+
+
