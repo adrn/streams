@@ -155,36 +155,3 @@ class StreamModel(object):
         if not np.isfinite(ll):
             return -np.inf
         return lp + ll
-
-    @property
-    def parameter_idx_to_plot_idx(self):
-        """ Make an index map array to go from chain parameter index to plot index """
-        _map = np.zeros(model.ndim, dtype=int)
-
-        # group the potential parameters
-        plot_idx = 0
-        p_start = 0
-        p_stop = self._Npotential
-        if p_stop > 0:
-            _map[p_start:p_stop] = plot_idx
-            plot_idx += 1
-
-        # group the particles in to 6D + tub
-        if isinstance(particles, ObservedParticle):
-            for ii in range(particles.nparticles):
-                _map[Npp+ii] = plot_idx # tub
-
-                start = Npp + particles.nparticles + 6*ii
-                stop = start + 6
-                _map[start:stop] = plot_idx
-                plot_idx += 1
-
-        if isinstance(satellite, ObservedParticle):
-            start = stop
-            stop = start + 6
-            _map[start:stop] = plot_idx
-            plot_idx += 1
-
-        return _map
-
-
