@@ -93,14 +93,14 @@ def observe_simulation(class_name, error_model, missing_dims=[], selection_expr=
         # add particle positions to file
         grp = f.create_group("particles")
         grp["data"] = o_particles._repr_X
-        grp["error"] = error_X
-        grp["coordinates"] = o_particles.frame.coord_names
+        grp["error"] = o_particles._repr_error_X
+        grp["coordinate_names"] = o_particles.frame.coord_names
         grp["units"] = [str(x) for x in o_particles._repr_units]
         grp["tub"] = o_particles.tub
 
         grp = f.create_group("satellite")
         grp["data"] = satellite._repr_X
-        grp["coordinates"] = satellite.frame.coord_names
+        grp["coordinate_names"] = satellite.frame.coord_names
         grp["units"] = [str(x) for x in satellite._repr_units]
 
 if __name__ == "__main__":
@@ -135,6 +135,8 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
 
-    main(args.class_name, gaia_spitzer_errors, missing_dims=[],
+    # TODO: missing dimensions
+    # TODO: class kwargs
+    observe_simulation(args.class_name, gaia_spitzer_errors, missing_dims=[],
          selection_expr=args.expr, N=args.N, output_file=args.output_file,
          overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass="2.5e8"))
