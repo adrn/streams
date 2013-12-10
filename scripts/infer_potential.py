@@ -85,6 +85,35 @@ def get_pool(mpi=False, threads=None):
 
     return pool
 
+def infer_potential(model, Nsteps, Nburn_in=None, Nwalkers='auto', args=()):
+        """ TODO: """
+
+        if str(Nwalkers).lower() == "auto":
+            Nwalkers = model.ndim*4
+        logger.debug("{} walkers".format(Nwalkers))
+
+        if Nburn_in is None:
+            Nburn_in = Nsteps // 10
+
+        # sample starting points for the walkers from the prior
+        p0 = model.sample(size=Nwalkers)
+
+        logger.debug("Initializing sampler...")
+        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
+                                        pool=pool, args=args)
+
+        if Nburn_in > 0:
+            logger.info("Burning in sampler for {} steps...".format(Nburn_in))
+            pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
+            sampler.reset()
+        else:
+            pos = p0
+
+        logger.info("Running sampler for {} steps...".format(Nsteps))
+        pos, prob, state = sampler.run_mcmc(pos, Nsteps)
+
+        return sampler
+
 def main(config_file, mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
@@ -198,50 +227,31 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     # Emcee!
     # read in the number of walkers to use
     Nwalkers = config.get("walkers", "auto")
-    if str(Nwalkers).lower() == "auto":
-        Nwalkers = model.ndim*4
-    logger.debug("{} walkers".format(Nwalkers))
-
-    # sample starting points for the walkers from the prior
-    p0 = model.sample(size=Nwalkers)
+    Nburn_in = config.get("burn_in", 0)
+    Nsteps = config["steps"]
 
     if not os.path.exists(output_file):
-        logger.debug("Output file '{}' doesn't exist...".format(output_file))
-        logger.debug("Initializing sampler...")
-        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
-                                        pool=pool, args=(t1,t2,dt))
-
-        Nburn_in = config.get("burn_in", 0)
-        Nsteps = config["steps"]
-        if Nburn_in > 0:
-            logger.info("Burning in sampler for {} steps...".format(Nburn_in))
-            pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
-            sampler.reset()
-        else:
-            pos = p0
-
-        logger.info("Running sampler for {} steps...".format(Nsteps))
-        pos, prob, state = sampler.run_mcmc(pos, Nsteps)
+        logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
+        sampler = infer_potential(model, Nsteps=Nsteps, Nburn_in=Nburn_in,
+                                  Nwalkers=Nwalkers, args=(t1,t2,dt))
 
         # write the sampler data to numpy save files
         logger.info("Writing sampler data to '{}'...".format(output_file))
-
         with h5py.File(output_file, "w") as f:
             #grp = f.create_group("sampler")
             f["chain"] = sampler.chain
             f["flatchain"] = sampler.flatchain
             f["lnprobability"] = sampler.lnprobability
             f["p0"] = p0
+    else:
+        logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
 
-    '''
-
-    try:
+    if pool is not None:
         pool.close()
-    except AttributeError:
-        pass
 
     return output_file
 
+'''
 def plot_whatever():
     if config.get("make_plots", False):
         logger.info("Generating plots and writing to {}...".format(path))
