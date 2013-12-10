@@ -48,6 +48,10 @@ class Particle(DynamicalBase):
 
         super(Particle, self).__init__(coords, frame, units=units, meta=meta)
 
+    @property
+    def coords(self):
+        return tuple([self[n] for n in self.frame.coord_names])
+
     def to_frame(self, frame):
         """ Transform coordinates and reference frame.
 
@@ -133,3 +137,27 @@ class Particle(DynamicalBase):
                               **kwargs)
 
         return fig
+
+class ObservedParticle(Particle):
+
+    def __init__(self, coords, errors, frame, units=None, meta=dict()):
+        """ Represents a dynamical particle or collection of particles.
+            Particles can have associated metadata, e.g., mass or for
+            a Satellite, velocity dispersion.
+
+            Parameters
+            ----------
+            coords : iterable
+                Can either be an iterable (e.g., list or tuple) of Quantity
+                objects, in which case their units are grabbed from the
+                objects themselves, or an array_like object with the first
+                axis as the separate coordinate dimensions, and the units
+                parameter specifying the units along each dimension.
+            frame : ReferenceFrame
+                The reference frame that the particles are in.
+            units : iterable (optional)
+                Must be specified if q is an array_like object, otherwise this
+                is constructed from the Quantity objects in q.
+            meta : dict (optional)
+                Any additional metadata.
+        """
