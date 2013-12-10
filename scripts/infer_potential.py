@@ -39,7 +39,7 @@ from streams.coordinates.frame import heliocentric, galactocentric
 from streams.dynamics import Particle, Orbit
 from streams.inference import (ModelParameter, StreamModel,
                                LogNormalPrior, LogUniformPrior)
-import streams.io as s_io
+import streams.io as io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
 from streams.util import _parse_quantity, make_path
@@ -50,7 +50,7 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def get_parallel_pool(mpi=False, threads=None):
+def get_pool(mpi=False, threads=None):
     """ Get a pool object to pass to emcee for parallel processing.
         If mpi is False and threads is None, pool is None.
 
@@ -88,15 +88,14 @@ def get_parallel_pool(mpi=False, threads=None):
 def main(config_file, mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
-    pool = get_parallel_pool(mpi=mpi, threads=threads)
+    pool = get_pool(mpi=mpi, threads=threads)
 
     # read in configurable parameters
     with open(config_file) as f:
         config = yaml.load(f.read())
 
     # determine the output data path
-    path = make_path(config["output_path"],
-                     name=config["name"],
+    path = make_path(config["output_path"], name=config["name"],
                      overwrite=overwrite)
     output_file = os.path.join(path, "inference.hdf5")
 
@@ -113,21 +112,24 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     #   - observedSatellite_observedParticles.hdf5 (errors on everything)
     #   - noSatellite_observedParticles.hdf5 (no satellite data all 0's, observed particles)
     # TODO: knows if hdf5 has 'errors' to return ObservedParticle, else Particle
-    s_io.read_hdf5(input_file) # contains stars/satellite info
+    io.read_hdf5(input_file) # contains stars/satellite info
 
-    ##########################################################################
-    # Setting up the Model
-    #
+
+    # Set up the Model
     model_parameters = []
 
     # Potential parameters
     potential_params = config["model_parameters"].get("potential", dict())
     for name,kwargs in potential_params.items():
-        # TODO: not so great
-        model_p = potential.model_parameter(name, **kwargs)
-        logger.debug("Prior on {}: U({},{})".format(name, model_p._ln_prior.a,
-                                                          model_p._ln_prior.b))
-        model_parameters.append(model_p)
+        a,b = kwargs["a"],kwargs["b"]
+        logger.debug("Prior on {}: U({},{})".format(name, a, b))
+
+        prior = LogUniformPrior(_parse_quantity(a).decompose(usys).value,
+                                _parse_quantity(b).decompose(usys).value)
+        p = ModelParameter(target=p, attr="_value", ln_prior=prior)
+        model_parameters.append(p)
+
+    return
 
     if particles is an ObservedParticle instance:
 
