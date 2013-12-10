@@ -20,7 +20,10 @@ __all__ = ["ModelParameter", "Parameter"]
 
 logger = logging.getLogger(__name__)
 
-class ModelParameter(object):
+class Parameter(object):
+    pass
+
+class ModelParameter(Parameter):
 
     def __init__(self, target, attr, ln_prior=None):
         """ This object represents an abstract concept -- the idea of
@@ -69,6 +72,3 @@ class ModelParameter(object):
 
     def __len__(self):
         return self.get().size
-
-class Parameter(object):
-    pass
