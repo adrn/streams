@@ -111,9 +111,8 @@ class Particle(DynamicalBase):
             new_q = new_q * self[name].unit
             new_qs.append(new_q)
 
-        meta = self.meta.copy()
-        meta["errors"] = errors
-        return Particle(new_qs, frame=self.frame, meta=meta)
+        return ObservedParticle(new_qs, errors, frame=self.frame,
+                                meta=self.meta.copy())
 
     def plot(self, fig=None, labels=None, \
              plot_kwargs=dict(), hist_kwargs=dict(),
@@ -153,6 +152,8 @@ class ObservedParticle(Particle):
                 objects themselves, or an array_like object with the first
                 axis as the separate coordinate dimensions, and the units
                 parameter specifying the units along each dimension.
+            errors : iterable
+                Observational errors for each coordinate.
             frame : ReferenceFrame
                 The reference frame that the particles are in.
             units : iterable (optional)
@@ -161,3 +162,27 @@ class ObservedParticle(Particle):
             meta : dict (optional)
                 Any additional metadata.
         """
+        super(ObservedParticle, self).__init__(coords, frame, units=units, meta=meta)
+
+        # TODO: should parse errors same way as coords...
+        self.errors = dict()
+        self._error_X = np.zeros_like(self._X)
+        for ii,name in enumerate(self.frame.coord_names):
+            try:
+                val = errors[name].to(self._internal_units[ii]).value
+            except:
+                raise ValueError("Invalid error specification.")
+
+            self.errors[name] = errors[name].to(self._repr_units[ii])
+            self._error_X[...,ii] = val
+
+    @property
+    def _repr_error_X(self):
+        """ Return the 6D array of all coordinate errors in the repr units """
+
+        _repr_error_X = np.zeros_like(self._error_X)
+        for ii in range(self.ndim):
+            _repr_error_X[...,ii] = (self._error_X[...,ii]*self._internal_units[ii])\
+                                     .to(self._repr_units[ii]).value
+
+        return _repr_error_X
