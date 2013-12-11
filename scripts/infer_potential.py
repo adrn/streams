@@ -38,8 +38,7 @@ except ImportError:
 from streams import usys
 from streams.coordinates.frame import heliocentric, galactocentric
 from streams.dynamics import Particle, Orbit, ObservedParticle
-from streams.inference import (ModelParameter, StreamModel,
-                               LogNormalPrior, LogUniformPrior)
+from streams.inference import *
 import streams.io as io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
@@ -197,7 +196,13 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         # TODO: all observed simulation particles must have tub attribute?
         lo = [t2] * particles.nparticles
         hi = [t1] * particles.nparticles
-        prior = LogUniformPrior(lo, hi)
+        #prior = LogUniformPrior(lo, hi)
+
+        # HACK
+        prior = LogNormalBoundedPrior(lo, hi,
+                                      mu=particles.tub,
+                                      sigma=[25]*N)
+
         model_parameters.append(ModelParameter(target=particles,
                                                attr="tub",
                                                ln_prior=prior))
@@ -410,6 +415,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                 fig.suptitle("Particle {}".format(ii))
                 fig.savefig(os.path.join(path, "particle{}_trace.png".format(ii)))
                 del fig
+                gc.collect()
 
         # if satellite position is in the model / have been observed
         if isinstance(satellite, ObservedParticle):
