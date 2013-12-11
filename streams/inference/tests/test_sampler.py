@@ -34,8 +34,9 @@ class TestStreamModel(object):
         from streams.io import SgrSimulation
 
         np.random.seed(52)
-        self.Nparticles = 25
+        self.Nparticles = 2
         self.simulation = SgrSimulation(mass="2.5e8")
+        self.args = (self.simulation.t1,self.simulation.t2,-1.)
 
         self.particles = self.simulation.particles(N=self.Nparticles,
                                                    expr="tub!=0")
@@ -61,8 +62,7 @@ class TestStreamModel(object):
                                 attr="_value",
                                 ln_prior=LogUniformPrior(*p._range)))
 
-        model = StreamModel(potential, self.simulation,
-                            satellite, particles,
+        model = StreamModel(potential, satellite, particles,
                             parameters=params)
 
         Nwalkers = 4
@@ -71,7 +71,7 @@ class TestStreamModel(object):
         p0 = p0.reshape(Nwalkers,1)
 
         a = pytime.time()
-        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model)
+        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model, args=self.args)
         pos, xx, yy = sampler.run_mcmc(p0, Nsteps)
         b = pytime.time()
 
@@ -95,13 +95,12 @@ class TestStreamModel(object):
                                     attr="_value",
                                     ln_prior=LogUniformPrior(*p._range)))
 
-            model = StreamModel(potential, self.simulation,
-                                satellite, particles,
+            model = StreamModel(potential, satellite, particles,
                                 parameters=params)
 
             p0 = np.random.uniform(0.75, 1.25, size=Nwalkers).reshape(Nwalkers,1)*p._truth
 
-            sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model)
+            sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model, args=self.args)
             pos, nuh, uh = sampler.run_mcmc(p0, Nsteps)
 
             plt.clf()
@@ -109,3 +108,42 @@ class TestStreamModel(object):
             for ii in range(Nwalkers):
                 plt.plot(sampler.chain[ii], drawstyle='steps', alpha=0.5, lw=2.)
             plt.savefig(os.path.join(plot_path, "sampled_{}.png".format(p_name)))
+
+    def test_sample_tub(self):
+
+        Nwalkers = 4
+        Nsteps = 100
+
+        potential = LawMajewski2010()
+
+        particles = self.particles.copy()
+        satellite = self.satellite.copy()
+        N = particles.nparticles
+
+        params = []
+        lo = [self.args[1]] * particles.nparticles
+        hi = [self.args[0]] * particles.nparticles
+        prior = LogNormalBoundedPrior(lo, hi, mu=self.particles.tub, sigma=[20]*N)
+        #prior = LogUniformPrior(lo, hi)
+        params.append(ModelParameter(target=particles,
+                                     attr="tub",
+                                     ln_prior=prior))
+
+        model = StreamModel(potential, satellite, particles,
+                            parameters=params)
+
+        p0 = model.sample(size=Nwalkers)
+
+        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model, args=self.args)
+        pos, nuh, uh = sampler.run_mcmc(p0, Nsteps)
+
+        plt.clf()
+
+        for ii in range(N):
+            plt.subplot(N,1,ii+1)
+            plt.axhline(self.particles.tub[ii], linestyle='--', color='#fff000', lw=5.)
+
+            for jj in range(Nwalkers):
+                plt.plot(sampler.chain[jj,:,ii], drawstyle='steps', alpha=0.5, lw=2.)
+
+        plt.savefig(os.path.join(plot_path, "sampled_tub.png"))
