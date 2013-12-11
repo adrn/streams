@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import time
 import gc
 import copy
 import logging
