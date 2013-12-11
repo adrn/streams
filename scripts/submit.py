@@ -34,7 +34,7 @@ job_sh = """#!/bin/sh
 date
 
 #Command to execute Python program
-mpiexec -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v
+mpiexec -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v --mpi {overwrite}
 
 date
 
@@ -42,7 +42,7 @@ date
 """
 
 def main(config_file, mpi_threads=None, walltime=None, memory=None,
-         job_name=None, astro=None):
+         job_name=None, astro=None, overwrite=False):
 
     # Read in simulation parameters from config file
     with open(config_file) as f:
@@ -67,6 +67,11 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
     if group == "vega":
         group = 'yeti'
 
+    if overwrite:
+        ovr = "-o"
+    else:
+        ovr = ""
+
     sh = job_sh.format(mpi_threads=mpi_threads,
                        nodes=mpi_threads//8,
                        time=walltime,
@@ -75,7 +80,8 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
                        name=name,
                        script=config["script"],
                        astro=astro,
-                       group=group)
+                       group=group,
+                       overwrite=ovr)
 
     yn = raw_input("About to submit the following job: \n\n{0}\n\n Is "
                    "this right? [y]/n: ".format(sh))
