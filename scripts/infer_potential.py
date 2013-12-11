@@ -201,7 +201,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         # HACK
         prior = LogNormalBoundedPrior(lo, hi,
                                       mu=particles.tub,
-                                      sigma=[25]*N)
+                                      sigma=[25]*particles.nparticles)
 
         model_parameters.append(ModelParameter(target=particles,
                                                attr="tub",
