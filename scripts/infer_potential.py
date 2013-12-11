@@ -86,7 +86,8 @@ def get_pool(mpi=False, threads=None):
 
     return pool
 
-def infer_potential(model, Nsteps, Nburn_in=None, Nwalkers='auto', args=()):
+def infer_potential(model, Nsteps, Nburn_in=None, Nwalkers='auto',
+                    args=(), pool=None):
         """ TODO: """
 
         if str(Nwalkers).lower() == "auto":
@@ -245,7 +246,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
         try:
             sampler = infer_potential(model, Nsteps=Nsteps, Nburn_in=Nburn_in,
-                                      Nwalkers=Nwalkers, args=(t1,t2,dt))
+                                      Nwalkers=Nwalkers, args=(t1,t2,dt),
+                                      pool=pool)
         except:
             color_print("ERROR","red")
             logger.error("infer_potential FAILED!")
