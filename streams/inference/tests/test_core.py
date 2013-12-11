@@ -203,11 +203,12 @@ class TestStreamModel(object):
             model = StreamModel(potential, satellite, particles,
                                 parameters=params)
 
-            true_tub = np.array(_particles.tub)
-            tub = _particles.tub
+            true_tub = np.array(self.particles.tub)
+            tub = np.array(self.particles.tub)
 
             Ls = []
-            vals = np.linspace(0.8, 1.2, 31)*true_tub[ii]
+            #vals = np.linspace(0.8, 1.2, 31)*true_tub[ii]
+            vals = np.linspace(self.simulation.t2, self.simulation.t1, 21)
             for v in vals:
                 tub[ii] = v
                 Ls.append(model(list(tub), *self.args))
