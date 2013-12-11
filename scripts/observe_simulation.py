@@ -159,8 +159,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
     # TODO: class kwargs
-    #particle_error_model=gaia_spitzer_errors, satellite_error_model=None,
+    # particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
+    # particle_error_model=gaia_spitzer_errors, satellite_error_model=None,
     observe_simulation(args.class_name,
-        particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
         selection_expr=args.expr, N=args.N, output_file=args.output_file,
         overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass="2.5e8"))

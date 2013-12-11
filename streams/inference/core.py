@@ -98,7 +98,8 @@ class StreamModel(object):
             velocity dispersion.
         """
 
-        t1,t2,dt = args
+        #t1,t2,dt = args
+        t1,t2,dt,tub_true = args
 
         # The true positions/velocities of the particles are parameters
         Nparticles = self.particles.nparticles
@@ -112,8 +113,10 @@ class StreamModel(object):
         particle_orbit,satellite_orbit = pi.run(t1=t1, t2=t2, dt=dt)
 
         # These are the unbinding time indices for each particle
+        # t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
+        #                     for tub in self.particles.tub])
         t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
-                            for tub in self.particles.tub])
+                            for tub in tub_true])
 
         Ntimesteps  = len(particle_orbit.t)
 
