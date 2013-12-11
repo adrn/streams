@@ -199,8 +199,9 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         #prior = LogUniformPrior(lo, hi)
 
         # HACK
+        tp = d["true_particles"]
         prior = LogNormalBoundedPrior(lo, hi,
-                                      mu=particles.tub,
+                                      mu=tp.tub,
                                       sigma=[25]*particles.nparticles)
 
         model_parameters.append(ModelParameter(target=particles,
