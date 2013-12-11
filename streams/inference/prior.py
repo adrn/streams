@@ -14,7 +14,7 @@ import logging
 import numpy as np
 import astropy.units as u
 
-__all__ = ["LogPrior", "LogUniformPrior", "LogNormalPrior"]
+__all__ = ["LogPrior", "LogUniformPrior", "LogNormalPrior", "LogNormalBoundedPrior"]
 
 logger = logging.getLogger(__name__)
 
@@ -83,3 +83,17 @@ class LogNormalPrior(LogPrior):
             return np.squeeze(np.rollaxis(s, 1))
         else:
             return np.squeeze(s)
+
+class LogNormalBoundedPrior(LogPrior):
+    """ THIS IS TECHNICALLY WRONG -- samples just from LogNormal """
+
+    def __call__(self, value):
+        return self._uniform(value) + self._normal(value)
+
+    def __init__(self, a, b, mu, sigma=None, cov=None):
+
+        self._uniform = LogUniformPrior(a,b)
+        self._normal = LogNormalPrior(mu, sigma=sigma, cov=cov)
+
+    def sample(self, size=None):
+        return self._normal.sample(size)
