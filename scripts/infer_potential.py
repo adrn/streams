@@ -152,7 +152,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     d = io.read_hdf5(config["input_file"]) # contains stars/satellite info
     satellite = d["satellite"]
     particles = d["particles"]
-    logger.debug("Read in particles: {}".format(particles))
+    logger.debug("Read in {} particles: {}".format(particles.nparticles, particles))
     logger.debug("Read in satellite: {}".format(satellite))
 
     # get integration bounding times
