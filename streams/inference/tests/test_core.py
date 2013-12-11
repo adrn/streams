@@ -39,6 +39,7 @@ class TestStreamModel(object):
         np.random.seed(52)
         self.Nparticles = 25
         self.simulation = SgrSimulation(mass="2.5e8")
+        self.args = (self.simulation.t1,self.simulation.t2,-1.)
 
         self.particles = self.simulation.particles(N=self.Nparticles,
                                                    expr="tub!=0")
@@ -55,10 +56,9 @@ class TestStreamModel(object):
                         attr="_value",
                         ln_prior=LogUniformPrior(*self.potential.q1._range)))
 
-        model = StreamModel(self.potential, self.simulation, self.satellite,
-                            self.particles.copy(), parameters=params)
+        model = StreamModel(self.potential, self.satellite, self.particles.copy(), parameters=params)
 
-        model([1.4])
+        model([1.4], *self.args)
         assert model.vector[0] == self.potential.q1.value
 
     def test_vector(self):
@@ -74,55 +74,14 @@ class TestStreamModel(object):
         params.append(ModelParameter(target=particles,
                                 attr="tub"))
 
-        model = StreamModel(self.potential, self.simulation,
-                            satellite, particles,
+        model = StreamModel(self.potential, satellite, particles,
                             parameters=params)
 
         model([1.4] + list(np.random.random(size=self.Nparticles*6)) + \
-              list(np.random.randint(6266, size=self.Nparticles)))
+              list(np.random.randint(6266, size=self.Nparticles)), *self.args)
 
         assert model.vector[0] == self.potential.q1.value
         assert self.potential.q1.value == self.potential.parameters["q1"].value
-
-    def test_indices(self):
-        particles = self.particles.copy()
-        satellite = self.satellite.copy()
-
-        params = []
-        params.append(ModelParameter(target=self.potential.q1,
-                                attr="_value",
-                                ln_prior=LogUniformPrior(*self.potential.q1._range)))
-        params.append(ModelParameter(target=particles,
-                                attr="_X"))
-        params.append(ModelParameter(target=particles,
-                                attr="tub"))
-
-        model = StreamModel(self.potential, self.simulation,
-                            satellite, particles,
-                            parameters=params)
-
-        for ii in range(len(params)):
-            print(model.param_idx_to_chain_idx(ii))
-
-    def test_indices2(self):
-        particles = self.particles.copy()
-        satellite = self.satellite.copy()
-
-        params = []
-        params.append(ModelParameter(target=particles,
-                                attr="_X"))
-        params.append(ModelParameter(target=self.potential.q1,
-                                attr="_value",
-                                ln_prior=LogUniformPrior(*self.potential.q1._range)))
-        params.append(ModelParameter(target=particles,
-                                attr="tub"))
-
-        model = StreamModel(self.potential, self.simulation,
-                            satellite, particles,
-                            parameters=params)
-
-        for ii in range(len(params)):
-            print(model.param_idx_to_chain_idx(ii))
 
     def test_potential_likelihood(self):
 
@@ -142,14 +101,13 @@ class TestStreamModel(object):
                                     attr="_value",
                                     ln_prior=LogUniformPrior(*p._range)))
 
-            model = StreamModel(potential, self.simulation,
-                                satellite, particles,
+            model = StreamModel(potential, satellite, particles,
                                 parameters=params)
 
             Ls = []
             vals = np.linspace(0.9, 1.1, 31)*p._truth
             for q in vals:
-                Ls.append(model([q]))
+                Ls.append(model([q], *self.args))
 
             ax.cla()
             ax.plot(vals, Ls)
@@ -180,14 +138,13 @@ class TestStreamModel(object):
                                          attr="_X",
                                          ln_prior=LogPrior()))
 
-            model = StreamModel(potential, self.simulation,
-                                satellite, particles,
+            model = StreamModel(potential, satellite, particles,
                                 parameters=params)
 
             Ls = []
             vals = np.linspace(0.8, 1.2, 31)*p._truth
             for q in vals:
-                Ls.append(model([q] + list(np.ravel(particles._X))))
+                Ls.append(model([q] + list(np.ravel(particles._X)), *self.args))
 
             ax.cla()
             ax.plot(vals, Ls)
@@ -212,15 +169,14 @@ class TestStreamModel(object):
                                      attr="_X",
                                      ln_prior=LogPrior()))
 
-        model = StreamModel(potential, self.simulation,
-                            satellite, particles,
+        model = StreamModel(potential, satellite, particles,
                             parameters=params)
 
         Ls = []
         vals = np.linspace(0.5, 1.5, 21)
         for v in vals:
             sampled_X = np.ravel(_particles._X)*v
-            Ls.append(model(list(sampled_X)))
+            Ls.append(model(list(sampled_X), *self.args))
 
         ax.cla()
         ax.plot(vals, Ls)
@@ -244,8 +200,7 @@ class TestStreamModel(object):
                                          attr="tub",
                                          ln_prior=LogPrior()))
 
-            model = StreamModel(potential, self.simulation,
-                                satellite, particles,
+            model = StreamModel(potential, satellite, particles,
                                 parameters=params)
 
             true_tub = np.array(_particles.tub)
@@ -255,7 +210,7 @@ class TestStreamModel(object):
             vals = np.linspace(0.8, 1.2, 31)*true_tub[ii]
             for v in vals:
                 tub[ii] = v
-                Ls.append(model(list(tub)))
+                Ls.append(model(list(tub), *self.args))
 
             ax.cla()
             ax.plot(vals, Ls)
@@ -302,8 +257,7 @@ class TestStreamModel(object):
                                      attr="_X",
                                      ln_prior=LogPrior()))
 
-        model = StreamModel(potential, self.simulation,
-                            satellite, particles,
+        model = StreamModel(potential, satellite, particles,
                             parameters=params)
 
         fnpickle(model, os.path.join(self.plot_path, "test.pickle"))
@@ -321,14 +275,13 @@ class TestStreamModel(object):
                                 attr="_value",
                                 ln_prior=LogUniformPrior(*p._range)))
 
-        model = StreamModel(potential, self.simulation,
-                            satellite, particles,
+        model = StreamModel(potential, satellite, particles,
                             parameters=params)
 
         N = 10
         a = pytime.time()
         for ii in range(N):
-            model([1.5])
+            model([1.5], *self.args)
 
         print("{} sec. per likelihood call".format((pytime.time()-a)/float(N)))
 
@@ -346,8 +299,7 @@ class TestStreamModel(object):
                                 attr="_value",
                                 ln_prior=LogUniformPrior(*p._range)))
 
-        model = StreamModel(potential, self.simulation,
-                            satellite, particles,
+        model = StreamModel(potential, satellite, particles,
                             parameters=params)
 
         Nwalkers = 8
@@ -356,7 +308,7 @@ class TestStreamModel(object):
         p0 = p0.reshape(Nwalkers,1)
 
         a = pytime.time()
-        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model)
+        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model, args=self.args)
         pos, xx, yy = sampler.run_mcmc(p0, Nsteps)
         b = pytime.time()
 
@@ -382,13 +334,12 @@ class TestStreamModel(object):
             params.append(ModelParameter(target=p, attr="_value",
                                          ln_prior=LogUniformPrior(*p._range)))
 
-            model = StreamModel(potential, self.simulation,
-                                satellite, particles,
+            model = StreamModel(potential, satellite, particles,
                                 parameters=params)
 
             Ls = []
             for val in vals:
-                Ls.append(model([val]))
+                Ls.append(model([val], *self.args))
 
             plt.clf()
             plt.plot(vals,Ls)
@@ -429,7 +380,7 @@ def test_likelihood_observed_particles():
                        attr="_X",
                        ln_prior=prior)
     params = [p]
-    model = StreamModel(potential, simulation, satellite, particles, parameters=params)
+    model = StreamModel(potential, satellite, particles, parameters=params)
 
     assert p.ln_prior() == (-0.5*6*np.log(2*np.pi) - 0.5*np.array([np.linalg.slogdet(c)[1]
                                                                     for c in covs]))[0]
@@ -442,11 +393,11 @@ def test_likelihood_observed_particles():
     for fac in facs:
         arr[:,2:] = fac
         X = arr*_X
-        print("posterior", model(np.ravel(X)))
+        print("posterior", model(np.ravel(X), *self.args))
         print("prior", model.ln_prior())
         print("likelihood", model.ln_likelihood())
         print()
-        Ps.append(model(np.ravel(X)))
+        Ps.append(model(np.ravel(X), *self.args))
 
     ax.plot(facs, Ps)
     ax.set_xlabel("Err. Factor")
