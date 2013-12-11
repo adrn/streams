@@ -1,4 +1,3 @@
-#!/vega/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
 """ Create and submit a job to the cluster given a streams config file. """
@@ -35,7 +34,7 @@ job_sh = """#!/bin/sh
 date
 
 #Command to execute Python program
-mpirun -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v
+mpiexec -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v
 
 date
 
