@@ -110,7 +110,10 @@ def infer_potential(model, Nsteps, Nburn_in=None, Nwalkers='auto', args=()):
             pos = p0
 
         logger.info("Running sampler for {} steps...".format(Nsteps))
+        a = time.time()
         pos, prob, state = sampler.run_mcmc(pos, Nsteps)
+        t = time.time() - a
+        logger.debug("Spent {} seconds on sampler...".format(t))
 
         sampler.p0 = p0
         return sampler
