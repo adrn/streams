@@ -110,7 +110,7 @@ def ln_likelihood(p, *args):
     #p_hel = p[4:nparticles*6+4]
     #tub = p[nparticles*6+4:nparticles*6+4+nparticles]
 
-    gc = np.vstack((s_gc,p_gc))
+    gc = np.vstack((s_gc,p_gc)).copy()
     acc = np.zeros_like(gc[:,:3])
     integrator = LeapfrogIntegrator(potential._acceleration_at,
                                     np.array(gc[:,:3]), np.array(gc[:,3:]),
@@ -148,13 +148,14 @@ def main(mpi=False, threads=None, overwrite=False):
 
     ##################################################
     # determine the output data path
+    home = "/vega/astro/users/amp2217/"
     #home = "/hpc/astro/users/amp2217/"
-    home = "/Users/adrian/"
+    #home = "/Users/adrian/"
     data_file = "N32_no_errors.hdf5"
     nburn = 0
     nsteps = 100
     nparticles = 4
-    nwalkers = 32
+    nwalkers = 64
     ##################################################
 
     path = os.path.join(home, "output_data/super_test")
@@ -188,7 +189,7 @@ def main(mpi=False, threads=None, overwrite=False):
             satellite_hel, satellite_hel_err,
             particles_hel, particles_hel_err)
 
-    l = ln_posterior(p, *args) # TEST evaluating
+    #l = ln_posterior(p, *args) # TEST evaluating
 
     if nwalkers is None:
         nwalkers = len(p)*2
