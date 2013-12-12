@@ -98,8 +98,7 @@ class StreamModel(object):
             velocity dispersion.
         """
 
-        #t1,t2,dt = args
-        t1,t2,dt,tub_true = args
+        t1,t2,dt = args
 
         # The true positions/velocities of the particles are parameters
         Nparticles = self.particles.nparticles
@@ -113,10 +112,8 @@ class StreamModel(object):
         particle_orbit,satellite_orbit = pi.run(t1=t1, t2=t2, dt=dt)
 
         # These are the unbinding time indices for each particle
-        # t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
-        #                     for tub in self.particles.tub])
         t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
-                            for tub in tub_true])
+                             for tub in self.particles.tub])
 
         Ntimesteps  = len(particle_orbit.t)
 
@@ -132,8 +129,12 @@ class StreamModel(object):
         s_x = np.array([satellite_orbit._X[jj,0] \
                             for ii,jj in enumerate(t_idx)])
 
-        log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) +
-                            (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
+        # log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) + \
+        #                         (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
+        # return np.sum(log_p_x_given_phi)
+
+        log_p_x_given_phi = -0.5*np.sum(np.log(Sigma), axis=1) - \
+                             0.5*np.sum((p_x-s_x)**2/Sigma, axis=1)*abs(dt)
 
         return np.sum(log_p_x_given_phi)
 
