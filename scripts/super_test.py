@@ -89,24 +89,25 @@ def get_pool(mpi=False, threads=None):
     return pool
 
 def ln_prior(p, *args):
-    potential,t1,t2,dt,s_hel,s_hel_err,p_hel,p_hel_err = args
+    t1,t2,dt,s_hel,s_hel_err,p_hel,p_hel_err,potential_params = args
 
-    p = np.array(p)
-    if np.any(p > t1) or np.any(p < t2):
+    tub = np.array(p[len(potential_params):])
+    if np.any(tub > t1) or np.any(tub < t2):
         return -np.inf
 
     return 0.
 
 def ln_likelihood(p, *args):
 
-    potential,t1,t2,dt,s_hel,s_hel_err,p_hel,p_hel_err = args
+    t1,t2,dt,s_hel,s_hel_err,p_hel,p_hel_err,potential_params = args
     p_gc = _hel_to_gc(p_hel)
     s_gc = _hel_to_gc(s_hel)
-    tub = p
 
     # OR
     #q1,qz,v_halo,phi = p[:4]
-    #potential = LawMajewski2010(q1=q1,qz=qz,v_halo=v_halo,phi=phi)
+    kwargs = dict(zip(potential_params, p[:len(potential_params)]))
+    potential = sp.LawMajewski2010(**kwargs)
+    tub = p[len(potential_params):]
     #p_hel = p[4:nparticles*6+4]
     #tub = p[nparticles*6+4:nparticles*6+4+nparticles]
 
@@ -166,7 +167,10 @@ def main(mpi=False, threads=None, overwrite=False):
     if not os.path.exists(path):
         os.makedirs(path)
 
+    truths = []
     potential = sp.LawMajewski2010()
+    #potential_params = ["q1","qz","v_halo","phi"]
+    potential_params = ["qz"]
 
     satellite_hel = d["satellite"]._X
     #satellite_hel_err = d["satellite"]._error_X
@@ -184,19 +188,38 @@ def main(mpi=False, threads=None, overwrite=False):
     t2 = float(d["t2"])
     dt = -1.
 
-    p = tub.tolist()
-    args = (potential, t1, t2, dt,
+    args = (t1, t2, dt,
             satellite_hel, satellite_hel_err,
-            particles_hel, particles_hel_err)
+            particles_hel, particles_hel_err,
+            potential_params)
 
     #l = ln_posterior(p, *args) # TEST evaluating
 
     if nwalkers is None:
         nwalkers = len(p)*2
-    p0 = np.random.uniform(t2, t1, size=(nwalkers,nparticles))
-    logger.debug("{} walkers".format(nwalkers))
 
-    sampler = emcee.EnsembleSampler(nwalkers, len(p), ln_posterior,
+    # potential
+    for pp in potential_params:
+        p = potential.parameters[pp]
+        a,b = p._range
+        this_p0 = np.random.uniform(a, b, size=(nwalkers,1))
+        try:
+            p0 = np.hstack((p0,this_p0))
+        except NameError:
+            p0 = this_p0
+        truths.append(p._truth)
+
+    # tub
+    truths = truths + tub.tolist()
+    this_p0 = np.random.uniform(t2, t1, size=(nwalkers,nparticles))
+    try:
+        p0 = np.hstack((p0,this_p0))
+    except NameError:
+        p0 = this_p0
+    logger.debug("{} walkers".format(nwalkers))
+    logger.debug("p0 shape: {}".format(p0.shape))
+
+    sampler = emcee.EnsembleSampler(nwalkers, p0.shape[-1], ln_posterior,
                                     pool=pool, args=args)
 
     if nburn > 0:
@@ -215,12 +238,12 @@ def main(mpi=False, threads=None, overwrite=False):
     if pool is not None:
         pool.close()
 
-    for jj in range(nparticles):
+    for jj in range(p0.shape[-1]):
         plt.clf()
         for ii in range(nwalkers):
             plt.plot(sampler.chain[ii,:,jj], alpha=0.4, drawstyle='steps')
 
-        plt.axhline(tub[jj], color='k', lw=4., linestyle='--')
+        plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
         plt.savefig(os.path.join(path, "walker_{}.png".format(jj)))
 
     fig = triangle.corner(sampler.flatchain)
