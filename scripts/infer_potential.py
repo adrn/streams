@@ -198,12 +198,6 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         hi = [t1] * particles.nparticles
         prior = LogUniformPrior(lo, hi)
 
-        # HACK
-        # tp = d["true_particles"]
-        # prior = LogNormalBoundedPrior(lo, hi,
-        #                               mu=tp.tub,
-        #                               sigma=[25]*particles.nparticles)
-
         model_parameters.append(ModelParameter(target=particles,
                                                attr="tub",
                                                ln_prior=prior))
@@ -237,7 +231,6 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         model_parameters.append(p)
 
     # now create the model
-    # TODO: don't specify number of potential parameters
     model = StreamModel(potential, satellite.copy(), particles.copy(),
                         parameters=model_parameters)
     logger.info("Model has {} parameters".format(model.ndim))
