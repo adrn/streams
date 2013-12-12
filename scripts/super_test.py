@@ -152,8 +152,8 @@ def main(mpi=False, threads=None, overwrite=False):
     #home = "/hpc/astro/users/amp2217/"
     #home = "/Users/adrian/"
     data_file = "N32_no_errors.hdf5"
-    nburn = 0
-    nsteps = 100
+    nburn = 500
+    nsteps = 1000
     nparticles = 4
     nwalkers = 64
     ##################################################
