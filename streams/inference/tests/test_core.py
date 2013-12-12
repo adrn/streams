@@ -454,9 +454,7 @@ def test_likelihood_observed_particles():
 
     particle_errors = gaia_spitzer_errors(particles)
     o_particles = particles.observe(particle_errors)
-    sigmas = np.array([o_particles.errors[n].decompose(usys).value \
-                for n in o_particles.frame.coord_names]).T
-    covs = [np.diag(s**2) for s in sigmas]
+    covs = [np.diag(s**2) for s in o_particles._error_X]
 
     prior = LogNormalPrior(np.array(o_particles._X),
                            cov=np.array(covs))
@@ -485,6 +483,9 @@ def test_likelihood_observed_particles():
         X = arr*_X
         print("posterior", model(np.ravel(X), *args))
         print("prior", model.ln_prior())
+        print("prior L", model(np.ravel(X)*0.9, *args), model.ln_prior())
+        print("prior R", model(np.ravel(X)*1.1, *args), model.ln_prior())
+        model(np.ravel(X), *args)
         print("likelihood", model.ln_likelihood(*args))
         print()
         Ps.append(model(np.ravel(X), *args))
