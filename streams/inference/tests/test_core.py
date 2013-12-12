@@ -177,6 +177,8 @@ class TestStreamModel(object):
         for v in vals:
             sampled_X = np.ravel(_particles._X)*v
             Ls.append(model(list(sampled_X), *self.args))
+            print(_particles.tub)
+            return
 
         ax.cla()
         ax.plot(vals, Ls)
@@ -347,11 +349,98 @@ class TestStreamModel(object):
             plt.axvline(p._truth)
             plt.savefig(os.path.join(this_plot_path, "L_vs_{}.png".format(p_name)))
 
+    def test_normed_R_vs_V(self):
+        from ...integrate import ParticleIntegrator
+
+        this_plot_path = os.path.join(plot_path, "D_ps")
+        if not os.path.exists(this_plot_path):
+            os.makedirs(this_plot_path)
+
+        particles = self.particles.copy()
+        satellite = self.satellite.copy()
+        potential = LawMajewski2010()
+
+        # The true positions/velocities of the particles are parameters
+        Nparticles = particles.nparticles
+        acc = np.zeros((Nparticles+1,3))
+
+        particles_gc = particles.to_frame(galactocentric)
+        satellite_gc = satellite.to_frame(galactocentric)
+
+        pi = ParticleIntegrator((particles_gc,satellite_gc),
+                                potential,
+                                args=(Nparticles+1, acc))
+        particle_orbit,satellite_orbit = pi.run(t1=self.args[0],
+                                                t2=self.args[1],
+                                                dt=self.args[2])
+
+        # These are the unbinding time indices for each particle
+        t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
+                             for tub in particles.tub])
+
+        # plot each particle orbit
+        # S = satellite_orbit._X[:,0]
+        # xx,zz = S[:,0], S[:,2]
+        # plt.figure(figsize=(8,8))
+        # for ii in range(Nparticles):
+        #     X = particle_orbit._X[:,ii]
+        #     x,z = X[:,0], X[:,2]
+        #     plt.clf()
+        #     plt.plot(xx,zz,marker=None,alpha=0.75)
+        #     plt.plot(x,z,marker=None,color='b')
+        #     plt.plot(xx[t_idx[ii]], zz[t_idx[ii]], marker='o', color='k')
+        #     plt.plot(x[t_idx[ii]], z[t_idx[ii]], marker='o', color='b')
+        #     plt.xlim(-80,80)
+        #     plt.ylim(-80,80)
+        #     plt.savefig(os.path.join(this_plot_path,"{}_orbit.png".format(ii)))
+
+        Ntimesteps  = len(particle_orbit.t)
+        sat_var = np.zeros((Ntimesteps,6))
+        sat_var[:,:3] = self.potential._tidal_radius(satellite.m,
+                                            satellite_orbit._X[...,:3])*1.26
+        sat_var[:,3:] += satellite.v_disp
+        cov = sat_var**2
+
+        Sigma = np.array([cov[jj] for ii,jj in enumerate(t_idx)])
+        p_x = np.array([particle_orbit._X[jj,ii] \
+                            for ii,jj in enumerate(t_idx)])
+        s_x = np.array([satellite_orbit._X[jj,0] \
+                            for ii,jj in enumerate(t_idx)])
+
+        norm_rel_X = (p_x-s_x)**2/Sigma
+        R,V = np.sqrt(np.sum(norm_rel_X[:,:3],axis=1)), np.sqrt(np.sum(norm_rel_X[:,3:],axis=1))
+        D_ps = np.sqrt(np.sum((particle_orbit._X - satellite_orbit._X)**2 / cov[:,np.newaxis],
+                              axis=-1))
+
+        plt.clf()
+        plt.plot(R,V,marker='o',linestyle='none')
+        plt.savefig(os.path.join(this_plot_path, "R_V.png"))
+
+        plt.clf()
+        plt.figure(figsize=(20,8))
+        for ii in range(Nparticles):
+            l = plt.plot(D_ps[:,ii])
+            plt.axvline(t_idx[ii], c=l[0].get_color())
+        plt.ylim(0,4)
+        plt.savefig(os.path.join(this_plot_path, "all_D_ps.png"))
+
+
+        log_p_x_given_phi_new = -0.5*np.sum(np.log(Sigma), axis=1) - \
+                             0.5*np.sum((p_x-s_x)**2/Sigma, axis=1)
+
+        log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) + \
+                            (p_x-s_x)**2/Sigma, axis=1)
+        print(log_p_x_given_phi)
+        print(log_p_x_given_phi_new)
+        print(np.sum(log_p_x_given_phi))
+        print(np.sum(log_p_x_given_phi_new))
+
 def test_likelihood_observed_particles():
     from streams.observation.gaia import gaia_spitzer_errors
 
     np.random.seed(52)
     simulation = SgrSimulation(mass="2.5e8")
+    args = (simulation.t1,simulation.t2,-1.)
 
     particles = simulation.particles(N=1, expr="tub!=0")
     particles = particles.to_frame(heliocentric)
@@ -394,11 +483,11 @@ def test_likelihood_observed_particles():
     for fac in facs:
         arr[:,2:] = fac
         X = arr*_X
-        print("posterior", model(np.ravel(X), *self.args))
+        print("posterior", model(np.ravel(X), *args))
         print("prior", model.ln_prior())
-        print("likelihood", model.ln_likelihood())
+        print("likelihood", model.ln_likelihood(*args))
         print()
-        Ps.append(model(np.ravel(X), *self.args))
+        Ps.append(model(np.ravel(X), *args))
 
     ax.plot(facs, Ps)
     ax.set_xlabel("Err. Factor")

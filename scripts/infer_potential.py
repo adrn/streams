@@ -252,7 +252,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
         try:
             sampler = infer_potential(model, Nsteps=Nsteps, Nburn_in=Nburn_in,
-                                      Nwalkers=Nwalkers, args=(t1,t2,dt,d["true_particles"].tub),
+                                      Nwalkers=Nwalkers, args=(t1,t2,dt),
                                       pool=pool)
         except:
             color_print("ERROR","red")

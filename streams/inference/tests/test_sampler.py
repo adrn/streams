@@ -34,7 +34,7 @@ class TestStreamModel(object):
         from streams.io import SgrSimulation
 
         np.random.seed(52)
-        self.Nparticles = 2
+        self.Nparticles = 5
         self.simulation = SgrSimulation(mass="2.5e8")
         self.args = (self.simulation.t1,self.simulation.t2,-1.)
 
@@ -111,7 +111,7 @@ class TestStreamModel(object):
 
     def test_sample_tub(self):
 
-        Nwalkers = 4
+        Nwalkers = 16
         Nsteps = 100
 
         potential = LawMajewski2010()
@@ -123,8 +123,8 @@ class TestStreamModel(object):
         params = []
         lo = [self.args[1]] * particles.nparticles
         hi = [self.args[0]] * particles.nparticles
-        prior = LogNormalBoundedPrior(lo, hi, mu=self.particles.tub, sigma=[20]*N)
-        #prior = LogUniformPrior(lo, hi)
+        # prior = LogNormalBoundedPrior(lo, hi, mu=self.particles.tub, sigma=[20]*N)
+        prior = LogUniformPrior(lo, hi)
         params.append(ModelParameter(target=particles,
                                      attr="tub",
                                      ln_prior=prior))
