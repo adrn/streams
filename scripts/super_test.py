@@ -117,7 +117,7 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     s_x = np.array([s_orbit[jj,0] for jj in t_idx])
 
     log_p_x_given_phi = -0.5*np.sum(np.log(Sigma), axis=1) - \
-                         0.5*np.sum((p_x-s_x)**2/Sigma, axis=1)*abs(dt)
+                         0.5*np.sum((p_x-s_x)**2/Sigma, axis=1)
 
     return np.sum(log_p_x_given_phi)
 
@@ -213,6 +213,10 @@ def main(mpi=False, threads=None, overwrite=False):
     if not os.path.exists(path):
         os.makedirs(path)
 
+    if os.path.exists(output_file) and overwrite:
+        logger.info("Writing over output file '{}'".format(output_file))
+        os.remove(output_file)
+
     truths = []
     potential = sp.LawMajewski2010()
 
@@ -259,23 +263,12 @@ def main(mpi=False, threads=None, overwrite=False):
     for pp in potential_params:
         p = potential.parameters[pp]
         priors.append(LogUniformPrior(*p._range))
-        # a,b = p._range
-        # this_p0 = np.random.uniform(a, b, size=(nwalkers,1))
-        # try:
-        #     p0 = np.hstack((p0,this_p0))
-        # except NameError:
-        #     p0 = this_p0
         truths.append(p._truth)
 
     # tub
     if tub is None:
-        truths = truths + true_tub.tolist()
         priors.append(LogUniformPrior([t2]*nparticles, [t1]*nparticles))
-        # this_p0 = np.random.uniform(t2, t1, size=(nwalkers,nparticles))
-        # try:
-        #     p0 = np.hstack((p0,this_p0))
-        # except NameError:
-        #     p0 = this_p0
+        truths = truths + true_tub.tolist()
 
     # particles
     if particles_hel is None:
@@ -288,34 +281,50 @@ def main(mpi=False, threads=None, overwrite=False):
     # satellite
     # TODO
 
-    # get initial walker positions
-    for jj in range(nwalkers):
-        try:
-            p0[jj] = np.concatenate([np.atleast_1d(p.sample()) for p in priors])
-        except NameError:
-            this_p0 = np.concatenate([np.atleast_1d(p.sample()) for p in priors])
-            p0 = np.zeros((nwalkers,len(this_p0)))
-            p0[jj] = this_p0
+    if not os.path.exists(output_file):
+        # get initial walker positions
+        for jj in range(nwalkers):
+            try:
+                p0[jj] = np.concatenate([np.atleast_1d(p.sample()) for p in priors])
+            except NameError:
+                this_p0 = np.concatenate([np.atleast_1d(p.sample()) for p in priors])
+                p0 = np.zeros((nwalkers,len(this_p0)))
+                p0[jj] = this_p0
 
-    args = (t1, t2, dt, priors, satellite_hel, particles_hel,
-            potential_params, tub, nparticles)
+        args = (t1, t2, dt, priors, satellite_hel, particles_hel,
+                potential_params, tub, nparticles)
 
-    logger.debug("p0 shape: {}".format(p0.shape))
-    sampler = emcee.EnsembleSampler(nwalkers, p0.shape[-1], ln_posterior,
-                                    pool=pool, args=args)
+        logger.debug("p0 shape: {}".format(p0.shape))
+        sampler = emcee.EnsembleSampler(nwalkers, p0.shape[-1], ln_posterior,
+                                        pool=pool, args=args)
 
-    if nburn > 0:
-        logger.info("Burning in sampler for {} steps...".format(nburn))
-        pos, xx, yy = sampler.run_mcmc(p0, nburn)
-        sampler.reset()
-    else:
-        pos = p0
+        if nburn > 0:
+            logger.info("Burning in sampler for {} steps...".format(nburn))
+            pos, xx, yy = sampler.run_mcmc(p0, nburn)
+            sampler.reset()
+        else:
+            pos = p0
 
-    logger.info("Running sampler for {} steps...".format(nsteps))
-    a = time.time()
-    pos, prob, state = sampler.run_mcmc(pos, nsteps)
-    t = time.time() - a
-    logger.debug("Spent {} seconds on sampler...".format(t))
+        logger.info("Running sampler for {} steps...".format(nsteps))
+        a = time.time()
+        pos, prob, state = sampler.run_mcmc(pos, nsteps)
+        t = time.time() - a
+        logger.debug("Spent {} seconds on sampler...".format(t))
+
+        with h5py.File(output_file, "w") as f:
+            f["chain"] = sampler.chain
+            f["flatchain"] = sampler.flatchain
+            f["lnprobability"] = sampler.lnprobability
+            f["p0"] = p0
+            f["acceptance_fraction"] = sampler.acceptance_fraction
+
+    with h5py.File(output_file, "r") as f:
+        chain = f["chain"].value
+        flatchain = f["flatchain"].value
+        p0 = f["p0"].value
+        acceptance_fraction = f["acceptance_fraction"].value
+
+    logger.info("Acceptance fractions: {}".format(acceptance_fraction))
 
     if pool is not None:
         pool.close()
@@ -323,7 +332,7 @@ def main(mpi=False, threads=None, overwrite=False):
     for jj in range(p0.shape[-1]):
         plt.clf()
         for ii in range(nwalkers):
-            plt.plot(sampler.chain[ii,:,jj], alpha=0.4, drawstyle='steps')
+            plt.plot(chain[ii,:,jj], alpha=0.4, drawstyle='steps')
 
         try:
             plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
@@ -331,7 +340,7 @@ def main(mpi=False, threads=None, overwrite=False):
             pass
         plt.savefig(os.path.join(path, "walker_{}.png".format(jj)))
 
-    fig = triangle.corner(sampler.flatchain)
+    fig = triangle.corner(flatchain)
     fig.savefig(os.path.join(path, "corner.png"))
 
 if __name__ == "__main__":
