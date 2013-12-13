@@ -37,7 +37,7 @@ class LogUniformPrior(LogPrior):
         self.a = a
         self.b = b
 
-    def sample(self, size=1):
+    def sample(self, size=None):
         return np.random.uniform(self.a, self.b, size=size)
 
 class LogNormalPrior(LogPrior):
@@ -83,6 +83,7 @@ class LogNormalPrior(LogPrior):
             return np.squeeze(np.rollaxis(s, 1))
         else:
             return np.squeeze(s)
+
 
 class LogNormalBoundedPrior(LogPrior):
     """ THIS IS TECHNICALLY WRONG -- samples just from LogNormal """

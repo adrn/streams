@@ -88,28 +88,10 @@ def get_pool(mpi=False, threads=None):
 
     return pool
 
-def ln_prior(p, *args):
-    t1,t2,dt,s_hel,s_hel_err,p_hel,p_hel_err,potential_params = args
+def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
 
-    tub = np.array(p[len(potential_params):])
-    if np.any(tub > t1) or np.any(tub < t2):
-        return -np.inf
-
-    return 0.
-
-def ln_likelihood(p, *args):
-
-    t1,t2,dt,s_hel,s_hel_err,p_hel,p_hel_err,potential_params = args
     p_gc = _hel_to_gc(p_hel)
     s_gc = _hel_to_gc(s_hel)
-
-    # OR
-    #q1,qz,v_halo,phi = p[:4]
-    kwargs = dict(zip(potential_params, p[:len(potential_params)]))
-    potential = sp.LawMajewski2010(**kwargs)
-    tub = p[len(potential_params):]
-    #p_hel = p[4:nparticles*6+4]
-    #tub = p[nparticles*6+4:nparticles*6+4+nparticles]
 
     gc = np.vstack((s_gc,p_gc)).copy()
     acc = np.zeros_like(gc[:,:3])
@@ -140,7 +122,53 @@ def ln_likelihood(p, *args):
     return np.sum(log_p_x_given_phi)
 
 def ln_posterior(p, *args):
-    return ln_prior(p, *args) + ln_likelihood(p, *args)
+    (t1, t2, dt, priors, s_hel, p_hel,
+     potential_params, tub, nparticles) = args
+
+    ln_prior = 0.
+    prior_ix = 0
+
+    Npp = len(potential_params)
+
+    ix1 = 0
+    ix2 = Npp
+    kwargs = dict(zip(potential_params, p[ix1:ix2]))
+    potential = sp.LawMajewski2010(**kwargs)
+    ix1 = ix2
+    for ii in range(Npp):
+        ln_prior += priors[prior_ix](p[ii])
+        prior_ix += 1
+
+    if tub is None:
+        ix2 = ix1 + nparticles
+        tub = p[ix1:ix2]
+        ix1 = ix2
+        ln_prior += priors[prior_ix](tub)
+        prior_ix += 1
+
+    if p_hel is None:
+        ix2 = ix1 + nparticles*6
+        p_hel = p[ix1:ix2].reshape(nparticles,6)
+        ix1 = ix2
+
+        for ii in range(nparticles):
+            ln_prior += priors[prior_ix](p_hel[ii])
+            prior_ix += 1
+
+    if s_hel is None:
+        ix2 = ix1 + 6
+        s_hel = p[ix1:ix2]
+        ix1 = ix2
+        ln_prior += priors[prior_ix](s_hel)
+        prior_ix += 1
+
+    ln_prior = np.sum(ln_prior)
+    if np.isinf(ln_prior):
+        return ln_prior
+
+    else:
+        ln_l = ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub)
+        return ln_prior + ln_l
 
 def main(mpi=False, threads=None, overwrite=False):
     """ TODO: """
@@ -148,15 +176,33 @@ def main(mpi=False, threads=None, overwrite=False):
     pool = get_pool(mpi=mpi, threads=threads)
 
     ##################################################
+    # VEGA
     # determine the output data path
-    home = "/vega/astro/users/amp2217/"
-    #home = "/hpc/astro/users/amp2217/"
-    #home = "/Users/adrian/"
-    data_file = "N32_no_errors.hdf5"
-    nburn = 500
-    nsteps = 1000
+    # home = "/vega/astro/users/amp2217/"
+    # #home = "/hpc/astro/users/amp2217/"
+    # data_file = "N32_ptcl_errors.hdf5"
+    # nburn = 500
+    # nsteps = 1000
+    # nparticles = 4
+    # nwalkers = 64
+    # potential_params = []
+    # infer_tub_tf = True
+    # infer_particles_tf = True
+    # infer_satellite_tf = False
+    ##################################################
+
+    ##################################################
+    # LAPTOP TESTING
+    home = "/Users/adrian/"
+    data_file = "N32_ptcl_errors.hdf5"
+    nburn = 0
+    nsteps = 10
     nparticles = 4
     nwalkers = 64
+    potential_params = ["qz"]
+    infer_tub_tf = True
+    infer_particles_tf = True
+    infer_satellite_tf = False
     ##################################################
 
     path = os.path.join(home, "output_data/super_test")
@@ -169,56 +215,92 @@ def main(mpi=False, threads=None, overwrite=False):
 
     truths = []
     potential = sp.LawMajewski2010()
-    #potential_params = ["q1","qz","v_halo","phi"]
-    potential_params = ["qz"]
 
-    satellite_hel = d["satellite"]._X
-    #satellite_hel_err = d["satellite"]._error_X
-    satellite_hel_err = None
-    logger.debug("Read in satellite".format(satellite_hel))
+    observed_satellite_hel = d["satellite"]._X
+    if infer_satellite_tf:
+        satellite_hel = None
+        satellite_hel_err = d["satellite"]._error_X
+    else:
+        satellite_hel = observed_satellite_hel
+        satellite_hel_err = None
+    logger.debug("Read in satellite".format(observed_satellite_hel))
 
-    particles_hel = d["particles"]._X[:nparticles]
-    #particles_hel_err = d["particles"]._error_X
-    particles_hel_err = None
-    tub = d["particles"].tub[:nparticles]
-    nparticles = particles_hel.shape[0]
+    observed_particles_hel = d["particles"]._X[:nparticles]
+    assert len(np.ravel(observed_particles_hel)) == len(np.unique(np.ravel(observed_particles_hel)))
+
+    if infer_particles_tf:
+        particles_hel = None
+        particles_hel_err = d["particles"]._error_X[:nparticles]
+    else:
+        particles_hel = observed_particles_hel
+        particles_hel_err = None
+
+    true_tub = d["particles"].tub[:nparticles]
+    if infer_tub_tf:
+        tub = None
+    else:
+        tub = np.array(true_tub)
+    nparticles = observed_particles_hel.shape[0]
     logger.debug("Read in {} particles".format(nparticles))
 
     t1 = float(d["t1"])
     t2 = float(d["t2"])
     dt = -1.
 
-    args = (t1, t2, dt,
-            satellite_hel, satellite_hel_err,
-            particles_hel, particles_hel_err,
-            potential_params)
-
-    #l = ln_posterior(p, *args) # TEST evaluating
-
     if nwalkers is None:
+        # TODO: broken
         nwalkers = len(p)*2
+    logger.debug("{} walkers".format(nwalkers))
+
+    # TODO: figure out how to sample p0 based on what is set to None, etc...
+    priors = []
 
     # potential
     for pp in potential_params:
         p = potential.parameters[pp]
-        a,b = p._range
-        this_p0 = np.random.uniform(a, b, size=(nwalkers,1))
-        try:
-            p0 = np.hstack((p0,this_p0))
-        except NameError:
-            p0 = this_p0
+        priors.append(LogUniformPrior(*p._range))
+        # a,b = p._range
+        # this_p0 = np.random.uniform(a, b, size=(nwalkers,1))
+        # try:
+        #     p0 = np.hstack((p0,this_p0))
+        # except NameError:
+        #     p0 = this_p0
         truths.append(p._truth)
 
     # tub
-    truths = truths + tub.tolist()
-    this_p0 = np.random.uniform(t2, t1, size=(nwalkers,nparticles))
-    try:
-        p0 = np.hstack((p0,this_p0))
-    except NameError:
-        p0 = this_p0
-    logger.debug("{} walkers".format(nwalkers))
-    logger.debug("p0 shape: {}".format(p0.shape))
+    if tub is None:
+        truths = truths + true_tub.tolist()
+        priors.append(LogUniformPrior([t2]*nparticles, [t1]*nparticles))
+        # this_p0 = np.random.uniform(t2, t1, size=(nwalkers,nparticles))
+        # try:
+        #     p0 = np.hstack((p0,this_p0))
+        # except NameError:
+        #     p0 = this_p0
 
+    # particles
+    if particles_hel is None:
+        assert particles_hel_err is not None
+
+        for ii in range(nparticles):
+            prior = LogNormalPrior(observed_particles_hel[ii], sigma=particles_hel_err[ii])
+            priors.append(prior)
+
+    # satellite
+    # TODO
+
+    # get initial walker positions
+    for jj in range(nwalkers):
+        try:
+            p0[jj] = np.concatenate([np.atleast_1d(p.sample()) for p in priors])
+        except NameError:
+            this_p0 = np.concatenate([np.atleast_1d(p.sample()) for p in priors])
+            p0 = np.zeros((nwalkers,len(this_p0)))
+            p0[jj] = this_p0
+
+    args = (t1, t2, dt, priors, satellite_hel, particles_hel,
+            potential_params, tub, nparticles)
+
+    logger.debug("p0 shape: {}".format(p0.shape))
     sampler = emcee.EnsembleSampler(nwalkers, p0.shape[-1], ln_posterior,
                                     pool=pool, args=args)
 
@@ -243,7 +325,10 @@ def main(mpi=False, threads=None, overwrite=False):
         for ii in range(nwalkers):
             plt.plot(sampler.chain[ii,:,jj], alpha=0.4, drawstyle='steps')
 
-        plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
+        try:
+            plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
+        except:
+            pass
         plt.savefig(os.path.join(path, "walker_{}.png".format(jj)))
 
     fig = triangle.corner(sampler.flatchain)
