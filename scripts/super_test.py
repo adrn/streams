@@ -178,34 +178,35 @@ def main(mpi=False, threads=None, overwrite=False):
     ##################################################
     # VEGA
     # determine the output data path
-    # home = "/vega/astro/users/amp2217/"
+    home = "/vega/astro/users/amp2217/"
     # #home = "/hpc/astro/users/amp2217/"
-    # data_file = "N32_ptcl_errors.hdf5"
-    # nburn = 500
-    # nsteps = 1000
-    # nparticles = 4
-    # nwalkers = 64
-    # potential_params = []
-    # infer_tub_tf = True
-    # infer_particles_tf = True
-    # infer_satellite_tf = False
+    data_file = "N32_ptcl_errors.hdf5"
+    nburn = 500
+    nsteps = 1000
+    nparticles = 4
+    nwalkers = 64
+    potential_params = []
+    infer_tub_tf = True
+    infer_particles_tf = True
+    infer_satellite_tf = False
+    name = "super_test2"
     ##################################################
 
     ##################################################
     # LAPTOP TESTING
-    home = "/Users/adrian/"
-    data_file = "N32_ptcl_errors.hdf5"
-    nburn = 0
-    nsteps = 10
-    nparticles = 4
-    nwalkers = 64
-    potential_params = ["qz"]
-    infer_tub_tf = True
-    infer_particles_tf = True
-    infer_satellite_tf = False
+    #home = "/Users/adrian/"
+    #data_file = "N32_ptcl_errors.hdf5"
+    #nburn = 0
+    #nsteps = 10
+    #nparticles = 4
+    #nwalkers = 64
+    #potential_params = ["qz"]
+    #infer_tub_tf = True
+    #infer_particles_tf = True
+    #infer_satellite_tf = False
     ##################################################
 
-    path = os.path.join(home, "output_data/super_test")
+    path = os.path.join(home, "output_data", name)
     d_path = os.path.join(home, "projects/streams/data/observed_particles/")
     d = io.read_hdf5(os.path.join(d_path, data_file))
     output_file = os.path.join(path, "inference.hdf5")
