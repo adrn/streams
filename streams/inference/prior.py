@@ -14,7 +14,7 @@ import logging
 import numpy as np
 import astropy.units as u
 
-__all__ = ["LogPrior", "LogUniformPrior", "LogNormalPrior", "LogNormalBoundedPrior"]
+__all__ = ["LogPrior", "LogUniformPrior", "LogNormalPrior"]
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class LogUniformPrior(LogPrior):
     def sample(self, size=None):
         return np.random.uniform(self.a, self.b, size=size)
 
-class LogNormalPrior(LogPrior):
+class LogNormalCovPrior(LogPrior):
 
     def __call__(self, value):
         X = np.atleast_2d(self.mu - value)
@@ -84,17 +84,21 @@ class LogNormalPrior(LogPrior):
         else:
             return np.squeeze(s)
 
-
-class LogNormalBoundedPrior(LogPrior):
-    """ THIS IS TECHNICALLY WRONG -- samples just from LogNormal """
+class LogNormalPrior(LogPrior):
 
     def __call__(self, value):
-        return self._uniform(value) + self._normal(value)
+        X = self.mu - np.atleast_1d(value)
+        return self._norm - 0.5 * np.sum((X / self.sigma)**2)
 
-    def __init__(self, a, b, mu, sigma=None, cov=None):
-
-        self._uniform = LogUniformPrior(a,b)
-        self._normal = LogNormalPrior(mu, sigma=sigma, cov=cov)
+    def __init__(self, mu, sigma):
+        self.mu = np.atleast_1d(mu)
+        self.sigma = np.atleast_1d(sigma)
+        k = len(self.mu)
+        self._norm = -0.5*k*np.log(2*np.pi) - np.sum(np.log(self.sigma))
 
     def sample(self, size=None):
-        return self._normal.sample(size)
+        s = np.random.multivariate_normal(self.mu, np.diag(self.sigma**2), size=size)
+        if size is not None:
+            return np.squeeze(np.rollaxis(s, 1))
+        else:
+            return np.squeeze(s)
