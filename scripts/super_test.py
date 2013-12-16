@@ -298,6 +298,7 @@ def main(mpi=False, threads=None, overwrite=False):
     # TODO
 
     if not os.path.exists(output_file):
+        logger.info("Output file '{}' doesn't exist".format(output_file))
         # get initial walker positions
         for jj in range(nwalkers):
             try:
@@ -333,6 +334,8 @@ def main(mpi=False, threads=None, overwrite=False):
             f["lnprobability"] = sampler.lnprobability
             f["p0"] = p0
             f["acceptance_fraction"] = sampler.acceptance_fraction
+    else:
+        logger.info("Output file '{}' already exists - reading in data".format(output_file))
 
     with h5py.File(output_file, "r") as f:
         chain = f["chain"].value
@@ -345,8 +348,12 @@ def main(mpi=False, threads=None, overwrite=False):
     if pool is not None:
         pool.close()
 
+    # Plotting!
+    # =========
     if plot_walkers:
+        logger.info("Plotting individual walkers...")
         for jj in range(p0.shape[-1]):
+            logger.debug("\t plotting walker {}".format(jj))
             plt.clf()
             for ii in range(nwalkers):
                 plt.plot(chain[ii,:,jj], alpha=0.4, drawstyle='steps')
@@ -363,6 +370,7 @@ def main(mpi=False, threads=None, overwrite=False):
     ix2 = Npp
 
     if Npp > 0:
+        logger.info("Plotting potential posterior...")
         d_units = [u.s,u.km,u.deg]
         potential = sp.LawMajewski2010()
         corner_kwargs = defaultdict(list)
@@ -390,11 +398,13 @@ def main(mpi=False, threads=None, overwrite=False):
         ix1 = ix2
 
     if infer_particles_tf:
+        logger.info("Plotting particle posteriors...")
         ix2 = ix1 + nparticles*6
         particles_flatchain = flatchain[:,ix1:ix2].reshape(nsteps*nwalkers,nparticles,6)
         particles_p0 = p0[:,ix1:ix2].reshape(nwalkers,nparticles,6)
 
         for ii in range(nparticles):
+            logger.debug("\tplotting particle {}".format(ii))
             this_p0 = convert_units(particles_p0[:,ii], hel_units, heliocentric.repr_units)
             true_X = convert_units(d["true_particles"]._X[ii], hel_units, heliocentric.repr_units)
             chain_X = convert_units(particles_flatchain[:,ii], hel_units, heliocentric.repr_units)
