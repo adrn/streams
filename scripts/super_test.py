@@ -54,6 +54,8 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
+hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
+
 def get_pool(mpi=False, threads=None):
     """ Get a pool object to pass to emcee for parallel processing.
         If mpi is False and threads is None, pool is None.
@@ -171,6 +173,14 @@ def ln_posterior(p, *args):
         ln_l = ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub)
         return ln_prior + ln_l
 
+def convert_units(X, u1, u2):
+    """ Convert X from units u1 to units u2. """
+
+    new_X = np.zeros_like(X)
+    for ii in range(len(X.T)):
+        new_X[...,ii] = (X[...,ii]*u1[ii]).to(u2[ii]).value
+    return new_X
+
 def main(mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
@@ -261,10 +271,10 @@ def main(mpi=False, threads=None, overwrite=False):
 
     priors = []
     # potential
-    for pp in potential_params:
-        p = potential.parameters[pp]
-        priors.append(LogUniformPrior(*p._range))
-        truths.append(p._truth)
+    for p_name in potential_params:
+        pp = potential.parameters[p_name]
+        priors.append(LogUniformPrior(*pp._range))
+        truths.append(pp._truth)
 
     # tub
     if tub is None:
@@ -333,13 +343,13 @@ def main(mpi=False, threads=None, overwrite=False):
     if pool is not None:
         pool.close()
 
-    for jj in range(p0.shape[-1]):
-        plt.clf()
-        for ii in range(nwalkers):
-            plt.plot(chain[ii,:,jj], alpha=0.4, drawstyle='steps')
+    # for jj in range(p0.shape[-1]):
+    #     plt.clf()
+    #     for ii in range(nwalkers):
+    #         plt.plot(chain[ii,:,jj], alpha=0.4, drawstyle='steps')
 
-        plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
-        plt.savefig(os.path.join(path, "walker_{}.png".format(jj)))
+    #     plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
+    #     plt.savefig(os.path.join(path, "walker_{}.png".format(jj)))
 
     # Make corner plots
     # -----------------
@@ -355,35 +365,59 @@ def main(mpi=False, threads=None, overwrite=False):
         corner_kwargs = defaultdict(list)
         corner_kwargs["xs"] = np.zeros_like(flatchain[:,ix1:ix2])
         for ii, p_name in enumerate(potential_params):
-            p = potential.parameters[p_name]
-            corner_kwargs["xs"][:,ix1+ii] = (flatchain[:,ix1+ii]*p._unit).decompose(d_units).value
-            corner_kwargs["truths"].append(p.truth.decompose(d_units).value)
-            corner_kwargs["extents"].append([x.decompose(d_units).value for x in p.range])
-            if p._unit is not u.dimensionless_unscaled:
-                label = "{0} [{1}]".format(p.latex, p.truth.decompose(d_units).unit)
+            pp = potential.parameters[p_name]
+            corner_kwargs["xs"][:,ix1+ii] = (flatchain[:,ix1+ii]*pp._unit).decompose(d_units).value
+            corner_kwargs["truths"].append(pp.truth.decompose(d_units).value)
+            corner_kwargs["extents"].append([x.decompose(d_units).value for x in pp.range])
+            if pp._unit is not u.dimensionless_unscaled:
+                label = "{0} [{1}]".format(pp.latex, pp.truth.decompose(d_units).unit)
             else:
-                label = "{0}".format(p.latex)
+                label = "{0}".format(pp.latex)
             corner_kwargs["labels"].append(label)
 
         fig = triangle.corner(**corner_kwargs)
         fig.savefig(os.path.join(path, "potential_posterior.png"))
-        #ix1 = ix2
+        ix1 = ix2
+        del fig
 
-    return
-
-    if tub is None:
+    tub_chain = None
+    if infer_tub_tf:
         ix2 = ix1 + nparticles
-        tub = p[ix1:ix2]
+        tub_chain = flatchain[:,ix1:ix2].reshape(nsteps*nwalkers,nparticles,1)
         ix1 = ix2
 
-    if p_hel is None:
+    if infer_particles_tf:
         ix2 = ix1 + nparticles*6
-        p_hel = p[ix1:ix2].reshape(nparticles,6)
-        ix1 = ix2
+        particles_flatchain = flatchain[:,ix1:ix2].reshape(nsteps*nwalkers,nparticles,6)
+        particles_p0 = p0[:,ix1:ix2].reshape(nwalkers,nparticles,6)
 
         for ii in range(nparticles):
-            pass
+            this_p0 = convert_units(particles_p0[:,ii], hel_units, heliocentric.repr_units)
+            true_X = convert_units(d["true_particles"]._X[ii], hel_units, heliocentric.repr_units)
+            chain_X = convert_units(particles_flatchain[:,ii], hel_units, heliocentric.repr_units)
 
+            corner_kwargs = defaultdict(list)
+            corner_kwargs["xs"] = chain_X
+            corner_kwargs["truths"] = true_X.tolist()
+            mu,sigma = np.mean(this_p0, axis=0),np.std(this_p0, axis=0)
+            corner_kwargs["extents"] = zip(mu-3*sigma,mu+3*sigma)
+            labels = ["{0} [{1}]".format(n,uu)
+                      for n,uu in zip(heliocentric.coord_names,heliocentric.repr_units)]
+            corner_kwargs["labels"] = labels
+
+            if tub_chain is not None:
+                corner_kwargs["xs"] = np.hstack((corner_kwargs["xs"],tub_chain[:,ii]))
+                corner_kwargs["truths"].append(true_tub[ii])
+                corner_kwargs["extents"].append((t2,t1))
+                corner_kwargs["labels"].append("$t_{ub}$")
+
+            fig = triangle.corner(**corner_kwargs)
+            fig.savefig(os.path.join(path, "particle{}_posterior.png".format(ii)))
+            del fig
+        ix1 = ix2
+
+    # TODO: satellite
+    return
     if s_hel is None:
         ix2 = ix1 + 6
         s_hel = p[ix1:ix2]
