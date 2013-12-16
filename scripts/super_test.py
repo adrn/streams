@@ -189,33 +189,35 @@ def main(mpi=False, threads=None, overwrite=False):
     ##################################################
     # VEGA
     # determine the output data path
-    # home = "/vega/astro/users/amp2217/"
-    # # #home = "/hpc/astro/users/amp2217/"
-    # data_file = "N32_ptcl_errors.hdf5"
-    # nburn = 5000
-    # nsteps = 7500
-    # nparticles = 16
-    # nwalkers = 1024
-    # potential_params = ["q1","qz","v_halo","phi"]
-    # infer_tub_tf = True
-    # infer_particles_tf = True
-    # infer_satellite_tf = False
-    # name = "super_test16"
-    ##################################################
-
-    ##################################################
-    # LAPTOP TESTING
-    home = "/Users/adrian/"
+    home = "/vega/astro/users/amp2217/"
+    # #home = "/hpc/astro/users/amp2217/"
     data_file = "N32_ptcl_errors.hdf5"
-    nburn = 0
-    nsteps = 10
-    nparticles = 4
-    nwalkers = 64
+    nburn = 5000
+    nsteps = 7500
+    nparticles = 16
+    nwalkers = 1024
     potential_params = ["q1","qz","v_halo","phi"]
     infer_tub_tf = True
     infer_particles_tf = True
     infer_satellite_tf = False
-    name = "super_test"
+    name = "super_test16"
+    plot_walkers = False
+    ##################################################
+
+    ##################################################
+    # LAPTOP TESTING
+    # home = "/Users/adrian/"
+    # data_file = "N32_ptcl_errors.hdf5"
+    # nburn = 0
+    # nsteps = 10
+    # nparticles = 4
+    # nwalkers = 64
+    # potential_params = ["q1","qz","v_halo","phi"]
+    # infer_tub_tf = True
+    # infer_particles_tf = True
+    # infer_satellite_tf = False
+    # name = "super_test"
+    # plot_walkers = False
     ##################################################
 
     path = os.path.join(home, "output_data", name)
@@ -343,13 +345,14 @@ def main(mpi=False, threads=None, overwrite=False):
     if pool is not None:
         pool.close()
 
-    # for jj in range(p0.shape[-1]):
-    #     plt.clf()
-    #     for ii in range(nwalkers):
-    #         plt.plot(chain[ii,:,jj], alpha=0.4, drawstyle='steps')
+    if plot_walkers:
+        for jj in range(p0.shape[-1]):
+            plt.clf()
+            for ii in range(nwalkers):
+                plt.plot(chain[ii,:,jj], alpha=0.4, drawstyle='steps')
 
-    #     plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
-    #     plt.savefig(os.path.join(path, "walker_{}.png".format(jj)))
+            plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
+            plt.savefig(os.path.join(path, "walker_{}.png".format(jj)))
 
     # Make corner plots
     # -----------------
