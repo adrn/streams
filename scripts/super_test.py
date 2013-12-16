@@ -343,7 +343,7 @@ def main(mpi=False, threads=None, overwrite=False):
         p0 = f["p0"].value
         acceptance_fraction = f["acceptance_fraction"].value
 
-    logger.info("Acceptance fractions: {}".format(acceptance_fraction))
+    logger.debug("Acceptance fractions: {}".format(acceptance_fraction))
 
     if pool is not None:
         pool.close()
