@@ -254,7 +254,11 @@ def main(mpi=False, threads=None, overwrite=False):
         particles_hel = observed_particles_hel
         particles_hel_err = None
 
-    true_tub = d["particles"].tub[:nparticles]
+    try:
+        true_tub = d["true_particles"].tub[:nparticles]
+    except KeyError:
+        true_tub = d["particles"].tub[:nparticles]
+
     if infer_tub_tf:
         tub = None
     else:
