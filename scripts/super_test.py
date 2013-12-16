@@ -181,15 +181,15 @@ def main(mpi=False, threads=None, overwrite=False):
     home = "/vega/astro/users/amp2217/"
     # #home = "/hpc/astro/users/amp2217/"
     data_file = "N32_ptcl_errors.hdf5"
-    nburn = 500
-    nsteps = 1000
-    nparticles = 4
-    nwalkers = 64
-    potential_params = []
+    nburn = 5000
+    nsteps = 7500
+    nparticles = 16
+    nwalkers = 1024
+    potential_params = ["q1","qz","v_halo","phi"]
     infer_tub_tf = True
     infer_particles_tf = True
     infer_satellite_tf = False
-    name = "super_test2"
+    name = "super_test16"
     ##################################################
 
     ##################################################
