@@ -14,6 +14,7 @@ import gc
 import copy
 import logging
 import multiprocessing
+from collections import defaultdict
 
 # Third-party
 import astropy.units as u
@@ -178,32 +179,33 @@ def main(mpi=False, threads=None, overwrite=False):
     ##################################################
     # VEGA
     # determine the output data path
-    home = "/vega/astro/users/amp2217/"
-    # #home = "/hpc/astro/users/amp2217/"
-    data_file = "N32_ptcl_errors.hdf5"
-    nburn = 5000
-    nsteps = 7500
-    nparticles = 16
-    nwalkers = 1024
-    potential_params = ["q1","qz","v_halo","phi"]
-    infer_tub_tf = True
-    infer_particles_tf = True
-    infer_satellite_tf = False
-    name = "super_test16"
+    # home = "/vega/astro/users/amp2217/"
+    # # #home = "/hpc/astro/users/amp2217/"
+    # data_file = "N32_ptcl_errors.hdf5"
+    # nburn = 5000
+    # nsteps = 7500
+    # nparticles = 16
+    # nwalkers = 1024
+    # potential_params = ["q1","qz","v_halo","phi"]
+    # infer_tub_tf = True
+    # infer_particles_tf = True
+    # infer_satellite_tf = False
+    # name = "super_test16"
     ##################################################
 
     ##################################################
     # LAPTOP TESTING
-    #home = "/Users/adrian/"
-    #data_file = "N32_ptcl_errors.hdf5"
-    #nburn = 0
-    #nsteps = 10
-    #nparticles = 4
-    #nwalkers = 64
-    #potential_params = ["qz"]
-    #infer_tub_tf = True
-    #infer_particles_tf = True
-    #infer_satellite_tf = False
+    home = "/Users/adrian/"
+    data_file = "N32_ptcl_errors.hdf5"
+    nburn = 0
+    nsteps = 10
+    nparticles = 4
+    nwalkers = 64
+    potential_params = ["q1","qz","v_halo","phi"]
+    infer_tub_tf = True
+    infer_particles_tf = True
+    infer_satellite_tf = False
+    name = "super_test"
     ##################################################
 
     path = os.path.join(home, "output_data", name)
@@ -257,9 +259,7 @@ def main(mpi=False, threads=None, overwrite=False):
         nwalkers = len(p)*2
     logger.debug("{} walkers".format(nwalkers))
 
-    # TODO: figure out how to sample p0 based on what is set to None, etc...
     priors = []
-
     # potential
     for pp in potential_params:
         p = potential.parameters[pp]
@@ -278,6 +278,9 @@ def main(mpi=False, threads=None, overwrite=False):
         for ii in range(nparticles):
             prior = LogNormalPrior(observed_particles_hel[ii], sigma=particles_hel_err[ii])
             priors.append(prior)
+
+        if d.has_key("true_particles"):
+            truths = truths + np.ravel(d["true_particles"]._X).tolist()
 
     # satellite
     # TODO
@@ -335,14 +338,56 @@ def main(mpi=False, threads=None, overwrite=False):
         for ii in range(nwalkers):
             plt.plot(chain[ii,:,jj], alpha=0.4, drawstyle='steps')
 
-        try:
-            plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
-        except:
-            pass
+        plt.axhline(truths[jj], color='k', lw=4., linestyle='--')
         plt.savefig(os.path.join(path, "walker_{}.png".format(jj)))
 
-    fig = triangle.corner(flatchain)
-    fig.savefig(os.path.join(path, "corner.png"))
+    # Make corner plots
+    # -----------------
+
+    # potential
+    Npp = len(potential_params)
+    ix1 = 0
+    ix2 = Npp
+
+    if Npp > 0:
+        d_units = [u.s,u.km,u.deg]
+        potential = sp.LawMajewski2010()
+        corner_kwargs = defaultdict(list)
+        corner_kwargs["xs"] = np.zeros_like(flatchain[:,ix1:ix2])
+        for ii, p_name in enumerate(potential_params):
+            p = potential.parameters[p_name]
+            corner_kwargs["xs"][:,ix1+ii] = (flatchain[:,ix1+ii]*p._unit).decompose(d_units).value
+            corner_kwargs["truths"].append(p.truth.decompose(d_units).value)
+            corner_kwargs["extents"].append([x.decompose(d_units).value for x in p.range])
+            if p._unit is not u.dimensionless_unscaled:
+                label = "{0} [{1}]".format(p.latex, p.truth.decompose(d_units).unit)
+            else:
+                label = "{0}".format(p.latex)
+            corner_kwargs["labels"].append(label)
+
+        fig = triangle.corner(**corner_kwargs)
+        fig.savefig(os.path.join(path, "potential_posterior.png"))
+        #ix1 = ix2
+
+    return
+
+    if tub is None:
+        ix2 = ix1 + nparticles
+        tub = p[ix1:ix2]
+        ix1 = ix2
+
+    if p_hel is None:
+        ix2 = ix1 + nparticles*6
+        p_hel = p[ix1:ix2].reshape(nparticles,6)
+        ix1 = ix2
+
+        for ii in range(nparticles):
+            pass
+
+    if s_hel is None:
+        ix2 = ix1 + 6
+        s_hel = p[ix1:ix2]
+        ix1 = ix2
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
