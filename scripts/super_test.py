@@ -187,20 +187,20 @@ def main(mpi=False, threads=None, overwrite=False):
     pool = get_pool(mpi=mpi, threads=threads)
 
     ##################################################
+    # config
     # VEGA
-    # determine the output data path
     home = "/vega/astro/users/amp2217/"
     # #home = "/hpc/astro/users/amp2217/"
     data_file = "N32_ptcl_errors.hdf5"
     nburn = 5000
     nsteps = 7500
-    nparticles = 16
+    nparticles = 32
     nwalkers = 1024
     potential_params = ["q1","qz","v_halo","phi"]
     infer_tub_tf = True
     infer_particles_tf = True
     infer_satellite_tf = False
-    name = "super_test16"
+    name = "super_test32_biggerlb_errors"
     plot_walkers = False
     ##################################################
 
@@ -392,8 +392,8 @@ def main(mpi=False, threads=None, overwrite=False):
 
         fig = triangle.corner(**corner_kwargs)
         fig.savefig(os.path.join(path, "potential_posterior.png"))
+        plt.close('all')
         ix1 = ix2
-        del fig
 
     tub_chain = None
     if infer_tub_tf:
@@ -430,7 +430,8 @@ def main(mpi=False, threads=None, overwrite=False):
 
             fig = triangle.corner(**corner_kwargs)
             fig.savefig(os.path.join(path, "particle{}_posterior.png".format(ii)))
-            del fig
+            plt.close('all')
+            gc.collect()
         ix1 = ix2
 
     # TODO: satellite
