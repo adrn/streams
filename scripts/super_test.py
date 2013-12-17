@@ -194,13 +194,13 @@ def main(mpi=False, threads=None, overwrite=False):
     data_file = "N32_ptcl_errors.hdf5"
     nburn = 5000
     nsteps = 7500
-    nparticles = 32
-    nwalkers = 1024
+    nparticles = 2
+    nwalkers = 512
     potential_params = ["q1","qz","v_halo","phi"]
     infer_tub_tf = True
     infer_particles_tf = True
     infer_satellite_tf = False
-    name = "super_test32_biggerlb_errors"
+    name = "super_test2"
     plot_walkers = False
     ##################################################
 
@@ -311,6 +311,11 @@ def main(mpi=False, threads=None, overwrite=False):
                 this_p0 = np.concatenate([np.atleast_1d(p.sample()) for p in priors])
                 p0 = np.zeros((nwalkers,len(this_p0)))
                 p0[jj] = this_p0
+
+        ### HACK TO INITIALIZE WALKERS NEAR true tub!
+        for ii in range(nparticles):
+            jj = ii + len(potential_params)
+            p0[:,jj] = np.random.normal(true_tub[ii], 10., size=nwalkers)
 
         args = (t1, t2, dt, priors, satellite_hel, particles_hel,
                 potential_params, tub, nparticles)

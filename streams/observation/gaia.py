@@ -112,8 +112,9 @@ def gaia_spitzer_errors(particles):
     dmu = proper_motion_error(V, rrl_V_minus_I)
 
     # angular position error is negligible
-    l = dlb.to(particles["l"].unit)
-    b = dlb.to(particles["b"].unit)
+    # HACK: extra factor of 100 here
+    l = dlb.to(particles["l"].unit)*100
+    b = dlb.to(particles["b"].unit)*100
 
     # proper motion
     mul = dmu.to(particles["mul"].unit)
