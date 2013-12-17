@@ -192,7 +192,7 @@ def main(mpi=False, threads=None, overwrite=False):
     home = "/vega/astro/users/amp2217/"
     # #home = "/hpc/astro/users/amp2217/"
     data_file = "N32_ptcl_errors.hdf5"
-    nburn = 5000
+    nburn = 2500
     nsteps = 7500
     nparticles = 2
     nwalkers = 512
