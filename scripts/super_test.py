@@ -119,13 +119,12 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     s_x = np.array([s_orbit[jj,0] for jj in t_idx])
 
-    log_p_x_given_phi = -0.5*np.sum(np.log(Sigma), axis=1) - \
-                         0.5*np.sum((p_x-s_x)**2/Sigma, axis=1)
+    log_p_x_given_phi = -0.5*np.sum(2*np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
 
     return np.sum(log_p_x_given_phi)
 
 def ln_data_likelihood(x, D, sigma):
-    log_p_D_given_x = -0.5*np.sum(-2.*np.log(sigma) + (x-D)**2/sigma**2, axis=-1)
+    log_p_D_given_x = -0.5*np.sum(2.*np.log(sigma) + (x-D)**2/sigma**2, axis=-1)
     return np.sum(log_p_D_given_x)
 
 def ln_posterior(p, *args):
@@ -206,26 +205,24 @@ def main(mpi=False, threads=None, overwrite=False):
     # VEGA
     home = "/vega/astro/users/amp2217/"
     # #home = "/hpc/astro/users/amp2217/"
-    data_file = "N32_ptcl_errors.hdf5"
     nburn = 2500
     nsteps = 7500
-    nparticles = 2
+    nparticles = 4
     nwalkers = 512
     potential_params = ["q1","qz","v_halo","phi"]
     infer_tub_tf = True
     infer_particles_tf = True
     infer_satellite_tf = False
-    name = "super_test2"
+    name = "super_test4"
     plot_walkers = False
     ##################################################
 
     ##################################################
     # LAPTOP TESTING
     # home = "/Users/adrian/"
-    # data_file = "N32_ptcl_errors.hdf5"
     # nburn = 0
     # nsteps = 10
-    # nparticles = 2
+    # nparticles = 4
     # nwalkers = 64
     # potential_params = ["q1","qz","v_halo","phi"]
     # infer_tub_tf = True
@@ -233,7 +230,13 @@ def main(mpi=False, threads=None, overwrite=False):
     # infer_satellite_tf = False
     # name = "super_test"
     # plot_walkers = False
+    # test = True
     ##################################################
+
+    if infer_particles_tf:
+        data_file = "N128_ptcl_errors.hdf5"
+    else:
+        data_file = "N128_no_errors.hdf5"
 
     path = os.path.join(home, "output_data", name)
     d_path = os.path.join(home, "projects/streams/data/observed_particles/")
@@ -249,6 +252,7 @@ def main(mpi=False, threads=None, overwrite=False):
 
     truths = []
     potential = sp.LawMajewski2010()
+    Npp = len(potential_params)
 
     observed_satellite_hel = d["satellite"]._X
     if infer_satellite_tf:
@@ -281,6 +285,62 @@ def main(mpi=False, threads=None, overwrite=False):
     t2 = float(d["t2"])
     dt = -1.
 
+    # ----------------------------------------------------------------------
+    # TEST
+    #
+    if test:
+        true_particles_hel = d["true_particles"]._X[:nparticles]
+
+        print(ln_data_likelihood(x=observed_particles_hel,
+                                 D=observed_particles_hel, sigma=particles_hel_err))
+
+        print(ln_likelihood(t1, t2, dt, potential,
+                            true_particles_hel, observed_satellite_hel,
+                            true_tub))
+
+        # # test tub
+        # tubs = np.linspace(0.,6200,25)
+        # for ii in range(nparticles):
+        #     Ls = []
+        #     for tub in tubs:
+        #         this_tub = true_tub.copy()
+        #         this_tub[ii] = tub
+        #         ll = ln_likelihood(t1, t2, dt, potential,
+        #                       true_particles_hel, observed_satellite_hel,
+        #                       this_tub)
+        #         Ls.append(ll)
+
+        #     plt.clf()
+        #     plt.plot(tubs, np.exp(Ls))
+        #     plt.axvline(true_tub[ii])
+        #     plt.show()
+
+        # particle positions
+        for ii in range(nparticles):
+            for jj in range(6):
+                vals = np.linspace(observed_particles_hel[ii,jj] - 3*particles_hel_err[ii,jj],
+                                   observed_particles_hel[ii,jj] + 3*particles_hel_err[ii,jj],
+                                   25)
+                p_hel = true_particles_hel.copy()
+                Ls = []
+                for v in vals:
+                    p_hel[ii,jj] = v
+                    l = ln_likelihood(t1, t2, dt, potential,
+                                    p_hel, observed_satellite_hel,
+                                    true_tub)
+                    Ls.append(l)
+
+                plt.clf()
+                plt.plot(vals, Ls)
+                plt.axvline(true_particles_hel[ii,jj], label='true')
+                plt.axvline(observed_particles_hel[ii,jj], color='r', label='observed')
+                plt.legend()
+                plt.show()
+                return
+
+        return
+    # ----------------------------------------------------------------------
+
     logger.debug("{} walkers".format(nwalkers))
 
     priors = []
@@ -309,6 +369,11 @@ def main(mpi=False, threads=None, overwrite=False):
     # satellite
     # TODO
 
+    args = (t1, t2, dt, priors,
+            observed_satellite_hel, observed_particles_hel,
+            satellite_hel_err, particles_hel_err,
+            potential_params, tub, nparticles)
+
     if not os.path.exists(output_file):
         logger.info("Output file '{}' doesn't exist".format(output_file))
         # get initial walker positions
@@ -324,11 +389,6 @@ def main(mpi=False, threads=None, overwrite=False):
         for ii in range(nparticles):
             jj = ii + len(potential_params)
             p0[:,jj] = np.random.normal(true_tub[ii], 10., size=nwalkers)
-
-        args = (t1, t2, dt, priors,
-                observed_satellite_hel, observed_particles_hel,
-                satellite_hel_err, particles_hel_err,
-                potential_params, tub, nparticles)
 
         logger.debug("p0 shape: {}".format(p0.shape))
         sampler = emcee.EnsembleSampler(nwalkers, p0.shape[-1], ln_posterior,
@@ -384,7 +444,6 @@ def main(mpi=False, threads=None, overwrite=False):
     # -----------------
 
     # potential
-    Npp = len(potential_params)
     ix1 = 0
     ix2 = Npp
 
