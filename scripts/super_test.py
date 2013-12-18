@@ -122,6 +122,9 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     log_p_x_given_phi = -0.5*np.sum(np.log(Sigma), axis=1) - \
                          0.5*np.sum((p_x-s_x)**2/Sigma, axis=1)
 
+    # log_p_D_given_x = -0.5*np.sum(-2.*np.log()\
+    #                     + (p_hel-self.obs_data)**2/self.obs_error**2)
+
     return np.sum(log_p_x_given_phi)
 
 def ln_posterior(p, *args):
@@ -270,9 +273,6 @@ def main(mpi=False, threads=None, overwrite=False):
     t2 = float(d["t2"])
     dt = -1.
 
-    if nwalkers is None:
-        # TODO: broken
-        nwalkers = len(p)*2
     logger.debug("{} walkers".format(nwalkers))
 
     priors = []
