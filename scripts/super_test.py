@@ -204,35 +204,35 @@ def main(mpi=False, threads=None, overwrite=False):
     ##################################################
     # config
     # VEGA
-    # home = "/vega/astro/users/amp2217/"
-    # # #home = "/hpc/astro/users/amp2217/"
-    # data_file = "N32_ptcl_errors.hdf5"
-    # nburn = 2500
-    # nsteps = 7500
-    # nparticles = 2
-    # nwalkers = 512
-    # potential_params = ["q1","qz","v_halo","phi"]
-    # infer_tub_tf = True
-    # infer_particles_tf = True
-    # infer_satellite_tf = False
-    # name = "super_test2"
-    # plot_walkers = False
-    ##################################################
-
-    ##################################################
-    # LAPTOP TESTING
-    home = "/Users/adrian/"
+    home = "/vega/astro/users/amp2217/"
+    # #home = "/hpc/astro/users/amp2217/"
     data_file = "N32_ptcl_errors.hdf5"
-    nburn = 0
-    nsteps = 10
+    nburn = 2500
+    nsteps = 7500
     nparticles = 2
-    nwalkers = 64
+    nwalkers = 512
     potential_params = ["q1","qz","v_halo","phi"]
     infer_tub_tf = True
     infer_particles_tf = True
     infer_satellite_tf = False
-    name = "super_test"
+    name = "super_test2"
     plot_walkers = False
+    ##################################################
+
+    ##################################################
+    # LAPTOP TESTING
+    # home = "/Users/adrian/"
+    # data_file = "N32_ptcl_errors.hdf5"
+    # nburn = 0
+    # nsteps = 10
+    # nparticles = 2
+    # nwalkers = 64
+    # potential_params = ["q1","qz","v_halo","phi"]
+    # infer_tub_tf = True
+    # infer_particles_tf = True
+    # infer_satellite_tf = False
+    # name = "super_test"
+    # plot_walkers = False
     ##################################################
 
     path = os.path.join(home, "output_data", name)
