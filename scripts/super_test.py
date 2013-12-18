@@ -124,11 +124,17 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
 
     return np.sum(log_p_x_given_phi)
 
+def ln_data_likelihood(x, D, sigma):
+    log_p_D_given_x = -0.5*np.sum(-2.*np.log(sigma) + (x-D)**2/sigma**2, axis=-1)
+    return np.sum(log_p_D_given_x)
+
 def ln_posterior(p, *args):
-    (t1, t2, dt, priors, s_hel, p_hel,
+    (t1, t2, dt, priors,
+     s_hel, p_hel, s_hel_errors, p_hel_errors,
      potential_params, tub, nparticles) = args
 
-    ln_prior = 0.
+    ll = 0. # ln likelihood
+    lp = 0. # ln prior
     prior_ix = 0
 
     Npp = len(potential_params)
@@ -139,39 +145,48 @@ def ln_posterior(p, *args):
     potential = sp.LawMajewski2010(**kwargs)
     ix1 = ix2
     for ii in range(Npp):
-        ln_prior += priors[prior_ix](p[ii])
+        lp += priors[prior_ix](p[ii])
         prior_ix += 1
 
     if tub is None:
         ix2 = ix1 + nparticles
         tub = p[ix1:ix2]
         ix1 = ix2
-        ln_prior += priors[prior_ix](tub)
+        lp += priors[prior_ix](tub)
         prior_ix += 1
 
-    if p_hel is None:
+    if p_hel_errors is not None:
         ix2 = ix1 + nparticles*6
-        p_hel = p[ix1:ix2].reshape(nparticles,6)
+        walker_p_hel = p[ix1:ix2].reshape(nparticles,6)
         ix1 = ix2
 
-        for ii in range(nparticles):
-            ln_prior += priors[prior_ix](p_hel[ii])
-            prior_ix += 1
+        ll += ln_data_likelihood(walker_p_hel, p_hel, p_hel_errors)
+    else:
+        walker_p_hel = p_hel
 
-    if s_hel is None:
+    #     for ii in range(nparticles):
+    #         ln_prior += priors[prior_ix](p_hel[ii])
+    #         prior_ix += 1
+
+    if s_hel_errors is not None:
         ix2 = ix1 + 6
-        s_hel = p[ix1:ix2]
+        walker_s_hel = p[ix1:ix2]
         ix1 = ix2
-        ln_prior += priors[prior_ix](s_hel)
-        prior_ix += 1
 
-    ln_prior = np.sum(ln_prior)
-    if np.isinf(ln_prior):
-        return ln_prior
+        ll += ln_data_likelihood(walker_s_hel, s_hel, s_hel_errors)
+    else:
+        walker_s_hel = s_hel
+
+    #     ln_prior += priors[prior_ix](s_hel)
+    #     prior_ix += 1
+
+    lp = np.sum(lp)
+    if np.isinf(lp):
+        return lp
 
     else:
-        ln_l = ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub)
-        return ln_prior + ln_l
+        ll += ln_likelihood(t1, t2, dt, potential, walker_p_hel, walker_s_hel, tub)
+        return lp + ll
 
 def convert_units(X, u1, u2):
     """ Convert X from units u1 to units u2. """
@@ -211,7 +226,7 @@ def main(mpi=False, threads=None, overwrite=False):
     # data_file = "N32_ptcl_errors.hdf5"
     # nburn = 0
     # nsteps = 10
-    # nparticles = 4
+    # nparticles = 2
     # nwalkers = 64
     # potential_params = ["q1","qz","v_halo","phi"]
     # infer_tub_tf = True
@@ -238,10 +253,8 @@ def main(mpi=False, threads=None, overwrite=False):
 
     observed_satellite_hel = d["satellite"]._X
     if infer_satellite_tf:
-        satellite_hel = None
         satellite_hel_err = d["satellite"]._error_X
     else:
-        satellite_hel = observed_satellite_hel
         satellite_hel_err = None
     logger.debug("Read in satellite".format(observed_satellite_hel))
 
@@ -249,10 +262,8 @@ def main(mpi=False, threads=None, overwrite=False):
     assert len(np.ravel(observed_particles_hel)) == len(np.unique(np.ravel(observed_particles_hel)))
 
     if infer_particles_tf:
-        particles_hel = None
         particles_hel_err = d["particles"]._error_X[:nparticles]
     else:
-        particles_hel = observed_particles_hel
         particles_hel_err = None
 
     try:
@@ -271,9 +282,6 @@ def main(mpi=False, threads=None, overwrite=False):
     t2 = float(d["t2"])
     dt = -1.
 
-    if nwalkers is None:
-        # TODO: broken
-        nwalkers = len(p)*2
     logger.debug("{} walkers".format(nwalkers))
 
     priors = []
@@ -289,7 +297,7 @@ def main(mpi=False, threads=None, overwrite=False):
         truths = truths + true_tub.tolist()
 
     # particles
-    if particles_hel is None:
+    if infer_particles_tf:
         assert particles_hel_err is not None
 
         for ii in range(nparticles):
@@ -318,7 +326,9 @@ def main(mpi=False, threads=None, overwrite=False):
             jj = ii + len(potential_params)
             p0[:,jj] = np.random.normal(true_tub[ii], 10., size=nwalkers)
 
-        args = (t1, t2, dt, priors, satellite_hel, particles_hel,
+        args = (t1, t2, dt, priors,
+                observed_satellite_hel, observed_particles_hel,
+                satellite_hel_err, particles_hel_err,
                 potential_params, tub, nparticles)
 
         logger.debug("p0 shape: {}".format(p0.shape))
