@@ -188,20 +188,21 @@ def main(mpi=False, threads=None, overwrite=False):
 
     ##################################################
     # config
-    # VEGA
+    # yeti
     home = "/vega/astro/users/amp2217/"
     # #home = "/hpc/astro/users/amp2217/"
-    data_file = "N32_ptcl_errors.hdf5"
-    nburn = 2500
-    nsteps = 7500
-    nparticles = 2
-    nwalkers = 512
-    potential_params = ["q1","qz","v_halo","phi"]
+    #data_file = "N32_ptcl_errors.hdf5"
+    data_file = "N32_no_errors.hdf5"
+    nburn = 0
+    nsteps = 10000
+    nparticles = 8
+    nwalkers = 128
+    potential_params = [] #"q1","qz","v_halo","phi"]
     infer_tub_tf = True
-    infer_particles_tf = True
+    infer_particles_tf = False
     infer_satellite_tf = False
-    name = "super_test2"
-    plot_walkers = False
+    name = "super_test8_tub"
+    plot_walkers = True
     ##################################################
 
     ##################################################
