@@ -8,11 +8,13 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+from collections import defaultdict
 import cPickle as pickle
 import inspect
 
 # Third-party
 import astropy.units as u
+from astropy.constants import G
 from astropy.io.misc import fnpickle, fnunpickle
 import numpy as np
 import matplotlib
@@ -27,6 +29,7 @@ import streams.io as io
 from streams.observation import apparent_magnitude
 from streams.observation.gaia import parallax_error, proper_motion_error
 from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
+from streams.plot import plot_point_cov
 from streams.potential import LawMajewski2010
 from streams.util import project_root
 
@@ -74,6 +77,24 @@ def fig1(**kwargs):
         mw_z = np.append(mw_z, np.append(np.random.exponential(scale=h0, size=N//2), \
                                          -np.random.exponential(scale=h0, size=N//2)))
 
+    # import json
+    # _mw = np.vstack((mw_x,mw_y,mw_z)).T
+    # _sgr = sgr._X[:,:3]
+    # _orp = orp._X[:,:3]
+
+    # d = dict()
+    # d['mw'] = dict(data=_mw.tolist(),
+    #                color='0xffffff')
+    # d['sgr'] = dict(data=_sgr.tolist(),
+    #                 color='0x' + sgr_color[1:])
+    # d['orp'] = dict(data=_orp.tolist(),
+    #                 color='0x' + orp_color[1:])
+
+    # with open("/Users/adrian/projects/visualizations/sgr/data.json", 'w') as f:
+    #     f.write(json.dumps(d))
+
+    # return
+
     rcparams = {}
     with rc_context(rc=rcparams):
         # 3d
@@ -97,8 +118,11 @@ def fig1(**kwargs):
                   marker='.', alpha=0.2, color=orp_color, linestyle='none', markersize=4.)
         axes.plot(sgr['x'].to(u.kpc).value, sgr['z'].to(u.kpc).value,
                   marker='.', alpha=0.2, color=sgr_color, linestyle='none', markersize=4.)
-        axes.plot([40.,50],[30.,30.], linestyle='-', marker=None, color='k')
-        axes.plot([45,45],[25.,35.], linestyle='-', marker=None, color='k')
+
+        # scale markers
+        axes.plot([35.,45],[15.,15.], linestyle='-', marker=None, color='k')
+        #axes.plot([45,45],[15.,25.], linestyle='-', marker=None, color='k')
+
         axes.set_xlim(-90, 60)
         axes.set_ylim(-70, 80)
         axes.set_aspect('equal') # doesn't work in 3d
@@ -190,9 +214,9 @@ def fig2(**kwargs):
     axes[1].set_yticklabels([])
     axes[1].set_xticklabels([])
 
-    axes[0].yaxis.tick_right()
+    axes[0].yaxis.tick_left()
     axes[0].xaxis.tick_bottom()
-    axes[1].yaxis.tick_right()
+    axes[1].yaxis.tick_left()
     axes[1].xaxis.tick_bottom()
 
     plt.tight_layout()
@@ -256,8 +280,8 @@ def fig3(**kwargs):
 
         axes = [plt.subplot(gs[0,:3]), plt.subplot(gs[1,:3]),
                 plt.subplot(gs[0,3]), plt.subplot(gs[1,3])]
-        axes[0].axhline(1.4, linestyle='--', color='#444444')
-        axes[1].axhline(1.4, linestyle='--', color='#444444')
+        axes[0].axhline(1.4, linestyle='--', color='#444444', linewidth=2.)
+        axes[1].axhline(1.4, linestyle='--', color='#444444', linewidth=2.)
 
         for ii in range(nPlot):
             for jj in range(2):
@@ -280,10 +304,10 @@ def fig3(**kwargs):
         bins = np.logspace(np.log10(ylim[0]), np.log10(ylim[1]), 50)
         n,xx,patches = axes[2].hist(np.min(D_pses[0], axis=0), bins=bins,
                                     orientation='horizontal', histtype='step',
-                                    linewidth=2.)
+                                    linewidth=2., fill=True, facecolor='w', edgecolor='k')
         n,xx,patches = axes[3].hist(np.min(D_pses[1], axis=0), bins=bins,
                                     orientation='horizontal', histtype='step',
-                                    linewidth=2.)
+                                    linewidth=2., fill=True, facecolor='w', edgecolor='k')
         axes[2].set_yscale('log')
         axes[3].set_yscale('log')
         axes[2].axis('off')
@@ -291,6 +315,7 @@ def fig3(**kwargs):
 
         axes[2].set_ylim(axes[0].get_ylim())
         axes[3].set_ylim(axes[1].get_ylim())
+        axes[3].set_ylim(top=axes[1].get_ylim()[1]*1.02)
         axes[2].set_xlim(right=1.05*axes[2].get_xlim()[1])
         axes[3].set_xlim(right=1.05*axes[3].get_xlim()[1])
 
@@ -301,6 +326,21 @@ def fig3(**kwargs):
     fig.subplots_adjust(hspace=0.02, wspace=0., top=0.98, bottom=0.02, left=0.02, right=0.98)
     fig.savefig(os.path.join(plot_path, "fig3.pdf"))
 
+def hernquist_miyamoto_v_circ(R):
+    """ Compute the circular velocity in the equatorial plane for the
+        Hernquist bulge + Miyamoto-Nagai disk.
+    """
+    m_disk = 1E11*u.M_sun
+    m_bulge = 3.4E10*u.M_sun
+    a = 6.5*u.kpc
+    b = 0.26*u.kpc
+    c = 0.7*u.kpc
+
+    vc_bulge = np.sqrt(G*m_bulge*R / (R+c)**2)
+    vc_disk = np.sqrt(G*m_disk*R**2 / (R**2 + (a+b)**2)**1.5)
+
+    return np.sqrt(vc_bulge**2 + vc_disk**2).to(u.km/u.s).value
+
 def fig4(**kwargs):
     data_file = os.path.join(project_root, "plots", "hotfoot",
                              "SMASH_aspen", "all_best_parameters.pickle")
@@ -308,71 +348,72 @@ def fig4(**kwargs):
     with open(data_file) as f:
         data = pickle.load(f)
 
-    rcparams = {'axes.linewidth' : 3.,
-                'xtick.major.size' : 8.}
-    with rc_context(rc=rcparams):
-        fig,axes = plt.subplots(2, 2, figsize=(12,5), sharex='col', sharey='row')
+    potential = LawMajewski2010()
+    xy_params = [('q1','v_halo'), ('qz','v_halo'), ('q1','phi'), ('qz','phi')]
 
-    y_param = 'v_halo'
-    x_params = ['q1', 'qz', 'phi']
+    f = defaultdict(lambda: lambda v: v)
+    f['phi'] = lambda v: (v*u.radian).to(u.degree).value
 
-    data['phi'] = (data['phi']*u.radian).to(u.degree).value
-    _true_params['phi'] = (_true_params['phi']*u.radian).to(u.degree).value
-    data['v_halo'] = (data['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
-    _true_params['v_halo'] = (_true_params['v_halo']*u.kpc/u.Myr).to(u.km/u.s).value
+    R = 8. # kpc
+    vc = hernquist_miyamoto_v_circ(R*u.kpc)
+    fac = np.sqrt(2)*(R/np.sqrt(R**2 + 12**2))
+    f['v_halo'] = lambda v: np.sqrt((fac*(v*u.kpc/u.Myr).to(u.km/u.s).value)**2 + vc**2)
 
     style = dict()
-    style['q1'] = dict(ticks=[1.3, 1.38, 1.46],
-                       lims=(1.27, 1.49))
-    style['qz'] = dict(ticks=[1.28, 1.36, 1.44],
-                       lims=(1.25, 1.47))
-    style['phi'] = dict(ticks=[92, 97, 102],
-                        lims=(90, 104))
-    style['v_halo'] = dict(ticks=[115, 122, 129],
-                           lims=(110, 134))
+    true_params = dict()
+    for pname in potential.parameters.keys():
+        pp = potential.parameters[pname]
+        true_v = f[pname](pp._truth)
+        true_params[pname] = true_v
 
-    for ii,x_param in enumerate(x_params):
+        style[pname] = dict(ticks=true_v*np.array([0.9,1.,1.1]),
+                            lims=true_v*np.array([0.85,1.15]))
 
-        true_x = _true_params[x_param]
-        true_y = _true_params[y_param]
-        xdata = np.array(data[x_param])
-        ydata = np.array(data[y_param])
+    rcparams = {'xtick.major.size' : 16,
+                'xtick.major.width' : 1.5,
+                'xtick.major.pad' : 10,
+                'xtick.minor.size' : 0,
+                'xtick.label.size' : 20,
+                'ytick.major.size' : 16,
+                'ytick.major.width' : 1.5,
+                'ytick.major.pad' : 10,
+                'ytick.minor.size' : 0,
+                'ytick.label.size' : 20}
+    with rc_context(rc=rcparams):
+        fig,axes = plt.subplots(2, 2, figsize=(8,8), sharex='col', sharey='row')
+        flat_axes = np.ravel(axes)
 
-        axes[ii].axhline(true_y, linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
-        axes[ii].axvline(true_x, linewidth=2, color='#ABDDA4', alpha=0.75, zorder=-1)
+        for ii,(x_param,y_param) in enumerate(xy_params):
+            xdata = f[x_param](np.array(data[x_param]))
+            ydata = f[y_param](np.array(data[y_param]))
 
-        points = np.vstack([xdata, ydata]).T
-        plot_point_cov(points, nstd=2, ax=axes[ii], alpha=0.25, color='#777777')
-        plot_point_cov(points, nstd=1, ax=axes[ii], alpha=0.5, color='#777777')
-        plot_point_cov(points, nstd=2, ax=axes[ii], color='#000000', fill=False)
-        plot_point_cov(points, nstd=1, ax=axes[ii], color='#000000', fill=False)
+            flat_axes[ii].axvline(true_params[x_param], linewidth=3,
+                             color='#ABDDA4', alpha=0.75, zorder=-1)
+            flat_axes[ii].axhline(true_params[y_param], linewidth=2,
+                             color='#ABDDA4', alpha=0.75, zorder=-3)
 
-        axes[ii].plot(xdata, ydata, marker='.', markersize=7, alpha=0.75,
-                      color='#2B83BA', linestyle='none')
-        axes[ii].set_xlim(style[x_param]['lims'])
-        axes[ii].set_ylim(style[y_param]['lims'])
+            points = np.vstack([xdata, ydata]).T
+            plot_point_cov(points, nstd=2, ax=flat_axes[ii], alpha=0.35, color='#777777')
+            plot_point_cov(points, nstd=1, ax=flat_axes[ii], alpha=0.75, color='#777777')
+            plot_point_cov(points, nstd=2, ax=flat_axes[ii], color='#000000', fill=False)
+            plot_point_cov(points, nstd=1, ax=flat_axes[ii], color='#000000', fill=False)
 
-        axes[ii].yaxis.tick_left()
-        axes[ii].set_xticks(style[x_param]['ticks'])
-        axes[ii].xaxis.tick_bottom()
+            flat_axes[ii].plot(xdata, ydata, marker='.', markersize=6, alpha=0.75,
+                               color=sgr_color, linestyle='none')
+            flat_axes[ii].set_xlim(style[x_param]['lims'])
+            flat_axes[ii].set_ylim(style[y_param]['lims'])
 
-    axes[0].set_ylabel(r"$v_{\rm halo}$",
-                       fontsize=26, rotation='horizontal')
+            flat_axes[ii].yaxis.tick_left()
+            flat_axes[ii].set_xticks(np.round(style[x_param]['ticks'], 2))
+            flat_axes[ii].set_yticks(np.round(style[y_param]['ticks'], 0))
+            flat_axes[ii].xaxis.tick_bottom()
 
-    axes[0].set_yticks(style[y_param]['ticks'])
-    axes[1].set_yticklabels([])
-    axes[2].set_yticklabels([])
-
-    axes[0].set_xlabel(r"$q_1$", fontsize=26, rotation='horizontal')
-    axes[1].set_xlabel(r"$q_z$", fontsize=26, rotation='horizontal')
-    axes[2].set_xlabel(r"$\phi$", fontsize=26, rotation='horizontal')
-
-    fig.text(0.855, 0.07, "[deg]", fontsize=16)
-    fig.text(0.025, 0.49, "[km/s]", fontsize=16)
+            flat_axes[ii].set_xticklabels([" " for x in flat_axes[ii].get_xticklabels()])
+            flat_axes[ii].set_yticklabels([" " for x in flat_axes[ii].get_yticklabels()])
 
     plt.tight_layout()
     fig.subplots_adjust(hspace=0., wspace=0.)
-    fig.savefig(os.path.join(plot_path, "bootstrap.pdf"))
+    fig.savefig(os.path.join(plot_path, "fig4.pdf"))
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
