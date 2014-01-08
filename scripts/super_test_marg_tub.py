@@ -73,6 +73,7 @@ infer_satellite_tf = False
 name = "super_test4"
 plot_walkers = False
 test = False
+print(nparticles)
 ##################################################
 
 ##################################################
@@ -222,6 +223,9 @@ def convert_units(X, u1, u2):
 
 def main(mpi=False, threads=None, overwrite=False):
     """ TODO: """
+
+    print(nparticles)
+    return
 
     pool = get_pool(mpi=mpi, threads=threads)
     logger.debug("Pool retrieved")
@@ -550,7 +554,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.ERROR)
     else:
         logging.basicConfig(level=logging.INFO)
-
+    
+    print(nparticles)
     try:
         main(mpi=args.mpi, threads=args.threads,
              overwrite=args.overwrite)
