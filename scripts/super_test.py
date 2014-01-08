@@ -449,14 +449,14 @@ def main(mpi=False, threads=None, overwrite=False):
         ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
         ### HACK HACK HACK
         ### HACK TO INITIALIZE WALKERS NEAR true tub!
-        for ii in range(nparticles):
-            jj = ii + len(potential_params)
-            p0[:,jj] = np.random.normal(true_tub[ii], 10., size=nwalkers)
+        # for ii in range(nparticles):
+        #     jj = ii + len(potential_params)
+        #     p0[:,jj] = np.random.normal(true_tub[ii], 10., size=nwalkers)
 
-        jj = nparticles + len(potential_params)
-        for ii in range(nwalkers):
-            p0[ii,jj:] = np.random.normal(np.ravel(d["true_particles"]._X[:nparticles]),
-                                          np.ravel(particles_hel_err)*0.01)
+        # jj = nparticles + len(potential_params)
+        # for ii in range(nwalkers):
+        #     p0[ii,jj:] = np.random.normal(np.ravel(d["true_particles"]._X[:nparticles]),
+        #                                   np.ravel(particles_hel_err)*0.01)
 
         ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
         ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
