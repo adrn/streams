@@ -205,16 +205,16 @@ def main(mpi=False, threads=None, overwrite=False):
     # yeti
     home = "/vega/astro/users/amp2217/"
     # #home = "/hpc/astro/users/amp2217/"
-    nburn = 0
-    nsteps = 2500
-    nparticles = 4
-    nwalkers = 128
+    nburn = 5000
+    nsteps = 5000
+    nparticles = 16
+    nwalkers = 2048
     potential_params = ["q1","qz","v_halo","phi"]
     infer_tub_tf = True
     infer_particles_tf = True
     infer_satellite_tf = False
-    name = "super_test2"
-    plot_walkers = True
+    name = "super_test16"
+    plot_walkers = False
     test = False
     ##################################################
 
@@ -537,17 +537,18 @@ def main(mpi=False, threads=None, overwrite=False):
         plt.close('all')
         ix1 = ix2
 
+    chain_nwalkers,chain_nsteps,op = chain.shape
     tub_chain = None
     if infer_tub_tf:
         ix2 = ix1 + nparticles
-        tub_chain = flatchain[:,ix1:ix2].reshape(nsteps*nwalkers,nparticles,1)
+        tub_chain = flatchain[:,ix1:ix2].reshape(chain_nwalkers*chain_nsteps,nparticles,1)
         ix1 = ix2
 
     if infer_particles_tf:
         logger.info("Plotting particle posteriors...")
         ix2 = ix1 + nparticles*6
-        particles_flatchain = flatchain[:,ix1:ix2].reshape(nsteps*nwalkers,nparticles,6)
-        particles_p0 = p0[:,ix1:ix2].reshape(nwalkers,nparticles,6)
+        particles_flatchain = flatchain[:,ix1:ix2].reshape(chain_nsteps*chain_nwalkers,nparticles,6)
+        particles_p0 = p0[:,ix1:ix2].reshape(chain_nwalkers,nparticles,6)
 
         for ii in range(nparticles):
             logger.debug("\tplotting particle {}".format(ii))

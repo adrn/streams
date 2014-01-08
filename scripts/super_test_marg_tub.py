@@ -64,15 +64,16 @@ hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
 home = "/vega/astro/users/amp2217/"
 # #home = "/hpc/astro/users/amp2217/"
 nburn = 0
-nsteps = 2500
+nsteps = 500
 nparticles = 4
 nwalkers = 128
 potential_params = ["q1","qz","v_halo","phi"]
 infer_particles_tf = True
 infer_satellite_tf = False
 name = "super_test4"
-plot_walkers = True
+plot_walkers = False
 test = False
+print(nparticles)
 ##################################################
 
 ##################################################
@@ -223,7 +224,11 @@ def convert_units(X, u1, u2):
 def main(mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
+    print(nparticles)
+    return
+
     pool = get_pool(mpi=mpi, threads=threads)
+    logger.debug("Pool retrieved")
 
     if infer_particles_tf:
         data_file = "N128_ptcl_errors.hdf5"
@@ -549,7 +554,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.ERROR)
     else:
         logging.basicConfig(level=logging.INFO)
-
+    
+    print(nparticles)
     try:
         main(mpi=args.mpi, threads=args.threads,
              overwrite=args.overwrite)
