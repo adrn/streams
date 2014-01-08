@@ -64,5 +64,20 @@ where $\boldsymbol r$,$\boldsymbol v$ are the (cartesian) positions and velociti
 %	- \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}&\langle \X-\X_s, \bSigma_s^{-1}(\X-\X_s) \rangle
 %\end{align}
 
+\section{Marginalize over $\tau$}
+\begin{align}
+	p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) &\propto 
+		p(\D^{(i)} \given \X^{(i)}) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)})\\
+	p(\Phi, \X^{(i)} \given \D^{(i)}) &= \int p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) p(\tau^{(i)}) d\tau^{(i)}
+\end{align}	
+\begin{align}
+	p(\Phi, \X^{(i)} \given \D^{(i)}) &\propto p(\D^{(i)} \given \X^{(i)}) \int p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}) p(\tau^{(i)}) d\tau^{(i)}\\
+	&\propto p(\D^{(i)} \given \X^{(i)}) \sum_j p(\X^{(i)} \given \X_s, \bSigma_s)|_{\tau^{(i)}_j} \Delta t
+\end{align}
+\begin{align}
+	\ln p^{(i)} &\propto \ln p(\D^{(i)} \given \X^{(i)}) + \ln \sum_j p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}_j) \Delta t\\
+	&\propto \ln p(\D^{(i)} \given \X^{(i)}) + \ln \sum_j \mathcal{N}(\X^{(i)}( \tau^{(i)}_j) \given \X_s( \tau^{(i)}_j), \bSigma_s( \tau^{(i)}_j)) \Delta t\\
+\end{align}
+
 
 \end{document}
