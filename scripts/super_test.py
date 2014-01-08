@@ -205,15 +205,15 @@ def main(mpi=False, threads=None, overwrite=False):
     # yeti
     home = "/vega/astro/users/amp2217/"
     # #home = "/hpc/astro/users/amp2217/"
-    nburn = 7500
+    nburn = 5000
     nsteps = 5000
-    nparticles = 32
-    nwalkers = 512
+    nparticles = 16
+    nwalkers = 2048
     potential_params = ["q1","qz","v_halo","phi"]
     infer_tub_tf = True
     infer_particles_tf = True
     infer_satellite_tf = False
-    name = "super_test32"
+    name = "super_test16"
     plot_walkers = False
     test = False
     ##################################################
