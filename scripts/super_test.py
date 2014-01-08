@@ -447,7 +447,6 @@ def main(mpi=False, threads=None, overwrite=False):
                 p0[jj] = this_p0
 
         ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
-        ### HACK HACK HACK
         ### HACK TO INITIALIZE WALKERS NEAR true tub!
         # for ii in range(nparticles):
         #     jj = ii + len(potential_params)
@@ -457,8 +456,6 @@ def main(mpi=False, threads=None, overwrite=False):
         # for ii in range(nwalkers):
         #     p0[ii,jj:] = np.random.normal(np.ravel(d["true_particles"]._X[:nparticles]),
         #                                   np.ravel(particles_hel_err)*0.01)
-
-        ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
         ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
 
         logger.debug("p0 shape: {}".format(p0.shape))
