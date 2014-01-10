@@ -58,39 +58,6 @@ logger = logging.getLogger(__name__)
 
 hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
 
-##################################################
-# config
-# yeti
-home = "/vega/astro/users/amp2217/"
-# #home = "/hpc/astro/users/amp2217/"
-nburn = 0
-nsteps = 500
-nparticles = 4
-nwalkers = 128
-potential_params = ["q1","qz","v_halo","phi"]
-infer_particles_tf = True
-infer_satellite_tf = False
-name = "super_test4"
-plot_walkers = False
-test = False
-print(nparticles)
-##################################################
-
-##################################################
-# # LAPTOP TESTING
-# home = "/Users/adrian/"
-# nburn = 0
-# nsteps = 10
-# nparticles = 4
-# nwalkers = 64
-# potential_params = ["q1","qz","v_halo","phi"]
-# infer_particles_tf = True
-# infer_satellite_tf = False
-# name = "super_test"
-# plot_walkers = False
-# test = False
-##################################################
-
 def get_pool(mpi=False, threads=None):
     """ Get a pool object to pass to emcee for parallel processing.
         If mpi is False and threads is None, pool is None.
@@ -224,8 +191,37 @@ def convert_units(X, u1, u2):
 def main(mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
-    print(nparticles)
-    return
+    ##################################################
+    # config
+    # yeti
+    home = "/vega/astro/users/amp2217/"
+    # #home = "/hpc/astro/users/amp2217/"
+    nburn = 0
+    nsteps = 500
+    nparticles = 4
+    nwalkers = 128
+    potential_params = ["q1","qz","v_halo","phi"]
+    infer_particles_tf = True
+    infer_satellite_tf = False
+    name = "super_test4"
+    plot_walkers = False
+    test = False
+    ##################################################
+
+    ##################################################
+    # # LAPTOP TESTING
+    # home = "/Users/adrian/"
+    # nburn = 0
+    # nsteps = 10
+    # nparticles = 4
+    # nwalkers = 64
+    # potential_params = ["q1","qz","v_halo","phi"]
+    # infer_particles_tf = True
+    # infer_satellite_tf = False
+    # name = "super_test"
+    # plot_walkers = False
+    # test = False
+    ##################################################
 
     pool = get_pool(mpi=mpi, threads=threads)
     logger.debug("Pool retrieved")
@@ -322,38 +318,39 @@ def main(mpi=False, threads=None, overwrite=False):
         print(ln_posterior(true_p, *args))
 
         # test potential
-        vals = np.linspace(0.9, 1.1, 25)
-        for ii,p_name in enumerate(potential_params):
-            pp = potential.parameters[p_name]
-            Ls = []
-            for val in vals:
-                #potential = sp.LawMajewski2010(**{p_name:p._truth*val})
-                # ll = ln_likelihood(t1, t2, dt, potential,
-                #                    true_particles_hel, observed_satellite_hel,
-                #                    true_tub)
-                p = true_p.copy()
-                p[ii] = pp._truth*val
-                ll = ln_posterior(p, *args)
-                Ls.append(ll)
+        # vals = np.linspace(0.9, 1.1, 25)
+        # for ii,p_name in enumerate(potential_params):
+        #     pp = potential.parameters[p_name]
+        #     Ls = []
+        #     for val in vals:
+        #         #potential = sp.LawMajewski2010(**{p_name:p._truth*val})
+        #         # ll = ln_likelihood(t1, t2, dt, potential,
+        #         #                    true_particles_hel, observed_satellite_hel,
+        #         #                    true_tub)
+        #         p = true_p.copy()
+        #         p[ii] = pp._truth*val
+        #         ll = ln_posterior(p, *args)
+        #         Ls.append(ll)
 
-            plt.clf()
-            plt.plot(vals*pp._truth, np.exp(Ls))
-            plt.axvline(pp._truth)
-            plt.ylabel("Posterior")
-            plt.savefig(os.path.join(path, "potential_{}.png".format(p_name)))
+        #     plt.clf()
+        #     plt.plot(vals*pp._truth, np.exp(Ls))
+        #     plt.axvline(pp._truth)
+        #     plt.ylabel("Posterior")
+        #     plt.savefig(os.path.join(path, "potential_{}.png".format(p_name)))
 
-            plt.clf()
-            plt.plot(vals*pp._truth, Ls)
-            plt.axvline(pp._truth)
-            plt.ylabel("Log Posterior")
-            plt.savefig(os.path.join(path, "potential_{}_log.png".format(p_name)))
+        #     plt.clf()
+        #     plt.plot(vals*pp._truth, Ls)
+        #     plt.axvline(pp._truth)
+        #     plt.ylabel("Log Posterior")
+        #     plt.savefig(os.path.join(path, "potential_{}_log.png".format(p_name)))
 
         # particle positions
         coords = ["l","b","D","mul","mub","vr"]
+        Nsig = 10.
         for ii in range(nparticles):
             for jj in range(6):
-                vals = np.linspace(observed_particles_hel[ii,jj] - 3*particles_hel_err[ii,jj],
-                                   observed_particles_hel[ii,jj] + 3*particles_hel_err[ii,jj],
+                vals = np.linspace(observed_particles_hel[ii,jj] - Nsig*particles_hel_err[ii,jj],
+                                   observed_particles_hel[ii,jj] + Nsig*particles_hel_err[ii,jj],
                                    25)
                 p_hel = true_particles_hel.copy()
                 Ls = []
@@ -554,8 +551,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.ERROR)
     else:
         logging.basicConfig(level=logging.INFO)
-    
-    print(nparticles)
+
     try:
         main(mpi=args.mpi, threads=args.threads,
              overwrite=args.overwrite)
