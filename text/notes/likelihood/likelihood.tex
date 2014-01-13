@@ -1,7 +1,7 @@
 \documentclass[letterpaper,12pt,preprint]{aastex}
 
 % packages
-\usepackage{amssymb,amsmath}
+\usepackage{amssymb,amsmath, amsbsy}
 
 % commands
 \newcommand{\given}{\,|\,}
@@ -9,45 +9,75 @@
 \newcommand{\transpose}[1]{{#1}^{\mathsf{T}}}
 \newcommand{\inverse}[1]{{#1}^{-1}}
 
+% bold X and D
+\newcommand{\D}{{\bf D}}
+\newcommand{\X}{{\bf X}}
+\newcommand{\bSigma}{{\bf \Sigma}}
+\newcommand{\bsigma}{\boldsymbol\sigma}
+
 \begin{document}
 
 \title{Back-integration likelihood}
 \author{Adrian M. Price-Whelan}
 
-Starting with notation, take ${\bf x}_i$ to be the true 6D ($x$, $y$, and $z$ positions along with velocity components in the same coordinate system) of the star $i$. Take ${\bf D}_i$ to be the observed 6D vector -- that is, sky coordinates, distance, proper motion, and radial velocity. For now, we assume the star was drawn at some time $t_i$ from a spherical Gaussian (progenitor) described by a single spatial scale (the tidal radius, $r_{\mathrm{tide}}$) and a single velocity scale (the velocity dispersion, $\sigma_\mathrm{v}$). These scales are specified in the covariance matrix ${\bf \Sigma}_p$, where the subscript $p$ refers to the progenitor.
+Starting with notation, take ${\bf D}^{(i)}$ to be the observed heliocentric 6D position of the $i$th star -- e.g., the measured $l$, $b$, $D$, $\mu_l$, $\mu_b$, $v_r$ -- and ${\bf X}^{(i)}$ to be the corresponding \emph{true} 6D position of the same star. We assume that this star was once part of a progenitor system -- e.g., satellite galaxy -- presently at observed position ${\bf D}_s$ (with true position ${\bf X}_s$) that is tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. We then model the measured position of a star today as the result of sampling from a time-dependent 6D distribution -- the progenitor system -- at some time $\tau^{(i)}$ in the past, and evolving that sampled 6D position to present day in the parent potential, neglecting the effect of self-interaction with the halo of the progenitor. We model the progenitor as a 6D Gaussian with mean vector given by the position of the satellite at any given time, ${\bf X}_s(t)$, and with shape defined by a time-dependent covariance matrix $\bSigma_s(t)$ (the subscript $s$ refers to satellite or progenitor). With these assumptions we can write the posterior for a single star as:
+\begin{align}
+	p(\Phi, \X^{(i)}, \X_s, \bSigma_s, \tau^{(i)} \given \D^{(i)}, \D_s) &\propto 
+		p(\D^{(i)} \given \X^{(i)}) p(\D_s \given \X_s) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)})\\
+	p(\D^{(i)} \given \X^{(i)}) &= \mathcal{N}(\X^{(i)} \given \D^{(i)}, \bsigma^{(i)})\\
+	p(\D_s \given \X_s) &= \mathcal{N}(\X_s \given \D_s, \bsigma_s)\\
+	p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}) &= \mathcal{N}(\widetilde{\X}^{(i)}(\tau^{(i)}) \given \widetilde{\X}_s(\tau^{(i)}), \bSigma_s(\tau^{(i)}))
+\end{align}
+where the vectors $\bsigma^{(i)}$ and $\bsigma_s$ represent the (assumed) Gaussian, uncorrelated observational errors on the observed 6D position of star $i$ and the satellite, respectively, and the tildes denote a conversion from spherical, heliocentric to cartesian, Galactocentric coordinates. 
+%Thus, 
+%\begin{align}
+%	p(\Phi, \X, \X_s, \bSigma_s, \tau \given \D, \D_s) &= \prod_i p(\Phi, \X^{(i)}, \X_s, \bSigma_s, \tau^{(i)} \given \D^{(i)}, \D_s)\\
+%	p &= \prod_i p^{(i)}\\
+%	\ln p &= \sum_i \ln p^{(i)}\\
+%	\ln p = \sum_i [\ln\mathcal{N}(\X^{(i)} \given \D^{(i)}, \bsigma^{(i)}) &+ \ln\mathcal{N}(\X_s \given \D_s, \bsigma_s) + \ln\mathcal{N}(\X^{(i)}(\tau^{(i)}) \given \X_s(\tau^{(i)}), \bSigma_s(\tau^{(i)}))]
+%\end{align}
 
-I've already implemented the case assuming we have perfect data -- that looks like this:
+We first consider the case of a spherical Gaussian progenitor described by a single (time-dependent) spatial scale -- the tidal radius, $r_{\mathrm{tide}}(t)$ -- and a single velocity scale -- the velocity dispersion, $\sigma_\mathrm{v}$, with a \emph{perfectly} observed position. Under these assumptions, the posterior can be written
 \begin{align}
-	p({\bf x}_i^{(0)} \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi, t_i) &= 
-        \mathcal{N}({\bf x}_i(t_i\given {\bf x}_i^{(0)}, \Phi ) \given {\bf x}_p(t_i\given {\bf x}_p^{(0)}, \Phi ), {\bf \Sigma}_p)\\
-	p({\bf x}_i^{(0)} \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi) &= 
-	\int p({\bf x}_i^{(0)} \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi, t_i) \dd t_i\\
+	p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) &\propto 
+		p(\D^{(i)} \given \X^{(i)}) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)})\\
 \end{align}
-then if we assume we know the position and shape of the progenitor exactly, it becomes a marginal likelihood I can handle:
+and thus the $\ln$-posterior is
 \begin{align}
-	p({\bf x}_i^{(0)} \given \Phi, t_i) &= 
-        \mathcal{N}({\bf x}_i(t_i\given {\bf x}_i^{(0)}, \Phi ) \given {\bf x}_p(t_i\given {\bf x}_p^{(0)}, \Phi ), {\bf \Sigma}_p)\\
-	p({\bf x}_i^{(0)} \given \Phi) &= 
-	\int p({\bf x}_i^{(0)} \given \Phi, t_i) \dd t_i\\
+	\ln p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) &= \ln p(\D^{(i)} \given \X^{(i)}) + \ln p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}).
 \end{align}
-which, numerically, is just:
+The first term on the RHS -- from the observed positions of the stars	-- can be expanded to read
 \begin{align}
-	p({\bf x}_i^{(0)} \given \Phi) &= 
-	\sum_k \mathcal{N}({\bf x}_i(t_i\given {\bf x}_i^{(0)}, \Phi ) \given {\bf x}_p(t_i\given {\bf x}_p^{(0)}, \Phi ), {\bf \Sigma}_p) \Delta t_{i,k}\\
+	\ln p(\D^{(i)} \given \X^{(i)}) &= K - \frac{1}{2}\sum_j \left[ 2\ln\sigma_j + \left(\frac{X^{(i)}_j-D^{(i)}_j}{\sigma^{(i)}_j}\right)^2\right].
+\end{align}
+The second term -- quantifying how well the potential ``returns'' the stars to the progenitor -- reads as follows for the case of a spherical progenitor:
+\begin{align}
+	\ln p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}) &= M - \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}\langle \widetilde{\X}-\widetilde{\X}_s, \bSigma_s^{-1}(\widetilde{\X}-\widetilde{\X}_s) \rangle\\
+	&= M - \left[3(\ln r_{\rm tide} + \ln \sigma_v) - \frac{1}{2}\left( \frac{({\boldsymbol r}^{(i)}-{\boldsymbol r}_s)^2}{r_{\rm tide}^2} + \frac{ ({\boldsymbol v}^{(i)}-{\boldsymbol v}_s)^2}{\sigma_v^2} \right)\right]_{t=\tau^{(i)}}\label{eq:ln_like}
+\end{align}
+where $\boldsymbol r$,$\boldsymbol v$ are the (cartesian) positions and velocities integrated \emph{backwards} in potential $\Phi$ from their present-day positions $\widetilde{\X}$. The whole expression Eq.~\ref{eq:ln_like} is evaluated at the time unbound, $\tau^{(i)}$.
+
+%\begin{align}
+%	= K - \frac{1}{2}\sum_j \left[ 2\ln\sigma_j + \left(\frac{X^{(i)}_j-D^{(i)}_j}{\sigma^{(i)}_j}\right)^2\right]&\notag \\
+%	- \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}&\langle \X-\X_s, \bSigma_s^{-1}(\X-\X_s) \rangle\\
+%	= K - \frac{1}{2}\sum_j \left[ 2\ln\sigma_j + \left(\frac{X^{(i)}_j-D^{(i)}_j}{\sigma^{(i)}_j}\right)^2\right]&\notag \\
+%	- \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}&\langle \X-\X_s, \bSigma_s^{-1}(\X-\X_s) \rangle
+%\end{align}
+
+\section{Marginalize over $\tau$}
+\begin{align}
+	p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) &\propto 
+		p(\D^{(i)} \given \X^{(i)}) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)})\\
+	p(\Phi, \X^{(i)} \given \D^{(i)}) &= \int p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) p(\tau^{(i)}) d\tau^{(i)}
+\end{align}	
+\begin{align}
+	p(\Phi, \X^{(i)} \given \D^{(i)}) &\propto p(\D^{(i)} \given \X^{(i)}) \int p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}) p(\tau^{(i)}) d\tau^{(i)}\\
+	&\propto p(\D^{(i)} \given \X^{(i)}) \sum_j p(\X^{(i)} \given \X_s, \bSigma_s)|_{\tau^{(i)}_j} \Delta t
+\end{align}
+\begin{align}
+	\ln p^{(i)} &\propto \ln p(\D^{(i)} \given \X^{(i)}) + \ln \sum_j p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}_j) \Delta t\\
+	&\propto \ln p(\D^{(i)} \given \X^{(i)}) + \ln \sum_j \mathcal{N}(\X^{(i)}( \tau^{(i)}_j) \given \X_s( \tau^{(i)}_j), \bSigma_s( \tau^{(i)}_j)) \Delta t\\
 \end{align}
 
-Now, I want to include the observational errors directly in this model. I think that looks like this:
-\begin{align}
-	p({\bf D}_i, {\bf x}_i^{(0)} \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi, t_i) &= 
-	p({\bf D}_i | {\bf x}_i^{(0)}) \mathcal{N}({\bf x}_i(t_i\given {\bf x}_i^{(0)}, \Phi ) \given {\bf x}_p(t_i\given {\bf x}_p^{(0)}, \Phi ), {\bf \Sigma}_p)\\
-	p({\bf D}_i \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi, t_i) &= \int p({\bf D}_i, {\bf x}_i^{(0)} \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi, t_i)p({\bf D}_i | {\bf x}_i^{(0)}) \dd {\bf x}_i^{(0)}
-\end{align}
-again, assuming we know the progenitor shape and position today perfectly well, then this is:
-\begin{align}
-	p({\bf D}_i \given \Phi) &= \iint p({\bf D}_i, {\bf x}_i^{(0)} \given {\bf x}_p^{(0)}, {\bf \Sigma}_p, \Phi, t_i)p({\bf D}_i | {\bf x}_i^{(0)}) \dd {\bf x}_i^{(0)} \dd t_i\\
-\end{align}
-all along assuming a uniform prior on $t_i$.
-
-But I've totally confused myself on how to implement marginalizing over the error distributions...
 
 \end{document}

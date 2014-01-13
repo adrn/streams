@@ -44,23 +44,23 @@ class LawMajewski2010(CompositePotential):
 
         # v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
         lm10_parameters = { 'q1' : PotentialParameter(truth=1.38,
-                                              range=(0.7, 2.),
+                                              range=(1.1, 1.7),
                                               latex=r"$q_1$"),
                     'q2' : PotentialParameter(truth=1.,
-                                              range=(0.7, 2.),
+                                              range=(0.7, 1.3),
                                               latex=r"$q_2$"),
                     'qz' : PotentialParameter(truth=1.36,
-                                              range=(0.7, 2.),
+                                              range=(1.1, 1.7),
                                               latex=r"$q_z$"),
                     'phi' : PotentialParameter(truth=97.*u.deg,
-                                               range=(80.*u.deg,120.*u.deg),
+                                               range=(85.*u.deg,115.*u.deg),
                                                latex=r"$\phi$"),
                     'v_halo' : PotentialParameter(truth=121.858*u.km/u.s,
                                                   range=(100.*u.km/u.s,
                                                          150.*u.km/u.s),
                                                   latex=r"$v_{\rm halo}$"),
                     'R_halo' : PotentialParameter(truth=12.*u.kpc,
-                                                  range=(8.*u.kpc, 20*u.kpc),
+                                                  range=(8.*u.kpc, 16*u.kpc),
                                                   latex=r"$R_{\rm halo}$")}
 
         self.parameters = dict(lm10_parameters)

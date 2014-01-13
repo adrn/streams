@@ -24,7 +24,7 @@ import astropy.units as u
 from .. import usys
 from ..inference import Parameter
 
-__all__ = ["CartesianPotential", "CompositePotential", "PotentialParameter"]
+__all__ = ["Potential", "CartesianPotential", "CompositePotential", "PotentialParameter"]
 
 
 class PotentialParameter(object):
@@ -82,9 +82,6 @@ class PotentialParameter(object):
         return self._value
 
 class Potential(object):
-    pass
-
-class CartesianPotential(Potential):
 
     def __init__(self, units, f, f_prime, latex=None, parameters=None):
         """ A baseclass for representing gravitational potentials in Cartesian
@@ -216,6 +213,9 @@ class CartesianPotential(Potential):
             the IPython notebook to render nice latex equations.
         """
         return u'${0}$'.format(self._latex)
+
+
+class CartesianPotential(Potential):
 
     def plot(self, ndim, grid, axes=None, **kwargs):
         """ Plot equipotentials lines. Must pass in grid arrays to evaluate the

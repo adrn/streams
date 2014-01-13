@@ -26,6 +26,8 @@ import numpy as np
 np.seterr(all="ignore")
 import scipy
 scipy.seterr(all="ignore")
+from scipy.integrate import simps
+from scipy.misc import logsumexp
 import triangle
 import yaml
 
@@ -91,54 +93,7 @@ def get_pool(mpi=False, threads=None):
 
     return pool
 
-def jacobian(hel):
-    l,b,d,mul,mub,vr = hel.T
-    cosl, sinl = np.cos(l), np.sin(l)
-    cosb, sinb = np.cos(b), np.sin(b)
-
-    gc = _hel_to_gc(hel)
-    x,y,z,vx,vy,vz = gc.T
-
-    row0 = np.zeros_like(hel.T)
-    row0[0] = -d*sinl*cosb
-    row0[1] = -d*cosl*sinb
-    row0[2] = cosl*cosb
-
-    row1 = np.zeros_like(hel.T)
-    row1[0] = d*cosl*cosb
-    row1[1] = -d*sinl*sinb
-    row1[2] = sinl*cosb
-
-    row2 = np.zeros_like(hel.T)
-    row2[0] = 0.
-    row2[1] = -d*cosb
-    row2[2] = sinb
-
-    row3 = [-vr*cosb*sinl + mul*d*cosb*cosl - mub*d*sinb*sinl,
-            -vr*sinb*cosl - mul*d*sinb*sinl + mub*d*cosb*cosl,
-            cosb*sinl*mul + sinb*cosl*mub,
-            d*cosb*sinl,
-            d*sinb*cosl,
-            cosb*cosl]
-
-    row4 = [vr*cosb*cosl + mul*d*cosb*sinl + mub*d*sinb*cosl,
-            -vr*sinb*sinl + mul*d*sinb*cosl + mub*d*cosb*sinl,
-            -cosb*cosl*mul + sinb*sinl*mub,
-            -d*cosb*cosl,
-            d*sinb*sinl,
-            cosb*sinl]
-
-    row5 = np.zeros_like(hel.T)
-    row5[0] = 0.
-    row5[1] = cosb*vr + d*sinb*mub
-    row5[2] = -cosb*mub
-    row5[3] = 0.
-    row5[4] = -d*cosb
-    row5[5] = sinb
-
-    return np.array([row0, row1, row2, row3, row4, row5])
-
-def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
+def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel):
 
     p_gc = _hel_to_gc(p_hel)
     s_gc = _hel_to_gc(s_hel)
@@ -154,25 +109,26 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
     p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
-    # These are the unbinding time indices for each particle
-    t_idx = np.array([np.argmin(np.fabs(times - t)) for t in tub])
+
+    r_tide = potential._tidal_radius(2.5e8, s_orbit[...,:3])*1.26
+    v_disp = 0.017198632325
 
     sat_var = np.zeros((len(times),6))
-    sat_var[:,:3] = potential._tidal_radius(2.5e8, s_orbit[...,:3])*1.26
-    sat_var[:,3:] += 0.017198632325
-    cov = sat_var**2
+    sat_var[:,:3] = r_tide
+    sat_var[:,3:] += v_disp
+    sat_var = sat_var[:,np.newaxis]
 
-    Sigma = np.array([cov[jj] for jj in t_idx])
-    p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+    # using trapezoidal rule: h/2 Sum_k [f(x_k+1) + f(x_k)]
+    exp_arg = -0.5*np.sum(((p_orbits-s_orbit) / sat_var)**2, axis=-1) - \
+                3*(np.log(r_tide) + np.log(v_disp))
+    log_p_x_given_phi = logsumexp(exp_arg, axis=0)
 
-    log_p_x_given_phi = -0.5*np.sum(2*np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
+    #xx = simps(exp_arg, times, axis=0)
+    #print(xx)
+    # sys.exit(0)
+    # log_p_x_given_phi = -0.5*np.sum(2*np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
 
-    p_x_hel = _gc_to_hel(p_x)
-    J = jacobian(p_x_hel).T
-    jac = np.array([np.linalg.slogdet(jj)[1] for jj in J])
-
-    return np.sum(log_p_x_given_phi + jac)
+    return np.sum(log_p_x_given_phi)
 
 def ln_data_likelihood(x, D, sigma):
     log_p_D_given_x = -0.5*np.sum(2.*np.log(sigma) + (x-D)**2/sigma**2, axis=-1)
@@ -181,7 +137,7 @@ def ln_data_likelihood(x, D, sigma):
 def ln_posterior(p, *args):
     (t1, t2, dt, priors,
      s_hel, p_hel, s_hel_errors, p_hel_errors,
-     potential_params, tub, nparticles) = args
+     potential_params, nparticles) = args
 
     ll = 0. # ln likelihood
     lp = 0. # ln prior
@@ -198,13 +154,6 @@ def ln_posterior(p, *args):
         lp += priors[prior_ix](p[ii])
         prior_ix += 1
 
-    if tub is None:
-        ix2 = ix1 + nparticles
-        tub = p[ix1:ix2]
-        ix1 = ix2
-        lp += priors[prior_ix](tub)
-        prior_ix += 1
-
     if p_hel_errors is not None:
         ix2 = ix1 + nparticles*6
         walker_p_hel = p[ix1:ix2].reshape(nparticles,6)
@@ -213,10 +162,6 @@ def ln_posterior(p, *args):
         ll += ln_data_likelihood(walker_p_hel, p_hel, p_hel_errors)
     else:
         walker_p_hel = p_hel
-
-    #     for ii in range(nparticles):
-    #         ln_prior += priors[prior_ix](p_hel[ii])
-    #         prior_ix += 1
 
     if s_hel_errors is not None:
         ix2 = ix1 + 6
@@ -227,15 +172,12 @@ def ln_posterior(p, *args):
     else:
         walker_s_hel = s_hel
 
-    #     ln_prior += priors[prior_ix](s_hel)
-    #     prior_ix += 1
-
     lp = np.sum(lp)
     if np.isinf(lp):
         return lp
 
     else:
-        ll += ln_likelihood(t1, t2, dt, potential, walker_p_hel, walker_s_hel, tub)
+        ll += ln_likelihood(t1, t2, dt, potential, walker_p_hel, walker_s_hel)
         return lp + ll
 
 def convert_units(X, u1, u2):
@@ -249,48 +191,47 @@ def convert_units(X, u1, u2):
 def main(mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
-    pool = get_pool(mpi=mpi, threads=threads)
-
     ##################################################
     # config
     # yeti
-    # home = "/vega/astro/users/amp2217/"
-    # # #home = "/hpc/astro/users/amp2217/"
-    # nburn = 5000
-    # nsteps = 5000
-    # nparticles = 16
-    # nwalkers = 2048
-    # potential_params = ["q1","qz","v_halo","phi"]
-    # infer_tub_tf = True
-    # infer_particles_tf = True
-    # infer_satellite_tf = False
-    # name = "super_test16"
-    # plot_walkers = False
-    # test = False
+    home = "/vega/astro/users/amp2217/"
+    # #home = "/hpc/astro/users/amp2217/"
+    nburn = 0
+    nsteps = 500
+    nparticles = 4
+    nwalkers = 128
+    potential_params = ["q1","qz","v_halo","phi"]
+    infer_particles_tf = True
+    infer_satellite_tf = False
+    name = "super_test4"
+    plot_walkers = False
+    test = False
     ##################################################
 
     ##################################################
     # # LAPTOP TESTING
-    home = "/Users/adrian/"
-    nburn = 0
-    nsteps = 10
-    nparticles = 4
-    nwalkers = 64
-    potential_params = ["q1","qz","v_halo","phi"]
-    infer_tub_tf = True
-    infer_particles_tf = True
-    infer_satellite_tf = False
-    name = "super_test"
-    plot_walkers = False
-    test = True
+    # home = "/Users/adrian/"
+    # nburn = 0
+    # nsteps = 10
+    # nparticles = 4
+    # nwalkers = 64
+    # potential_params = ["q1","qz","v_halo","phi"]
+    # infer_particles_tf = True
+    # infer_satellite_tf = False
+    # name = "super_test"
+    # plot_walkers = False
+    # test = False
     ##################################################
+
+    pool = get_pool(mpi=mpi, threads=threads)
+    logger.debug("Pool retrieved")
 
     if infer_particles_tf:
         data_file = "N128_ptcl_errors.hdf5"
     else:
         data_file = "N128_no_errors.hdf5"
 
-    path = os.path.join(home, "output_data", name)
+    path = os.path.join(home, "output_data_marg_tub", name)
     d_path = os.path.join(home, "projects/streams/data/observed_particles/")
     d = io.read_hdf5(os.path.join(d_path, data_file))
     output_file = os.path.join(path, "inference.hdf5")
@@ -321,15 +262,6 @@ def main(mpi=False, threads=None, overwrite=False):
     else:
         particles_hel_err = None
 
-    try:
-        true_tub = d["true_particles"].tub[:nparticles]
-    except KeyError:
-        true_tub = d["particles"].tub[:nparticles]
-
-    if infer_tub_tf:
-        tub = None
-    else:
-        tub = np.array(true_tub)
     nparticles = observed_particles_hel.shape[0]
     logger.debug("Read in {} particles".format(nparticles))
 
@@ -345,11 +277,6 @@ def main(mpi=False, threads=None, overwrite=False):
         pp = potential.parameters[p_name]
         priors.append(LogUniformPrior(*pp._range))
         truths.append(pp._truth)
-
-    # tub
-    if tub is None:
-        priors.append(LogUniformPrior([t2]*nparticles, [t1]*nparticles))
-        truths = truths + true_tub.tolist()
 
     # particles
     if infer_particles_tf:
@@ -375,83 +302,55 @@ def main(mpi=False, threads=None, overwrite=False):
                                  D=observed_particles_hel, sigma=particles_hel_err))
 
         print("true", ln_likelihood(t1, t2, dt, potential,
-                      true_particles_hel, observed_satellite_hel, true_tub))
+                      true_particles_hel, observed_satellite_hel))
         wrong_potential = sp.LawMajewski2010(qz=1.7)
         print("wrong", ln_likelihood(t1, t2, dt, wrong_potential,
-                       true_particles_hel, observed_satellite_hel, true_tub))
-        sys.exit(0)
+                       true_particles_hel, observed_satellite_hel))
 
         true_p = [potential.parameters[p_name]._truth for p_name in potential_params]
-        true_p = np.append(true_p, true_tub)
         true_p = np.append(true_p, np.ravel(true_particles_hel))
 
         args = (t1, t2, dt, priors,
                 observed_satellite_hel, true_particles_hel,
                 satellite_hel_err, particles_hel_err,
-                potential_params, None, nparticles)
+                potential_params, nparticles)
 
         print(ln_posterior(true_p, *args))
 
         # test potential
-        vals = np.linspace(0.9, 1.1, 25)
-        for ii,p_name in enumerate(potential_params):
-            pp = potential.parameters[p_name]
-            Ls = []
-            for val in vals:
-                #potential = sp.LawMajewski2010(**{p_name:p._truth*val})
-                # ll = ln_likelihood(t1, t2, dt, potential,
-                #                    true_particles_hel, observed_satellite_hel,
-                #                    true_tub)
-                p = true_p.copy()
-                p[ii] = pp._truth*val
-                ll = ln_posterior(p, *args)
-                Ls.append(ll)
+        # vals = np.linspace(0.9, 1.1, 25)
+        # for ii,p_name in enumerate(potential_params):
+        #     pp = potential.parameters[p_name]
+        #     Ls = []
+        #     for val in vals:
+        #         #potential = sp.LawMajewski2010(**{p_name:p._truth*val})
+        #         # ll = ln_likelihood(t1, t2, dt, potential,
+        #         #                    true_particles_hel, observed_satellite_hel,
+        #         #                    true_tub)
+        #         p = true_p.copy()
+        #         p[ii] = pp._truth*val
+        #         ll = ln_posterior(p, *args)
+        #         Ls.append(ll)
 
-            plt.clf()
-            plt.plot(vals*pp._truth, np.exp(Ls))
-            plt.axvline(pp._truth)
-            plt.ylabel("Posterior")
-            plt.savefig(os.path.join(path, "potential_{}.png".format(p_name)))
+        #     plt.clf()
+        #     plt.plot(vals*pp._truth, np.exp(Ls))
+        #     plt.axvline(pp._truth)
+        #     plt.ylabel("Posterior")
+        #     plt.savefig(os.path.join(path, "potential_{}.png".format(p_name)))
 
-            plt.clf()
-            plt.plot(vals*pp._truth, Ls)
-            plt.axvline(pp._truth)
-            plt.ylabel("Log Posterior")
-            plt.savefig(os.path.join(path, "potential_{}_log.png".format(p_name)))
-
-        # test tub
-        tubs = np.linspace(0.,6200,25)
-        for ii in range(nparticles):
-            Ls = []
-            for tub in tubs:
-                # this_tub = true_tub.copy()
-                # this_tub[ii] = tub
-                # ll = ln_likelihood(t1, t2, dt, potential,
-                #               true_particles_hel, observed_satellite_hel,
-                #               this_tub)
-                p = true_p.copy()
-                p[Npp+ii] = tub
-                ll = ln_posterior(p, *args)
-                Ls.append(ll)
-
-            plt.clf()
-            plt.plot(tubs, np.exp(Ls))
-            plt.axvline(true_tub[ii])
-            plt.ylabel("Posterior")
-            plt.savefig(os.path.join(path, "particle{}_tub.png".format(ii)))
-
-            plt.clf()
-            plt.plot(tubs, Ls)
-            plt.axvline(true_tub[ii])
-            plt.ylabel("Log Posterior")
-            plt.savefig(os.path.join(path, "particle{}_tub_log.png".format(ii)))
+        #     plt.clf()
+        #     plt.plot(vals*pp._truth, Ls)
+        #     plt.axvline(pp._truth)
+        #     plt.ylabel("Log Posterior")
+        #     plt.savefig(os.path.join(path, "potential_{}_log.png".format(p_name)))
 
         # particle positions
         coords = ["l","b","D","mul","mub","vr"]
+        Nsig = 10.
         for ii in range(nparticles):
             for jj in range(6):
-                vals = np.linspace(observed_particles_hel[ii,jj] - 3*particles_hel_err[ii,jj],
-                                   observed_particles_hel[ii,jj] + 3*particles_hel_err[ii,jj],
+                vals = np.linspace(observed_particles_hel[ii,jj] - Nsig*particles_hel_err[ii,jj],
+                                   observed_particles_hel[ii,jj] + Nsig*particles_hel_err[ii,jj],
                                    25)
                 p_hel = true_particles_hel.copy()
                 Ls = []
@@ -487,7 +386,7 @@ def main(mpi=False, threads=None, overwrite=False):
     args = (t1, t2, dt, priors,
             observed_satellite_hel, observed_particles_hel,
             satellite_hel_err, particles_hel_err,
-            potential_params, tub, nparticles)
+            potential_params, nparticles)
 
     if not os.path.exists(output_file):
         logger.info("Output file '{}' doesn't exist".format(output_file))
@@ -591,18 +490,11 @@ def main(mpi=False, threads=None, overwrite=False):
         plt.close('all')
         ix1 = ix2
 
-    chain_nwalkers,chain_nsteps,op = chain.shape
-    tub_chain = None
-    if infer_tub_tf:
-        ix2 = ix1 + nparticles
-        tub_chain = flatchain[:,ix1:ix2].reshape(chain_nwalkers*chain_nsteps,nparticles,1)
-        ix1 = ix2
-
     if infer_particles_tf:
         logger.info("Plotting particle posteriors...")
         ix2 = ix1 + nparticles*6
-        particles_flatchain = flatchain[:,ix1:ix2].reshape(chain_nsteps*chain_nwalkers,nparticles,6)
-        particles_p0 = p0[:,ix1:ix2].reshape(chain_nwalkers,nparticles,6)
+        particles_flatchain = flatchain[:,ix1:ix2].reshape(nsteps*nwalkers,nparticles,6)
+        particles_p0 = p0[:,ix1:ix2].reshape(nwalkers,nparticles,6)
 
         for ii in range(nparticles):
             logger.debug("\tplotting particle {}".format(ii))
@@ -618,12 +510,6 @@ def main(mpi=False, threads=None, overwrite=False):
             labels = ["{0} [{1}]".format(n,uu)
                       for n,uu in zip(heliocentric.coord_names,heliocentric.repr_units)]
             corner_kwargs["labels"] = labels
-
-            if tub_chain is not None:
-                corner_kwargs["xs"] = np.hstack((corner_kwargs["xs"],tub_chain[:,ii]))
-                corner_kwargs["truths"].append(true_tub[ii])
-                corner_kwargs["extents"].append((t2,t1))
-                corner_kwargs["labels"].append("$t_{ub}$")
 
             fig = triangle.corner(**corner_kwargs)
             fig.savefig(os.path.join(path, "particle{}_posterior.png".format(ii)))

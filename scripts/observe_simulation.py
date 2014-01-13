@@ -158,9 +158,15 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
 
+    """
+        e.g.:
+        python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' --N=32 --file=/Users/adrian/projects/streams/data/observed_particles/N32_no_errors.hdf5
+    """
+
     # TODO: class kwargs
     # particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
     # particle_error_model=gaia_spitzer_errors, satellite_error_model=None,
     observe_simulation(args.class_name,
         selection_expr=args.expr, N=args.N, output_file=args.output_file,
+        particle_error_model=gaia_spitzer_errors, satellite_error_model=None,
         overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass="2.5e8"))
