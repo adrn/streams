@@ -91,6 +91,53 @@ def get_pool(mpi=False, threads=None):
 
     return pool
 
+def jacobian(hel):
+    l,b,d,mul,mub,vr = hel.T
+    cosl, sinl = np.cos(l), np.sin(l)
+    cosb, sinb = np.cos(b), np.sin(b)
+
+    gc = _hel_to_gc(hel)
+    x,y,z,vx,vy,vz = gc.T
+
+    row0 = np.zeros_like(hel.T)
+    row0[0] = -d*sinl*cosb
+    row0[1] = -d*cosl*sinb
+    row0[2] = cosl*cosb
+
+    row1 = np.zeros_like(hel.T)
+    row1[0] = d*cosl*cosb
+    row1[1] = -d*sinl*sinb
+    row1[2] = sinl*cosb
+
+    row2 = np.zeros_like(hel.T)
+    row2[0] = 0.
+    row2[1] = -d*cosb
+    row2[2] = sinb
+
+    row3 = [-vr*cosb*sinl + mul*d*cosb*cosl - mub*d*sinb*sinl,
+            -vr*sinb*cosl - mul*d*sinb*sinl + mub*d*cosb*cosl,
+            cosb*sinl*mul + sinb*cosl*mub,
+            d*cosb*sinl,
+            d*sinb*cosl,
+            cosb*cosl]
+
+    row4 = [vr*cosb*cosl + mul*d*cosb*sinl + mub*d*sinb*cosl,
+            -vr*sinb*sinl + mul*d*sinb*cosl + mub*d*cosb*sinl,
+            -cosb*cosl*mul + sinb*sinl*mub,
+            -d*cosb*cosl,
+            d*sinb*sinl,
+            cosb*sinl]
+
+    row5 = np.zeros_like(hel.T)
+    row5[0] = 0.
+    row5[1] = cosb*vr + d*sinb*mub
+    row5[2] = -cosb*mub
+    row5[3] = 0.
+    row5[4] = -d*cosb
+    row5[5] = sinb
+
+    return np.array([row0, row1, row2, row3, row4, row5])
+
 def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
 
     p_gc = _hel_to_gc(p_hel)
@@ -121,7 +168,11 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
 
     log_p_x_given_phi = -0.5*np.sum(2*np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
 
-    return np.sum(log_p_x_given_phi)
+    p_x_hel = _gc_to_hel(p_x)
+    J = jacobian(p_x_hel).T
+    jac = np.array([np.linalg.slogdet(jj)[1] for jj in J])
+
+    return np.sum(log_p_x_given_phi + jac)
 
 def ln_data_likelihood(x, D, sigma):
     log_p_D_given_x = -0.5*np.sum(2.*np.log(sigma) + (x-D)**2/sigma**2, axis=-1)
@@ -203,35 +254,35 @@ def main(mpi=False, threads=None, overwrite=False):
     ##################################################
     # config
     # yeti
-    home = "/vega/astro/users/amp2217/"
-    # #home = "/hpc/astro/users/amp2217/"
-    nburn = 5000
-    nsteps = 5000
-    nparticles = 16
-    nwalkers = 2048
-    potential_params = ["q1","qz","v_halo","phi"]
-    infer_tub_tf = True
-    infer_particles_tf = True
-    infer_satellite_tf = False
-    name = "super_test16"
-    plot_walkers = False
-    test = False
-    ##################################################
-
-    ##################################################
-    # # LAPTOP TESTING
-    # home = "/Users/adrian/"
-    # nburn = 0
-    # nsteps = 10
-    # nparticles = 4
-    # nwalkers = 64
+    # home = "/vega/astro/users/amp2217/"
+    # # #home = "/hpc/astro/users/amp2217/"
+    # nburn = 5000
+    # nsteps = 5000
+    # nparticles = 16
+    # nwalkers = 2048
     # potential_params = ["q1","qz","v_halo","phi"]
     # infer_tub_tf = True
     # infer_particles_tf = True
     # infer_satellite_tf = False
-    # name = "super_test"
+    # name = "super_test16"
     # plot_walkers = False
     # test = False
+    ##################################################
+
+    ##################################################
+    # # LAPTOP TESTING
+    home = "/Users/adrian/"
+    nburn = 0
+    nsteps = 10
+    nparticles = 4
+    nwalkers = 64
+    potential_params = ["q1","qz","v_halo","phi"]
+    infer_tub_tf = True
+    infer_particles_tf = True
+    infer_satellite_tf = False
+    name = "super_test"
+    plot_walkers = False
+    test = True
     ##################################################
 
     if infer_particles_tf:
@@ -323,9 +374,12 @@ def main(mpi=False, threads=None, overwrite=False):
         print(ln_data_likelihood(x=observed_particles_hel,
                                  D=observed_particles_hel, sigma=particles_hel_err))
 
-        print(ln_likelihood(t1, t2, dt, potential,
-                            true_particles_hel, observed_satellite_hel,
-                            true_tub))
+        print("true", ln_likelihood(t1, t2, dt, potential,
+                      true_particles_hel, observed_satellite_hel, true_tub))
+        wrong_potential = sp.LawMajewski2010(qz=1.7)
+        print("wrong", ln_likelihood(t1, t2, dt, wrong_potential,
+                       true_particles_hel, observed_satellite_hel, true_tub))
+        sys.exit(0)
 
         true_p = [potential.parameters[p_name]._truth for p_name in potential_params]
         true_p = np.append(true_p, true_tub)
