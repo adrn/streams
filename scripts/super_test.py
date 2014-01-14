@@ -13,7 +13,6 @@ import time
 import gc
 import copy
 import logging
-import multiprocessing
 from collections import defaultdict
 
 # Third-party
@@ -28,12 +27,6 @@ import scipy
 scipy.seterr(all="ignore")
 import triangle
 import yaml
-
-try:
-    from emcee.utils import MPIPool
-except ImportError:
-    color_print("Failed to import MPIPool from emcee! MPI functionality "
-                "won't work.", "yellow")
 
 # Project
 from streams import usys
@@ -510,9 +503,9 @@ def main(c, mpi=False, threads=None, overwrite=False):
 
         ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
         ### HACK TO INITIALIZE WALKERS NEAR true tub!
-        # for ii in range(c["nparticles"]):
-        #     jj = ii + len(c["potential_params"])
-        #     p0[:,jj] = np.random.normal(true_tub[ii], 10., size=c["nwalkers"])
+        for ii in range(c["nparticles"]):
+            jj = ii + len(c["potential_params"])
+            p0[:,jj] = np.random.normal(true_tub[ii], 10., size=c["nwalkers"])
 
         # jj = c["nparticles"] + len(c["potential_params"])
         # for ii in range(c["nwalkers"]):
@@ -559,7 +552,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
 
     # Plotting!
     # =========
-    if plot_walkers:
+    if c["plot_walkers"]:
         logger.info("Plotting individual walkers...")
         for jj in range(p0.shape[-1]):
             logger.debug("\t plotting walker {}".format(jj))
@@ -599,18 +592,18 @@ def main(c, mpi=False, threads=None, overwrite=False):
         plt.close('all')
         ix1 = ix2
 
-    chain_c["nwalkers"],chain_c["nsteps"],op = chain.shape
+    chain_nwalkers,chain_nsteps,op = chain.shape
     tub_chain = None
     if c["infer_tub"]:
         ix2 = ix1 + c["nparticles"]
-        tub_chain = flatchain[:,ix1:ix2].reshape(chain_c["nwalkers"]*chain_c["nsteps"],c["nparticles"],1)
+        tub_chain = flatchain[:,ix1:ix2].reshape(chain_nwalkers*chain_nsteps,c["nparticles"],1)
         ix1 = ix2
 
     if c["infer_particles"]:
         logger.info("Plotting particle posteriors...")
         ix2 = ix1 + c["nparticles"]*6
-        particles_flatchain = flatchain[:,ix1:ix2].reshape(chain_c["nsteps"]*chain_c["nwalkers"],c["nparticles"],6)
-        particles_p0 = p0[:,ix1:ix2].reshape(chain_c["nwalkers"],c["nparticles"],6)
+        particles_flatchain = flatchain[:,ix1:ix2].reshape(chain_nsteps*chain_nwalkers,c["nparticles"],6)
+        particles_p0 = p0[:,ix1:ix2].reshape(chain_nwalkers,c["nparticles"],6)
 
         for ii in range(c["nparticles"]):
             logger.debug("\tplotting particle {}".format(ii))
@@ -689,7 +682,7 @@ if __name__ == "__main__":
     elif args.machine.lower().strip() == "hotfoot":
         config["save_path"] = "/hpc/astro/users/amp2217/"
     elif args.machine.lower().strip() == "deimos":
-        config["save_path"] = "/home/adrian/"
+        config["save_path"] = "/home/adrian/projects/streams/plots/output_data"
     elif args.machine.lower().strip() == "laptop":
         config["save_path"] = "/Users/adrian/"
     else:
