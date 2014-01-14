@@ -61,14 +61,14 @@ default_config = dict(
     save_path="/tmp/",
     nburn=0,
     nsteps=100,
-    nparticles=16,
-    nwalkers=2048,
-    potential_params=["q1","qz","v_halo","phi"],
+    nparticles=5,
+    nwalkers=64,
+    potential_params=[], #["q1","qz","v_halo","phi"],
     infer_tub=True,
-    infer_particles=True,
+    infer_particles=False,
     infer_satellite=False,
     name="infer_potential",
-    plot_walkers=False,
+    plot_walkers=True,
     test=False
 )
 
@@ -375,28 +375,46 @@ def main(c, mpi=False, threads=None, overwrite=False):
         tubs = np.linspace(0.,6200,25)
         for ii in range(c["nparticles"]):
             Ls = []
+            Ps = []
             for tub in tubs:
-                # this_tub = true_tub.copy()
-                # this_tub[ii] = tub
-                # ll = ln_likelihood(t1, t2, dt, potential,
-                #               true_particles_hel, observed_satellite_hel,
-                #               this_tub)
-                p = true_p.copy()
-                p[Npp+ii] = tub
-                ll = ln_posterior(p, *args)
+                this_tub = true_tub.copy()
+                this_tub[ii] = tub
+                ll = ln_likelihood(t1, t2, dt, potential,
+                                   observed_particles_hel, observed_satellite_hel,
+                                   this_tub)
                 Ls.append(ll)
 
+                p = true_p.copy()
+                p[Npp+ii] = tub
+                lp = ln_posterior(p, *args)
+                Ps.append(lp)
+
             plt.clf()
+            plt.subplot(211)
             plt.plot(tubs, np.exp(Ls))
+            plt.axvline(true_tub[ii])
+            plt.ylabel("Likelihood")
+
+            plt.subplot(212)
+            plt.plot(tubs, np.exp(Ps))
             plt.axvline(true_tub[ii])
             plt.ylabel("Posterior")
             plt.savefig(os.path.join(path, "particle{}_tub.png".format(ii)))
 
+
             plt.clf()
+            plt.subplot(211)
             plt.plot(tubs, Ls)
             plt.axvline(true_tub[ii])
-            plt.ylabel("Log Posterior")
+            plt.ylabel("Likelihood")
+
+            plt.subplot(212)
+            plt.plot(tubs, Ps)
+            plt.axvline(true_tub[ii])
+            plt.ylabel("Posterior")
             plt.savefig(os.path.join(path, "log_particle{}_tub.png".format(ii)))
+
+        sys.exit(0)
 
         # particle positions
         coords = ["l","b","D","mul","mub","vr"]
