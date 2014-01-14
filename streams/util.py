@@ -104,3 +104,38 @@ def make_path(output_data_path, name=None, overwrite=False):
         os.mkdir(path)
 
     return path
+
+def get_pool(mpi=False, threads=None):
+    """ Get a pool object to pass to emcee for parallel processing.
+        If mpi is False and threads is None, pool is None.
+
+        Parameters
+        ----------
+        mpi : bool
+            Use MPI or not. If specified, ignores the threads kwarg.
+        threads : int (optional)
+            If mpi is False and threads is specified, use a Python
+            multiprocessing pool with the specified number of threads.
+    """
+    # This needs to go here so I don't read in the particle file N times!!
+    # get a pool object given the configuration parameters
+    if mpi:
+        # Initialize the MPI pool
+        pool = MPIPool()
+
+        # Make sure the thread we're running on is the master
+        if not pool.is_master():
+            pool.wait()
+            sys.exit(0)
+        logger.debug("Running with MPI...")
+
+    elif threads > 1:
+        logger.debug("Running with multiprocessing on {} cores..."\
+                    .format(threads))
+        pool = multiprocessing.Pool(threads)
+
+    else:
+        logger.debug("Running serial...")
+        pool = None
+
+    return pool
