@@ -17,6 +17,7 @@ import shutil
 import multiprocessing
 
 # Third-party
+from astropy.utils.console import color_print
 from astropy.utils.misc import isiterable
 import astropy.units as u
 import numpy as np
