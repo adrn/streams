@@ -14,11 +14,18 @@ import logging
 from datetime import datetime
 import resource
 import shutil
+import multiprocessing
 
 # Third-party
 from astropy.utils.misc import isiterable
 import astropy.units as u
 import numpy as np
+
+try:
+    from emcee.utils import MPIPool
+except ImportError:
+    color_print("Failed to import MPIPool from emcee! MPI functionality "
+                "won't work.", "yellow")
 
 __all__ = ["_validate_coord", "project_root", "u_galactic", "make_path"]
 
