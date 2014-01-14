@@ -592,18 +592,18 @@ def main(c, mpi=False, threads=None, overwrite=False):
         plt.close('all')
         ix1 = ix2
 
-    chain_c["nwalkers"],chain_c["nsteps"],op = chain.shape
+    chain_nwalkers,chain_nsteps,op = chain.shape
     tub_chain = None
     if c["infer_tub"]:
         ix2 = ix1 + c["nparticles"]
-        tub_chain = flatchain[:,ix1:ix2].reshape(chain_c["nwalkers"]*chain_c["nsteps"],c["nparticles"],1)
+        tub_chain = flatchain[:,ix1:ix2].reshape(chain_nwalkers*chain_nsteps,c["nparticles"],1)
         ix1 = ix2
 
     if c["infer_particles"]:
         logger.info("Plotting particle posteriors...")
         ix2 = ix1 + c["nparticles"]*6
-        particles_flatchain = flatchain[:,ix1:ix2].reshape(chain_c["nsteps"]*chain_c["nwalkers"],c["nparticles"],6)
-        particles_p0 = p0[:,ix1:ix2].reshape(chain_c["nwalkers"],c["nparticles"],6)
+        particles_flatchain = flatchain[:,ix1:ix2].reshape(chain_nsteps*chain_nwalkers,c["nparticles"],6)
+        particles_p0 = p0[:,ix1:ix2].reshape(chain_nwalkers,c["nparticles"],6)
 
         for ii in range(c["nparticles"]):
             logger.debug("\tplotting particle {}".format(ii))
