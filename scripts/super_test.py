@@ -13,7 +13,6 @@ import time
 import gc
 import copy
 import logging
-import multiprocessing
 from collections import defaultdict
 
 # Third-party
@@ -28,12 +27,6 @@ import scipy
 scipy.seterr(all="ignore")
 import triangle
 import yaml
-
-try:
-    from emcee.utils import MPIPool
-except ImportError:
-    color_print("Failed to import MPIPool from emcee! MPI functionality "
-                "won't work.", "yellow")
 
 # Project
 from streams import usys
@@ -559,7 +552,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
 
     # Plotting!
     # =========
-    if plot_walkers:
+    if c["plot_walkers"]:
         logger.info("Plotting individual walkers...")
         for jj in range(p0.shape[-1]):
             logger.debug("\t plotting walker {}".format(jj))
