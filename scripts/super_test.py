@@ -682,7 +682,7 @@ if __name__ == "__main__":
     elif args.machine.lower().strip() == "hotfoot":
         config["save_path"] = "/hpc/astro/users/amp2217/"
     elif args.machine.lower().strip() == "deimos":
-        config["save_path"] = "/home/adrian/"
+        config["save_path"] = "/home/adrian/projects/streams/plots/output_data"
     elif args.machine.lower().strip() == "laptop":
         config["save_path"] = "/Users/adrian/"
     else:
