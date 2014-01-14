@@ -225,45 +225,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
 
     pool = get_pool(mpi=mpi, threads=threads)
 
-<<<<<<< HEAD
     if c["infer_particles"]:
-=======
-    ##################################################
-    # config
-    # yeti
-    home = "/vega/astro/users/amp2217/"
-    # # #home = "/hpc/astro/users/amp2217/"
-    nburn = 0
-    nsteps = 2000
-    nparticles = 5
-    nwalkers = 512
-    potential_params = ["q1","qz","v_halo","phi"]
-    infer_tub_tf = True
-    infer_particles_tf = True
-    infer_satellite_tf = False
-    name = "super_test5"
-    plot_walkers = False
-    test = False
-    ##################################################
-
-    ##################################################
-    # # LAPTOP TESTING
-    # home = "/Users/adrian/"
-    # nburn = 0
-    # nsteps = 10
-    # nparticles = 4
-    # nwalkers = 64
-    # potential_params = ["q1","qz","v_halo","phi"]
-    # infer_tub_tf = True
-    # infer_particles_tf = True
-    # infer_satellite_tf = False
-    # name = "super_test"
-    # plot_walkers = False
-    # test = True
-    ##################################################
-
-    if infer_particles_tf:
->>>>>>> 10e3c561cef4508a5b8c814ba9c93fa4b1f4999d
         data_file = "N128_ptcl_errors.hdf5"
     else:
         data_file = "N128_no_errors.hdf5"
