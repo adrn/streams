@@ -17,7 +17,6 @@ from collections import defaultdict
 
 # Third-party
 import astropy.units as u
-from astropy.utils.console import color_print
 import emcee
 import h5py
 import matplotlib.pyplot as plt
@@ -58,7 +57,7 @@ default_config = dict(
     nwalkers=64,
     potential_params=[], #["q1","qz","v_halo","phi"],
     infer_tub=True,
-    infer_particles=False,
+    infer_particles=True,
     infer_satellite=False,
     name="infer_potential",
     plot_walkers=True,
@@ -218,14 +217,19 @@ def main(c, mpi=False, threads=None, overwrite=False):
 
     pool = get_pool(mpi=mpi, threads=threads)
 
-    if c["infer_particles"]:
-        data_file = "N128_ptcl_errors.hdf5"
-    else:
-        data_file = "N128_no_errors.hdf5"
-
+    # Contains observed and true data
+    data_file = "N128.hdf5"
     path = os.path.join(c["save_path"], "output_data", c["name"])
-    d_path = os.path.join(c["save_path"], "projects/streams/data/observed_particles/")
+    try:
+        d_path = os.path.join(os.environ["STREAMSPATH"],
+                              "data/observed_particles/")
+    except KeyError:
+        raise ValueError("Env var $STREAMSPATH not set!")
+        sys.exit(1)
+
+    print(os.path.join(d_path, data_file))
     d = io.read_hdf5(os.path.join(d_path, data_file))
+    print(d.keys())
     output_file = os.path.join(path, "inference.hdf5")
 
     if not os.path.exists(path):
@@ -239,20 +243,21 @@ def main(c, mpi=False, threads=None, overwrite=False):
     potential = sp.LawMajewski2010()
     Npp = len(c["potential_params"])
 
-    observed_satellite_hel = d["satellite"]._X
     if c["infer_satellite"]:
+        observed_satellite_hel = d["satellite"]._X
         satellite_hel_err = d["satellite"]._error_X
     else:
+        observed_satellite_hel = d["true_satellite"]._X
         satellite_hel_err = None
     logger.debug("Read in satellite".format(observed_satellite_hel))
 
-    observed_particles_hel = d["particles"]._X[:c["nparticles"]]
-    assert len(np.ravel(observed_particles_hel)) == len(np.unique(np.ravel(observed_particles_hel)))
-
     if c["infer_particles"]:
         particles_hel_err = d["particles"]._error_X[:c["nparticles"]]
+        observed_particles_hel = d["particles"]._X[:c["nparticles"]]
     else:
+        observed_particles_hel = d["true_particles"]._X[:c["nparticles"]]
         particles_hel_err = None
+    assert len(np.ravel(observed_particles_hel))==len(np.unique(np.ravel(observed_particles_hel)))
 
     try:
         true_tub = d["true_particles"].tub[:c["nparticles"]]
