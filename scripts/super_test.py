@@ -503,9 +503,9 @@ def main(c, mpi=False, threads=None, overwrite=False):
 
         ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ###
         ### HACK TO INITIALIZE WALKERS NEAR true tub!
-        # for ii in range(c["nparticles"]):
-        #     jj = ii + len(c["potential_params"])
-        #     p0[:,jj] = np.random.normal(true_tub[ii], 10., size=c["nwalkers"])
+        for ii in range(c["nparticles"]):
+            jj = ii + len(c["potential_params"])
+            p0[:,jj] = np.random.normal(true_tub[ii], 10., size=c["nwalkers"])
 
         # jj = c["nparticles"] + len(c["potential_params"])
         # for ii in range(c["nwalkers"]):
