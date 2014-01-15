@@ -51,17 +51,17 @@ hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
 ##################################################
 default_config = dict(
     save_path="/tmp/",
-    nburn=1000,
-    nsteps=2000,
-    nparticles=8,
-    nwalkers=512,
+    nburn=0,
+    nsteps=25,
+    nparticles=5,
+    nwalkers=64,
     potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
     infer_particles=True,
     infer_satellite=False,
-    name="infer_potential",
-    plot_walkers=True,
-    test=False
+    name="test",
+    plot_walkers=False,
+    test=True
 )
 
 def jacobian(hel):
@@ -130,22 +130,50 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     # These are the unbinding time indices for each particle
     t_idx = np.array([np.argmin(np.fabs(times - t)) for t in tub])
 
-    sat_var = np.zeros((len(times),6))
-    sat_var[:,:3] = potential._tidal_radius(2.5e8, s_orbit[...,:3])*1.26
-    sat_var[:,3:] += 0.017198632325
-    cov = sat_var**2
+    ##############################################
+    # sat_var = np.zeros((len(times),6))
+    # sat_var[:,:3] = potential._tidal_radius(2.5e8, s_orbit[...,:3])*1.26
+    # sat_var[:,3:] += 0.017198632325
+    # cov = sat_var**2
 
-    Sigma = np.array([cov[jj] for jj in t_idx])
+    # Sigma = np.array([cov[jj] for jj in t_idx])
+    # p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    # s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+
+    # log_p_x_given_phi = -0.5*np.sum(2*np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
+    # p_x_hel = _gc_to_hel(p_x)
+    # J = jacobian(p_x_hel).T
+    # jac = np.array([np.linalg.slogdet(jj)[1] for jj in J])
+
+    #return np.sum(log_p_x_given_phi + jac)
+    ##############################################
+
     p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     s_x = np.array([s_orbit[jj,0] for jj in t_idx])
 
-    log_p_x_given_phi = -0.5*np.sum(2*np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
+    r_tide = potential._tidal_radius(2.5e8, s_x)*1.7
+    v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
+
+    rel_x = p_x-s_x
+    rel_dist = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
+    rel_vel = np.sqrt(np.sum(rel_x[...,3:]**2, axis=-1))
+
+    sigma_r = np.zeros_like(r_tide) + 5.7
+    r_term = -0.5*np.sum(2*np.log(sigma_r) + (rel_dist-r_tide)**2 / (2*sigma_r**2))
+    #print((rel_dist-r_tide)**2 / (2*sigma_r**2))
+
+    sigma_v = np.zeros_like(v_esc) + 0.017198632325
+    v_term = -0.5*np.sum(2*np.log(sigma_v) + (rel_vel-v_esc)**2 / (2*sigma_v**2))
+    # print((rel_vel-v_esc)**2 / (2*sigma_v**2))
+    # print()
+
+    #print(r_term, v_term)
 
     p_x_hel = _gc_to_hel(p_x)
     J = jacobian(p_x_hel).T
     jac = np.array([np.linalg.slogdet(jj)[1] for jj in J])
 
-    return np.sum(log_p_x_given_phi + jac)
+    return r_term + v_term + np.sum(jac)
 
 def ln_data_likelihood(x, D, sigma):
     log_p_D_given_x = -0.5*np.sum(2.*np.log(sigma) + (x-D)**2/sigma**2, axis=-1)
@@ -314,6 +342,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
         wrong_potential = sp.LawMajewski2010(qz=1.7)
         print("wrong", ln_likelihood(t1, t2, dt, wrong_potential,
                        true_particles_hel, observed_satellite_hel, true_tub))
+        #sys.exit(0)
 
         ######
         # check that posterior is sum of likelihoods
@@ -412,7 +441,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
             plt.ylabel("Posterior")
             plt.savefig(os.path.join(path, "log_particle{}_tub.png".format(ii)))
 
-        sys.exit(0)
+        #sys.exit(0)
 
         # particle positions
         coords = ["l","b","D","mul","mub","vr"]
@@ -486,6 +515,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
 
                 fig.savefig(os.path.join(path,"log_particle{}_coord{}.png".format(ii,coords[jj])))
                 plt.close('all')
+            break
 
         return
     # ----------------------------------------------------------------------
