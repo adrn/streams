@@ -20,15 +20,16 @@
 \title{Back-integration likelihood}
 \author{Adrian M. Price-Whelan}
 
-Starting with notation, take ${\bf D}^{(i)}$ to be the observed heliocentric 6D position of the $i$th star -- e.g., the measured $l$, $b$, $D$, $\mu_l$, $\mu_b$, $v_r$ -- and ${\bf X}^{(i)}$ to be the corresponding \emph{true} 6D position of the same star. We assume that this star was once part of a progenitor system -- e.g., satellite galaxy -- presently at observed position ${\bf D}_s$ (with true position ${\bf X}_s$) that is tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. We then model the measured position of a star today as the result of sampling from a time-dependent 6D distribution -- the progenitor system -- at some time $\tau^{(i)}$ in the past, and evolving that sampled 6D position to present day in the parent potential, neglecting the effect of self-interaction with the halo of the progenitor. We model the progenitor as a 6D Gaussian with mean vector given by the position of the satellite at any given time, ${\bf X}_s(t)$, and with shape defined by a time-dependent covariance matrix $\bSigma_s(t)$ (the subscript $s$ refers to satellite or progenitor). With these assumptions we can write the posterior for a single star as:
+Starting with notation, take ${\bf D}^{(i)}$ to be the observed heliocentric 6D position of the $i$th star -- e.g., the measured $l$, $b$, $D$, $\mu_l$, $\mu_b$, $v_r$ -- and ${\bf X}^{(i)}$ to be the corresponding \emph{true} 6D position of the same star. We assume that this star was once part of a progenitor system -- e.g., satellite galaxy -- presently at observed position ${\bf D}_s$ (with true position, ${\bf X}_s$ and shape described by a covariance matrix, $\bSigma_s$) that is tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. We then model the measured position of a star today as the result of sampling from a time-dependent 6D distribution -- the progenitor system -- at some time $\tau^{(i)}$ in the past, evolved to present day in the parent potential, neglecting the effect of self-interaction with the halo of the progenitor. We model the progenitor as a 6D Gaussian with mean vector given by the position of the satellite at any given time, ${\bf X}_s(t)$, and with shape defined by a time-dependent covariance matrix $\bSigma_s(t)$ (the subscript $s$ refers to satellite or progenitor). With these assumptions we can write the posterior for a single star as:
 \begin{align}
-	p(\Phi, \X^{(i)}, \X_s, \bSigma_s, \tau^{(i)} \given \D^{(i)}, \D_s) &\propto 
-		p(\D^{(i)} \given \X^{(i)}) p(\D_s \given \X_s) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)})\\
+	p(\Phi, \X^{(i)}, \X_s, \bSigma_s, \tau^{(i)} \given \D^{(i)}, \D_s) &= 
+		\frac{1}{Z} p(\D^{(i)} \given \X^{(i)}) p(\D_s \given \X_s) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}, \Phi)\\
 	p(\D^{(i)} \given \X^{(i)}) &= \mathcal{N}(\X^{(i)} \given \D^{(i)}, \bsigma^{(i)})\\
 	p(\D_s \given \X_s) &= \mathcal{N}(\X_s \given \D_s, \bsigma_s)\\
-	p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}) &= \mathcal{N}(\widetilde{\X}^{(i)}(\tau^{(i)}) \given \widetilde{\X}_s(\tau^{(i)}), \bSigma_s(\tau^{(i)}))
+	p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}, \Phi) &= \mathcal{N}(\widetilde{\X}^{(i)}(\tau^{(i)}) \given \widetilde{\X}_s(\tau^{(i)}), \bSigma_s(\tau^{(i)}))
 \end{align}
-where the vectors $\bsigma^{(i)}$ and $\bsigma_s$ represent the (assumed) Gaussian, uncorrelated observational errors on the observed 6D position of star $i$ and the satellite, respectively, and the tildes denote a conversion from spherical, heliocentric to cartesian, Galactocentric coordinates. 
+where the vectors $\bsigma^{2}$ and $\bsigma_s^2$ represent the (assumed) Gaussian, uncorrelated observational variances on the observed 6D position of star and the satellite, respectively.
+%, and the tildes denote a conversion from spherical, heliocentric to cartesian, Galactocentric coordinates. 
 %Thus, 
 %\begin{align}
 %	p(\Phi, \X, \X_s, \bSigma_s, \tau \given \D, \D_s) &= \prod_i p(\Phi, \X^{(i)}, \X_s, \bSigma_s, \tau^{(i)} \given \D^{(i)}, \D_s)\\
