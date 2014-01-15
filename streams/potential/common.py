@@ -23,7 +23,8 @@ from .core import CartesianPotential
 __all__ = ["PointMassPotential", "MiyamotoNagaiPotential",\
            "HernquistPotential", "LogarithmicPotentialLJ",\
            "PlummerPotential", "IsochronePotential",\
-           "AxisymmetricNFWPotential", "AxisymmetricLogarithmicPotential"]
+           "AxisymmetricNFWPotential", "AxisymmetricLogarithmicPotential",
+           "SphericalNFWPotential"]
 
 ############################################################
 #    Potential due to a point mass at a given position
@@ -491,6 +492,68 @@ class AxisymmetricNFWPotential(CartesianPotential):
                                                  f=f, f_prime=df,
                                                  latex=latex,
                                                  parameters=parameters)
+
+##############################################################################
+#    Spherical NFW potential
+#
+def _cartesian_spherical_nfw_model(bases):
+    """ Generates functions to evaluate an NFW potential and its
+        derivatives at a specified position.
+
+        Physical parameters for this potential are:
+            log_m : total mass in the core of the potential
+            a : scale-length
+    """
+
+    # scale G to be in this unit system
+    _G = G.decompose(bases=bases).value
+
+    def f(r,r_0,log_m,a):
+        rr = r-r_0
+        x,y,z = rr.T
+
+        m = np.exp(log_m)
+        R2 = x**2 + y**2 + z**2
+
+        return -3 * _G * m / R2 * np.log(1. + R2/a)
+
+    def df(r,r_0,log_m,a):
+        rr = r-r_0
+        x,y,z = rr.T
+
+        m = np.exp(log_m)
+        R = np.sqrt(x*x + y*y + z*z)
+
+        dphi_dr = 3*_G*m/R * (np.log(1+R/a)/R - 1/(R+a))
+        _x = dphi_dr * x/R
+        _y = dphi_dr * y/R
+        _z = dphi_dr * z/R
+
+        return -np.array([_x,_y,_z]).T
+
+    return (f, df)
+
+class SphericalNFWPotential(CartesianPotential):
+
+    def __init__(self, units, **parameters):
+
+        latex = "$\sigma$"
+
+        assert "log_m" in parameters.keys(), "You must specify a log-mass."
+        assert "a" in parameters.keys(), "You must specify the parameter 'a'."
+
+        # get functions for evaluating potential and derivatives
+        f,df = _cartesian_spherical_nfw_model(units)
+        super(SphericalNFWPotential, self).__init__(units,
+                                                 f=f, f_prime=df,
+                                                 latex=latex,
+                                                 parameters=parameters)
+
+    def v_circ(self, r):
+        """ Return the circular velocity at position r """
+        a = np.sqrt(np.sum(self.acceleration_at(r)**2, axis=-1))
+        R = np.sqrt(np.sum(r**2, axis=-1))
+        return np.sqrt(R*a)
 
 ##############################################################################
 #    Axisymmetric, Logarithmic potential

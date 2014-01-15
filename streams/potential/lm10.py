@@ -91,10 +91,10 @@ class LawMajewski2010(CompositePotential):
         #                                       halo=halo)
         self.units = usys
         self._G = G.decompose(bases=usys).value
+        self._parameter_dict = dict([(k,v._value) for k,v in self.parameters.items()])
 
     def _acceleration_at(self, r, n_particles, acc):
-        p_dict = dict([(k,v._value) for k,v in self.parameters.items()])
-        return lm10_acceleration(r, n_particles, acc, **p_dict)
+        return lm10_acceleration(r, n_particles, acc, **self._parameter_dict)
 
     def _enclosed_mass(self, R):
         """ Compute the enclosed mass at the position r. Assumes it's far from
