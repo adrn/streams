@@ -51,11 +51,11 @@ hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
 ##################################################
 default_config = dict(
     save_path="/tmp/",
-    nburn=0,
-    nsteps=100,
-    nparticles=5,
-    nwalkers=64,
-    potential_params=[], #["q1","qz","v_halo","phi"],
+    nburn=1000,
+    nsteps=2000,
+    nparticles=8,
+    nwalkers=512,
+    potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
     infer_particles=True,
     infer_satellite=False,
@@ -510,7 +510,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
         ### HACK TO INITIALIZE WALKERS NEAR true tub!
         for ii in range(c["nparticles"]):
             jj = ii + len(c["potential_params"])
-            p0[:,jj] = np.random.normal(true_tub[ii], 10., size=c["nwalkers"])
+            p0[:,jj] = np.random.normal(true_tub[ii], 100., size=c["nwalkers"])
 
         # jj = c["nparticles"] + len(c["potential_params"])
         # for ii in range(c["nwalkers"]):
