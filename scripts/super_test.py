@@ -18,6 +18,7 @@ from collections import defaultdict
 # Third-party
 import astropy.units as u
 import emcee
+from emcee.utils import sample_ball
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,15 +53,16 @@ hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
 default_config = dict(
     save_path="/tmp/",
     nburn=500,
-    niterations=500,
-    nsteps=1000,
-    nparticles=8,
-    nwalkers=512,
+    niter=10,
+    nsteps_per_iter=250,
+    nsteps_final=1000,
+    nparticles=2,
+    nwalkers=64,
     potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
     infer_particles=True,
     infer_satellite=False,
-    name="gaussian_shell",
+    name="sampler_trick",
     plot_walkers=False,
     test=False
 )
@@ -546,6 +548,9 @@ def main(c, mpi=False, threads=None, overwrite=False):
         sampler = emcee.EnsembleSampler(c["nwalkers"], p0.shape[-1], ln_posterior,
                                         pool=pool, args=args)
 
+        total = c["nburn"] + c["nsteps_final"] + c["niter"]*c["nsteps_per_iter"]
+        logger.info("Running sampler for {} steps total".format(total))
+
         if c["nburn"] > 0:
             logger.info("Burning in sampler for {} steps...".format(c["nburn"]))
             pos, xx, yy = sampler.run_mcmc(p0, c["nburn"])
@@ -553,9 +558,19 @@ def main(c, mpi=False, threads=None, overwrite=False):
         else:
             pos = p0
 
-        logger.info("Running sampler for {} steps...".format(c["nsteps"]))
+        logger.info("Running sampler for {} iterations of {} steps..."\
+                    .format(c["niter"], c["nsteps_per_iter"]))
+
         a = time.time()
-        pos, prob, state = sampler.run_mcmc(pos, c["nsteps"])
+        for ii in range(c["niter"]):
+            pos, prob, state = sampler.run_mcmc(pos, c["nsteps_per_iter"])
+            best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
+            std = np.std(sampler.flatchain, axis=0) / 10.
+
+            pos = sample_ball(best_pos, std, size=c["nwalkers"])
+
+        pos, prob, state = sampler.run_mcmc(pos, c["nsteps_final"])
+
         t = time.time() - a
         logger.debug("Spent {} seconds on sampler...".format(t))
 
