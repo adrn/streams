@@ -51,17 +51,18 @@ hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
 ##################################################
 default_config = dict(
     save_path="/tmp/",
-    nburn=0,
-    nsteps=25,
-    nparticles=5,
-    nwalkers=64,
+    nburn=500,
+    niterations=500,
+    nsteps=1000,
+    nparticles=8,
+    nwalkers=512,
     potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
     infer_particles=True,
     infer_satellite=False,
-    name="test",
+    name="gaussian_shell",
     plot_walkers=False,
-    test=True
+    test=False
 )
 
 def jacobian(hel):
