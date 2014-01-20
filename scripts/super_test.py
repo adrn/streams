@@ -56,8 +56,8 @@ default_config = dict(
     niter=10,
     nsteps_per_iter=250,
     nsteps_final=1000,
-    nparticles=2,
-    nwalkers=64,
+    nparticles=8,
+    nwalkers=512,
     potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
     infer_particles=True,
@@ -708,8 +708,8 @@ if __name__ == "__main__":
                         help="What machine you're running on. e.g., 'yeti' or 'hotfoot'")
     parser.add_argument("--save-path", dest="save_path", default=None, type=str,
                         help="Overwrites path set by machine name.")
-    parser.add_argument("--name", dest="name", default="infer_potential", type=str,
-                        help=".")
+    parser.add_argument("--name", dest="name", default=default_config["name"], \
+                        type=str, help=".")
 
     args = parser.parse_args()
 
