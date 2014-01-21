@@ -56,7 +56,7 @@ default_config = dict(
     niter=25,
     nsteps_per_iter=500,
     nsteps_final=2000,
-    nparticles=16,
+    nparticles=32,
     nwalkers=1024,
     potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
@@ -134,49 +134,66 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     t_idx = np.array([np.argmin(np.fabs(times - t)) for t in tub])
 
     ##############################################
-    p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    s_x = np.array([s_orbit[jj,0] for jj in t_idx])
-
-    # r_tide = potential._tidal_radius(2.5e8, s_x)
-    r_tide = potential._tidal_radius(2.5e8, s_orbit[...,:3]) * 1.7
-    v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
-
-    sat_var = np.zeros((len(times),6))
-    sat_var[:,:3] = r_tide #potential._tidal_radius(2.5e8, s_orbit[...,:3])*1.7
-    sat_var[:,3:] += v_esc # 0.017198632325
-    cov = sat_var**2
-
-    Sigma = np.array([cov[jj] for jj in t_idx])
-
-    log_p_x_given_phi = -0.5*np.sum(np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
-
-    p_x_hel = _gc_to_hel(p_x)
-    J = jacobian(p_x_hel).T
-    jac = np.array([np.linalg.slogdet(np.linalg.inv(jj))[1] for jj in J])
-    #jac = np.array([np.linalg.slogdet(jj)[1] for jj in J])
-
-    return np.sum(log_p_x_given_phi + jac)
-    ##############################################
-    # New Gaussian shell idea:
     # p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     # s_x = np.array([s_orbit[jj,0] for jj in t_idx])
 
-    # r_tide = potential._tidal_radius(2.5e8, s_x)
-    # v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
+    # # r_tide = potential._tidal_radius(2.5e8, s_x)
+    # r_tide = potential._tidal_radius(2.5e8, s_orbit[...,:3]) * 1.26
+    # v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide) / 1.4
 
-    # rel_x = p_x-s_x
-    # rel_dist = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
-    # rel_vel = np.sqrt(np.sum(rel_x[...,3:]**2, axis=-1))
+    # sat_var = np.zeros((len(times),6))
+    # sat_var[:,:3] = r_tide #potential._tidal_radius(2.5e8, s_orbit[...,:3])*1.7
+    # sat_var[:,3:] += v_esc # 0.017198632325
+    # cov = sat_var**2
 
-    # sigma_r = np.zeros_like(r_tide) + np.log(r_tide.mean())
-    # r_term = -0.5*np.sum(2*np.log(sigma_r) + (np.log(rel_dist)/sigma_r)**2) - 3*np.log(rel_dist)
+    # Sigma = np.array([cov[jj] for jj in t_idx])
 
-    # sigma_v = np.zeros_like(v_esc) + np.log(v_esc.mean() / 1.4)
-    # v_term = -0.5*np.sum(2*np.log(sigma_v) + ((np.log(rel_dist)-v_esc)/sigma_v)**2) - 3*np.log(rel_vel)
+    # log_p_x_given_phi = -0.5*np.sum(np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
 
-    # print(r_term, v_term)
+    # p_x_hel = _gc_to_hel(p_x)
+    # J = jacobian(p_x_hel).T
+    # jac = np.array([np.linalg.slogdet(np.linalg.inv(jj))[1] for jj in J])
 
-    # return r_term + v_term
+    # return np.sum(log_p_x_given_phi + jac)
+    ##############################################
+    # New Gaussian shell idea:
+    p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+
+    r_tide = potential._tidal_radius(2.5e8, s_x)
+    v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
+    v_disp = 0.017198632325
+
+    rel_x = p_x-s_x
+    R = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
+    V = np.sqrt(np.sum(rel_x[...,3:]**2, axis=-1))
+    lnR = np.log(R)
+    lnV = np.log(V)
+
+    #sigma_r = np.zeros_like(r_tide) + r_tide.mean()
+    #mu_r = np.log(r_tide) # 1.5
+    #sigma_r = np.zeros_like(r_tide) + 0.45
+    v = 1.
+    sigma_r = np.sqrt(np.log(1 + v/r_tide**2))
+    mu_r = np.log(r_tide**2 / np.sqrt(v + r_tide**2))
+    r_term = -0.5*(2*np.log(sigma_r) + ((lnR-mu_r)/sigma_r)**2) - np.log(R**3)
+
+    # print(mu_r, sigma_r)
+    # print(r_term)
+
+    #sigma_v = np.zeros_like(v_esc) + v_esc.mean() / 1.4
+    # mu_v = np.log(v_esc) #-4.1
+    # sigma_v = np.zeros_like(v_esc) + 0.5
+    v = v_disp
+    sigma_v = np.sqrt(np.log(1 + v/v_esc**2))
+    mu_v = np.log(v_esc**2 / np.sqrt(v + v_esc**2))
+    v_term = -0.5*(2*np.log(sigma_v) + ((lnV-mu_v)/sigma_v)**2) - np.log(V**3)
+
+    # print(mu_v, sigma_v)
+    # print(v_term)
+    #sys.exit(0)
+
+    return np.sum(r_term + v_term)
 
 def ln_data_likelihood(x, D, sigma):
     log_p_D_given_x = -0.5*np.sum(2.*np.log(sigma) + (x-D)**2/sigma**2, axis=-1)
