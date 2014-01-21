@@ -1,3 +1,20 @@
 #!/bin/bash
 
-rsync -vazr hotfoot:/hpc/astro/users/amp2217/jobs/output_data/* ~/projects/streams/plots/hotfoot
+if [[ -z "$1" ]]; then
+    echo "You must specify a source machine."
+    exit
+fi
+
+if [[ -z "$STREAMSPATH" ]]; then
+    echo "Env var STREAMSPATH must be set."
+fi
+
+if [[ "$1" == "yeti" ]]; then
+    echo `rsync -vazr --exclude="*.hdf5" --include="*.png" yeti:/vega/astro/users/amp2217/output_data* ~/projects/streams/plots/yeti`
+
+elif [[ "$1" == "hotfoot" ]]; then
+    echo `rsync -vazr --exclude="*.hdf5" --include="*.png" hotfoot:/hpc/astro/users/amp2217/output_data/* ~/projects/streams/plots/hotfoot`
+
+else
+    echo "ERROR: Unrecognized machine '$1'"
+fi
