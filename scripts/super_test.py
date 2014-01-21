@@ -52,17 +52,17 @@ hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
 ##################################################
 default_config = dict(
     save_path="/tmp/",
-    nburn=500,
-    niter=10,
-    nsteps_per_iter=250,
-    nsteps_final=1000,
+    nburn=1000,
+    niter=25,
+    nsteps_per_iter=500,
+    nsteps_final=2000,
     nparticles=8,
-    nwalkers=512,
+    nwalkers=1024,
     potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
     infer_particles=True,
     infer_satellite=False,
-    name="sampler_trick",
+    name="infer_potential_8stars",
     plot_walkers=False,
     test=False
 )
