@@ -565,9 +565,8 @@ def main(c, mpi=False, threads=None, overwrite=False):
         for ii in range(c["niter"]):
             pos, prob, state = sampler.run_mcmc(pos, c["nsteps_per_iter"])
             best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
-
-            print(best_pos[:5], std[:5])
-            std = np.std(sampler.flatchain, axis=0) / 10.
+            std = np.std(sampler.flatchain, axis=0) / 2.
+            print(best_pos[:5], std[:5]*2.)
 
             pos = sample_ball(best_pos, std, size=c["nwalkers"])
 
