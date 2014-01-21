@@ -653,6 +653,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
             logger.debug("\tplotting particle {}".format(ii))
             this_p0 = convert_units(particles_p0[:,ii], hel_units, heliocentric.repr_units)
             true_X = convert_units(d["true_particles"]._X[ii], hel_units, heliocentric.repr_units)
+            obs_X = convert_units(d["particles"]._X[ii], hel_units, heliocentric.repr_units)
             chain_X = convert_units(particles_flatchain[:,ii], hel_units, heliocentric.repr_units)
 
             corner_kwargs = defaultdict(list)
@@ -672,6 +673,11 @@ def main(c, mpi=False, threads=None, overwrite=False):
 
             fig = triangle.corner(**corner_kwargs)
             fig.savefig(os.path.join(path, "particle{}_posterior.png".format(ii)))
+
+            corner_kwargs["truths"][:-1] = obs_X.tolist()
+            fig = triangle.corner(**corner_kwargs)
+            fig.savefig(os.path.join(path, "particle{}_posterior_obs.png".format(ii)))
+
             plt.close('all')
             gc.collect()
         ix1 = ix2
