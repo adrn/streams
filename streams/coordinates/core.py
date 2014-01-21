@@ -19,7 +19,7 @@ import astropy.units as u
 __all__ = ["vgsr_to_vhel", "vhel_to_vgsr", \
            "gc_to_hel", "hel_to_gc", "_gc_to_hel", "_hel_to_gc"]
 
-v_sun_circ = [0., 220., 0.]*u.km/u.s
+v_sun_circ = 220.*u.km/u.s
 v_sun_lsr = [10., 5.25, 7.17]*u.km/u.s
 R_sun = 8.*u.kpc
 
@@ -72,10 +72,17 @@ def vhel_to_vgsr(l, b, v_hel,
 
 def gc_to_hel(x,y,z,vx,vy,vz,
               v_sun_circ=v_sun_circ,
+              v_sun_lsr=v_sun_lsr,
               R_sun=R_sun):
+
     # transform to heliocentric cartesian
     x = x + R_sun
-    vy = vy - v_sun_circ[1] # don't use -= or +=!!!
+    vy = vy - v_sun_circ # don't use -= or +=!!!
+
+    # correct for motion of LSR
+    vx = vx - v_sun_lsr[0]
+    vy = vy - v_sun_lsr[1]
+    vz = vz - v_sun_lsr[2]
 
     # transform from cartesian to spherical
     d = np.sqrt(x**2 + y**2 + z**2)
@@ -95,6 +102,7 @@ def gc_to_hel(x,y,z,vx,vy,vz,
 
 def hel_to_gc(l,b,d,mul,mub,vr,
               v_sun_circ=v_sun_circ,
+              v_sun_lsr=v_sun_lsr,
               R_sun=R_sun):
     # transform from spherical to cartesian
     x = d*np.cos(b)*np.cos(l)
@@ -110,7 +118,12 @@ def hel_to_gc(l,b,d,mul,mub,vr,
     vz = z/d*vr - d*np.cos(b)*omega_b
 
     x = x - R_sun
-    vy = vy + v_sun_circ[1]
+    vy = vy + v_sun_circ
+
+    # correct for motion of LSR
+    vx = vx + v_sun_lsr[0]
+    vy = vy + v_sun_lsr[1]
+    vz = vz + v_sun_lsr[2]
 
     return x,y,z,vx,vy,vz
 

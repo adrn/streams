@@ -11,7 +11,9 @@
 
 % bold X and D
 \newcommand{\D}{{\bf D}}
+\newcommand{\W}{{\bf W}}
 \newcommand{\X}{{\bf X}}
+\newcommand{\V}{{\bf V}}
 \newcommand{\bSigma}{{\bf \Sigma}}
 \newcommand{\bsigma}{\boldsymbol\sigma}
 
@@ -20,64 +22,75 @@
 \title{Back-integration likelihood}
 \author{Adrian M. Price-Whelan}
 
-Starting with notation, take ${\bf D}^{(i)}$ to be the observed heliocentric 6D position of the $i$th star -- e.g., the measured $l$, $b$, $D$, $\mu_l$, $\mu_b$, $v_r$ -- and ${\bf X}^{(i)}$ to be the corresponding \emph{true} 6D position of the same star. We assume that this star was once part of a progenitor system -- e.g., satellite galaxy -- presently at observed position ${\bf D}_s$ (with true position, ${\bf X}_s$ and shape described by a covariance matrix, $\bSigma_s$) that is tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. We then model the measured position of a star today as the result of sampling from a time-dependent 6D distribution -- the progenitor system -- at some time $\tau^{(i)}$ in the past, evolved to present day in the parent potential, neglecting the effect of self-interaction with the halo of the progenitor. We model the progenitor as a 6D Gaussian with mean vector given by the position of the satellite at any given time, ${\bf X}_s(t)$, and with shape defined by a time-dependent covariance matrix $\bSigma_s(t)$ (the subscript $s$ refers to satellite or progenitor). With these assumptions we can write the posterior for a single star as:
+Starting with notation, take ${\bf D}^{(i)}$ to be the observed, heliocentric 6D position of the $i$th star -- e.g., the measured position on the sky, ($l$, $b$), distance, $D$, proper motions, ($\mu_l$, $\mu_b$), and radial velocity, $v_r$ -- and ${\bf W}^{(i)}$ to be the corresponding \emph{true}, 6D position of the same star in the same coordinate and reference frame. We assume that this star was once part of a progenitor system -- e.g., satellite galaxy -- tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The satellite is observed to be at heliocentric 6D position ${\bf D}_s$, with true position ${\bf W}_s$, and shape described by a covariance matrix, $\V_s$ (the subscript $s$ refers to the satellite). The true, 6D spherical, heliocentric positions of the stars and satellite -- $\W^{(i)}$ and $\W_s$ -- have corresponding 6D cartesian, Galactocentric coordinate vectors $\X^{(i)}$ and $\X_s$. 
+
+We model the observed, present-day position of a star as the result of sampling from a time-dependent 6D distribution -- the progenitor system -- at some time $\tau^{(i)}$ in the past, evolved to present day in the parent potential, neglecting the effect of self-interaction with the halo of the progenitor. We model the progenitor as a 6D Gaussian with mean vector given by the position of the satellite at any given time, ${\bf W}_s(t)$, and with shape defined by the time-dependent covariance matrix $\V_s(t)$. With these assumptions we can write the joint posterior probability for the observed position of a star, properties of the disrupting satellite, and parent potential given the data as:
 \begin{align}
-	p(\Phi, \X^{(i)}, \X_s, \bSigma_s, \tau^{(i)} \given \D^{(i)}, \D_s) &= 
-		\frac{1}{Z} p(\D^{(i)} \given \X^{(i)}) p(\D_s \given \X_s) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}, \Phi)\\
-	p(\D^{(i)} \given \X^{(i)}) &= \mathcal{N}(\X^{(i)} \given \D^{(i)}, \bsigma^{(i)})\\
-	p(\D_s \given \X_s) &= \mathcal{N}(\X_s \given \D_s, \bsigma_s)\\
-	p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}, \Phi) &= \mathcal{N}(\widetilde{\X}^{(i)}(\tau^{(i)}) \given \widetilde{\X}_s(\tau^{(i)}), \bSigma_s(\tau^{(i)}))
+	%p(\Phi, \W^{(i)}, \W_s, \V_s, \tau^{(i)} \given \D^{(i)}, \D_s) &= 
+	%	\frac{1}{\mathcal{Z}} p(\D^{(i)} \given \W^{(i)}) p(\D_s \given \W_s) p(\W^{(i)} \given \W_s, \V_s, \tau^{(i)}, \Phi)
+	p(\Phi, \W^{(i)}, \W_s, \V_s, \tau^{(i)} \given \D^{(i)}, \D_s) &= 
+		\frac{1}{\mathcal{Z}} p(\D^{(i)} \given \W^{(i)}) p(\D_s \given \W_s) p(\D^{(i)} \given \D_s, \V_s, \tau^{(i)}, \Phi)
 \end{align}
-where the vectors $\bsigma^{2}$ and $\bsigma_s^2$ represent the (assumed) Gaussian, uncorrelated observational variances on the observed 6D position of star and the satellite, respectively.
+where the factor $\mathcal{Z}$ only depends on the properties of the data (the \emph{evidence}), and is thus constant when varying the model parameters. We assume that the observational errors are Gaussian:
+\begin{align}
+	p(\D^{(i)} \given \W^{(i)}) &= \mathcal{N}(\W^{(i)} \given \D^{(i)}, \bSigma^{(i)})\\
+	p(\D_s \given \W_s) &= \mathcal{N}(\W_s \given \D_s, \bSigma_s)
+\end{align}
+where the covariance matrices $\bSigma^{(i)}$ and $\bSigma_s$ represent the observational variances on the observed 6D position of star and the satellite, respectively. [...] hmm...
+\begin{align}
+	p(\D^{(i)} \given \D_s, \V_s, \tau^{(i)}, \Phi) &= p(\W^{(i)} \given \W_s, \V_s, \tau^{(i)}, \Phi) \times \det{\bf J}^{(i)}\\
+	&= \left(\mathcal{N}(\W^{(i)} \given \W_s, \V_s) \times \det{\bf J}^{(i)}\right)\rvert_{t=\tau^{(i)}}
+\end{align}
+
 %, and the tildes denote a conversion from spherical, heliocentric to cartesian, Galactocentric coordinates. 
 %Thus, 
 %\begin{align}
-%	p(\Phi, \X, \X_s, \bSigma_s, \tau \given \D, \D_s) &= \prod_i p(\Phi, \X^{(i)}, \X_s, \bSigma_s, \tau^{(i)} \given \D^{(i)}, \D_s)\\
+%	p(\Phi, \W, \W_s, \bSigma_s, \tau \given \D, \D_s) &= \prod_i p(\Phi, \W^{(i)}, \W_s, \bSigma_s, \tau^{(i)} \given \D^{(i)}, \D_s)\\
 %	p &= \prod_i p^{(i)}\\
 %	\ln p &= \sum_i \ln p^{(i)}\\
-%	\ln p = \sum_i [\ln\mathcal{N}(\X^{(i)} \given \D^{(i)}, \bsigma^{(i)}) &+ \ln\mathcal{N}(\X_s \given \D_s, \bsigma_s) + \ln\mathcal{N}(\X^{(i)}(\tau^{(i)}) \given \X_s(\tau^{(i)}), \bSigma_s(\tau^{(i)}))]
+%	\ln p = \sum_i [\ln\mathcal{N}(\W^{(i)} \given \D^{(i)}, \bsigma^{(i)}) &+ \ln\mathcal{N}(\W_s \given \D_s, \bsigma_s) + \ln\mathcal{N}(\W^{(i)}(\tau^{(i)}) \given \W_s(\tau^{(i)}), \bSigma_s(\tau^{(i)}))]
 %\end{align}
 
 We first consider the case of a spherical Gaussian progenitor described by a single (time-dependent) spatial scale -- the tidal radius, $r_{\mathrm{tide}}(t)$ -- and a single velocity scale -- the velocity dispersion, $\sigma_\mathrm{v}$, with a \emph{perfectly} observed position. Under these assumptions, the posterior can be written
 \begin{align}
-	p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) &\propto 
-		p(\D^{(i)} \given \X^{(i)}) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)})\\
+	p(\Phi, \W^{(i)}, \tau^{(i)} \given \D^{(i)}) &\propto 
+		p(\D^{(i)} \given \W^{(i)}) p(\W^{(i)} \given \W_s, \bSigma_s, \tau^{(i)})\\
 \end{align}
 and thus the $\ln$-posterior is
 \begin{align}
-	\ln p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) &= \ln p(\D^{(i)} \given \X^{(i)}) + \ln p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}).
+	\ln p(\Phi, \W^{(i)}, \tau^{(i)} \given \D^{(i)}) &= \ln p(\D^{(i)} \given \W^{(i)}) + \ln p(\W^{(i)} \given \W_s, \bSigma_s, \tau^{(i)}).
 \end{align}
 The first term on the RHS -- from the observed positions of the stars	-- can be expanded to read
 \begin{align}
-	\ln p(\D^{(i)} \given \X^{(i)}) &= K - \frac{1}{2}\sum_j \left[ 2\ln\sigma_j + \left(\frac{X^{(i)}_j-D^{(i)}_j}{\sigma^{(i)}_j}\right)^2\right].
+	\ln p(\D^{(i)} \given \W^{(i)}) &= K - \frac{1}{2}\sum_j \left[ 2\ln\sigma_j + \left(\frac{X^{(i)}_j-D^{(i)}_j}{\sigma^{(i)}_j}\right)^2\right].
 \end{align}
 The second term -- quantifying how well the potential ``returns'' the stars to the progenitor -- reads as follows for the case of a spherical progenitor:
 \begin{align}
-	\ln p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}) &= M - \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}\langle \widetilde{\X}-\widetilde{\X}_s, \bSigma_s^{-1}(\widetilde{\X}-\widetilde{\X}_s) \rangle\\
+	\ln p(\W^{(i)} \given \W_s, \bSigma_s, \tau^{(i)}) &= M - \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}\langle \widetilde{\W}-\widetilde{\W}_s, \bSigma_s^{-1}(\widetilde{\W}-\widetilde{\W}_s) \rangle\\
 	&= M - \left[3(\ln r_{\rm tide} + \ln \sigma_v) - \frac{1}{2}\left( \frac{({\boldsymbol r}^{(i)}-{\boldsymbol r}_s)^2}{r_{\rm tide}^2} + \frac{ ({\boldsymbol v}^{(i)}-{\boldsymbol v}_s)^2}{\sigma_v^2} \right)\right]_{t=\tau^{(i)}}\label{eq:ln_like}
 \end{align}
-where $\boldsymbol r$,$\boldsymbol v$ are the (cartesian) positions and velocities integrated \emph{backwards} in potential $\Phi$ from their present-day positions $\widetilde{\X}$. The whole expression Eq.~\ref{eq:ln_like} is evaluated at the time unbound, $\tau^{(i)}$.
+where $\boldsymbol r$,$\boldsymbol v$ are the (cartesian) positions and velocities integrated \emph{backwards} in potential $\Phi$ from their present-day positions $\widetilde{\W}$. The whole expression Eq.~\ref{eq:ln_like} is evaluated at the time unbound, $\tau^{(i)}$.
 
 %\begin{align}
 %	= K - \frac{1}{2}\sum_j \left[ 2\ln\sigma_j + \left(\frac{X^{(i)}_j-D^{(i)}_j}{\sigma^{(i)}_j}\right)^2\right]&\notag \\
-%	- \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}&\langle \X-\X_s, \bSigma_s^{-1}(\X-\X_s) \rangle\\
+%	- \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}&\langle \W-\W_s, \bSigma_s^{-1}(\W-\W_s) \rangle\\
 %	= K - \frac{1}{2}\sum_j \left[ 2\ln\sigma_j + \left(\frac{X^{(i)}_j-D^{(i)}_j}{\sigma^{(i)}_j}\right)^2\right]&\notag \\
-%	- \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}&\langle \X-\X_s, \bSigma_s^{-1}(\X-\X_s) \rangle
+%	- \frac{1}{2}\ln(\left\vert\bSigma_s(\tau^{(i)})\right\vert) - \frac{1}{2}&\langle \W-\W_s, \bSigma_s^{-1}(\W-\W_s) \rangle
 %\end{align}
 
 \section{Marginalize over $\tau$}
 \begin{align}
-	p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) &\propto 
-		p(\D^{(i)} \given \X^{(i)}) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)})\\
-	p(\Phi, \X^{(i)} \given \D^{(i)}) &= \int p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) p(\tau^{(i)}) d\tau^{(i)}
+	p(\Phi, \W^{(i)}, \tau^{(i)} \given \D^{(i)}) &\propto 
+		p(\D^{(i)} \given \W^{(i)}) p(\W^{(i)} \given \W_s, \bSigma_s, \tau^{(i)})\\
+	p(\Phi, \W^{(i)} \given \D^{(i)}) &= \int p(\Phi, \W^{(i)}, \tau^{(i)} \given \D^{(i)}) p(\tau^{(i)}) d\tau^{(i)}
 \end{align}	
 \begin{align}
-	p(\Phi, \X^{(i)} \given \D^{(i)}) &\propto p(\D^{(i)} \given \X^{(i)}) \int p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}) p(\tau^{(i)}) d\tau^{(i)}\\
-	&\propto p(\D^{(i)} \given \X^{(i)}) \sum_j p(\X^{(i)} \given \X_s, \bSigma_s)|_{\tau^{(i)}_j} \Delta t
+	p(\Phi, \W^{(i)} \given \D^{(i)}) &\propto p(\D^{(i)} \given \W^{(i)}) \int p(\W^{(i)} \given \W_s, \bSigma_s, \tau^{(i)}) p(\tau^{(i)}) d\tau^{(i)}\\
+	&\propto p(\D^{(i)} \given \W^{(i)}) \sum_j p(\W^{(i)} \given \W_s, \bSigma_s)|_{\tau^{(i)}_j} \Delta t
 \end{align}
 \begin{align}
-	\ln p^{(i)} &\propto \ln p(\D^{(i)} \given \X^{(i)}) + \ln \sum_j p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}_j) \Delta t\\
-	&\propto \ln p(\D^{(i)} \given \X^{(i)}) + \ln \sum_j \mathcal{N}(\X^{(i)}( \tau^{(i)}_j) \given \X_s( \tau^{(i)}_j), \bSigma_s( \tau^{(i)}_j)) \Delta t\\
+	\ln p^{(i)} &\propto \ln p(\D^{(i)} \given \W^{(i)}) + \ln \sum_j p(\W^{(i)} \given \W_s, \bSigma_s, \tau^{(i)}_j) \Delta t\\
+	&\propto \ln p(\D^{(i)} \given \W^{(i)}) + \ln \sum_j \mathcal{N}(\W^{(i)}( \tau^{(i)}_j) \given \W_s( \tau^{(i)}_j), \bSigma_s( \tau^{(i)}_j)) \Delta t\\
 \end{align}
 
 
