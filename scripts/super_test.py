@@ -56,15 +56,15 @@ default_config = dict(
     niter=25,
     nsteps_per_iter=500,
     nsteps_final=2000,
-    nparticles=8,
+    nparticles=16,
     nwalkers=1024,
     potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
     infer_particles=True,
     infer_satellite=False,
-    name="infer_potential_8stars",
+    name="infer_potential",
     plot_walkers=False,
-    test=False
+    test=True
 )
 
 def jacobian(hel):
@@ -134,19 +134,26 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     t_idx = np.array([np.argmin(np.fabs(times - t)) for t in tub])
 
     ##############################################
-    sat_var = np.zeros((len(times),6))
-    sat_var[:,:3] = potential._tidal_radius(2.5e8, s_orbit[...,:3])*1.26
-    sat_var[:,3:] += 0.017198632325
-    cov = sat_var**2
-
-    Sigma = np.array([cov[jj] for jj in t_idx])
     p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     s_x = np.array([s_orbit[jj,0] for jj in t_idx])
 
-    log_p_x_given_phi = -0.5*np.sum(2*np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
+    # r_tide = potential._tidal_radius(2.5e8, s_x)
+    r_tide = potential._tidal_radius(2.5e8, s_orbit[...,:3]) * 1.7
+    v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
+
+    sat_var = np.zeros((len(times),6))
+    sat_var[:,:3] = r_tide #potential._tidal_radius(2.5e8, s_orbit[...,:3])*1.7
+    sat_var[:,3:] += v_esc # 0.017198632325
+    cov = sat_var**2
+
+    Sigma = np.array([cov[jj] for jj in t_idx])
+
+    log_p_x_given_phi = -0.5*np.sum(np.log(Sigma) + (p_x-s_x)**2/Sigma, axis=1)
+
     p_x_hel = _gc_to_hel(p_x)
     J = jacobian(p_x_hel).T
     jac = np.array([np.linalg.slogdet(np.linalg.inv(jj))[1] for jj in J])
+    #jac = np.array([np.linalg.slogdet(jj)[1] for jj in J])
 
     return np.sum(log_p_x_given_phi + jac)
     ##############################################
@@ -368,7 +375,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
                 c["potential_params"], None, c["nparticles"])
 
         # # test potential
-        vals = np.linspace(0.9, 1.1, 25)
+        vals = np.linspace(0.95, 1.05, 50)
         for ii,p_name in enumerate(c["potential_params"]):
             pp = potential.parameters[p_name]
             Ls = []
@@ -383,7 +390,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
                 Ls.append(ll)
 
             plt.clf()
-            plt.plot(vals*pp._truth, np.exp(Ls))
+            plt.plot(vals*pp._truth, np.exp(Ls-max(Ls)))
             plt.axvline(pp._truth)
             plt.ylabel("Posterior")
             plt.savefig(os.path.join(path, "potential_{}.png".format(p_name)))
@@ -393,6 +400,8 @@ def main(c, mpi=False, threads=None, overwrite=False):
             plt.axvline(pp._truth)
             plt.ylabel("Log Posterior")
             plt.savefig(os.path.join(path, "log_potential_{}.png".format(p_name)))
+
+        sys.exit(0)
 
         # test tub
         tubs = np.linspace(0.,6200,25)
