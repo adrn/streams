@@ -56,7 +56,7 @@ default_config = dict(
     niter=10,
     nsteps_per_iter=1000,
     nsteps_final=2000,
-    nparticles=32,
+    nparticles=8,
     nwalkers=1024,
     potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
@@ -64,10 +64,10 @@ default_config = dict(
     infer_satellite=False,
     name="infer_potential",
     plot_walkers=False,
-    test=False
+    test=True
 )
 
-def jacobian(hel):
+def xyz_sph_jac(hel):
     l,b,d,mul,mub,vr = hel.T
     cosl, sinl = np.cos(l), np.sin(l)
     cosb, sinb = np.cos(b), np.sin(b)
@@ -112,7 +112,26 @@ def jacobian(hel):
     row5[4] = -d*cosb
     row5[5] = sinb
 
-    return np.array([row0, row1, row2, row3, row4, row5])
+    return np.array([row0, row1, row2, row3, row4, row5]).T
+
+def lnRV_xyz_jac(gc):
+    """ RELATIVE TO SATELLITE gc coords """
+
+    x,y,z,vx,vy,vz = gc.T
+    nparticles = len(x)
+
+    r_sq = x**2 + y**2 + z**2
+    v_sq = vx**2 + vy**2 + vz**2
+
+    J = np.zeros((nparticles,6,6))
+    J[:,0,0] = x/r_sq
+    J[:,1,0] = y/r_sq
+    J[:,2,0] = z/r_sq
+    J[:,3,1] = vx/v_sq
+    J[:,4,1] = vy/v_sq
+    J[:,5,1] = vz/v_sq
+
+    return J
 
 def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
 
@@ -159,12 +178,18 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     # New Gaussian shell idea:
     p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+    rel_x = p_x-s_x
+
+    p_x_hel = _gc_to_hel(p_x)
+    J1 = xyz_sph_jac(p_x_hel)
+    jac1 = np.array([np.linalg.slogdet(np.linalg.inv(j))[1] for j in J1])
+    #J2 = lnRV_xyz_jac(rel_x)
+    #jac2 = np.array([np.linalg.slogdet(np.linalg.inv(j))[1] for j in J2])
 
     r_tide = potential._tidal_radius(2.5e8, s_x)
     v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
     v_disp = 0.017198632325
 
-    rel_x = p_x-s_x
     R = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
     V = np.sqrt(np.sum(rel_x[...,3:]**2, axis=-1))
     lnR = np.log(R)
@@ -193,7 +218,7 @@ def ln_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     # print(v_term)
     #sys.exit(0)
 
-    return np.sum(r_term + v_term)
+    return np.sum(r_term + v_term) + np.sum(jac1)
 
 def ln_data_likelihood(x, D, sigma):
     log_p_D_given_x = -0.5*np.sum(2.*np.log(sigma) + (x-D)**2/sigma**2, axis=-1)
@@ -421,47 +446,47 @@ def main(c, mpi=False, threads=None, overwrite=False):
         sys.exit(0)
 
         # test tub
-        tubs = np.linspace(0.,6200,25)
-        for ii in range(c["nparticles"]):
-            Ls = []
-            Ps = []
-            for tub in tubs:
-                this_tub = true_tub.copy()
-                this_tub[ii] = tub
-                ll = ln_likelihood(t1, t2, dt, potential,
-                                   observed_particles_hel, observed_satellite_hel,
-                                   this_tub)
-                Ls.append(ll)
+        # tubs = np.linspace(0.,6200,25)
+        # for ii in range(c["nparticles"]):
+        #     Ls = []
+        #     Ps = []
+        #     for tub in tubs:
+        #         this_tub = true_tub.copy()
+        #         this_tub[ii] = tub
+        #         ll = ln_likelihood(t1, t2, dt, potential,
+        #                            observed_particles_hel, observed_satellite_hel,
+        #                            this_tub)
+        #         Ls.append(ll)
 
-                p = true_p.copy()
-                p[Npp+ii] = tub
-                lp = ln_posterior(p, *args)
-                Ps.append(lp)
+        #         p = true_p.copy()
+        #         p[Npp+ii] = tub
+        #         lp = ln_posterior(p, *args)
+        #         Ps.append(lp)
 
-            plt.clf()
-            plt.subplot(211)
-            plt.plot(tubs, np.exp(Ls))
-            plt.axvline(true_tub[ii])
-            plt.ylabel("Likelihood")
+        #     plt.clf()
+        #     plt.subplot(211)
+        #     plt.plot(tubs, np.exp(Ls))
+        #     plt.axvline(true_tub[ii])
+        #     plt.ylabel("Likelihood")
 
-            plt.subplot(212)
-            plt.plot(tubs, np.exp(Ps))
-            plt.axvline(true_tub[ii])
-            plt.ylabel("Posterior")
-            plt.savefig(os.path.join(path, "particle{}_tub.png".format(ii)))
+        #     plt.subplot(212)
+        #     plt.plot(tubs, np.exp(Ps))
+        #     plt.axvline(true_tub[ii])
+        #     plt.ylabel("Posterior")
+        #     plt.savefig(os.path.join(path, "particle{}_tub.png".format(ii)))
 
 
-            plt.clf()
-            plt.subplot(211)
-            plt.plot(tubs, Ls)
-            plt.axvline(true_tub[ii])
-            plt.ylabel("Likelihood")
+        #     plt.clf()
+        #     plt.subplot(211)
+        #     plt.plot(tubs, Ls)
+        #     plt.axvline(true_tub[ii])
+        #     plt.ylabel("Likelihood")
 
-            plt.subplot(212)
-            plt.plot(tubs, Ps)
-            plt.axvline(true_tub[ii])
-            plt.ylabel("Posterior")
-            plt.savefig(os.path.join(path, "log_particle{}_tub.png".format(ii)))
+        #     plt.subplot(212)
+        #     plt.plot(tubs, Ps)
+        #     plt.axvline(true_tub[ii])
+        #     plt.ylabel("Posterior")
+        #     plt.savefig(os.path.join(path, "log_particle{}_tub.png".format(ii)))
 
         #sys.exit(0)
 
