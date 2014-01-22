@@ -53,8 +53,8 @@ hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
 default_config = dict(
     save_path="/tmp/",
     nburn=1000,
-    niter=5,
-    nsteps_per_iter=500,
+    niter=10,
+    nsteps_per_iter=1000,
     nsteps_final=2000,
     nparticles=32,
     nwalkers=1024,
@@ -562,7 +562,7 @@ def main(c, mpi=False, threads=None, overwrite=False):
         ### HACK TO INITIALIZE WALKERS NEAR true tub!
         for ii in range(c["nparticles"]):
             jj = ii + len(c["potential_params"])
-            p0[:,jj] = np.random.normal(true_tub[ii], 100., size=c["nwalkers"])
+            p0[:,jj] = np.random.normal(true_tub[ii], 1000., size=c["nwalkers"])
 
         # jj = c["nparticles"] + len(c["potential_params"])
         # for ii in range(c["nwalkers"]):
