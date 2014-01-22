@@ -64,7 +64,7 @@ default_config = dict(
     infer_satellite=False,
     name="infer_potential",
     plot_walkers=False,
-    test=True
+    test=False
 )
 
 def jacobian(hel):
