@@ -231,7 +231,25 @@ def main(config_file, mpi, threads, overwrite):
     else:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
 
+    pool.close() if hasattr(pool, 'close') else None
+
     return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     if pool is not None:
@@ -485,4 +503,5 @@ if __name__ == "__main__":
         raise
         sys.exit(1)
 
+    pool.close() if hasattr(pool, 'close') else None
     sys.exit(0)
