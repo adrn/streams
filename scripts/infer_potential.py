@@ -76,7 +76,20 @@ def main(config_file, mpi, threads, overwrite):
     logger.debug("Reading particle/satellite data from:\n\t{}".format(data_file))
     d = io.read_hdf5(data_file, nparticles=config.get('nparticles', None))
     nparticles = d['true_particles'].nparticles
-    logger.debug("Running with {} particles.".format(nparticles))
+    logger.info("Running with {} particles.".format(nparticles))
+
+    # integration stuff
+    t1 = float(d["t1"])
+    t2 = float(d["t2"])
+    dt = -1.
+
+    # get the potential object specified from the potential subpackage
+    Potential = getattr(sp, config["potential"]["class_name"])
+    potential = Potential()
+    logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
+
+    # Define the empty model to add parameters to
+    model = si.StreamModel(potential, lnpargs=(t1,t2,dt))
 
     return
 
