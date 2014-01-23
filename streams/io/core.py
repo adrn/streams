@@ -63,7 +63,7 @@ def read_hdf5(h5file, nparticles=None):
             true_p = Particle(ptcl["true_data"].value[:nparticles].T,
                               frame=heliocentric,
                               units=[u.Unit(x) for x in ptcl["units"]])
-            true_p.tub = true_tub
+            true_p.tub = true_tub[:nparticles]
             return_dict["true_particles"] = true_p
         else:
             p = Particle(ptcl["data"].value.T,
