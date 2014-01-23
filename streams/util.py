@@ -22,12 +22,6 @@ from astropy.utils.misc import isiterable
 import astropy.units as u
 import numpy as np
 
-try:
-    from emcee.utils import MPIPool
-except ImportError:
-    color_print("Failed to import MPIPool from emcee! MPI functionality "
-                "won't work.", "yellow")
-
 __all__ = ["_validate_coord", "project_root", "u_galactic", "make_path"]
 
 # Create logger
@@ -125,6 +119,12 @@ def get_pool(mpi=False, threads=None):
             If mpi is False and threads is specified, use a Python
             multiprocessing pool with the specified number of threads.
     """
+    try:
+        from emcee.utils import MPIPool
+    except ImportError:
+        color_print("Failed to import MPIPool from emcee! MPI functionality "
+                    "won't work.", "yellow")
+
     # This needs to go here so I don't read in the particle file N times!!
     # get a pool object given the configuration parameters
     if mpi:
