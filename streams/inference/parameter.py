@@ -44,9 +44,12 @@ class ModelParameter(u.Quantity):
         self.truth = truth
         self.name = str(name)
 
-        print(name, prior, value)
-
         return self
+
+    def copy(self):
+        """ Return a copy of this `ModelParameter` instance """
+        return ModelParameter(name=self.name, value=self.value*self.unit,
+                              prior=self._prior, truth=self.truth)
 
     def prior(self, value):
         """ """
@@ -63,3 +66,19 @@ class ModelParameter(u.Quantity):
             return np.array([p.sample(size=size) for p in self._prior]).T
         else:
             return self._prior.sample(size=size)
+
+    def __reduce__(self):
+        # patch to pickle ModelParameter objects (ndarray subclasses),
+        # see http://www.mail-archive.com/numpy-discussion@scipy.org/msg02446.html
+
+        object_state = list(super(ModelParameter, self).__reduce__())
+        object_state[2] = (object_state[2], self.__dict__)
+        return tuple(object_state)
+
+    def __setstate__(self, state):
+        # patch to unpickle ModelParameter objects (ndarray subclasses),
+        # see http://www.mail-archive.com/numpy-discussion@scipy.org/msg02446.html
+
+        nd_state, own_state = state
+        super(ModelParameter, self).__setstate__(nd_state)
+        self.__dict__.update(own_state)
