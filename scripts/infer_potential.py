@@ -75,7 +75,10 @@ def main(config_file, mpi, threads, overwrite):
     data_file = os.path.join(data_path, config['data_file'])
     logger.debug("Reading particle/satellite data from:\n\t{}".format(data_file))
     d = io.read_hdf5(data_file, nparticles=config.get('nparticles', None))
-    nparticles = d['true_particles'].nparticles
+
+    true_particles = d['true_particles']
+    true_satellite = d['true_satellite']
+    nparticles = true_particles.nparticles
     logger.info("Running with {} particles.".format(nparticles))
 
     # integration stuff
@@ -102,6 +105,48 @@ def main(config_file, mpi, threads, overwrite):
                                    _parse_quantity(b).decompose(usys).value)
         p = si.ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
         model.add_parameter('potential', p)
+
+    # Particle parameters
+    try:
+        particle_parameters = config['particles']['parameters']
+    except KeyError:
+        particle_parameters = None
+
+    if particle_parameters is not None:
+        particles = d['particles']
+
+        logger.debug("Particle properties added as parameters:")
+        if config['particles']['parameters'].has_key('_X'):
+            priors = [si.LogNormalPrior(particles._X[ii],particles._error_X[ii])
+                        for ii in range(nparticles)]
+            X = si.ModelParameter('_X', value=particles._X, prior=priors,
+                                  truth=true_particles._X)
+            model.add_parameter('particles', X)
+            logger.debug("\t\t_X - particle 6D positions today")
+
+        if config['particles']['parameters'].has_key('tub'):
+            priors = [si.LogUniformPrior(t2, t1) for ii in range(nparticles)]
+            tub = si.ModelParameter('tub', value=np.zeros(nparticles), prior=priors,
+                                    truth=true_particles.tub)
+            model.add_parameter('particles', tub)
+            logger.debug("\t\ttub - unbinding time of particles")
+
+    # Satellite parameters
+    try:
+        satellite_parameters = config['satellite']['parameters']
+    except KeyError:
+        satellite_parameters = None
+
+    if satellite_parameters is not None:
+        satellite = d['satellite']
+
+        logger.debug("Satellite properties added as parameters:")
+        if satellite_parameters.has_key('_X'):
+            priors = [si.LogNormalPrior(satellite._X[0],satellite._error_X[0])]
+            s_X = si.ModelParameter('_X', value=satellite._X, prior=priors,
+                                    truth=true_satellite._X)
+            model.add_parameter('satellite', s_X)
+            logger.debug("\t\t_X - satellite 6D position today")
 
     return
 
