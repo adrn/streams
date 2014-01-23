@@ -92,7 +92,9 @@ def main(config_file, mpi, threads, overwrite):
     logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
 
     # Define the empty model to add parameters to
-    model = si.StreamModel(potential, lnpargs=(t1,t2,dt))
+    model = si.StreamModel(potential, lnpargs=(t1,t2,dt),
+                           true_satellite=true_satellite,
+                           true_particles=true_particles)
 
     # Potential parameters
     potential_params = config["potential"].get("parameters", dict())
@@ -147,6 +149,15 @@ def main(config_file, mpi, threads, overwrite):
                                     truth=true_satellite._X)
             model.add_parameter('satellite', s_X)
             logger.debug("\t\t_X - satellite 6D position today")
+
+    # make sure true posterior value is higher than any randomly sampled value
+    logger.debug("Checking posterior values...")
+    true_ln_p = model.ln_posterior(model.truths, t1, t2, dt)
+    logger.debug("\t\t At truth: {}".format(true_ln_p))
+    p0 = model.sample_priors()
+    ln_p = model.ln_posterior(p0, t1, t2, dt)
+    logger.debug("\t\t At random sample: {}".format(ln_p))
+    assert true_ln_p > ln_p
 
     return
 
