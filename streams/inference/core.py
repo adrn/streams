@@ -12,17 +12,20 @@ import logging
 from collections import OrderedDict
 
 # Third-party
-import emcee
+from emcee import EnsembleSampler
 import numpy as np
 import astropy.units as u
 
-__all__ = ["StreamModel"]
+# Project
+from .back_integrate import back_integration_likelihood
+
+__all__ = ["StreamModel", "StreamModelSampler"]
 
 logger = logging.getLogger(__name__)
 
 class StreamModel(object):
 
-    def __init__(self, potential):
+    def __init__(self, potential, lnpargs=()):
         """
 
             Parameters
@@ -38,6 +41,8 @@ class StreamModel(object):
         self.parameters['particles'] = OrderedDict()
         self.parameters['satellite'] = OrderedDict()
         self.nparameters = 0
+
+        self.lnpargs = lnpargs
 
     def add_parameter(self, parameter_group, parameter):
         """ """
@@ -135,8 +140,18 @@ class StreamModel(object):
 
         return ln_like + np.sum(ln_prior)
 
-    def __call__(self, p, *args):
-        return self.ln_posterior(p, *args)
+    def __call__(self, p):
+        return self.ln_posterior(p, *self.lnpargs)
 
-    def run(self, Nsteps):
-        pass
+class StreamModelSampler(EnsembleSampler):
+
+    def __init__(self, model, nwalkers=None, pool=None):
+        """ """
+
+        if nwalkers is None:
+            nwalkers = model.nparameters*2 + 2
+
+        super(StreamModelSampler, self).__init__(nwalkers, model.nparameters, model,
+                                                 pool=pool)
+
+    #def
