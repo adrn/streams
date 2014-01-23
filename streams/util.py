@@ -81,32 +81,6 @@ def print_options(*args, **kwargs):
     yield
     np.set_printoptions(**original)
 
-def make_path(output_data_path, name=None, overwrite=False):
-    """ Make or return path for saving plots and sampler data files.
-
-        Parameters
-        ----------
-        output_data_path : str
-        name : str (optional)
-        overwrite : bool (optional)
-    """
-
-    if name is None:
-        iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        logger.debug("Name not specified, using current time...")
-        name = iso_now
-
-    path = os.path.join(output_data_path, name)
-    logger.debug("Output path: '{}'".format(path))
-
-    if os.path.exists(path) and overwrite:
-        shutil.rmtree(path)
-
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-    return path
-
 def get_pool(mpi=False, threads=None):
     """ Get a pool object to pass to emcee for parallel processing.
         If mpi is False and threads is None, pool is None.
