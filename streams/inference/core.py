@@ -9,18 +9,12 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import logging
+from collections import OrderedDict
 
 # Third-party
 import emcee
 import numpy as np
 import astropy.units as u
-
-from ..coordinates.frame import galactocentric
-from ..dynamics import Particle, ObservedParticle
-from ..integrate import ParticleIntegrator
-from .parameter import *
-from .prior import *
-from ..util import get_memory_usage
 
 __all__ = ["StreamModel"]
 
@@ -28,134 +22,121 @@ logger = logging.getLogger(__name__)
 
 class StreamModel(object):
 
-    def __init__(self, potential, satellite, particles,
-                 parameters=[]):
-        """ ...
+    def __init__(self, potential):
+        """
 
             Parameters
             ----------
-            ...
+            Potential : streams.Potential
+                The potential to fit.
         """
+        self._potential_class = potential.__class__
+        self._given_potential_params = potential.parameters.copy()
 
-        self.potential = potential
-        self.satellite = satellite
-        self.particles = particles
-        self.parameters = parameters
+        self.parameters = OrderedDict()
+        self.parameters['potential'] = OrderedDict()
+        self.parameters['particles'] = OrderedDict()
+        self.parameters['satellite'] = OrderedDict()
+        self.nparameters = 0
 
-        self.acc = np.zeros((particles.nparticles+1,3))
+    def add_parameter(self, parameter_group, parameter):
+        """ """
 
-    def __call__(self, p, *args):
-        self.vector = np.array(p)
-        return self.ln_posterior(*args)
+        # TODO: need a ModelParameter object -- needs to have a .size, .shape
+        if not self.parameters.has_key(parameter_group):
+            # currently only supports pre-specified parameter groups
+            raise KeyError("Invalid parameter group '{}'".format(parameter_group))
+
+        self.parameters[parameter_group][parameter.name] = parameter.copy()
+        self.nparameters += parameter.size
 
     @property
-    def ndim(self):
-        return len(self.sample())
+    def truths(self):
+        """ """
+        true_p = np.array([])
+        for group_name,group in self.parameters.items():
+            for param_name,param in group.items():
+                t = param.truth
+                if t is None:
+                    t = [None]*param.size
+                true_p = np.append(true_p, np.ravel(t))
 
-    @property
-    def vector(self):
-        return np.concatenate(map(np.ravel,
-                                  [p.get() for p in self.parameters]))
+        return true_p
 
-    @vector.setter
-    def vector(self, values):
-        ind = 0
-        for p in self.parameters:
-            if len(p):
-                p.set(values[ind:ind+len(p)])
-                ind += len(p)
-            else:
-                p.set(values[ind])
-                ind += 1
+    def sample_priors(self, size=None):
+        """ """
 
-    def sample(self, size=None):
-        if size is None:
-            return np.hstack([np.ravel(p.sample()) for p in self.parameters])
+        sz = size if size is not None else 1
+        p0 = np.zeros((sz, self.nparameters))
+        for ii in range(sz):
+            ix1 = 0
+            for group_name,group in self.parameters.items():
+                for param_name,param in group.items():
+                    p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
+                    ix1 += param.size
 
-        for ii in range(size):
-            x = np.hstack([np.ravel(p.sample()) for p in self.parameters])
-            try:
-                d[ii] = x
-            except NameError:
-                d = np.zeros((size,) + x.shape)
-                d[ii] = x
+        return np.squeeze(p0)
+
+    def _decompose_vector(self, p):
+        """ """
+        d = OrderedDict()
+
+        ix1 = 0
+        for group_name,group in self.parameters.items():
+            for param_name,param in group.items():
+                try:
+                    d[group_name][param_name] = p[ix1:ix1+param.size]
+                except:
+                    d[group_name] = OrderedDict()
+                    d[group_name][param_name] = p[ix1:ix1+param.size]
+
+                if d[group_name][param_name].size > 1:
+                    d[group_name][param_name] = d[group_name][param_name].reshape(param.shape)
+                else:
+                    d[group_name][param_name] = np.squeeze(d[group_name][param_name])
+
+                ix1 += param.size
 
         return d
 
-    def ln_prior(self):
-        ppar = np.concatenate([np.atleast_1d(p.ln_prior())\
-                               for p in self.parameters])
-        if not np.all(np.isfinite(ppar)):
+    def ln_posterior(self, p, *args):
+        """ """
+
+        t1, t2, dt = args
+
+        # TODO: placeholder
+        derp = self._decompose_vector(p)
+
+        ln_prior = 0.
+        for group_name,group in self.parameters.items():
+            for param_name,param in group.items():
+                lp = param.prior(derp[group_name][param_name])
+                ln_prior += lp
+
+        # short-circuit if any prior value is -infinity
+        if np.any(np.isinf(ln_prior)):
             return -np.inf
 
-        return np.sum(ppar)
+        # get potential
+        pparams = self._given_potential_params.copy()
+        for k,v in derp['potential'].items():
+            pparams[k] = v
 
-    def ln_likelihood(self, *args):
-        """ This is a simplified version of the likelihood laid out by Hogg in
-            Bread and Butter (https://github.com/davidwhogg/BreadAndButter/).
-            The stars are assumed to come from a Gaussian progenitor,
-            described by just two scales -- the tidal radius and
-            velocity dispersion.
-        """
+        # heliocentric particle positions and unbinding times
+        p_hel = derp['particles']['_X']
+        tub = derp['particles']['tub']
 
-        t1,t2,dt = args
+        # heliocentric satellite position
+        s_hel = derp['satellite']['_X']
 
-        # The true positions/velocities of the particles are parameters
-        Nparticles = self.particles.nparticles
+        potential = self._potential_class(**pparams)
+        ln_like = back_integration_likelihood(t1, t2, dt, potential,
+                                              p_hel, s_hel, tub)
 
-        particles_gc = self.particles.to_frame(galactocentric)
-        satellite_gc = self.satellite.to_frame(galactocentric)
+        return ln_like + np.sum(ln_prior)
 
-        pi = ParticleIntegrator((particles_gc,satellite_gc),
-                                self.potential,
-                                args=(Nparticles+1, self.acc))
-        particle_orbit,satellite_orbit = pi.run(t1=t1, t2=t2, dt=dt)
+    def __call__(self, p, *args):
+        return self.ln_posterior(p, *args)
 
-        # These are the unbinding time indices for each particle
-        t_idx = np.array([np.argmin(np.fabs(satellite_orbit.t.value - tub)) \
-                             for tub in self.particles.tub])
-
-        Ntimesteps  = len(particle_orbit.t)
-
-        sat_var = np.zeros((Ntimesteps,6))
-        sat_var[:,:3] = self.potential._tidal_radius(self.satellite.m,
-                                            satellite_orbit._X[...,:3])*1.26
-        sat_var[:,3:] += self.satellite.v_disp
-        cov = sat_var**2
-
-        Sigma = np.array([cov[jj] for ii,jj in enumerate(t_idx)])
-        p_x = np.array([particle_orbit._X[jj,ii] \
-                            for ii,jj in enumerate(t_idx)])
-        s_x = np.array([satellite_orbit._X[jj,0] \
-                            for ii,jj in enumerate(t_idx)])
-
-        # log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) + \
-        #                         (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
-        # return np.sum(log_p_x_given_phi)
-
-        log_p_x_given_phi = -0.5*np.sum(np.log(Sigma), axis=1) - \
-                             0.5*np.sum((p_x-s_x)**2/Sigma, axis=1)*abs(dt)
-
-        return np.sum(log_p_x_given_phi)
-
-        # if self.obs_data is not None:
-        #     log_p_D_given_x = -0.5*np.sum(-2.*np.log(self.obs_error)\
-        #                 + (hel-self.obs_data)**2/self.obs_error**2)
-        # else:
-        #     log_p_D_given_x = 0.
-
-        # if self.obs_data_sat is not None:
-        #     log_p_D_given_x_sat = -0.5*np.sum(-2.*np.log(self.obs_error_sat)\
-        #             + (hel_sat-self.obs_data_sat)**2/self.obs_error_sat**2)
-        # else:
-        #     log_p_D_given_x_sat = 0.
-
-    def ln_posterior(self, *args):
-        lp = self.ln_prior()
-        if not np.isfinite(lp):
-            return -np.inf
-
-        ll = self.ln_likelihood(*args)
-        if not np.isfinite(ll):
-            return -np.inf
-        return lp + ll
+    def run(self, Nsteps):
+        pass
