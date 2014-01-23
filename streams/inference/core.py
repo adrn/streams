@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 
 class StreamModel(object):
 
-    def __init__(self, potential, lnpargs=()):
+    def __init__(self, potential, lnpargs=(),
+                 true_satellite=None, true_particles=None):
         """
 
             Parameters
@@ -43,6 +44,9 @@ class StreamModel(object):
         self.nparameters = 0
 
         self.lnpargs = lnpargs
+
+        self.true_satellite = true_satellite
+        self.true_particles = true_particles
 
     def add_parameter(self, parameter_group, parameter):
         """ """
@@ -128,11 +132,21 @@ class StreamModel(object):
             pparams[k] = v
 
         # heliocentric particle positions and unbinding times
-        p_hel = derp['particles']['_X']
-        tub = derp['particles']['tub']
+        try:
+            p_hel = derp['particles']['_X']
+        except KeyError:
+            p_hel = self.true_particles._X
+
+        try:
+            tub = derp['particles']['tub']
+        except KeyError:
+            tub = self.true_particles.tub
 
         # heliocentric satellite position
-        s_hel = derp['satellite']['_X']
+        try:
+            s_hel = derp['satellite']['_X']
+        except KeyError:
+            s_hel = self.true_satellite._X
 
         potential = self._potential_class(**pparams)
         ln_like = back_integration_likelihood(t1, t2, dt, potential,
