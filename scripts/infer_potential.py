@@ -1,4 +1,3 @@
-#!/vega/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
 """ Script for using the Rewinder to infer the Galactic host potential """
@@ -9,40 +8,21 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import time
-import gc
-import copy
 import logging
-import multiprocessing
+import shutil
 
 # Third-party
 import astropy.units as u
-from astropy.utils.console import color_print
-import emcee
-import h5py
-import matplotlib.pyplot as plt
 import numpy as np
-np.seterr(all="ignore")
-import scipy
-scipy.seterr(all="ignore")
-import triangle
 import yaml
-
-try:
-    from emcee.utils import MPIPool
-except ImportError:
-    color_print("Failed to import MPIPool from emcee! MPI functionality "
-                "won't work.", "yellow")
 
 # Project
 from streams import usys
-from streams.coordinates.frame import heliocentric, galactocentric
-from streams.dynamics import Particle, Orbit, ObservedParticle
-from streams.inference import *
+from streams.dynamics import ObservedParticle, Particle
 import streams.io as io
-from streams.observation.gaia import gaia_spitzer_errors
-import streams.potential as s_potential
-from streams.util import _parse_quantity, make_path, print_options
+import streams.inference as si
+import streams.potential as sp
+from streams.util import get_pool
 
 global pool
 pool = None
@@ -50,83 +30,107 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def get_pool(mpi=False, threads=None):
-    """ Get a pool object to pass to emcee for parallel processing.
-        If mpi is False and threads is None, pool is None.
+def make_path(path, overwrite=False):
+    """ """
+    if os.path.exists(path) and overwrite:
+        shutil.rmtree(path)
 
-        Parameters
-        ----------
-        mpi : bool
-            Use MPI or not. If specified, ignores the threads kwarg.
-        threads : int (optional)
-            If mpi is False and threads is specified, use a Python
-            multiprocessing pool with the specified number of threads.
-    """
-    # This needs to go here so I don't read in the particle file N times!!
-    # get a pool object given the configuration parameters
-    if mpi:
-        # Initialize the MPI pool
-        pool = MPIPool()
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-        # Make sure the thread we're running on is the master
-        if not pool.is_master():
-            pool.wait()
-            sys.exit(0)
-        logger.debug("Running with MPI...")
-
-    elif threads > 1:
-        logger.debug("Running with multiprocessing on {} cores..."\
-                    .format(threads))
-        pool = multiprocessing.Pool(threads)
-
-    else:
-        logger.debug("Running serial...")
-        pool = None
-
-    return pool
-
-def infer_potential(model, Nsteps, Nburn_in=None, Nwalkers='auto',
-                    args=(), pool=None):
-        """ TODO: """
-
-        if str(Nwalkers).lower() == "auto":
-            Nwalkers = model.ndim*4
-        logger.debug("{} walkers".format(Nwalkers))
-
-        if Nburn_in is None:
-            Nburn_in = Nsteps // 10
-
-        # sample starting points for the walkers from the prior
-        p0 = model.sample(size=Nwalkers)
-
-        logger.debug("Initializing sampler...")
-        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
-                                        pool=pool, args=args)
-
-        if Nburn_in > 0:
-            logger.info("Burning in sampler for {} steps...".format(Nburn_in))
-            pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
-            sampler.reset()
-        else:
-            pos = p0
-
-        logger.info("Running sampler for {} steps...".format(Nsteps))
-        a = time.time()
-        pos, prob, state = sampler.run_mcmc(pos, Nsteps)
-        t = time.time() - a
-        logger.debug("Spent {} seconds on sampler...".format(t))
-
-        sampler.p0 = p0
-        return sampler
-
-def main(config_file, mpi=False, threads=None, overwrite=False):
+def main(config_file, mpi, threads, overwrite):
     """ TODO: """
 
+    # get a pool object given the configuration parameters
+    # -- This needs to go here so I don't read in the particle file for each thread. --
     pool = get_pool(mpi=mpi, threads=threads)
+
+    # get path to streams project
+    streams_path = None
+    if os.environ.has_key('STREAMSPATH'):
+        streams_path = os.environ["STREAMSPATH"]
 
     # read in configurable parameters
     with open(config_file) as f:
         config = yaml.load(f.read())
+
+    if config.has_key('streams_path'):
+        streams_path = config['streams_path']
+
+    if streams_path is None:
+        raise IOError("Streams path not specified.")
+    elif not os.path.exists(streams_path):
+        raise IOError("Specified streams path '{}' doesn't exist!".format(streams_path))
+    logger.debug("Path to streams project: {}".format(streams_path))
+
+    # set other paths relative to top-level streams project
+    data_path = os.path.join(streams_path, "data/observed_particles/")
+    output_path = os.path.join(streams_path, "plots/infer_potential/", config['name'])
+    if config.has_key('output_path'):
+        output_path = os.path.join(config['output_path'], config['name'])
+    make_path(output_path, overwrite)
+    logger.debug("Writing data to:\n\t{}".format(output_path))
+
+    # load satellite and particle data
+    data_file = os.path.join(data_path, config['data_file'])
+    logger.debug("Reading particle/satellite data from:\n\t{}".format(data_file))
+    d = io.read_hdf5(data_file, nparticles=config.get('nparticles', None))
+    nparticles = d['true_particles'].nparticles
+    logger.debug("Running with {} particles.".format(nparticles))
+
+    return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # plot stuff
     make_plots = config.get("make_plots", False)
@@ -511,6 +515,7 @@ if __name__ == "__main__":
         main(args.file, mpi=args.mpi, threads=args.threads,
              overwrite=args.overwrite)
     except:
+        pool.close() if hasattr(pool, 'close') else None
         raise
         sys.exit(1)
 
