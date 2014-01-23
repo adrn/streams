@@ -22,7 +22,7 @@ from streams.dynamics import ObservedParticle, Particle
 import streams.io as io
 import streams.inference as si
 import streams.potential as sp
-from streams.util import get_pool
+from streams.util import get_pool, _parse_quantity, OrderedDictYAMLLoader
 
 global pool
 pool = None
@@ -52,7 +52,7 @@ def main(config_file, mpi, threads, overwrite):
 
     # read in configurable parameters
     with open(config_file) as f:
-        config = yaml.load(f.read())
+        config = yaml.load(f.read(), OrderedDictYAMLLoader)
 
     if config.has_key('streams_path'):
         streams_path = config['streams_path']
@@ -81,7 +81,7 @@ def main(config_file, mpi, threads, overwrite):
     # integration stuff
     t1 = float(d["t1"])
     t2 = float(d["t2"])
-    dt = -1.
+    dt = config.get("dt", -1.)
 
     # get the potential object specified from the potential subpackage
     Potential = getattr(sp, config["potential"]["class_name"])
@@ -90,6 +90,18 @@ def main(config_file, mpi, threads, overwrite):
 
     # Define the empty model to add parameters to
     model = si.StreamModel(potential, lnpargs=(t1,t2,dt))
+
+    # Potential parameters
+    potential_params = config["potential"].get("parameters", dict())
+    for ii,(name,kwargs) in enumerate(potential_params.items()):
+        a,b = kwargs["a"], kwargs["b"]
+        p = getattr(potential, name)
+        logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
+
+        prior = si.LogUniformPrior(_parse_quantity(a).decompose(usys).value,
+                                   _parse_quantity(b).decompose(usys).value)
+        p = si.ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
+        model.add_parameter('potential', p)
 
     return
 
@@ -107,89 +119,6 @@ def main(config_file, mpi, threads, overwrite):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # plot stuff
-    make_plots = config.get("make_plots", False)
-
-    # determine the output data path
-    path = make_path(config["output_path"], name=config["name"],
-                     overwrite=overwrite)
-    output_file = os.path.join(path, "inference.hdf5")
-
-    # get the potential object specified from the potential subpackage
-    Potential = getattr(s_potential, config["potential"]["class_name"])
-    potential = Potential()
-    logger.debug("Using potential '{}'..."\
-                 .format(config["potential"]["class_name"]))
-
-    # read data from an input HDF5 file
-    # TODO: make several input files
-    #   - perfect_data.hdf5 (no errors on particles or satellite)
-    #   - perfectSatellite_observedParticles.hdf5 (no errors on satellite, gaia+spitzer on particles)
-    #   - observedSatellite_observedParticles.hdf5 (errors on everything)
-    #   - noSatellite_observedParticles.hdf5 (no satellite data all 0's, observed particles)
-    # TODO: knows if hdf5 has 'errors' to return ObservedParticle, else Particle
-    d = io.read_hdf5(config["input_file"]) # contains stars/satellite info
-    satellite = d["satellite"]
-    particles = d["particles"]
-    logger.debug("Read in {} particles: {}".format(particles.nparticles, particles))
-    logger.debug("Read in satellite: {}".format(satellite))
-
-    # get integration bounding times
-    if d.has_key("t1"):
-        t1 = float(d["t1"])
-    elif config.has_key("t1"):
-        t1 = float(config["t1"])
-    else:
-        raise ValueError("Must specify t1 in input HDF5 or config file.")
-
-    if d.has_key("t2"):
-        t2 = float(d["t2"])
-    elif config.has_key("t2"):
-        t2 = float(config["t2"])
-    else:
-        raise ValueError("Must specify t2 in input HDF5 or config file.")
-
-    dt = config.get("dt", -1.)
-    if dt > 0.:
-        raise ValueError("Are you sure you want a positive dt? {}".format(dt))
 
     # Set up the Model
     model_parameters = []
