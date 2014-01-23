@@ -13,7 +13,10 @@ import shutil
 
 # Third-party
 import astropy.units as u
+from emcee.utils import sample_ball
+import matplotlib.pyplot as plt
 import numpy as np
+import time
 import yaml
 
 # Project
@@ -70,6 +73,7 @@ def main(config_file, mpi, threads, overwrite):
         output_path = os.path.join(config['output_path'], config['name'])
     make_path(output_path, overwrite)
     logger.debug("Writing data to:\n\t{}".format(output_path))
+    output_file = os.path.join(output_path, "inference.hdf5")
 
     # load satellite and particle data
     data_file = os.path.join(data_path, config['data_file'])
@@ -159,102 +163,67 @@ def main(config_file, mpi, threads, overwrite):
     logger.debug("\t\t At random sample: {}".format(ln_p))
     assert true_ln_p > ln_p
 
-    return
+    logger.info("Model has {} parameters".format(model.nparameters))
+
+    # for ii,truth in enumerate(model.truths):
+    #     p = model.truths.copy()
+    #     vals = truth*np.linspace(0.95, 1.05, 50)
+    #     Ls = []
+    #     for val in vals:
+    #         p[ii] = val
+    #         Ls.append(model(p))
+
+    #     plt.clf()
+    #     plt.plot(vals, Ls)
+    #     plt.axvline(truth)
+    #     plt.savefig(os.path.join(output_path, "test_{}.png".format(ii)))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # Set up the Model
-    model_parameters = []
-    parameter_idx_to_plot_idx = np.array([], dtype=int)
-
-    # Potential parameters
-    potential_params = config["potential"].get("parameters", dict())
-    for ii,(name,kwargs) in enumerate(potential_params.items()):
-        a,b = kwargs["a"],kwargs["b"]
-        p = getattr(potential, name)
-        logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
-
-        prior = LogUniformPrior(_parse_quantity(a).decompose(usys).value,
-                                _parse_quantity(b).decompose(usys).value)
-        model_p = ModelParameter(target=p, attr="_value", ln_prior=prior)
-        model_parameters.append(model_p)
-
-    # Particle parameters
-    if isinstance(particles, ObservedParticle):
-        # prior on the time the particle came unbound
-        # TODO: all observed simulation particles must have tub attribute?
-        lo = [t2] * particles.nparticles
-        hi = [t1] * particles.nparticles
-        prior = LogUniformPrior(lo, hi)
-
-        model_parameters.append(ModelParameter(target=particles,
-                                               attr="tub",
-                                               ln_prior=prior))
-        logger.info("Added particle tub as model parameter.")
-
-        covs = [np.diag(s**2) for s in particles._error_X]
-        prior = LogNormalPrior(np.array(particles._X),
-                               cov=np.array(covs))
-        p = ModelParameter(target=particles,
-                           attr="_X",
-                           ln_prior=prior)
-        model_parameters.append(p)
-        logger.info("Added true particle positions as model parameter.")
-        with print_options(precision=2):
-            for ii in range(particles.nparticles):
-                logger.debug("\t  X={}\n\t\terr={}".format(particles._repr_X[ii],
-                                                     particles._repr_error_X[ii]))
-
-    # Satellite parameters
-    if isinstance(satellite, ObservedParticle):
-        covs = [np.diag(s**2) for s in satellite._error_X]
-        prior = LogNormalPrior(np.array(satellite._X),
-                               cov=np.array(covs))
-        logger.info("Added true satellite position as model parameter:")
-        with print_options(precision=2):
-            logger.debug("\t X={}\n\t\terr={}".format(satellite._repr_X,
-                                                      satellite._repr_error_X))
-        p = ModelParameter(target=satellite,
-                           attr="_X",
-                           ln_prior=prior)
-        model_parameters.append(p)
-
-    # now create the model
-    model = StreamModel(potential, satellite.copy(), particles.copy(),
-                        parameters=model_parameters)
-    logger.info("Model has {} parameters".format(model.ndim))
-
-    # Emcee!
-    # read in the number of walkers to use
-    Nwalkers = config.get("walkers", "auto")
-    Nburn_in = config.get("burn_in", 0)
-    Nsteps = config["steps"]
+    if os.path.exists(output_file) and overwrite:
+        logger.info("Writing over output file '{}'".format(output_file))
+        os.remove(output_file)
 
     if not os.path.exists(output_file):
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
-        try:
-            sampler = infer_potential(model, Nsteps=Nsteps, Nburn_in=Nburn_in,
-                                      Nwalkers=Nwalkers, args=(t1,t2,dt),
-                                      pool=pool)
-        except:
-            color_print("ERROR","red")
-            logger.error("infer_potential FAILED!")
-            if pool is not None:
-                pool.close()
-            sys.exit(1)
+
+        # emcee parameters
+        # read in the number of walkers to use
+        nwalkers = config["walkers"]
+        nsteps = config["steps"]
+        nburn = config.get("burn_in", 0)
+        niter = config.get("iterate", 1)
+
+        # sample starting positions
+        p0 = model.sample_priors(size=nwalkers)
+        ### HACK TO INITIALIZE WALKERS NEAR true tub!
+        # for ii in range(c["nparticles"]):
+        #     jj = ii + len(c["potential_params"])
+        #     p0[:,jj] = np.random.normal(true_tub[ii], 1000., size=c["nwalkers"])
+
+        # get the sampler
+        sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
+        if nburn > 0:
+            logger.info("Burning in sampler for {} steps...".format(nburn))
+            pos, xx, yy = sampler.run_mcmc(p0, nburn)
+            sampler.reset()
+        else:
+            pos = p0
+
+        logger.info("Running sampler for {} iterations of {} steps..."\
+                    .format(niter, nsteps//niter))
+
+        time0 = time.time()
+        for ii in range(niter):
+            pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
+            best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
+            std = np.std(sampler.flatchain, axis=0)
+            logger.debug("Walker positions: {}".format(best_pos[:5]))
+            logger.debug("Walker std dev: {}".format(std[:5]))
+            pos = sample_ball(best_pos, std, size=nwalkers)
+
+        t = time.time() - time0
+        logger.debug("Spent {} seconds on sampling...".format(t))
 
         # write the sampler data to numpy save files
         logger.info("Writing sampler data to '{}'...".format(output_file))
@@ -265,6 +234,9 @@ def main(config_file, mpi, threads, overwrite):
             f["p0"] = sampler.p0
     else:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
+
+    return
+
 
     if pool is not None:
         pool.close()
