@@ -14,6 +14,7 @@ import shutil
 # Third-party
 import astropy.units as u
 from emcee.utils import sample_ball
+import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -32,14 +33,6 @@ pool = None
 
 # Create logger
 logger = logging.getLogger(__name__)
-
-def make_path(path, overwrite=False):
-    """ """
-    if os.path.exists(path) and overwrite:
-        shutil.rmtree(path)
-
-    if not os.path.exists(path):
-        os.makedirs(path)
 
 def main(config_file, mpi, threads, overwrite):
     """ TODO: """
@@ -71,7 +64,10 @@ def main(config_file, mpi, threads, overwrite):
     output_path = os.path.join(streams_path, "plots/infer_potential/", config['name'])
     if config.has_key('output_path'):
         output_path = os.path.join(config['output_path'], config['name'])
-    make_path(output_path, overwrite)
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
     logger.debug("Writing data to:\n\t{}".format(output_path))
     output_file = os.path.join(output_path, "inference.hdf5")
 
@@ -231,7 +227,7 @@ def main(config_file, mpi, threads, overwrite):
             f["chain"] = sampler.chain
             f["flatchain"] = sampler.flatchain
             f["lnprobability"] = sampler.lnprobability
-            f["p0"] = sampler.p0
+            f["p0"] = p0
     else:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
 
