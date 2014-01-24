@@ -12,7 +12,7 @@ import logging
 from collections import OrderedDict
 
 # Third-party
-from emcee import EnsembleSampler
+from emcee import EnsembleSampler, PTSampler
 import numpy as np
 import astropy.units as u
 
@@ -108,10 +108,35 @@ class StreamModel(object):
 
         return d
 
+    def label_flatchain(self, flatchain):
+        """ """
+        d = OrderedDict()
+
+        nsamples,ndim = flatchain.shape
+        # make sure ndim == nparameters
+        if ndim != self.nparameters:
+            raise ValueError("Flatchain ndim != model nparameters")
+
+        ix1 = 0
+        for group_name,group in self.parameters.items():
+            for param_name,param in group.items():
+                try:
+                    d[group_name][param_name] = flatchain[:,ix1:ix1+param.size]
+                except:
+                    d[group_name] = OrderedDict()
+                    d[group_name][param_name] = flatchain[:,ix1:ix1+param.size]
+
+                if param.size > 1:
+                    shp = (nsamples,) + param.shape
+                    d[group_name][param_name] = d[group_name][param_name].reshape(shp)
+
+                ix1 += param.size
+
+        return d
+
+
     def ln_posterior(self, p, *args):
         """ """
-
-        t1, t2, dt = args
 
         # TODO: placeholder
         derp = self._decompose_vector(p)
@@ -149,10 +174,13 @@ class StreamModel(object):
             s_hel = self.true_satellite._X
 
         potential = self._potential_class(**pparams)
-        ln_like = back_integration_likelihood(t1, t2, dt, potential,
-                                              p_hel, s_hel, tub)
+        ln_like = back_integration_likelihood(args[0], args[1], args[2], # t1, t2, dt
+                                              potential, p_hel, s_hel, tub)
 
-        return ln_like + np.sum(ln_prior)
+        try:
+            return ln_like/args[3] + np.sum(ln_prior)
+        except:
+            return ln_like + np.sum(ln_prior)
 
     def __call__(self, p):
         return self.ln_posterior(p, *self.lnpargs)
@@ -168,4 +196,3 @@ class StreamModelSampler(EnsembleSampler):
         super(StreamModelSampler, self).__init__(nwalkers, model.nparameters, model,
                                                  pool=pool)
 
-    #def
