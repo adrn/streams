@@ -289,6 +289,8 @@ def main(config_file, mpi, threads, overwrite):
 
         derp = model.label_flatchain(flatchain)
         print(derp["potential"]["q1"].shape)
+        print(derp["particles"]["_X"].shape)
+        print(derp["particles"]["tub"].shape)
         return
         for group_name,group in model.parameters.items():
             for param_name,param in group.items():
