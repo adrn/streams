@@ -10,6 +10,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 import logging
 import shutil
+import time
 
 # Third-party
 import astropy.units as u
@@ -17,7 +18,7 @@ from emcee.utils import sample_ball
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-import time
+import triangle
 import yaml
 
 # Project
@@ -287,14 +288,36 @@ def main(config_file, mpi, threads, overwrite):
             flatchain = f["flatchain"].value
             p0 = f["p0"].value
 
-        derp = model.label_flatchain(flatchain)
-        print(derp["potential"]["q1"].shape)
-        print(derp["particles"]["_X"].shape)
-        print(derp["particles"]["tub"].shape)
+        flatchain_dict = model.label_flatchain(flatchain)
+        p0_dict = model.label_flatchain(np.vstack(p0))
+        potential_group = model.parameters.get('potential', None)
+        particles_group = model.parameters.get('particles', None)
+        satellite_group = model.parameters.get('satellite', None)
+
+        if potential_group:
+            this_flatchain = np.zeros((len(flatchain),len(potential_group)))
+            this_p0 = np.zeros((nwalkers,len(potential_group)))
+            for ii,param_name in enumerate(potential_group.keys()):
+                this_flatchain[:,ii] = np.squeeze(flatchain_dict['potential'][param_name])
+                this_p0[:,ii] = np.squeeze(p0_dict['potential'][param_name])
+
+            fig = triangle.corner(this_p0,
+                        plot_kwargs=dict(color='g',alpha=1.),
+                        hist_kwargs=dict(color='g',alpha=0.75,normed=True),
+                        plot_contours=False)
+            fig = triangle.corner(this_flatchain,
+                        fig=fig,
+                        truths=[p.truth for p in model.parameters['potential'].values()],
+                        labels=potential_group.keys(),
+                        plot_kwargs=dict(color='k',alpha=1.),
+                        hist_kwargs=dict(color='k',alpha=0.75,normed=True))
+            fig.savefig(os.path.join(output_path, "potential.{}".format(plot_ext)))
+
         return
+
         for group_name,group in model.parameters.items():
             for param_name,param in group.items():
-                derp[group_name][param_name]
+                print(param_name, flatchain_dict[group_name][param_name].shape)
 
         return
 
