@@ -81,7 +81,10 @@ class StreamModel(object):
             ix1 = 0
             for group_name,group in self.parameters.items():
                 for param_name,param in group.items():
-                    p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
+                    if param.size > 1:
+                        p0[ii,ix1:ix1+param.size] = np.ravel(param.sample().T)
+                    else:
+                        p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
                     ix1 += param.size
 
         return np.squeeze(p0)
