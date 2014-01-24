@@ -51,6 +51,10 @@ class ModelParameter(u.Quantity):
         return ModelParameter(name=self.name, value=self.value*self.unit,
                               prior=self._prior, truth=self.truth)
 
+    def __deepcopy__(self):
+        """ Return a copy of this `ModelParameter` instance """
+        return self.copy()
+
     def prior(self, value):
         """ """
 
