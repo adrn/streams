@@ -237,6 +237,10 @@ def main(config_file, mpi, threads, overwrite):
             f["lnprobability"] = sampler.lnprobability
             f["p0"] = p0
             f["acceptance_fraction"] = sampler.acceptance_fraction
+            try:
+                f["acor"] = sampler.acor
+            except:
+                f["acor"] = []
     else:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
 
@@ -256,21 +260,23 @@ def main(config_file, mpi, threads, overwrite):
             flatchain = f["flatchain"].value
             acceptance_fraction = f["acceptance_fraction"].value
             p0 = f["p0"].value
+            acor = f["acor"]
 
         diagnostics_path = os.path.join(output_path, "diagnostics")
         if not os.path.exists(diagnostics_path):
             os.mkdir(diagnostics_path)
 
+        # plot histogram of autocorrelation times
+        if acor:
+            fig,ax = plt.subplots(1,1,figsize=(8,8))
+            ax.hist(acor, bins=model.nparameters//5)
+            ax.set_xlabel("Autocorrelation time")
+            fig.suptitle("Histogram of autocorrelation times")
+            fig.savefig(os.path.join(diagnostics_path, "acor.{}".format(plot_ext)))
+
         # plot histogram of acceptance fractions
         fig,ax = plt.subplots(1,1,figsize=(8,8))
         ax.hist(acceptance_fraction, bins=nwalkers//5)
-        ax.set_xlabel("Acceptance fraction")
-        fig.suptitle("Histogram of acceptance fractions for all walkers")
-        fig.savefig(os.path.join(diagnostics_path, "acc_frac.{}".format(plot_ext)))
-
-        # plot histogram of autocorrelation times
-        fig,ax = plt.subplots(1,1,figsize=(8,8))
-        ax.hist(acor, bins=nwalkers//5)
         ax.set_xlabel("Acceptance fraction")
         fig.suptitle("Histogram of acceptance fractions for all walkers")
         fig.savefig(os.path.join(diagnostics_path, "acc_frac.{}".format(plot_ext)))
