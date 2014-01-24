@@ -92,7 +92,7 @@ def main(config_file, mpi, threads, overwrite):
     logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
 
     # Define the empty model to add parameters to
-    model = si.StreamModel(potential, lnpargs=(t1,t2,dt),
+    model = si.StreamModel(potential, lnpargs=[t1,t2,dt,1.], # 1. is the temperature
                            true_satellite=true_satellite,
                            true_particles=true_particles)
 
@@ -179,15 +179,16 @@ def main(config_file, mpi, threads, overwrite):
         logger.info("Writing over output file '{}'".format(output_file))
         os.remove(output_file)
 
+
+    # emcee parameters
+    # read in the number of walkers to use
+    nwalkers = config["walkers"]
+    nsteps = config["steps"]
+    nburn = config.get("burn_in", 0)
+    niter = config.get("iterate", 1)
+
     if not os.path.exists(output_file):
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
-
-        # emcee parameters
-        # read in the number of walkers to use
-        nwalkers = config["walkers"]
-        nsteps = config["steps"]
-        nburn = config.get("burn_in", 0)
-        niter = config.get("iterate", 1)
 
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers)
@@ -206,12 +207,19 @@ def main(config_file, mpi, threads, overwrite):
         else:
             pos = p0
 
-        logger.info("Running sampler for {} iterations of {} steps..."\
-                    .format(niter, nsteps//niter))
+        logger.info("Running {} walkers for {} iterations of {} steps..."\
+                    .format(nwalkers, niter, nsteps//niter))
 
+        model.lnpargs[3] = 100.
         time0 = time.time()
         for ii in range(niter):
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
+            model.lnpargs[3] = model.lnpargs[3] - 10.
+            if model.lnpargs[3] < 1.:
+                model.lnpargs[3] = 1.
+            sampler.reset()
+            continue
+
             best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
             std = np.std(sampler.flatchain, axis=0)
             logger.debug("Walker positions: {}".format(best_pos[:5]))
@@ -228,40 +236,75 @@ def main(config_file, mpi, threads, overwrite):
             f["flatchain"] = sampler.flatchain
             f["lnprobability"] = sampler.lnprobability
             f["p0"] = p0
+            f["acceptance_fraction"] = sampler.acceptance_fraction
     else:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
 
     pool.close() if hasattr(pool, 'close') else None
 
-    return
+    #############################################################
+    # Plotting
+    #
+    plot_config = config.get("plot", dict())
+    plot_ext = plot_config.get("ext", "png")
 
+    if plot_config.get("mcmc_diagnostics", False):
+        logger.debug("Plotting MCMC diagnostics...")
 
+        with h5py.File(output_file, "r") as f:
+            chain = f["chain"].value
+            flatchain = f["flatchain"].value
+            acceptance_fraction = f["acceptance_fraction"].value
+            p0 = f["p0"].value
 
+        diagnostics_path = os.path.join(output_path, "diagnostics")
+        if not os.path.exists(diagnostics_path):
+            os.mkdir(diagnostics_path)
 
+        # plot histogram of acceptance fractions
+        fig,ax = plt.subplots(1,1,figsize=(8,8))
+        ax.hist(acceptance_fraction, bins=nwalkers//5)
+        ax.set_xlabel("Acceptance fraction")
+        fig.suptitle("Histogram of acceptance fractions for all walkers")
+        fig.savefig(os.path.join(diagnostics_path, "acc_frac.{}".format(plot_ext)))
 
+        # plot individual walkers
+        plt.figure(figsize=(12,6))
+        for k in range(model.nparameters):
+            plt.clf()
+            for ii in range(nwalkers):
+                plt.plot(chain[ii,:,k], alpha=0.4, drawstyle='steps', color='k')
 
+            plt.axhline(model.truths[k], color='r', lw=2., linestyle='-', alpha=0.5)
+            plt.savefig(os.path.join(diagnostics_path, "param_{}.{}".format(k, plot_ext)))
 
+        plt.close('all')
 
+    if plot_config.get("posterior", False):
+        logger.debug("Plotting posterior distributions...")
 
-
-
-
-
-
-
-
-
-
-    if pool is not None:
-        pool.close()
-
-    if make_plots:
         with h5py.File(output_file, "r") as f:
             chain = f["chain"].value
             flatchain = f["flatchain"].value
             p0 = f["p0"].value
 
-        logger.info("Making plots and writing to {}...".format(path))
+        derp = model.label_flatchain(flatchain)
+        print(derp["potential"]["q1"].shape)
+        return
+        for group_name,group in model.parameters.items():
+            for param_name,param in group.items():
+                derp[group_name][param_name]
+
+        return
+
+
+
+
+
+
+
+
+
 
         # plot observed data / true particles
         extents = [(-180,180), (-90,90), (0.,75.), (-10.,10.), (-10.,10), (-300,300)]
