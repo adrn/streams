@@ -93,7 +93,7 @@ def main(config_file, mpi, threads, overwrite):
     logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
 
     # Define the empty model to add parameters to
-    model = si.StreamModel(potential, lnpargs=[t1,t2,dt,1.], # 1. is the temperature
+    model = si.StreamModel(potential, lnpargs=[t1,t2,dt,1.], # 1. is the inverse temperature
                            true_satellite=true_satellite,
                            true_particles=true_particles)
 
@@ -268,6 +268,13 @@ def main(config_file, mpi, threads, overwrite):
         fig.suptitle("Histogram of acceptance fractions for all walkers")
         fig.savefig(os.path.join(diagnostics_path, "acc_frac.{}".format(plot_ext)))
 
+        # plot histogram of autocorrelation times
+        fig,ax = plt.subplots(1,1,figsize=(8,8))
+        ax.hist(acor, bins=nwalkers//5)
+        ax.set_xlabel("Acceptance fraction")
+        fig.suptitle("Histogram of acceptance fractions for all walkers")
+        fig.savefig(os.path.join(diagnostics_path, "acc_frac.{}".format(plot_ext)))
+
         # plot individual walkers
         plt.figure(figsize=(12,6))
         for k in range(model.nparameters):
@@ -312,6 +319,41 @@ def main(config_file, mpi, threads, overwrite):
                         plot_kwargs=dict(color='k',alpha=1.),
                         hist_kwargs=dict(color='k',alpha=0.75,normed=True))
             fig.savefig(os.path.join(output_path, "potential.{}".format(plot_ext)))
+
+        if particles_group:
+            for jj in range(nparticles):
+                this_flatchain = None
+                this_p0 = None
+                this_truths = []
+                for ii,pname in enumerate(particles_group.keys()):
+                    p = flatchain_dict['particles'][pname][:,jj]
+                    _p0 = p0_dict['particles'][pname][:,jj]
+                    if p.ndim == 1:
+                        p = p[:,np.newaxis]
+                        _p0 = _p0[:,np.newaxis]
+
+                    if this_flatchain is None:
+                        this_flatchain = p
+                        this_p0 = _p0
+                    else:
+                        this_flatchain = np.hstack((this_flatchain, p))
+                        this_p0 = np.hstack((this_p0, _p0))
+
+                    truth = model.parameters['particles'][pname].truth[jj]
+                    this_truths += list(np.atleast_1d(truth))
+
+                fig = triangle.corner(this_p0,
+                            plot_kwargs=dict(color='g',alpha=1.),
+                            hist_kwargs=dict(color='g',alpha=0.75,normed=True),
+                            plot_contours=False)
+
+                # labels=potential_group.keys(),
+                fig = triangle.corner(this_flatchain,
+                            fig=fig,
+                            truths=this_truths,
+                            plot_kwargs=dict(color='k',alpha=1.),
+                            hist_kwargs=dict(color='k',alpha=0.75,normed=True))
+                fig.savefig(os.path.join(output_path, "particle{}.{}".format(jj,plot_ext)))
 
         return
 
