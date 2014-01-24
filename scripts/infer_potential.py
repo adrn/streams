@@ -203,7 +203,6 @@ def main(config_file, mpi, threads, overwrite):
         if nburn > 0:
             logger.info("Burning in sampler for {} steps...".format(nburn))
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
-            sampler.reset()
         else:
             pos = p0
 
@@ -213,11 +212,11 @@ def main(config_file, mpi, threads, overwrite):
         model.lnpargs[3] = 100.
         time0 = time.time()
         for ii in range(niter):
+            sampler.reset()
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
             model.lnpargs[3] = model.lnpargs[3] - 10.
             if model.lnpargs[3] < 1.:
                 model.lnpargs[3] = 1.
-            sampler.reset()
             continue
 
             best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
