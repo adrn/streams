@@ -180,7 +180,6 @@ def main(config_file, mpi, threads, overwrite):
         logger.info("Writing over output file '{}'".format(output_file))
         os.remove(output_file)
 
-
     # emcee parameters
     # read in the number of walkers to use
     nwalkers = config["walkers"]
@@ -204,20 +203,21 @@ def main(config_file, mpi, threads, overwrite):
         if nburn > 0:
             logger.info("Burning in sampler for {} steps...".format(nburn))
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
+            sampler.reset()
         else:
             pos = p0
 
         logger.info("Running {} walkers for {} iterations of {} steps..."\
                     .format(nwalkers, niter, nsteps//niter))
 
-        model.lnpargs[3] = 100.
+        model.lnpargs[3] = 0.1
         time0 = time.time()
-        for ii in range(niter):
-            sampler.reset()
+        for ii,beta in enumerate(np.logspace(-5,0.,niter)):
+            #sampler.reset()
+            logger.debug("beta = {}".format(beta))
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
-            model.lnpargs[3] = model.lnpargs[3] - 10.
-            if model.lnpargs[3] < 1.:
-                model.lnpargs[3] = 1.
+            model.lnpargs[3] = beta
+
             continue
 
             best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]

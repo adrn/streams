@@ -47,9 +47,9 @@ particles:
 
 # emcee
 walkers: 72
-burn_in: 500
+burn_in: 0
 steps: 1000
-iterate: 1
+iterate: 10
 
 # satellite:
 #     _X:
