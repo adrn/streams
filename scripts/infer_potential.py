@@ -226,6 +226,9 @@ def main(config_file, mpi, threads, overwrite):
             logger.debug("Walker std dev: {}".format(std[:5]))
             pos = sample_ball(best_pos, std, size=nwalkers)
 
+        print(sampler.acor)
+        return
+
         t = time.time() - time0
         logger.debug("Spent {} seconds on sampling...".format(t))
 
