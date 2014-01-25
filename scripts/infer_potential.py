@@ -240,6 +240,7 @@ def main(config_file, mpi, threads, overwrite):
             try:
                 f["acor"] = sampler.acor
             except:
+                logger.warn("Failed to compute autocorrelation time.")
                 f["acor"] = []
     else:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
