@@ -1,0 +1,63 @@
+# general
+seed: 42
+script: infer_potential.py
+name: test
+# streams_path: /path/to/streams
+
+# plots / output
+plot:
+    mcmc_diagnostics: True
+    posterior: True
+    ext: png
+#output_path: /tmp
+
+# data
+data_file: N128.hdf5
+nparticles: 2
+
+# integration
+dt: -1.
+# t1: 0
+# t2: -6200.
+
+potential:
+    class_name: LawMajewski2010
+    parameters:
+        q1:
+            a: 1.0
+            b: 1.75
+        qz:
+            a: 1.0
+            b: 1.75
+        phi:
+            a: 80. degree
+            b: 120. degree
+        v_halo:
+            a: 100 km/s
+            b: 150 km/s
+
+# particles:
+#     parameters:
+#         _X:
+#         tub:
+
+# satellite:
+#     parameters:
+#         _X:
+
+# emcee
+walkers: 12
+burn_in: 0
+steps: 100
+iterate: 1
+
+# satellite:
+#     _X:
+#         errors:
+#             factor: 1. # multiplies all errors
+#             l: 1 milliarcsecond
+#             b: 1 milliarcsecond
+#             D: 0.05
+#             mul: 1.2 mas/yr
+#             mub: 1.2 mas/yr
+#             vr: 5 km/s
