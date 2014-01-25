@@ -36,19 +36,19 @@ potential:
             a: 100 km/s
             b: 150 km/s
 
-# particles:
-#     parameters:
-#         _X:
-#         tub:
+particles:
+    parameters:
+        _X:
+        tub:
 
 # satellite:
 #     parameters:
 #         _X:
 
 # emcee
-walkers: 12
-burn_in: 0
-steps: 100
+walkers: 72
+burn_in: 500
+steps: 1000
 iterate: 1
 
 # satellite:
