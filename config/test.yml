@@ -46,8 +46,8 @@ particles:
 #         _X:
 
 # emcee
-walkers: 72
-burn_in: 0
+walkers: 128
+burn_in: 100
 steps: 1000
 iterate: 10
 

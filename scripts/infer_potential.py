@@ -162,9 +162,16 @@ def main(config_file, mpi, threads, overwrite):
 
     logger.info("Model has {} parameters".format(model.nparameters))
 
+    ################################################
+    ################################################
+    # TEST
+    # test_path = os.path.join(output_path, "test")
+    # if not os.path.exists(test_path):
+    #     os.mkdir(test_path)
+
     # for ii,truth in enumerate(model.truths):
     #     p = model.truths.copy()
-    #     vals = truth*np.linspace(0.95, 1.05, 50)
+    #     vals = truth*np.linspace(0.7, 1.3, 101)
     #     Ls = []
     #     for val in vals:
     #         p[ii] = val
@@ -173,8 +180,10 @@ def main(config_file, mpi, threads, overwrite):
     #     plt.clf()
     #     plt.plot(vals, Ls)
     #     plt.axvline(truth)
-    #     plt.savefig(os.path.join(output_path, "test_{}.png".format(ii)))
-
+    #     plt.savefig(os.path.join(test_path, "test_{}.png".format(ii)))
+    # return
+    ################################################
+    ################################################
 
     if os.path.exists(output_file) and overwrite:
         logger.info("Writing over output file '{}'".format(output_file))
@@ -207,24 +216,22 @@ def main(config_file, mpi, threads, overwrite):
         else:
             pos = p0
 
+        # TODO: add annealing schedule to class
+        #   - specify start temp, end temp, have it continuously change each step
+
         logger.info("Running {} walkers for {} iterations of {} steps..."\
                     .format(nwalkers, niter, nsteps//niter))
 
-        model.lnpargs[3] = 0.1
         time0 = time.time()
-        for ii,beta in enumerate(np.logspace(-5,0.,niter)):
-            #sampler.reset()
-            logger.debug("beta = {}".format(beta))
+        for ii in range(niter):
+            sampler.reset()
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
-            model.lnpargs[3] = beta
 
-            continue
-
-            best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
-            std = np.std(sampler.flatchain, axis=0)
-            logger.debug("Walker positions: {}".format(best_pos[:5]))
-            logger.debug("Walker std dev: {}".format(std[:5]))
-            pos = sample_ball(best_pos, std, size=nwalkers)
+            # best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
+            # std = np.std(sampler.flatchain, axis=0)
+            # logger.debug("Walker positions: {}".format(best_pos[:5]))
+            # logger.debug("Walker std dev: {}".format(std[:5]))
+            # pos = sample_ball(best_pos, std, size=nwalkers)
 
         t = time.time() - time0
         logger.debug("Spent {} seconds on sampling...".format(t))

@@ -186,6 +186,7 @@ class StreamModel(object):
             return ln_like + np.sum(ln_prior)
 
     def __call__(self, p):
+        # TODO: each call, adjust temperature according to self.annealing?
         return self.ln_posterior(p, *self.lnpargs)
 
 class StreamModelSampler(EnsembleSampler):
