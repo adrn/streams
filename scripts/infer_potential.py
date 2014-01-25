@@ -260,15 +260,27 @@ def main(config_file, mpi, threads, overwrite):
     plot_config = config.get("plot", dict())
     plot_ext = plot_config.get("ext", "png")
 
+    with h5py.File(output_file, "r") as f:
+        chain = f["chain"].value
+        flatchain = f["flatchain"].value
+        acceptance_fraction = f["acceptance_fraction"].value
+        p0 = f["p0"].value
+        acor = f["acor"]
+
+    # thin chain
+    if acor:
+        t_med = np.median(acor)
+        thin_chain = chain[:,::int(t_med)]
+        thin_flatchain = np.vstack(thin_chain)
+
+        nstp = thin_chain.shape[1]
+        if t_med < 8*nstp:
+            logger.warn("Uh oh, median(acor) < 8*nsteps: {} < {}".format(t_med,nstp))
+        else:
+            logger.info("Good, median(acor) > 8*nsteps: {} > {}".format(t_med,nstp))
+
     if plot_config.get("mcmc_diagnostics", False):
         logger.debug("Plotting MCMC diagnostics...")
-
-        with h5py.File(output_file, "r") as f:
-            chain = f["chain"].value
-            flatchain = f["flatchain"].value
-            acceptance_fraction = f["acceptance_fraction"].value
-            p0 = f["p0"].value
-            acor = f["acor"]
 
         diagnostics_path = os.path.join(output_path, "diagnostics")
         if not os.path.exists(diagnostics_path):
@@ -303,11 +315,6 @@ def main(config_file, mpi, threads, overwrite):
 
     if plot_config.get("posterior", False):
         logger.debug("Plotting posterior distributions...")
-
-        with h5py.File(output_file, "r") as f:
-            chain = f["chain"].value
-            flatchain = f["flatchain"].value
-            p0 = f["p0"].value
 
         flatchain_dict = model.label_flatchain(flatchain)
         p0_dict = model.label_flatchain(np.vstack(p0))
