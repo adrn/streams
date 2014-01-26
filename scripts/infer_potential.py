@@ -1,4 +1,3 @@
-#!/vega/astro/users/amp2217/yt-x86_64/bin/python
 # coding: utf-8
 
 """ Script for using the Rewinder to infer the Galactic host potential """
@@ -9,40 +8,26 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import time
-import gc
-import copy
 import logging
-import multiprocessing
+import shutil
+import time
 
 # Third-party
 import astropy.units as u
-from astropy.utils.console import color_print
-import emcee
+from emcee.utils import sample_ball
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-np.seterr(all="ignore")
-import scipy
-scipy.seterr(all="ignore")
 import triangle
 import yaml
 
-try:
-    from emcee.utils import MPIPool
-except ImportError:
-    color_print("Failed to import MPIPool from emcee! MPI functionality "
-                "won't work.", "yellow")
-
 # Project
 from streams import usys
-from streams.coordinates.frame import heliocentric, galactocentric
-from streams.dynamics import Particle, Orbit, ObservedParticle
-from streams.inference import *
+from streams.dynamics import ObservedParticle, Particle
 import streams.io as io
-from streams.observation.gaia import gaia_spitzer_errors
-import streams.potential as s_potential
-from streams.util import _parse_quantity, make_path, print_options
+import streams.inference as si
+import streams.potential as sp
+from streams.util import get_pool, _parse_quantity, OrderedDictYAMLLoader
 
 global pool
 pool = None
@@ -50,209 +35,218 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def get_pool(mpi=False, threads=None):
-    """ Get a pool object to pass to emcee for parallel processing.
-        If mpi is False and threads is None, pool is None.
-
-        Parameters
-        ----------
-        mpi : bool
-            Use MPI or not. If specified, ignores the threads kwarg.
-        threads : int (optional)
-            If mpi is False and threads is specified, use a Python
-            multiprocessing pool with the specified number of threads.
-    """
-    # This needs to go here so I don't read in the particle file N times!!
-    # get a pool object given the configuration parameters
-    if mpi:
-        # Initialize the MPI pool
-        pool = MPIPool()
-
-        # Make sure the thread we're running on is the master
-        if not pool.is_master():
-            pool.wait()
-            sys.exit(0)
-        logger.debug("Running with MPI...")
-
-    elif threads > 1:
-        logger.debug("Running with multiprocessing on {} cores..."\
-                    .format(threads))
-        pool = multiprocessing.Pool(threads)
-
-    else:
-        logger.debug("Running serial...")
-        pool = None
-
-    return pool
-
-def infer_potential(model, Nsteps, Nburn_in=None, Nwalkers='auto',
-                    args=(), pool=None):
-        """ TODO: """
-
-        if str(Nwalkers).lower() == "auto":
-            Nwalkers = model.ndim*4
-        logger.debug("{} walkers".format(Nwalkers))
-
-        if Nburn_in is None:
-            Nburn_in = Nsteps // 10
-
-        # sample starting points for the walkers from the prior
-        p0 = model.sample(size=Nwalkers)
-
-        logger.debug("Initializing sampler...")
-        sampler = emcee.EnsembleSampler(Nwalkers, model.ndim, model,
-                                        pool=pool, args=args)
-
-        if Nburn_in > 0:
-            logger.info("Burning in sampler for {} steps...".format(Nburn_in))
-            pos, xx, yy = sampler.run_mcmc(p0, Nburn_in)
-            sampler.reset()
-        else:
-            pos = p0
-
-        logger.info("Running sampler for {} steps...".format(Nsteps))
-        a = time.time()
-        pos, prob, state = sampler.run_mcmc(pos, Nsteps)
-        t = time.time() - a
-        logger.debug("Spent {} seconds on sampler...".format(t))
-
-        sampler.p0 = p0
-        return sampler
-
-def main(config_file, mpi=False, threads=None, overwrite=False):
+def main(config_file, mpi, threads, overwrite):
     """ TODO: """
 
+    # get a pool object given the configuration parameters
+    # -- This needs to go here so I don't read in the particle file for each thread. --
     pool = get_pool(mpi=mpi, threads=threads)
+
+    # get path to streams project
+    streams_path = None
+    if os.environ.has_key('STREAMSPATH'):
+        streams_path = os.environ["STREAMSPATH"]
 
     # read in configurable parameters
     with open(config_file) as f:
-        config = yaml.load(f.read())
+        config = yaml.load(f.read(), OrderedDictYAMLLoader)
 
-    # plot stuff
-    make_plots = config.get("make_plots", False)
+    if config.has_key('streams_path'):
+        streams_path = config['streams_path']
 
-    # determine the output data path
-    path = make_path(config["output_path"], name=config["name"],
-                     overwrite=overwrite)
-    output_file = os.path.join(path, "inference.hdf5")
+    if streams_path is None:
+        raise IOError("Streams path not specified.")
+    elif not os.path.exists(streams_path):
+        raise IOError("Specified streams path '{}' doesn't exist!".format(streams_path))
+    logger.debug("Path to streams project: {}".format(streams_path))
+
+    # set other paths relative to top-level streams project
+    data_path = os.path.join(streams_path, "data/observed_particles/")
+    output_path = os.path.join(streams_path, "plots/infer_potential/", config['name'])
+    if config.has_key('output_path'):
+        output_path = os.path.join(config['output_path'], config['name'])
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    logger.debug("Writing data to:\n\t{}".format(output_path))
+    output_file = os.path.join(output_path, "inference.hdf5")
+
+    # load satellite and particle data
+    data_file = os.path.join(data_path, config['data_file'])
+    logger.debug("Reading particle/satellite data from:\n\t{}".format(data_file))
+    d = io.read_hdf5(data_file, nparticles=config.get('nparticles', None))
+
+    true_particles = d['true_particles']
+    true_satellite = d['true_satellite']
+    nparticles = true_particles.nparticles
+    logger.info("Running with {} particles.".format(nparticles))
+
+    # integration stuff
+    t1 = float(d["t1"])
+    t2 = float(d["t2"])
+    dt = config.get("dt", -1.)
 
     # get the potential object specified from the potential subpackage
-    Potential = getattr(s_potential, config["potential"]["class_name"])
+    Potential = getattr(sp, config["potential"]["class_name"])
     potential = Potential()
-    logger.debug("Using potential '{}'..."\
-                 .format(config["potential"]["class_name"]))
+    logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
 
-    # read data from an input HDF5 file
-    # TODO: make several input files
-    #   - perfect_data.hdf5 (no errors on particles or satellite)
-    #   - perfectSatellite_observedParticles.hdf5 (no errors on satellite, gaia+spitzer on particles)
-    #   - observedSatellite_observedParticles.hdf5 (errors on everything)
-    #   - noSatellite_observedParticles.hdf5 (no satellite data all 0's, observed particles)
-    # TODO: knows if hdf5 has 'errors' to return ObservedParticle, else Particle
-    d = io.read_hdf5(config["input_file"]) # contains stars/satellite info
-    satellite = d["satellite"]
-    particles = d["particles"]
-    logger.debug("Read in {} particles: {}".format(particles.nparticles, particles))
-    logger.debug("Read in satellite: {}".format(satellite))
-
-    # get integration bounding times
-    if d.has_key("t1"):
-        t1 = float(d["t1"])
-    elif config.has_key("t1"):
-        t1 = float(config["t1"])
-    else:
-        raise ValueError("Must specify t1 in input HDF5 or config file.")
-
-    if d.has_key("t2"):
-        t2 = float(d["t2"])
-    elif config.has_key("t2"):
-        t2 = float(config["t2"])
-    else:
-        raise ValueError("Must specify t2 in input HDF5 or config file.")
-
-    dt = config.get("dt", -1.)
-    if dt > 0.:
-        raise ValueError("Are you sure you want a positive dt? {}".format(dt))
-
-    # Set up the Model
-    model_parameters = []
-    parameter_idx_to_plot_idx = np.array([], dtype=int)
+    # Define the empty model to add parameters to
+    model = si.StreamModel(potential, lnpargs=[t1,t2,dt,1.], # 1. is the inverse temperature
+                           true_satellite=true_satellite,
+                           true_particles=true_particles)
 
     # Potential parameters
     potential_params = config["potential"].get("parameters", dict())
     for ii,(name,kwargs) in enumerate(potential_params.items()):
-        a,b = kwargs["a"],kwargs["b"]
+        a,b = kwargs["a"], kwargs["b"]
         p = getattr(potential, name)
         logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
 
-        prior = LogUniformPrior(_parse_quantity(a).decompose(usys).value,
-                                _parse_quantity(b).decompose(usys).value)
-        model_p = ModelParameter(target=p, attr="_value", ln_prior=prior)
-        model_parameters.append(model_p)
+        prior = si.LogUniformPrior(_parse_quantity(a).decompose(usys).value,
+                                   _parse_quantity(b).decompose(usys).value)
+        p = si.ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
+        model.add_parameter('potential', p)
 
     # Particle parameters
-    if isinstance(particles, ObservedParticle):
-        # prior on the time the particle came unbound
-        # TODO: all observed simulation particles must have tub attribute?
-        lo = [t2] * particles.nparticles
-        hi = [t1] * particles.nparticles
-        prior = LogUniformPrior(lo, hi)
+    try:
+        particle_parameters = config['particles']['parameters']
+    except KeyError:
+        particle_parameters = None
 
-        model_parameters.append(ModelParameter(target=particles,
-                                               attr="tub",
-                                               ln_prior=prior))
-        logger.info("Added particle tub as model parameter.")
+    if particle_parameters is not None:
+        particles = d['particles']
 
-        covs = [np.diag(s**2) for s in particles._error_X]
-        prior = LogNormalPrior(np.array(particles._X),
-                               cov=np.array(covs))
-        p = ModelParameter(target=particles,
-                           attr="_X",
-                           ln_prior=prior)
-        model_parameters.append(p)
-        logger.info("Added true particle positions as model parameter.")
-        with print_options(precision=2):
-            for ii in range(particles.nparticles):
-                logger.debug("\t  X={}\n\t\terr={}".format(particles._repr_X[ii],
-                                                     particles._repr_error_X[ii]))
+        logger.debug("Particle properties added as parameters:")
+        if config['particles']['parameters'].has_key('_X'):
+            priors = [si.LogNormalPrior(particles._X[ii],particles._error_X[ii])
+                        for ii in range(nparticles)]
+            X = si.ModelParameter('_X', value=particles._X, prior=priors,
+                                  truth=true_particles._X)
+            model.add_parameter('particles', X)
+            logger.debug("\t\t_X - particle 6D positions today")
+
+        if config['particles']['parameters'].has_key('tub'):
+            priors = [si.LogUniformPrior(t2, t1) for ii in range(nparticles)]
+            tub = si.ModelParameter('tub', value=np.zeros(nparticles), prior=priors,
+                                    truth=true_particles.tub)
+            model.add_parameter('particles', tub)
+            logger.debug("\t\ttub - unbinding time of particles")
 
     # Satellite parameters
-    if isinstance(satellite, ObservedParticle):
-        covs = [np.diag(s**2) for s in satellite._error_X]
-        prior = LogNormalPrior(np.array(satellite._X),
-                               cov=np.array(covs))
-        logger.info("Added true satellite position as model parameter:")
-        with print_options(precision=2):
-            logger.debug("\t X={}\n\t\terr={}".format(satellite._repr_X,
-                                                      satellite._repr_error_X))
-        p = ModelParameter(target=satellite,
-                           attr="_X",
-                           ln_prior=prior)
-        model_parameters.append(p)
+    try:
+        satellite_parameters = config['satellite']['parameters']
+    except KeyError:
+        satellite_parameters = None
 
-    # now create the model
-    model = StreamModel(potential, satellite.copy(), particles.copy(),
-                        parameters=model_parameters)
-    logger.info("Model has {} parameters".format(model.ndim))
+    if satellite_parameters is not None:
+        satellite = d['satellite']
 
-    # Emcee!
+        logger.debug("Satellite properties added as parameters:")
+        if satellite_parameters.has_key('_X'):
+            priors = [si.LogNormalPrior(satellite._X[0],satellite._error_X[0])]
+            s_X = si.ModelParameter('_X', value=satellite._X, prior=priors,
+                                    truth=true_satellite._X)
+            model.add_parameter('satellite', s_X)
+            logger.debug("\t\t_X - satellite 6D position today")
+
+    # make sure true posterior value is higher than any randomly sampled value
+    logger.debug("Checking posterior values...")
+    true_ln_p = model.ln_posterior(model.truths, t1, t2, dt)
+    logger.debug("\t\t At truth: {}".format(true_ln_p))
+    p0 = model.sample_priors()
+    ln_p = model.ln_posterior(p0, t1, t2, dt)
+    logger.debug("\t\t At random sample: {}".format(ln_p))
+    assert true_ln_p > ln_p
+
+    logger.info("Model has {} parameters".format(model.nparameters))
+
+    ################################################
+    ################################################
+    # TEST
+    # test_path = os.path.join(output_path, "test")
+    # if not os.path.exists(test_path):
+    #     os.mkdir(test_path)
+
+    # for ii,truth in enumerate(model.truths):
+    #     p = model.truths.copy()
+    #     vals = truth*np.linspace(0.7, 1.3, 101)
+    #     Ls = []
+    #     for val in vals:
+    #         p[ii] = val
+    #         Ls.append(model(p))
+
+    #     plt.clf()
+    #     plt.plot(vals, Ls)
+    #     plt.axvline(truth)
+    #     plt.savefig(os.path.join(test_path, "test_{}.png".format(ii)))
+    # return
+    ################################################
+    ################################################
+
+    if os.path.exists(output_file) and overwrite:
+        logger.info("Writing over output file '{}'".format(output_file))
+        os.remove(output_file)
+
+    # emcee parameters
     # read in the number of walkers to use
-    Nwalkers = config.get("walkers", "auto")
-    Nburn_in = config.get("burn_in", 0)
-    Nsteps = config["steps"]
+    nwalkers = config["walkers"]
+    nsteps = config["steps"]
+    nsteps_final = config.get("steps_final", 0)
+    nburn = config.get("burn_in", 0)
+    niter = config.get("iterate", 1)
 
     if not os.path.exists(output_file):
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
-        try:
-            sampler = infer_potential(model, Nsteps=Nsteps, Nburn_in=Nburn_in,
-                                      Nwalkers=Nwalkers, args=(t1,t2,dt),
-                                      pool=pool)
-        except:
-            color_print("ERROR","red")
-            logger.error("infer_potential FAILED!")
-            if pool is not None:
-                pool.close()
-            sys.exit(1)
+
+        # sample starting positions
+        p0 = model.sample_priors(size=nwalkers)
+        ### HACK TO INITIALIZE WALKERS NEAR true tub!
+        # for ii in range(c["nparticles"]):
+        #     jj = ii + len(c["potential_params"])
+        #     p0[:,jj] = np.random.normal(true_tub[ii], 1000., size=c["nwalkers"])
+
+        # get the sampler
+        sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
+        if nburn > 0:
+            logger.info("Burning in sampler for {} steps...".format(nburn))
+            pos, xx, yy = sampler.run_mcmc(p0, nburn)
+            sampler.reset()
+        else:
+            pos = p0
+
+        # TODO: add annealing schedule to class
+        #   - specify start temp, end temp, have it continuously change each step
+
+        logger.info("Running {} walkers for {} iterations of {} steps..."\
+                    .format(nwalkers, niter, nsteps//niter))
+
+        time0 = time.time()
+        for ii in range(niter):
+            pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
+
+            # if any of the samplers have less than 3% acceptance,
+            #  start them from new positions sampled from the best position
+            acc_frac_test = sampler.acceptance_fraction < 0.03
+            if np.any(acc_frac_test):
+                nbad = np.sum(acc_frac_test)
+                best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
+                std = np.std(sampler.flatchain, axis=0)
+                new_pos = sample_ball(best_pos, std, size=nwalkers)
+
+                for jj in range(nwalkers):
+                    if acc_frac_test[jj]:
+                        pos[jj] = new_pos[jj]
+
+
+        if nsteps_final > 0:
+            sampler.reset()
+            pos, prob, state = sampler.run_mcmc(pos, nsteps_final)
+
+        t = time.time() - time0
+        logger.debug("Spent {} seconds on sampling...".format(t))
 
         # write the sampler data to numpy save files
         logger.info("Writing sampler data to '{}'...".format(output_file))
@@ -260,222 +254,165 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             f["chain"] = sampler.chain
             f["flatchain"] = sampler.flatchain
             f["lnprobability"] = sampler.lnprobability
-            f["p0"] = sampler.p0
+            f["p0"] = p0
+            f["acceptance_fraction"] = sampler.acceptance_fraction
+            try:
+                f["acor"] = sampler.acor
+            except:
+                logger.warn("Failed to compute autocorrelation time.")
+                f["acor"] = []
     else:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
 
-    if pool is not None:
-        pool.close()
+    pool.close() if hasattr(pool, 'close') else None
 
-    if make_plots:
-        with h5py.File(output_file, "r") as f:
-            chain = f["chain"].value
-            flatchain = f["flatchain"].value
-            p0 = f["p0"].value
+    #############################################################
+    # Plotting
+    #
+    plot_config = config.get("plot", dict())
+    plot_ext = plot_config.get("ext", "png")
 
-        logger.info("Making plots and writing to {}...".format(path))
+    with h5py.File(output_file, "r") as f:
+        chain = f["chain"].value
+        flatchain = f["flatchain"].value
+        acceptance_fraction = f["acceptance_fraction"].value
+        p0 = f["p0"].value
+        acor = f["acor"].value
 
-        # plot observed data / true particles
-        extents = [(-180,180), (-90,90), (0.,75.), (-10.,10.), (-10.,10), (-300,300)]
-        logger.debug("Plotting particles in heliocentric coordinates")
-        fig = particles.plot(plot_kwargs=dict(markersize=4, color='k'),
-                             hist_kwargs=dict(color='k'),
-                             extents=extents)
-        fig.savefig(os.path.join(path,"particles_hc.png"))
+    # thin chain
+    if len(acor) > 0:
+        t_med = np.median(acor)
+        thin_chain = chain[:,::int(t_med)]
+        thin_flatchain = np.vstack(thin_chain)
 
-        extents = [(-85,85)]*3 + [(-300,300)]*3
-        logger.debug("Plotting particles in galactocentric coordinates")
-        fig = particles.to_frame(galactocentric)\
-                       .plot(plot_kwargs=dict(markersize=4, color='k'),
-                             hist_kwargs=dict(color='k'),
-                             extents=extents)
-        fig.savefig(os.path.join(path,"particles_gc.png"))
+        nstp = chain.shape[1]
+        if t_med < 8*nstp:
+            logger.warn("Uh oh, median(acor) < 8*nsteps: {} < {}".format(t_med,8*nstp))
+        else:
+            logger.info("Good, median(acor) > 8*nsteps: {} > {}".format(t_med,8*nstp))
 
-        # plot the potential parameters
-        Npp = len(potential_params)
-        if Npp > 0:
-            # Make a corner plot for the potential parameters
-            pparams = model.parameters[:Npp]
+    if plot_config.get("mcmc_diagnostics", False):
+        logger.debug("Plotting MCMC diagnostics...")
 
-            # First, just samples from the priors:
-            logger.debug("Plotting prior over potential parameters")
-            fig = triangle.corner(p0[:,:Npp],
-                        truths=[p.target._truth for p in pparams],
-                        extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
-                        labels=[p.target.latex for p in pparams],
-                        plot_kwargs=dict(color='k'),
-                        hist_kwargs=dict(color='k'))
-            fig.savefig(os.path.join(path, "potential_prior.png"))
+        diagnostics_path = os.path.join(output_path, "diagnostics")
+        if not os.path.exists(diagnostics_path):
+            os.mkdir(diagnostics_path)
 
-            # Now the actual chains, extents from the priors
-            logger.debug("Plotting posterior over potential parameters")
-            fig = triangle.corner(flatchain[:,:Npp],
-                        truths=[p.target._truth for p in pparams],
-                        extents=[(p._ln_prior.a,p._ln_prior.b) for p in pparams],
-                        labels=[p.target.latex for p in pparams],
-                        plot_kwargs=dict(color='k'),
-                        hist_kwargs=dict(color='k'))
-            fig.savefig(os.path.join(path, "potential_posterior.png"))
+        # plot histogram of autocorrelation times
+        if len(acor) > 0:
+            fig,ax = plt.subplots(1,1,figsize=(8,8))
+            ax.hist(acor, bins=12) #model.nparameters//5)
+            ax.set_xlabel("Autocorrelation time")
+            fig.suptitle("Histogram of autocorrelation times")
+            fig.savefig(os.path.join(diagnostics_path, "acor.{}".format(plot_ext)))
 
-            # now make trace plots
-            fig,axes = plt.subplots(Npp,1,figsize=(8,12),sharex=True)
-            for ii in range(Npp):
-                ax = axes[ii]
-                p = pparams[ii]
-                for jj in range(chain.shape[0]):
-                    ax.plot(chain[jj,:,ii], drawstyle="steps", color='k', alpha=0.1)
+        # plot histogram of acceptance fractions
+        fig,ax = plt.subplots(1,1,figsize=(8,8))
+        ax.hist(acceptance_fraction, bins=nwalkers//5)
+        ax.set_xlabel("Acceptance fraction")
+        fig.suptitle("Histogram of acceptance fractions for all walkers")
+        fig.savefig(os.path.join(diagnostics_path, "acc_frac.{}".format(plot_ext)))
 
-                ax.axhline(p.target._truth, linewidth=4., alpha=0.5,
-                           linestyle="--", color="#2B8CBE")
-                ax.set_ylim(p._ln_prior.a,p._ln_prior.b)
-                ax.set_ylabel(p.target.latex)
-            fig.savefig(os.path.join(path, "potential_trace.png"))
-            del fig
-        stop = Npp
+        # plot individual walkers
+        plt.figure(figsize=(12,6))
+        for k in range(model.nparameters):
+            plt.clf()
+            for ii in range(nwalkers):
+                plt.plot(chain[ii,:,k], alpha=0.4, drawstyle='steps', color='k')
 
-        # if particles are in the model / have been observed
-        if isinstance(particles, ObservedParticle):
-            true_particles = d["true_particles"]
-            for ii in range(particles.nparticles):
-                tub = flatchain[:,Npp+ii]
+            plt.axhline(model.truths[k], color='r', lw=2., linestyle='-', alpha=0.5)
+            plt.savefig(os.path.join(diagnostics_path, "param_{}.{}".format(k, plot_ext)))
 
-                start = Npp + particles.nparticles + 6*ii
-                stop = start + 6
-                _X = flatchain[:,start:stop]
+        plt.close('all')
 
-                p = Particle(_X.T, units=particles._internal_units,
-                             frame=heliocentric)
-                p = p.to_units(particles._repr_units)
+    if plot_config.get("posterior", False):
+        logger.debug("Plotting posterior distributions...")
 
-                prior_p = Particle(p0[:,start:stop].T,
-                                   units=particles._internal_units,
-                                   frame=heliocentric)
-                prior_p = prior_p.to_units(particles._repr_units)
+        flatchain_dict = model.label_flatchain(flatchain)
+        p0_dict = model.label_flatchain(np.vstack(p0))
+        potential_group = model.parameters.get('potential', None)
+        particles_group = model.parameters.get('particles', None)
+        satellite_group = model.parameters.get('satellite', None)
 
-                # plot the posterior
-                truths = [true_particles.tub[ii]] + true_particles._repr_X[ii].tolist()
-                X_extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) for truth in truths[1:]]
-                truth_extents = [(t2,t1)] + X_extents
+        if potential_group:
+            this_flatchain = np.zeros((len(flatchain),len(potential_group)))
+            this_p0 = np.zeros((nwalkers,len(potential_group)))
+            for ii,param_name in enumerate(potential_group.keys()):
+                this_flatchain[:,ii] = np.squeeze(flatchain_dict['potential'][param_name])
+                this_p0[:,ii] = np.squeeze(p0_dict['potential'][param_name])
 
-                this_p0 = np.hstack((p0[:,Npp+ii][:,np.newaxis], prior_p._repr_X))
-                prior_extents = zip(np.min(this_p0, axis=0), np.max(this_p0, axis=0))
+            fig = triangle.corner(this_p0,
+                        plot_kwargs=dict(color='g',alpha=1.),
+                        hist_kwargs=dict(color='g',alpha=0.75,normed=True),
+                        plot_contours=False)
+            # fig = triangle.corner(this_flatchain,
+            #             fig=fig,
+            #             truths=[p.truth for p in model.parameters['potential'].values()],
+            #             truth_color=
+            #             plot_kwargs=dict(color='k',alpha=0.0001),
+            #             hist_kwargs=dict(color='k',alpha=0.0001,normed=True))
+            fig = triangle.corner(this_flatchain,
+                        fig=fig,
+                        truths=[p.truth for p in model.parameters['potential'].values()],
+                        labels=potential_group.keys(),
+                        plot_kwargs=dict(color='k',alpha=1.),
+                        hist_kwargs=dict(color='k',alpha=0.75,normed=True))
+            fig.savefig(os.path.join(output_path, "potential.{}".format(plot_ext)))
 
-                extents = []
-                for jj in range(7):
-                    lo = min(truth_extents[jj][0], prior_extents[jj][0])
-                    hi = max(truth_extents[jj][1], prior_extents[jj][1])
-                    extents.append((lo,hi))
+        if particles_group:
+            for jj in range(nparticles):
+                this_flatchain = None
+                this_p0 = None
+                this_truths = []
+                for ii,pname in enumerate(particles_group.keys()):
+                    p = flatchain_dict['particles'][pname][:,jj]
+                    _p0 = p0_dict['particles'][pname][:,jj]
+                    if p.ndim == 1:
+                        p = p[:,np.newaxis]
+                        _p0 = _p0[:,np.newaxis]
 
-                labels = ['$t_{ub}$ [Myr]','l [deg]','b [deg]','D [kpc]',\
-                          r'$\mu_l$ [mas/yr]', r'$\mu_l$ [mas/yr]','$v_r$ [km/s]']
+                    if this_flatchain is None:
+                        this_flatchain = p
+                        this_p0 = _p0
+                    else:
+                        this_flatchain = np.hstack((this_flatchain, p))
+                        this_p0 = np.hstack((this_p0, _p0))
 
-                logger.debug("Plotting particle {} prior".format(ii))
+                    truth = model.parameters['particles'][pname].truth[jj]
+                    this_truths += list(np.atleast_1d(truth))
+
                 fig = triangle.corner(this_p0,
-                                      labels=labels,
-                                      truths=truths,
-                                      extents=extents)
-                fig.suptitle("Particle {0}".format(ii))
-                fig.savefig(os.path.join(path, "particle{0}_prior.png"\
-                                         .format(ii)))
-                del fig
+                            plot_kwargs=dict(color='g',alpha=1.),
+                            hist_kwargs=dict(color='g',alpha=0.75,normed=True),
+                            plot_contours=False)
 
-                fig = triangle.corner(np.hstack((tub[:,np.newaxis], p._repr_X)),
-                                      labels=labels,
-                                      truths=truths,
-                                      extents=extents)
-                fig.suptitle("Particle {0}".format(ii))
-                fig.savefig(os.path.join(path, "particle{0}_posterior.png"\
-                                         .format(ii)))
-                del fig
+                # labels=potential_group.keys(),
+                fig = triangle.corner(this_flatchain,
+                            fig=fig,
+                            truths=this_truths,
+                            plot_kwargs=dict(color='k',alpha=1.),
+                            hist_kwargs=dict(color='k',alpha=0.75,normed=True))
+                fig.savefig(os.path.join(output_path, "particle{}.{}".format(jj,plot_ext)))
 
-                # now make trace plots
-                fig,axes = plt.subplots(7,1,figsize=(10,14))
-                for kk in range(7):
-                    for jj in range(chain.shape[0]):
-                        if kk == 0:
-                            axes[kk].plot(chain[jj,:,Npp+ii],
-                                          drawstyle="steps", color='k',
-                                          alpha=0.1)
-                        else:
-                            q = (chain[jj,:,start+kk-1]*particles._internal_units[kk-1])
-                            axes[kk].plot(q.to(particles._repr_units[kk-1]).value,
-                                          drawstyle="steps", color='k',
-                                          alpha=0.1)
+        # TODO:
+        if satellite_group:
+            raise NotImplementedError()
 
-                    axes[kk].axhline(truths[kk], linewidth=4., alpha=0.5,
-                               linestyle="--", color="#2B8CBE")
-                    axes[kk].set_ylim(extents[kk])
+        # TODO: plot observed data / true particles
+        # extents = [(-180,180), (-90,90), (0.,75.), (-10.,10.), (-10.,10), (-300,300)]
+        # logger.debug("Plotting particles in heliocentric coordinates")
+        # fig = particles.plot(plot_kwargs=dict(markersize=4, color='k'),
+        #                      hist_kwargs=dict(color='k'),
+        #                      extents=extents)
+        # fig.savefig(os.path.join(path,"particles_hc.png"))
 
-                fig.suptitle("Particle {}".format(ii))
-                fig.savefig(os.path.join(path, "particle{}_trace.png".format(ii)))
-                del fig
-                gc.collect()
-
-        # if satellite position is in the model / have been observed
-        if isinstance(satellite, ObservedParticle):
-            true_satellite = d["true_satellite"]
-
-            start = stop
-            stop = start + 6
-            _X = flatchain[:,start:stop]
-
-            s = Particle(_X.T, units=satellite._internal_units,
-                         frame=heliocentric)
-            s = s.to_units(satellite._repr_units)
-
-            prior_s = Particle(p0[:,start:stop].T,
-                               units=satellite._internal_units,
-                               frame=heliocentric)
-            prior_s = prior_s.to_units(satellite._repr_units)
-
-            # plot the posterior
-            truths = np.squeeze(true_satellite._repr_X).tolist()
-            truth_extents = [(truth-0.2*abs(truth),truth+0.2*abs(truth)) for truth in truths]
-            prior_extents = zip(np.min(prior_s._repr_X, axis=0), np.max(prior_s._repr_X, axis=0))
-
-            extents = []
-            for jj in range(6):
-                lo = min(truth_extents[jj][0], prior_extents[jj][0])
-                hi = max(truth_extents[jj][1], prior_extents[jj][1])
-                extents.append((lo,hi))
-
-            labels = ['l [deg]','b [deg]','D [kpc]',
-                      r'$\mu_l$ [mas/yr]', r'$\mu_l$ [mas/yr]','$v_r$ [km/s]']
-
-            logger.debug("Plotting satellite prior")
-            fig = triangle.corner(prior_s._repr_X,
-                                  labels=labels,
-                                  truths=truths,
-                                  extents=extents)
-            fig.suptitle("Satellite")
-            fig.savefig(os.path.join(path, "satellite_prior."))
-            del fig
-
-            logger.debug("Plotting satellite posterior")
-            fig = triangle.corner(s._repr_X,
-                                  labels=labels,
-                                  truths=truths,
-                                  extents=extents)
-            fig.suptitle("Particle {0}".format(ii))
-            fig.savefig(os.path.join(path, "satellite_posterior.png"))
-            del fig
-
-            # now make trace plots
-            fig,axes = plt.subplots(6,1,figsize=(10,14))
-            for kk in range(6):
-                for jj in range(chain.shape[0]):
-                    q = (chain[jj,:,start+kk]*satellite._internal_units[kk])
-                    axes[kk].plot(q.to(satellite._repr_units[kk]).value,
-                                  drawstyle="steps", color='k',
-                                  alpha=0.1)
-
-                axes[kk].axhline(truths[kk], linewidth=4., alpha=0.5,
-                           linestyle="--", color="#2B8CBE")
-                axes[kk].set_ylim(extents[kk])
-
-            fig.suptitle("Satellite")
-            fig.savefig(os.path.join(path, "satellite_trace.png"))
-            del fig
+        # extents = [(-85,85)]*3 + [(-300,300)]*3
+        # logger.debug("Plotting particles in galactocentric coordinates")
+        # fig = particles.to_frame(galactocentric)\
+        #                .plot(plot_kwargs=dict(markersize=4, color='k'),
+        #                      hist_kwargs=dict(color='k'),
+        #                      extents=extents)
+        # fig.savefig(os.path.join(path,"particles_gc.png"))
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -511,7 +448,9 @@ if __name__ == "__main__":
         main(args.file, mpi=args.mpi, threads=args.threads,
              overwrite=args.overwrite)
     except:
+        pool.close() if hasattr(pool, 'close') else None
         raise
         sys.exit(1)
 
+    pool.close() if hasattr(pool, 'close') else None
     sys.exit(0)

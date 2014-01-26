@@ -38,7 +38,7 @@ def read_table(filename, expr=None, N=None):
 
     return _table
 
-def read_hdf5(h5file):
+def read_hdf5(h5file, nparticles=None):
     """ Read particles and satellite from a given HDF5 file. """
 
     return_dict = dict()
@@ -50,17 +50,20 @@ def read_hdf5(h5file):
             raise ValueError("Invalid HDF5 file. Missing 'particles' or "
                              "'satellite' group.")
 
+        if nparticles is None:
+            nparticles = len(ptcl["data"].value)
+
         true_tub = ptcl["tub"].value
         if "error" in ptcl.keys():
-            p = ObservedParticle(ptcl["data"].value.T, ptcl["error"].value.T,
+            p = ObservedParticle(ptcl["data"].value[:nparticles].T,
+                                 ptcl["error"].value[:nparticles].T,
                                  frame=heliocentric,
                                  units=[u.Unit(x) for x in ptcl["units"]])
-            p.tub = true_tub
 
-            true_p = Particle(ptcl["true_data"].value.T,
+            true_p = Particle(ptcl["true_data"].value[:nparticles].T,
                               frame=heliocentric,
                               units=[u.Unit(x) for x in ptcl["units"]])
-            true_p.tub = true_tub
+            true_p.tub = true_tub[:nparticles]
             return_dict["true_particles"] = true_p
         else:
             p = Particle(ptcl["data"].value.T,

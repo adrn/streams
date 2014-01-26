@@ -13,20 +13,15 @@ import re
 import logging
 from datetime import datetime
 import resource
-import shutil
 import multiprocessing
+from collections import OrderedDict
 
 # Third-party
-from astropy.utils.console import color_print
-from astropy.utils.misc import isiterable
+from astropy.utils import isiterable
 import astropy.units as u
 import numpy as np
-
-try:
-    from emcee.utils import MPIPool
-except ImportError:
-    color_print("Failed to import MPIPool from emcee! MPI functionality "
-                "won't work.", "yellow")
+import yaml
+import yaml.constructor
 
 __all__ = ["_validate_coord", "project_root", "u_galactic", "make_path"]
 
@@ -87,32 +82,6 @@ def print_options(*args, **kwargs):
     yield
     np.set_printoptions(**original)
 
-def make_path(output_data_path, name=None, overwrite=False):
-    """ Make or return path for saving plots and sampler data files.
-
-        Parameters
-        ----------
-        output_data_path : str
-        name : str (optional)
-        overwrite : bool (optional)
-    """
-
-    if name is None:
-        iso_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        logger.debug("Name not specified, using current time...")
-        name = iso_now
-
-    path = os.path.join(output_data_path, name)
-    logger.debug("Output path: '{}'".format(path))
-
-    if os.path.exists(path) and overwrite:
-        shutil.rmtree(path)
-
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-    return path
-
 def get_pool(mpi=False, threads=None):
     """ Get a pool object to pass to emcee for parallel processing.
         If mpi is False and threads is None, pool is None.
@@ -125,9 +94,10 @@ def get_pool(mpi=False, threads=None):
             If mpi is False and threads is specified, use a Python
             multiprocessing pool with the specified number of threads.
     """
-    # This needs to go here so I don't read in the particle file N times!!
-    # get a pool object given the configuration parameters
+
     if mpi:
+        from emcee.utils import MPIPool
+
         # Initialize the MPI pool
         pool = MPIPool()
 
@@ -147,3 +117,39 @@ def get_pool(mpi=False, threads=None):
         pool = None
 
     return pool
+
+class OrderedDictYAMLLoader(yaml.Loader):
+    """
+    A YAML loader that loads mappings into ordered dictionaries.
+    """
+
+    def __init__(self, *args, **kwargs):
+        yaml.Loader.__init__(self, *args, **kwargs)
+
+        self.add_constructor(u'tag:yaml.org,2002:map', type(self).construct_yaml_map)
+        self.add_constructor(u'tag:yaml.org,2002:omap', type(self).construct_yaml_map)
+
+    def construct_yaml_map(self, node):
+        data = OrderedDict()
+        yield data
+        value = self.construct_mapping(node)
+        data.update(value)
+
+    def construct_mapping(self, node, deep=False):
+        if isinstance(node, yaml.MappingNode):
+            self.flatten_mapping(node)
+        else:
+            raise yaml.constructor.ConstructorError(None, None,
+                'expected a mapping node, but found %s' % node.id, node.start_mark)
+
+        mapping = OrderedDict()
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            try:
+                hash(key)
+            except TypeError, exc:
+                raise yaml.constructor.ConstructorError('while constructing a mapping',
+                    node.start_mark, 'found unacceptable key (%s)' % exc, key_node.start_mark)
+            value = self.construct_object(value_node, deep=deep)
+            mapping[key] = value
+        return mapping
