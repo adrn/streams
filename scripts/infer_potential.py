@@ -120,8 +120,17 @@ def main(config_file, mpi, threads, overwrite):
 
         logger.debug("Particle properties added as parameters:")
         if config['particles']['parameters'].has_key('_X'):
-            priors = [si.LogNormalPrior(particles._X[ii],particles._error_X[ii])
-                        for ii in range(nparticles)]
+            # priors = [si.LogNormalPrior(particles._X[ii],particles._error_X[ii])
+            #             for ii in range(nparticles)]
+            #################### HACK HACK HACK HACK ####################
+            priors = []
+            for ii in range(nparticles):
+                err = particles._error_X[ii]
+                err[:2] = err[:2]*1e5
+                lnp = si.LogNormalPrior(particles._X[ii],err)
+                priors.append(lnp)
+            #################### HACK HACK HACK HACK ####################
+
             X = si.ModelParameter('_X', value=particles._X, prior=priors,
                                   truth=true_particles._X)
             model.add_parameter('particles', X)
