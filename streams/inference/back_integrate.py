@@ -15,144 +15,108 @@ import os, sys
 import numpy as np
 import astropy.units as u
 
+# Project
+from ..coordinates import _hel_to_gc, _gc_to_hel
 from ..dynamics import Particle
-from ..inference import generalized_variance
-from ..integrate.satellite_particles import satellite_particles_integrate
+from ..integrate import LeapfrogIntegrator
 
-__all__ = ["back_integrate_likelihood", "variance_likelihood"]
+__all__ = ["back_integration_likelihood"]
 
-def _gc_to_hel(gc):
-    """ Convert galactocentric to heliocentric, assuming galactic
-        units: kpc, Myr, M_sun, radian
 
-        gc should be Nparticles, Ndim
-    """
-    Rsun = 8. # kpc
-    Vcirc = 0.224996676312 # kpc / Myr
+def xyz_sph_jac(hel):
+    l,b,d,mul,mub,vr = hel.T
+    cosl, sinl = np.cos(l), np.sin(l)
+    cosb, sinb = np.cos(b), np.sin(b)
 
+    gc = _hel_to_gc(hel)
     x,y,z,vx,vy,vz = gc.T
 
-    # transform to heliocentric cartesian
-    x += Rsun
-    vy -= Vcirc
+    row0 = np.zeros_like(hel.T)
+    row0[0] = -d*sinl*cosb
+    row0[1] = -d*cosl*sinb
+    row0[2] = cosl*cosb
 
-    # transform from cartesian to spherical
-    d = np.sqrt(x**2 + y**2 + z**2)
-    l = np.arctan2(y, x)
-    b = np.pi/2. - np.arccos(z/d)
+    row1 = np.zeros_like(hel.T)
+    row1[0] = d*cosl*cosb
+    row1[1] = -d*sinl*sinb
+    row1[2] = sinl*cosb
 
-    # transform cartesian velocity to spherical
-    d_xy = np.sqrt(x**2 + y**2)
-    vr = (x*vx + y*vy + z*vz) / d # velocity
+    row2 = np.zeros_like(hel.T)
+    row2[0] = 0.
+    row2[1] = -d*cosb
+    row2[2] = sinb
 
-    mu_l = -(vx*y - x*vy) / d_xy**2 # rad/Myr
-    mu_b = -(z*(x*vx + y*vy) - d_xy**2*vz) / (d**2 * d_xy) # rad/Myr
+    row3 = [-vr*cosb*sinl + mul*d*cosb*cosl - mub*d*sinb*sinl,
+            -vr*sinb*cosl - mul*d*sinb*sinl + mub*d*cosb*cosl,
+            cosb*sinl*mul + sinb*cosl*mub,
+            d*cosb*sinl,
+            d*sinb*cosl,
+            cosb*cosl]
 
-    hel = np.zeros_like(gc).T
-    for ii,col in enumerate([l,b,d,mu_l,mu_b,vr]):
-        hel[ii] = col
+    row4 = [vr*cosb*cosl + mul*d*cosb*sinl + mub*d*sinb*cosl,
+            -vr*sinb*sinl + mul*d*sinb*cosl + mub*d*cosb*sinl,
+            -cosb*cosl*mul + sinb*sinl*mub,
+            -d*cosb*cosl,
+            d*sinb*sinl,
+            cosb*sinl]
 
-    return hel.T
+    row5 = np.zeros_like(hel.T)
+    row5[0] = 0.
+    row5[1] = cosb*vr + d*sinb*mub
+    row5[2] = -cosb*mub
+    row5[3] = 0.
+    row5[4] = -d*cosb
+    row5[5] = sinb
 
-def _hel_to_gc(hel):
-    """ Convert heliocentric to galactocentric, assuming galactic
-        units: kpc, Myr, M_sun, radian
+    return np.array([row0, row1, row2, row3, row4, row5]).T
 
-        gc should be Nparticles, Ndim
-    """
-    Rsun = 8. # kpc
-    Vcirc = 0.224996676312 # kpc / Myr
+def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
 
-    l,b,d,mul,mub,vr = hel.T
+    p_gc = _hel_to_gc(p_hel)
+    s_gc = _hel_to_gc(s_hel)
 
-    # transform from spherical to cartesian
-    x = d*np.cos(b)*np.cos(l)
-    y = d*np.cos(b)*np.sin(l)
-    z = d*np.sin(b)
+    gc = np.vstack((s_gc,p_gc)).copy()
+    acc = np.zeros_like(gc[:,:3])
+    integrator = LeapfrogIntegrator(potential._acceleration_at,
+                                    np.array(gc[:,:3]), np.array(gc[:,3:]),
+                                    args=(gc.shape[0], acc))
 
-    # transform spherical velocity to cartesian
-    omega_l = -mul
-    omega_b = -mub
+    times, rs, vs = integrator.run(t1=t1, t2=t2, dt=dt)
 
-    vx = x/d*vr + y*omega_l + z*np.cos(l)*omega_b
-    vy = y/d*vr - x*omega_l + z*np.sin(l)*omega_b
-    vz = z/d*vr - d*np.cos(b)*omega_b
+    s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+    p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
-    x -= Rsun
-    vy += Vcirc
+    # These are the unbinding time indices for each particle
+    t_idx = np.array([np.argmin(np.fabs(times - t)) for t in tub])
 
-    gc = np.zeros_like(hel).T
-    for ii,col in enumerate([x,y,z,vx,vy,vz]):
-        gc[ii] = col
+    # Gaussian shell idea:
+    p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+    rel_x = p_x-s_x
 
-    return gc.T
+    p_x_hel = _gc_to_hel(p_x)
+    J1 = xyz_sph_jac(p_x_hel)
+    jac1 = np.array([np.linalg.slogdet(np.linalg.inv(j))[1] for j in J1])
+    #J2 = lnRV_xyz_jac(rel_x)
+    #jac2 = np.array([np.linalg.slogdet(np.linalg.inv(j))[1] for j in J2])
 
-def back_integrate_likelihood(p, potential_params, satellite,
-                              data, data_errors,
-                              Potential, t1, t2):
-    """ This is a simplified version of the likelihood laid out by D. Hogg in
-        Bread and Butter (https://github.com/davidwhogg/BreadAndButter/). The
-        stars are assumed to come from a Gaussian progenitor, described by
-        just two scales -- the tidal radius and velocity dispersion.
-    """
+    r_tide = potential._tidal_radius(2.5e8, s_x)
+    v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
+    v_disp = 0.017198632325
 
-    # First need to pull apart the parameters p -- first few are the
-    #   potential parameters, then the true position of the stars, then
-    #   the time the stars came unbound from their progenitor.
-    Nparticles,Ndim = data.shape
-    Nparams = len(potential_params)
-    dt = -1.
+    R = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
+    V = np.sqrt(np.sum(rel_x[...,3:]**2, axis=-1))
+    lnR = np.log(R)
+    lnV = np.log(V)
 
-    # Use the specified Potential class and parameters
-    potential_params = dict(zip(potential_params, p[:Nparams]))
-    potential = Potential(**potential_params)
+    v = 1.
+    sigma_r = np.sqrt(np.log(1 + v/r_tide**2))
+    mu_r = np.log(r_tide**2 / np.sqrt(v + r_tide**2))
+    r_term = -0.5*(2*np.log(sigma_r) + ((lnR-mu_r)/sigma_r)**2) - np.log(R**3)
 
-    # These are the true positions/velocities of the particles, which we
-    #   add as parameters in the model
-    x = np.array(p[Nparams:Nparams+(Nparticles*6)]).reshape(Nparticles,6)
-    hel = _gc_to_hel(x)
+    v = v_disp
+    sigma_v = np.sqrt(np.log(1 + v/v_esc**2))
+    mu_v = np.log(v_esc**2 / np.sqrt(v + v_esc**2))
+    v_term = -0.5*(2*np.log(sigma_v) + ((lnV-mu_v)/sigma_v)**2) - np.log(V**3)
 
-    # These are the unbinding times for each particle
-    t_idx = [int(pp) for pp in p[Nparams+(Nparticles*6):]]
-
-    # A Particle object for the true positions of the particles -- not great...
-    particles = Particle(x[:,:3]*u.kpc, x[:,3:]*u.kpc/u.Myr, 0.*u.M_sun)
-
-    acc = np.zeros((Nparticles+1,3))
-    s,p = satellite_particles_integrate(satellite, particles, potential,
-                                        potential_args=(Nparticles+1, acc),
-                                        time_spec=dict(t1=t1, t2=t2, dt=dt))
-
-    Ntimesteps  = p._X.shape[0]
-
-    sat_var = np.zeros((Ntimesteps,6))
-    sat_var[:,:3] = potential._tidal_radius(satellite._m, s._r) * 1.26
-    sat_var[:,3:] += 0.0083972030362941957 #v_disp # kpc/Myr for 2.5E7
-    cov = sat_var**2
-
-    Sigma = np.array([cov[jj] for ii,jj in enumerate(t_idx)])
-    p_x = np.array([p._X[jj,ii] for ii,jj in enumerate(t_idx)])
-    s_x = np.array([s._X[jj,0] for ii,jj in enumerate(t_idx)])
-    log_p_x_given_phi = -0.5*np.sum(-2.*np.log(Sigma) +
-                        (p_x-s_x)**2/Sigma, axis=1) * abs(dt)
-
-    log_p_D_given_x = -0.5*np.sum(-2.*np.log(data_errors) + \
-                                  (hel-data)**2/data_errors**2, axis=1)
-
-    return np.sum(log_p_D_given_x + log_p_x_given_phi)
-
-def variance_likelihood(p, param_names, satellite, particles,
-                        Potential, t1, t2):
-    """ Evaluate the TODO """
-
-    model_params = dict(zip(param_names, p))
-    potential = Potential(**model_params)
-
-    Nparticles = len(particles)
-    acc = np.zeros((Nparticles+1,3)) # placeholder
-    s_orbit,p_orbits = satellite_particles_integrate(satellite, particles,
-                                                     potential,
-                                                     potential_args=(Nparticles+1, acc), \
-                                                     time_spec=dict(t1=t1, t2=t2, dt=-1.))
-
-    return -generalized_variance(lm10, s_orbit, p_orbits)
+    return np.sum(r_term + v_term) + np.sum(jac1)

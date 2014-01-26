@@ -104,7 +104,7 @@ class DynamicalBase(object):
 
     def __getitem__(self, slc):
         if isinstance(slc, (int,slice)):
-            raise ValueError("Slicing not supported by index, only coordinate name.")
+            raise ValueError("Slicing not supported by single index or slice.")
 
         else:
             try:

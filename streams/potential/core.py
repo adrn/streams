@@ -22,7 +22,6 @@ from matplotlib import cm
 import astropy.units as u
 
 from .. import usys
-from ..inference import Parameter
 
 __all__ = ["Potential", "CartesianPotential", "CompositePotential", "PotentialParameter"]
 
