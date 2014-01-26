@@ -227,11 +227,11 @@ def main(config_file, mpi, threads, overwrite):
             sampler.reset()
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
 
-            # best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
-            # std = np.std(sampler.flatchain, axis=0)
-            # logger.debug("Walker positions: {}".format(best_pos[:5]))
-            # logger.debug("Walker std dev: {}".format(std[:5]))
-            # pos = sample_ball(best_pos, std, size=nwalkers)
+            best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
+            std = np.std(sampler.flatchain, axis=0)/10.
+            logger.debug("Walker positions: {}".format(best_pos[:5]))
+            logger.debug("Walker std dev: {}".format(std[:5]))
+            pos = sample_ball(best_pos, std, size=nwalkers)
 
         t = time.time() - time0
         logger.debug("Spent {} seconds on sampling...".format(t))
@@ -265,10 +265,10 @@ def main(config_file, mpi, threads, overwrite):
         flatchain = f["flatchain"].value
         acceptance_fraction = f["acceptance_fraction"].value
         p0 = f["p0"].value
-        acor = f["acor"]
+        acor = f["acor"].value
 
     # thin chain
-    if acor:
+    if len(acor) > 0:
         t_med = np.median(acor)
         thin_chain = chain[:,::int(t_med)]
         thin_flatchain = np.vstack(thin_chain)
@@ -287,9 +287,9 @@ def main(config_file, mpi, threads, overwrite):
             os.mkdir(diagnostics_path)
 
         # plot histogram of autocorrelation times
-        if acor:
+        if len(acor) > 0:
             fig,ax = plt.subplots(1,1,figsize=(8,8))
-            ax.hist(acor, bins=model.nparameters//5)
+            ax.hist(acor, bins=12) #model.nparameters//5)
             ax.set_xlabel("Autocorrelation time")
             fig.suptitle("Histogram of autocorrelation times")
             fig.savefig(os.path.join(diagnostics_path, "acor.{}".format(plot_ext)))
