@@ -120,17 +120,8 @@ def main(config_file, mpi, threads, overwrite):
 
         logger.debug("Particle properties added as parameters:")
         if config['particles']['parameters'].has_key('_X'):
-            # priors = [si.LogNormalPrior(particles._X[ii],particles._error_X[ii])
-            #             for ii in range(nparticles)]
-            #################### HACK HACK HACK HACK ####################
-            priors = []
-            for ii in range(nparticles):
-                err = particles._error_X[ii]
-                err[:2] = err[:2]*1e5
-                lnp = si.LogNormalPrior(particles._X[ii],err)
-                priors.append(lnp)
-            #################### HACK HACK HACK HACK ####################
-
+            priors = [si.LogNormalPrior(particles._X[ii],particles._error_X[ii])
+                        for ii in range(nparticles)]
             X = si.ModelParameter('_X', value=particles._X, prior=priors,
                                   truth=true_particles._X)
             model.add_parameter('particles', X)
@@ -234,14 +225,21 @@ def main(config_file, mpi, threads, overwrite):
 
         time0 = time.time()
         for ii in range(niter):
-            sampler.reset()
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
 
-            # best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
-            # std = np.std(sampler.flatchain, axis=0)/10.
-            # logger.debug("Walker positions: {}".format(best_pos[:5]))
-            # logger.debug("Walker std dev: {}".format(std[:5]))
-            # pos = sample_ball(best_pos, std, size=nwalkers)
+            # if any of the samplers have less than 3% acceptance,
+            #  start them from new positions sampled from the best position
+            acc_frac_test = sampler.acceptance_fraction < 0.03
+            if np.any(acc_frac_test):
+                nbad = np.sum(acc_frac_test)
+                best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
+                std = np.std(sampler.flatchain, axis=0)
+                new_pos = sample_ball(best_pos, std, size=nwalkers)
+
+                for jj in range(nwalkers):
+                    if acc_frac_test[jj]:
+                        pos[jj] = new_pos[jj]
+
 
         if nsteps_final > 0:
             sampler.reset()
