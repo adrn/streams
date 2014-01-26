@@ -52,12 +52,12 @@ hel_units = [u.radian,u.radian,u.kpc,u.radian/u.Myr,u.radian/u.Myr,u.kpc/u.Myr]
 ##################################################
 default_config = dict(
     save_path="/tmp/",
-    nburn=1000,
-    niter=10,
+    nburn=500,
+    niter=25,
     nsteps_per_iter=1000,
-    nsteps_final=2000,
-    nparticles=128,
-    nwalkers=1024,
+    nsteps_final=5000,
+    nparticles=5,
+    nwalkers=512,
     potential_params=["q1","qz","v_halo","phi"],
     infer_tub=True,
     infer_particles=True,
@@ -616,8 +616,14 @@ def main(c, mpi=False, threads=None, overwrite=False):
         for ii in range(c["niter"]):
             pos, prob, state = sampler.run_mcmc(pos, c["nsteps_per_iter"])
             best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
-            std = np.std(sampler.flatchain, axis=0) / 2.
-            print(best_pos[:5], std[:5]*2.)
+            if ii % 2 == 0:
+                std = np.std(sampler.flatchain, axis=0) * 10
+            else:
+                std = np.std(sampler.flatchain, axis=0) / 10
+
+            print()
+            print(best_pos[:5])
+            print(std[:5])
 
             pos = sample_ball(best_pos, std, size=c["nwalkers"])
 
