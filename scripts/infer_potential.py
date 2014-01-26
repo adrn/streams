@@ -228,11 +228,11 @@ def main(config_file, mpi, threads, overwrite):
             sampler.reset()
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
 
-            best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
-            std = np.std(sampler.flatchain, axis=0)/10.
-            logger.debug("Walker positions: {}".format(best_pos[:5]))
-            logger.debug("Walker std dev: {}".format(std[:5]))
-            pos = sample_ball(best_pos, std, size=nwalkers)
+            # best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
+            # std = np.std(sampler.flatchain, axis=0)/10.
+            # logger.debug("Walker positions: {}".format(best_pos[:5]))
+            # logger.debug("Walker std dev: {}".format(std[:5]))
+            # pos = sample_ball(best_pos, std, size=nwalkers)
 
         if nsteps_final > 0:
             sampler.reset()
@@ -338,6 +338,12 @@ def main(config_file, mpi, threads, overwrite):
                         plot_kwargs=dict(color='g',alpha=1.),
                         hist_kwargs=dict(color='g',alpha=0.75,normed=True),
                         plot_contours=False)
+            # fig = triangle.corner(this_flatchain,
+            #             fig=fig,
+            #             truths=[p.truth for p in model.parameters['potential'].values()],
+            #             truth_color=
+            #             plot_kwargs=dict(color='k',alpha=0.0001),
+            #             hist_kwargs=dict(color='k',alpha=0.0001,normed=True))
             fig = triangle.corner(this_flatchain,
                         fig=fig,
                         truths=[p.truth for p in model.parameters['potential'].values()],
