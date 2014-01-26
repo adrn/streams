@@ -193,6 +193,7 @@ def main(config_file, mpi, threads, overwrite):
     # read in the number of walkers to use
     nwalkers = config["walkers"]
     nsteps = config["steps"]
+    nsteps_final = config.get("steps_final", 0)
     nburn = config.get("burn_in", 0)
     niter = config.get("iterate", 1)
 
@@ -232,6 +233,10 @@ def main(config_file, mpi, threads, overwrite):
             logger.debug("Walker positions: {}".format(best_pos[:5]))
             logger.debug("Walker std dev: {}".format(std[:5]))
             pos = sample_ball(best_pos, std, size=nwalkers)
+
+        if nsteps_final > 0:
+            sampler.reset()
+            pos, prob, state = sampler.run_mcmc(pos, nsteps_final)
 
         t = time.time() - time0
         logger.debug("Spent {} seconds on sampling...".format(t))
@@ -273,11 +278,11 @@ def main(config_file, mpi, threads, overwrite):
         thin_chain = chain[:,::int(t_med)]
         thin_flatchain = np.vstack(thin_chain)
 
-        nstp = thin_chain.shape[1]
+        nstp = chain.shape[1]
         if t_med < 8*nstp:
-            logger.warn("Uh oh, median(acor) < 8*nsteps: {} < {}".format(t_med,nstp))
+            logger.warn("Uh oh, median(acor) < 8*nsteps: {} < {}".format(t_med,8*nstp))
         else:
-            logger.info("Good, median(acor) > 8*nsteps: {} > {}".format(t_med,nstp))
+            logger.info("Good, median(acor) > 8*nsteps: {} > {}".format(t_med,8*nstp))
 
     if plot_config.get("mcmc_diagnostics", False):
         logger.debug("Plotting MCMC diagnostics...")
