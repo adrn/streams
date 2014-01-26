@@ -35,7 +35,8 @@ class StreamModel(object):
                 The potential to fit.
         """
         self._potential_class = potential.__class__
-        self._given_potential_params = potential.parameters.copy()
+        self._given_potential_params = dict([(k,v._value)
+                                             for k,v in potential.parameters.items()])
 
         self.parameters = OrderedDict()
         self.parameters['potential'] = OrderedDict()
