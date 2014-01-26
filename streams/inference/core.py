@@ -156,7 +156,7 @@ class StreamModel(object):
 
         # get potential
         pparams = self._given_potential_params.copy()
-        for k,v in derp['potential'].items():
+        for k,v in derp.get('potential',dict()).items():
             pparams[k] = v
 
         # heliocentric particle positions and unbinding times
