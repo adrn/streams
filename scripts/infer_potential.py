@@ -23,8 +23,10 @@ import yaml
 
 # Project
 from streams import usys
+from streams.coordinates.frame import galactocentric
 from streams.dynamics import ObservedParticle, Particle
 import streams.io as io
+from streams.io.sgr import SgrSimulation
 import streams.inference as si
 import streams.potential as sp
 from streams.util import get_pool, _parse_quantity, OrderedDictYAMLLoader
@@ -84,13 +86,7 @@ def main(config_file, mpi, threads, overwrite):
     nparticles = true_particles.nparticles
     logger.info("Running with {} particles.".format(nparticles))
 
-    # TODO: plot true_particles, true_satellite
-    # TODO: if particles is key, plot those too
-    # plot over the rest of the stream
-    #fig = true_particles.plot()
-    from streams.coordinates.frame import galactocentric
-    from streams.io.sgr import SgrSimulation
-
+    # plot true_particles, true_satellite over the rest of the stream
     gc_particles = true_particles.to_frame(galactocentric)
     sgr = SgrSimulation("2.5e8")
     all_gc_particles = sgr.particles(N=1000, expr="tub!=0").to_frame(galactocentric)
