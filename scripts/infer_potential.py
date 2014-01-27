@@ -231,9 +231,9 @@ def main(config_file, mpi, threads, overwrite):
         for ii in range(niter):
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
 
-            # if any of the samplers have less than 3% acceptance,
+            # if any of the samplers have less than 5% acceptance,
             #  start them from new positions sampled from the best position
-            acc_frac_test = sampler.acceptance_fraction < 0.03
+            acc_frac_test = sampler.acceptance_fraction < 0.05
             if np.any(acc_frac_test):
                 nbad = np.sum(acc_frac_test)
                 best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
@@ -294,6 +294,10 @@ def main(config_file, mpi, threads, overwrite):
         #     logger.warn("Uh oh, median(acor) < 8*nsteps: {} < {}".format(t_med,8*nstp))
         # else:
         #     logger.info("Good, median(acor) > 8*nsteps: {} > {}".format(t_med,8*nstp))
+    else:
+        logger.warn("FAILED TO THIN CHAIN")
+        thin_chain = chain
+        thin_flatchain = flatchain
 
     # plot true_particles, true_satellite over the rest of the stream
     gc_particles = true_particles.to_frame(galactocentric)
@@ -350,27 +354,28 @@ def main(config_file, mpi, threads, overwrite):
     if plot_config.get("posterior", False):
         logger.debug("Plotting posterior distributions...")
 
-        flatchain_dict = model.label_flatchain(flatchain)
+        flatchain_dict = model.label_flatchain(thin_flatchain)
+        p0 = model.sample_priors(size=10000) # HACK HACK HACK
         p0_dict = model.label_flatchain(np.vstack(p0))
         potential_group = model.parameters.get('potential', None)
         particles_group = model.parameters.get('particles', None)
         satellite_group = model.parameters.get('satellite', None)
 
         if potential_group:
-            this_flatchain = np.zeros((len(flatchain),len(potential_group)))
+            this_flatchain = np.zeros((len(thin_flatchain),len(potential_group)))
             this_p0 = np.zeros((nwalkers,len(potential_group)))
             for ii,param_name in enumerate(potential_group.keys()):
                 this_flatchain[:,ii] = np.squeeze(flatchain_dict['potential'][param_name])
                 this_p0[:,ii] = np.squeeze(p0_dict['potential'][param_name])
 
             fig = triangle.corner(this_p0,
-                        plot_kwargs=dict(color='g',alpha=1.),
+                        plot_kwargs=dict(color='g',alpha=0.1),
                         hist_kwargs=dict(color='g',alpha=0.75,normed=True),
                         plot_contours=False)
             # fig = triangle.corner(this_flatchain,
             #             fig=fig,
             #             truths=[p.truth for p in model.parameters['potential'].values()],
-            #             truth_color=
+            #             truth_color="r",
             #             plot_kwargs=dict(color='k',alpha=0.0001),
             #             hist_kwargs=dict(color='k',alpha=0.0001,normed=True))
             fig = triangle.corner(this_flatchain,
@@ -417,11 +422,11 @@ def main(config_file, mpi, threads, overwrite):
                 fig.savefig(os.path.join(output_path, "particle{}.{}".format(jj,plot_ext)))
 
             # HACK this is the Hogg suck-it-up plot
-            fig = triangle.corner(thin_chain,
+            fig = triangle.corner(thin_flatchain,
                                   truths=model.truths,
                                   plot_kwargs=dict(color='k',alpha=1.),
                                   hist_kwargs=dict(color='k',alpha=0.75,normed=True))
-            fig.savefig(os.path.join(output_path, "suck-it-up.{}".format(jj,plot_ext)))
+            fig.savefig(os.path.join(output_path, "suck-it-up.{}".format(plot_ext)))
 
         # TODO:
         if satellite_group:
