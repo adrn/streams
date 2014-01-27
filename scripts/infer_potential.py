@@ -290,10 +290,10 @@ def main(config_file, mpi, threads, overwrite):
         thin_flatchain = np.vstack(thin_chain)
 
         nstp = chain.shape[1]
-        if t_med < 8*nstp:
-            logger.warn("Uh oh, median(acor) < 8*nsteps: {} < {}".format(t_med,8*nstp))
-        else:
-            logger.info("Good, median(acor) > 8*nsteps: {} > {}".format(t_med,8*nstp))
+        # if 8*t_med < nstp:
+        #     logger.warn("Uh oh, median(acor) < 8*nsteps: {} < {}".format(t_med,8*nstp))
+        # else:
+        #     logger.info("Good, median(acor) > 8*nsteps: {} > {}".format(t_med,8*nstp))
 
     # plot true_particles, true_satellite over the rest of the stream
     gc_particles = true_particles.to_frame(galactocentric)
@@ -415,6 +415,13 @@ def main(config_file, mpi, threads, overwrite):
                             plot_kwargs=dict(color='k',alpha=1.),
                             hist_kwargs=dict(color='k',alpha=0.75,normed=True))
                 fig.savefig(os.path.join(output_path, "particle{}.{}".format(jj,plot_ext)))
+
+            # HACK this is the Hogg suck-it-up plot
+            fig = triangle.corner(thin_chain,
+                                  truths=model.truths,
+                                  plot_kwargs=dict(color='k',alpha=1.),
+                                  hist_kwargs=dict(color='k',alpha=0.75,normed=True))
+            fig.savefig(os.path.join(output_path, "suck-it-up.{}".format(jj,plot_ext)))
 
         # TODO:
         if satellite_group:
