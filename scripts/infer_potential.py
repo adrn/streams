@@ -106,8 +106,7 @@ def main(config_file, mpi, threads, overwrite):
     axes[1].plot(gc_particles["vx"].to(u.km/u.s).value,
                  gc_particles["vz"].to(u.km/u.s).value,
                  markersize=10., marker='o', linestyle='none', alpha=0.75)
-    plt.show()
-    return
+    fig.savefig(os.path.join(output_path, "xyz_vxvyvz.{}".format(plot_ext)))
 
     # integration stuff
     t1 = float(d["t1"])
