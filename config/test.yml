@@ -14,6 +14,7 @@ plot:
 # data
 data_file: N128.hdf5
 nparticles: 2
+particle_idx: [0,50]
 
 # integration
 dt: -1.

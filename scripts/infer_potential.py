@@ -75,12 +75,39 @@ def main(config_file, mpi, threads, overwrite):
     # load satellite and particle data
     data_file = os.path.join(data_path, config['data_file'])
     logger.debug("Reading particle/satellite data from:\n\t{}".format(data_file))
-    d = io.read_hdf5(data_file, nparticles=config.get('nparticles', None))
+    d = io.read_hdf5(data_file,
+                     nparticles=config.get('nparticles', None),
+                     particle_idx=config.get('particle_idx', None))
 
     true_particles = d['true_particles']
     true_satellite = d['true_satellite']
     nparticles = true_particles.nparticles
     logger.info("Running with {} particles.".format(nparticles))
+
+    # TODO: plot true_particles, true_satellite
+    # TODO: if particles is key, plot those too
+    # plot over the rest of the stream
+    #fig = true_particles.plot()
+    from streams.coordinates.frame import galactocentric
+    from streams.io.sgr import SgrSimulation
+
+    gc_particles = true_particles.to_frame(galactocentric)
+    sgr = SgrSimulation("2.5e8")
+    all_gc_particles = sgr.particles(N=1000, expr="tub!=0").to_frame(galactocentric)
+
+    fig,axes = plt.subplots(1,2,figsize=(16,8))
+    axes[0].plot(all_gc_particles["x"].value, all_gc_particles["z"].value,
+                 markersize=10., marker='.', linestyle='none', alpha=0.25)
+    axes[0].plot(gc_particles["x"].value, gc_particles["z"].value,
+                 markersize=10., marker='o', linestyle='none', alpha=0.75)
+    axes[1].plot(all_gc_particles["vx"].to(u.km/u.s).value,
+                 all_gc_particles["vz"].to(u.km/u.s).value,
+                 markersize=10., marker='.', linestyle='none', alpha=0.25)
+    axes[1].plot(gc_particles["vx"].to(u.km/u.s).value,
+                 gc_particles["vz"].to(u.km/u.s).value,
+                 markersize=10., marker='o', linestyle='none', alpha=0.75)
+    plt.show()
+    return
 
     # integration stuff
     t1 = float(d["t1"])
