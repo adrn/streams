@@ -82,6 +82,7 @@ def rel_dist(**kwargs):
 
     nbins = 50
     fig,axes = plt.subplots(4,2,figsize=(8.5,11), sharex='col', sharey=True)
+    fig2,axes2 = plt.subplots(1,2,figsize=(11,8.5))
 
     #_m = kwargs["mass"]
     for kk,_m in enumerate(["2.5e6","2.5e7","2.5e8","2.5e9"]):
@@ -166,22 +167,27 @@ def rel_dist(**kwargs):
             axes[kk,0].set_xlabel(r"$\ln\vert r_i-r_{\rm sat} \vert$")
             axes[kk,1].set_xlabel(r"$\ln\vert v_i-v_{\rm sat} \vert$")
 
-    plt.tight_layout()
+        n,bins,patches = axes2[0].hist((np.log(rel_r)-np.log(r_tide)), linewidth=1.,
+                                       linestyle='solid', edgecolor='k', histtype='stepfilled',
+                                       bins=nbins, alpha=0.25, normed=True)
+        axes2[0].set_title("normalized distance distribution")
+        axes2[0].set_yticks([])
+        axes2[0].set_xlabel(r"$\ln\vert r_i-r_{\rm sat} \vert - \ln r_{\rm tide}$")
+
+        n,bins,patches = axes2[1].hist((np.log(rel_v)-np.log(v_disp)), linewidth=1.,
+                                       linestyle='solid', edgecolor='k', histtype='stepfilled',
+                                       bins=nbins, alpha=0.25, normed=True)
+        axes2[1].set_title("normalized velocity distribution")
+        axes2[1].set_yticks([])
+        axes2[1].set_xlabel(r"$\ln\vert v_i-v_{\rm sat} \vert - \ln \sigma_v$")
+
+    fig.tight_layout()
     fig.savefig(os.path.join(plot_path, "rel_dists.pdf"))
 
-    # fig,axes = plt.subplots(1,2,figsize=(16,8))
-    # n,bins,patches = axes[0].hist((np.log(rel_r)-np.log(r_tide)),
-    #                               bins=nbins, alpha=0.4, normed=True)
-    # axes[0].set_title("normed distance distribution")
-    # axes[0].set_yticks([])
-
-    # n,bins,patches = axes[1].hist((np.log(rel_v)-np.log(v_disp)),
-    #                               bins=nbins, alpha=0.4, normed=True)
-    # axes[1].set_title("normed velocity distribution")
-    # axes[1].set_yticks([])
-
-    # plt.tight_layout()
-    # fig.savefig(os.path.join(plot_path, "{}_norm_dists.pdf".format(_m)))
+    fig2.tight_layout()
+    axes2[0].set_xlim(-3,3)
+    axes2[1].set_xlim(-3,3)
+    fig2.savefig(os.path.join(plot_path, "norm_dists.pdf".format(_m)))
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
