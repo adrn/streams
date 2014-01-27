@@ -38,7 +38,7 @@ def read_table(filename, expr=None, N=None):
 
     return _table
 
-def read_hdf5(h5file, nparticles=None):
+def read_hdf5(h5file, nparticles=None, particle_idx=None):
     """ Read particles and satellite from a given HDF5 file. """
 
     return_dict = dict()
@@ -53,17 +53,20 @@ def read_hdf5(h5file, nparticles=None):
         if nparticles is None:
             nparticles = len(ptcl["data"].value)
 
+        if particle_idx is None:
+            particle_idx = np.arange(0, nparticles, dtype=int)
+
         true_tub = ptcl["tub"].value
         if "error" in ptcl.keys():
-            p = ObservedParticle(ptcl["data"].value[:nparticles].T,
-                                 ptcl["error"].value[:nparticles].T,
+            p = ObservedParticle(ptcl["data"].value[particle_idx].T,
+                                 ptcl["error"].value[particle_idx].T,
                                  frame=heliocentric,
                                  units=[u.Unit(x) for x in ptcl["units"]])
 
-            true_p = Particle(ptcl["true_data"].value[:nparticles].T,
+            true_p = Particle(ptcl["true_data"].value[particle_idx].T,
                               frame=heliocentric,
                               units=[u.Unit(x) for x in ptcl["units"]])
-            true_p.tub = true_tub[:nparticles]
+            true_p.tub = true_tub[particle_idx]
             return_dict["true_particles"] = true_p
         else:
             p = Particle(ptcl["data"].value.T,
