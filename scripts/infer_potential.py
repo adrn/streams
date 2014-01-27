@@ -86,24 +86,6 @@ def main(config_file, mpi, threads, overwrite):
     nparticles = true_particles.nparticles
     logger.info("Running with {} particles.".format(nparticles))
 
-    # plot true_particles, true_satellite over the rest of the stream
-    gc_particles = true_particles.to_frame(galactocentric)
-    sgr = SgrSimulation("2.5e8")
-    all_gc_particles = sgr.particles(N=1000, expr="tub!=0").to_frame(galactocentric)
-
-    fig,axes = plt.subplots(1,2,figsize=(16,8))
-    axes[0].plot(all_gc_particles["x"].value, all_gc_particles["z"].value,
-                 markersize=10., marker='.', linestyle='none', alpha=0.25)
-    axes[0].plot(gc_particles["x"].value, gc_particles["z"].value,
-                 markersize=10., marker='o', linestyle='none', alpha=0.75)
-    axes[1].plot(all_gc_particles["vx"].to(u.km/u.s).value,
-                 all_gc_particles["vz"].to(u.km/u.s).value,
-                 markersize=10., marker='.', linestyle='none', alpha=0.25)
-    axes[1].plot(gc_particles["vx"].to(u.km/u.s).value,
-                 gc_particles["vz"].to(u.km/u.s).value,
-                 markersize=10., marker='o', linestyle='none', alpha=0.75)
-    fig.savefig(os.path.join(output_path, "xyz_vxvyvz.{}".format(plot_ext)))
-
     # integration stuff
     t1 = float(d["t1"])
     t2 = float(d["t2"])
@@ -312,6 +294,24 @@ def main(config_file, mpi, threads, overwrite):
             logger.warn("Uh oh, median(acor) < 8*nsteps: {} < {}".format(t_med,8*nstp))
         else:
             logger.info("Good, median(acor) > 8*nsteps: {} > {}".format(t_med,8*nstp))
+
+    # plot true_particles, true_satellite over the rest of the stream
+    gc_particles = true_particles.to_frame(galactocentric)
+    sgr = SgrSimulation("2.5e8")
+    all_gc_particles = sgr.particles(N=1000, expr="tub!=0").to_frame(galactocentric)
+
+    fig,axes = plt.subplots(1,2,figsize=(16,8))
+    axes[0].plot(all_gc_particles["x"].value, all_gc_particles["z"].value,
+                 markersize=10., marker='.', linestyle='none', alpha=0.25)
+    axes[0].plot(gc_particles["x"].value, gc_particles["z"].value,
+                 markersize=10., marker='o', linestyle='none', alpha=0.75)
+    axes[1].plot(all_gc_particles["vx"].to(u.km/u.s).value,
+                 all_gc_particles["vz"].to(u.km/u.s).value,
+                 markersize=10., marker='.', linestyle='none', alpha=0.25)
+    axes[1].plot(gc_particles["vx"].to(u.km/u.s).value,
+                 gc_particles["vz"].to(u.km/u.s).value,
+                 markersize=10., marker='o', linestyle='none', alpha=0.75)
+    fig.savefig(os.path.join(output_path, "xyz_vxvyvz.{}".format(plot_ext)))
 
     if plot_config.get("mcmc_diagnostics", False):
         logger.debug("Plotting MCMC diagnostics...")
