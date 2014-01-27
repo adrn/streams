@@ -236,8 +236,9 @@ def main(config_file, mpi, threads, overwrite):
             acc_frac_test = sampler.acceptance_fraction < 0.05
             if np.any(acc_frac_test):
                 nbad = np.sum(acc_frac_test)
-                best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
-                std = np.std(sampler.flatchain, axis=0)
+                best_pos = np.median(sampler.flatchain, axis=0)
+                #[sampler.flatlnprobability.argmax()]
+                std = np.std(sampler.flatchain, axis=0)/2.
                 new_pos = sample_ball(best_pos, std, size=nwalkers)
 
                 for jj in range(nwalkers):
