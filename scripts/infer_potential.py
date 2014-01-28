@@ -364,7 +364,7 @@ def main(config_file, mpi, threads, overwrite):
 
         if potential_group:
             this_flatchain = np.zeros((len(thin_flatchain),len(potential_group)))
-            this_p0 = np.zeros((nwalkers,len(potential_group)))
+            this_p0 = np.zeros((len(p0),len(potential_group)))
             for ii,param_name in enumerate(potential_group.keys()):
                 this_flatchain[:,ii] = np.squeeze(flatchain_dict['potential'][param_name])
                 this_p0[:,ii] = np.squeeze(p0_dict['potential'][param_name])
