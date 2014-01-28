@@ -42,8 +42,11 @@ def read_config(filename, default_filename=''):
     """
 
     # read and load YAML file
-    with open(filename) as f:
-        config = yaml.load(f.read(), OrderedDictYAMLLoader)
+    try:
+        with open(filename) as f:
+            config = yaml.load(f.read(), OrderedDictYAMLLoader)
+    except:
+        config = yaml.load(filename, OrderedDictYAMLLoader)
 
     # first make sure the path to the streams project is specified either
     #   as an env var or in the yaml
