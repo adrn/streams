@@ -21,14 +21,12 @@ import numpy as np
 import triangle
 
 # Project
-from streams import usys
 from streams.coordinates.frame import galactocentric
-from streams.dynamics import ObservedParticle, Particle
 import streams.io as io
 from streams.io.sgr import SgrSimulation
 import streams.inference as si
 import streams.potential as sp
-from streams.util import get_pool, _parse_quantity
+from streams.util import get_pool
 
 global pool
 pool = None
@@ -55,88 +53,25 @@ def main(config_file, mpi, threads, overwrite):
     logger.debug("Will write data to:\n\t{}".format(output_path))
     output_file = os.path.join(output_path, "inference.hdf5")
 
-    # load satellite and particle data
-    logger.debug("Reading particle/satellite data from:\n\t{}".format(config["data_file"]))
-    d = io.read_hdf5(config["data_file"],
-                     nparticles=config.get('nparticles', None),
-                     particle_idx=config.get('particle_idx', None))
-
-    true_particles = d['true_particles']
-    true_satellite = d['true_satellite']
-    nparticles = true_particles.nparticles
-    logger.info("Running with {} particles.".format(nparticles))
-
-    # integration stuff
-    t1 = config.get("t1", float(d["t1"]))
-    t2 = config.get("t2", float(d["t2"]))
-    dt = config.get("dt", -1.)
-
-    # get the potential object specified from the potential subpackage
-    Potential = getattr(sp, config["potential"]["class_name"])
-    potential = Potential()
-    logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
-
-    # Define the empty model to add parameters to
-    model = si.StreamModel(potential, lnpargs=[t1,t2,dt,1.], # 1. is the inverse temperature
-                           true_satellite=true_satellite,
-                           true_particles=true_particles)
-
-    # Potential parameters
-    if config["potential"]["parameters"] is not None:
-        for ii,(name,kwargs) in enumerate(config["potential"]["parameters"].items()):
-            a,b = kwargs["a"], kwargs["b"]
-            p = getattr(potential, name)
-            logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
-
-            prior = si.LogUniformPrior(_parse_quantity(a).decompose(usys).value,
-                                       _parse_quantity(b).decompose(usys).value)
-            p = si.ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
-            model.add_parameter('potential', p)
-
-    # Particle parameters
-    if config['particles']['parameters'] is not None:
-        particles = d['particles']
-
-        logger.debug("Particle properties added as parameters:")
-        if config['particles']['parameters'].has_key('_X'):
-            priors = [si.LogNormalPrior(particles._X[ii],particles._error_X[ii])
-                        for ii in range(nparticles)]
-            X = si.ModelParameter('_X', value=particles._X, prior=priors,
-                                  truth=true_particles._X)
-            model.add_parameter('particles', X)
-            logger.debug("\t\t_X - particle 6D positions today")
-
-        if config['particles']['parameters'].has_key('tub'):
-            priors = [si.LogUniformPrior(t2, t1) for ii in range(nparticles)]
-            tub = si.ModelParameter('tub', value=np.zeros(nparticles), prior=priors,
-                                    truth=true_particles.tub)
-            model.add_parameter('particles', tub)
-            logger.debug("\t\ttub - unbinding time of particles")
-
-    # Satellite parameters
-    if config['satellite']['parameters'] is not None:
-        satellite = d['satellite']
-
-        logger.debug("Satellite properties added as parameters:")
-        if config['satellite']['parameters'].has_key('_X'):
-            priors = [si.LogNormalPrior(satellite._X[0],satellite._error_X[0])]
-            s_X = si.ModelParameter('_X', value=satellite._X, prior=priors,
-                                    truth=true_satellite._X)
-            model.add_parameter('satellite', s_X)
-            logger.debug("\t\t_X - satellite 6D position today")
-
-    return
+    # get a StreamModel from a config dict
+    model = si.StreamModel.from_config(config)
 
     # make sure true posterior value is higher than any randomly sampled value
     logger.debug("Checking posterior values...")
-    true_ln_p = model.ln_posterior(model.truths, t1, t2, dt)
+    true_ln_p = model.ln_posterior(model.truths, *model.lnpargs)
+    true_ln_p2 = model(model.truths)
     logger.debug("\t\t At truth: {}".format(true_ln_p))
     p0 = model.sample_priors()
-    ln_p = model.ln_posterior(p0, t1, t2, dt)
+    ln_p = model.ln_posterior(p0, *model.lnpargs)
+    ln_p2 = model(p0)
     logger.debug("\t\t At random sample: {}".format(ln_p))
     assert true_ln_p > ln_p
+    assert true_ln_p == true_ln_p2
+    assert ln_p == ln_p2
 
     logger.info("Model has {} parameters".format(model.nparameters))
+
+    return
 
     ################################################
     ################################################

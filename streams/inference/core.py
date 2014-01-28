@@ -22,6 +22,8 @@ from ..io import read_hdf5
 from .parameter import ModelParameter
 from .prior import *
 from .. import potential as sp
+from ..util import _parse_quantity
+from .. import usys
 
 __all__ = ["StreamModel", "StreamModelSampler"]
 
