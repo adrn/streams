@@ -21,8 +21,8 @@ from ._lm10_acceleration import lm10_acceleration
 from .. import usys
 from ..util import _parse_quantity
 
-from ..inference import ModelParameter
-from ..inference.prior import LogUniformPrior, LogPrior
+#from ..inference import ModelParameter
+#from ..inference.prior import LogUniformPrior, LogPrior
 
 class LawMajewski2010(CompositePotential):
 
