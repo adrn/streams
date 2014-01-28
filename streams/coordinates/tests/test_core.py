@@ -67,6 +67,48 @@ def test_roundtrip():
     np.all(np.round((vy1-vy2)/vy1*100.,2) == 0)
     np.all(np.round((vz1-vz2)/vz1*100.,2) == 0)
 
+def test_sgr():
+
+    d = np.genfromtxt(os.path.join(os.environ['STREAMSPATH'], 'data',
+                                   'simulation', 'LM10', 'SgrTriax_DYN.dat'),
+                      names=True)[:2]
+
+    l,b,D,mul,mub,vr = gc_to_hel(-d['xgc']*u.kpc, d['ygc']*u.kpc, d['zgc']*u.kpc,
+                                 -d['u']*u.km/u.s, d['v']*u.km/u.s, d['w']*u.km/u.s)
+
+    print(l.to(u.degree).value - d['l'])
+    print(b.to(u.degree).value - d['b'])
+    print(D.value - d['dist'])
+
+    print(mul.value - d['mul'])
+    print(mub.value - d['mub'])
+
+    import astropy.coordinates as coord
+    vgsr = vhel_to_vgsr(coord.Angle(l), coord.Angle(b), vr)
+    print(vgsr.value - d['vgsr'])
+
+    return
+
+    np.random.seed(43)
+    N = 100
+    x1 = np.random.uniform(-50.,50.,size=N)*u.kpc
+    y1 = np.random.uniform(-50.,50.,size=N)*u.kpc
+    z1 = np.random.uniform(-50.,50.,size=N)*u.kpc
+
+    vx1 = np.random.uniform(-100.,100.,size=N)*u.km/u.s
+    vy1 = np.random.uniform(-100.,100.,size=N)*u.km/u.s
+    vz1 = np.random.uniform(-100.,100.,size=N)*u.km/u.s
+
+    l,b,d,mul,mub,vr = gc_to_hel(x1,y1,z1,vx1,vy1,vz1)
+    x2,y2,z2,vx2,vy2,vz2 = hel_to_gc(l,b,d,mul,mub,vr)
+
+    np.all(np.round((x1-x2)/x1*100.,2) == 0)
+    np.all(np.round((y1-y2)/y1*100.,2) == 0)
+    np.all(np.round((z1-z2)/z1*100.,2) == 0)
+    np.all(np.round((vx1-vx2)/vx1*100.,2) == 0)
+    np.all(np.round((vy1-vy2)/vy1*100.,2) == 0)
+    np.all(np.round((vz1-vz2)/vz1*100.,2) == 0)
+
 def test_roundtrip_unitless():
     np.random.seed(43)
     N = 100
