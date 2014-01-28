@@ -237,7 +237,7 @@ def main(config_file, mpi, threads, overwrite):
             if np.any(acc_frac_test):
                 nbad = np.sum(acc_frac_test)
                 med_pos = np.median(sampler.flatchain, axis=0)
-                std = np.std(sampler.flatchain, axis=0)/2.
+                std = np.std(sampler.flatchain, axis=0)
                 new_pos = sample_ball(med_pos, std, size=nwalkers)
 
                 for jj in range(nwalkers):
