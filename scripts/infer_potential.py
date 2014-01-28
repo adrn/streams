@@ -428,22 +428,6 @@ def main(config_file, mpi, threads, overwrite):
         if satellite_group:
             raise NotImplementedError()
 
-        # TODO: plot observed data / true particles
-        # extents = [(-180,180), (-90,90), (0.,75.), (-10.,10.), (-10.,10), (-300,300)]
-        # logger.debug("Plotting particles in heliocentric coordinates")
-        # fig = particles.plot(plot_kwargs=dict(markersize=4, color='k'),
-        #                      hist_kwargs=dict(color='k'),
-        #                      extents=extents)
-        # fig.savefig(os.path.join(path,"particles_hc.png"))
-
-        # extents = [(-85,85)]*3 + [(-300,300)]*3
-        # logger.debug("Plotting particles in galactocentric coordinates")
-        # fig = particles.to_frame(galactocentric)\
-        #                .plot(plot_kwargs=dict(markersize=4, color='k'),
-        #                      hist_kwargs=dict(color='k'),
-        #                      extents=extents)
-        # fig.savefig(os.path.join(path,"particles_gc.png"))
-
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
