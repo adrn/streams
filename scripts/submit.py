@@ -116,6 +116,6 @@ if __name__ == "__main__":
 
     filename = os.path.join(os.environ['STREAMSPATH'], args.file)
     main(filename, mpi_threads=args.mpi_threads, walltime=args.time,
-         memory=args.memory, job_name=args.job_name, astro=ASTRO)
+         memory=args.memory, job_name=args.job_name, astro=os.environ['ASTRO'])
     sys.exit(0)
 
