@@ -18,6 +18,10 @@ import astropy.units as u
 
 # Project
 from .back_integrate import back_integration_likelihood
+from ..io import read_hdf5
+from .parameter import ModelParameter
+from .prior import *
+from .. import potential as sp
 
 __all__ = ["StreamModel", "StreamModelSampler"]
 
@@ -48,6 +52,87 @@ class StreamModel(object):
 
         self.true_satellite = true_satellite
         self.true_particles = true_particles
+
+    @classmethod
+    def from_config(cls, config):
+        """ Construct a StreamModel from a configuration dictionary.
+            Typically comes from a YAML file via `streams.io.read_config`.
+
+            Parameters
+            ----------
+            config : dict
+        """
+        # load satellite and particle data
+        logger.debug("Reading particle/satellite data from:\n\t{}".format(config["data_file"]))
+        d = read_hdf5(config["data_file"],
+                      nparticles=config.get('nparticles', None),
+                      particle_idx=config.get('particle_idx', None))
+
+        true_particles = d['true_particles']
+        true_satellite = d['true_satellite']
+        nparticles = true_particles.nparticles
+        logger.info("Running with {} particles.".format(nparticles))
+
+        # integration stuff
+        t1 = config.get("t1", float(d["t1"]))
+        t2 = config.get("t2", float(d["t2"]))
+        dt = config.get("dt", -1.)
+
+        # get the potential object specified from the potential subpackage
+        Potential = getattr(sp, config["potential"]["class_name"])
+        potential = Potential()
+        logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
+
+        # Define the empty model to add parameters to
+        model = cls(potential, lnpargs=[t1,t2,dt,1.], # 1. is the inverse temperature
+                    true_satellite=true_satellite,
+                    true_particles=true_particles)
+
+        # Potential parameters
+        if config["potential"]["parameters"] is not None:
+            for ii,(name,kwargs) in enumerate(config["potential"]["parameters"].items()):
+                a,b = kwargs["a"], kwargs["b"]
+                p = getattr(potential, name)
+                logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
+
+                prior = LogUniformPrior(_parse_quantity(a).decompose(usys).value,
+                                           _parse_quantity(b).decompose(usys).value)
+                p = ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
+                model.add_parameter('potential', p)
+
+        # Particle parameters
+        if config['particles']['parameters'] is not None:
+            particles = d['particles']
+
+            logger.debug("Particle properties added as parameters:")
+            if config['particles']['parameters'].has_key('_X'):
+                priors = [LogNormalPrior(particles._X[ii],particles._error_X[ii])
+                            for ii in range(nparticles)]
+                X = ModelParameter('_X', value=particles._X, prior=priors,
+                                      truth=true_particles._X)
+                model.add_parameter('particles', X)
+                logger.debug("\t\t_X - particle 6D positions today")
+
+            if config['particles']['parameters'].has_key('tub'):
+                priors = [LogUniformPrior(t2, t1) for ii in range(nparticles)]
+                tub = ModelParameter('tub', value=np.zeros(nparticles), prior=priors,
+                                        truth=true_particles.tub)
+                model.add_parameter('particles', tub)
+                logger.debug("\t\ttub - unbinding time of particles")
+
+        # Satellite parameters
+        if config['satellite']['parameters'] is not None:
+            satellite = d['satellite']
+
+            logger.debug("Satellite properties added as parameters:")
+            if config['satellite']['parameters'].has_key('_X'):
+                priors = [LogNormalPrior(satellite._X[0],satellite._error_X[0])]
+                s_X = ModelParameter('_X', value=satellite._X, prior=priors,
+                                        truth=true_satellite._X)
+                model.add_parameter('satellite', s_X)
+                logger.debug("\t\t_X - satellite 6D position today")
+
+        return model
 
     def add_parameter(self, parameter_group, parameter):
         """ """
