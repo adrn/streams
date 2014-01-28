@@ -341,14 +341,14 @@ def main(config_file, mpi, threads, overwrite):
         fig.savefig(os.path.join(diagnostics_path, "acc_frac.{}".format(plot_ext)))
 
         # plot individual walkers
-        plt.figure(figsize=(12,6))
-        for k in range(model.nparameters):
-            plt.clf()
-            for ii in range(nwalkers):
-                plt.plot(chain[ii,:,k], alpha=0.4, drawstyle='steps', color='k')
+        # plt.figure(figsize=(12,6))
+        # for k in range(model.nparameters):
+        #     plt.clf()
+        #     for ii in range(nwalkers):
+        #         plt.plot(chain[ii,:,k], alpha=0.4, drawstyle='steps', color='k')
 
-            plt.axhline(model.truths[k], color='r', lw=2., linestyle='-', alpha=0.5)
-            plt.savefig(os.path.join(diagnostics_path, "param_{}.{}".format(k, plot_ext)))
+        #     plt.axhline(model.truths[k], color='r', lw=2., linestyle='-', alpha=0.5)
+        #     plt.savefig(os.path.join(diagnostics_path, "param_{}.{}".format(k, plot_ext)))
 
         plt.close('all')
 
@@ -423,11 +423,11 @@ def main(config_file, mpi, threads, overwrite):
                 fig.savefig(os.path.join(output_path, "particle{}.{}".format(jj,plot_ext)))
 
             # HACK this is the Hogg suck-it-up plot
-            fig = triangle.corner(thin_flatchain,
-                                  truths=model.truths,
-                                  plot_kwargs=dict(color='k',alpha=1.),
-                                  hist_kwargs=dict(color='k',alpha=0.75,normed=True))
-            fig.savefig(os.path.join(output_path, "suck-it-up.{}".format(plot_ext)))
+            # fig = triangle.corner(thin_flatchain,
+            #                       truths=model.truths,
+            #                       plot_kwargs=dict(color='k',alpha=1.),
+            #                       hist_kwargs=dict(color='k',alpha=0.75,normed=True))
+            # fig.savefig(os.path.join(output_path, "suck-it-up.{}".format(plot_ext)))
 
         # TODO:
         if satellite_group:
