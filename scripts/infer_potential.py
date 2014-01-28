@@ -289,12 +289,7 @@ def main(config_file, mpi, threads, overwrite):
         t_med = np.median(acor)
         thin_chain = chain[:,::int(t_med)]
         thin_flatchain = np.vstack(thin_chain)
-
-        nstp = chain.shape[1]
-        # if 8*t_med < nstp:
-        #     logger.warn("Uh oh, median(acor) < 8*nsteps: {} < {}".format(t_med,8*nstp))
-        # else:
-        #     logger.info("Good, median(acor) > 8*nsteps: {} > {}".format(t_med,8*nstp))
+        logger.info("Median autocorrelation time: {}".format(t_med))
     else:
         logger.warn("FAILED TO THIN CHAIN")
         thin_chain = chain
