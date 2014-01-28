@@ -19,7 +19,6 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import triangle
-import yaml
 
 # Project
 from streams import usys
@@ -29,7 +28,7 @@ import streams.io as io
 from streams.io.sgr import SgrSimulation
 import streams.inference as si
 import streams.potential as sp
-from streams.util import get_pool, _parse_quantity, OrderedDictYAMLLoader
+from streams.util import get_pool, _parse_quantity
 
 global pool
 pool = None
@@ -44,40 +43,21 @@ def main(config_file, mpi, threads, overwrite):
     # -- This needs to go here so I don't read in the particle file for each thread. --
     pool = get_pool(mpi=mpi, threads=threads)
 
-    # get path to streams project
-    streams_path = None
-    if os.environ.has_key('STREAMSPATH'):
-        streams_path = os.environ["STREAMSPATH"]
+    # TODO
+    config = io.read_config(config_file)
 
-    # read in configurable parameters
-    with open(config_file) as f:
-        config = yaml.load(f.read(), OrderedDictYAMLLoader)
+    if not os.path.exists(config['streams_path']):
+        raise IOError("Specified streams path '{}' doesn't exist!".format(config['streams_path']))
+    logger.debug("Path to streams project: {}".format(config['streams_path']))
 
-    if config.has_key('streams_path'):
-        streams_path = config['streams_path']
-
-    if streams_path is None:
-        raise IOError("Streams path not specified.")
-    elif not os.path.exists(streams_path):
-        raise IOError("Specified streams path '{}' doesn't exist!".format(streams_path))
-    logger.debug("Path to streams project: {}".format(streams_path))
-
-    # set other paths relative to top-level streams project
-    data_path = os.path.join(streams_path, "data/observed_particles/")
-    output_path = os.path.join(streams_path, "plots/infer_potential/", config['name'])
-    if config.has_key('output_path'):
-        output_path = os.path.join(config['output_path'], config['name'])
-
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-
-    logger.debug("Writing data to:\n\t{}".format(output_path))
+    # the path to write things to
+    output_path = config["output_path"]
+    logger.debug("Will write data to:\n\t{}".format(output_path))
     output_file = os.path.join(output_path, "inference.hdf5")
 
     # load satellite and particle data
-    data_file = os.path.join(data_path, config['data_file'])
-    logger.debug("Reading particle/satellite data from:\n\t{}".format(data_file))
-    d = io.read_hdf5(data_file,
+    logger.debug("Reading particle/satellite data from:\n\t{}".format(config["data_file"]))
+    d = io.read_hdf5(config["data_file"],
                      nparticles=config.get('nparticles', None),
                      particle_idx=config.get('particle_idx', None))
 
@@ -87,8 +67,8 @@ def main(config_file, mpi, threads, overwrite):
     logger.info("Running with {} particles.".format(nparticles))
 
     # integration stuff
-    t1 = float(d["t1"])
-    t2 = float(d["t2"])
+    t1 = config.get("t1", float(d["t1"]))
+    t2 = config.get("t2", float(d["t2"]))
     dt = config.get("dt", -1.)
 
     # get the potential object specified from the potential subpackage
@@ -102,24 +82,19 @@ def main(config_file, mpi, threads, overwrite):
                            true_particles=true_particles)
 
     # Potential parameters
-    potential_params = config["potential"].get("parameters", dict())
-    for ii,(name,kwargs) in enumerate(potential_params.items()):
-        a,b = kwargs["a"], kwargs["b"]
-        p = getattr(potential, name)
-        logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
+    if config["potential"]["parameters"] is not None:
+        for ii,(name,kwargs) in enumerate(config["potential"]["parameters"].items()):
+            a,b = kwargs["a"], kwargs["b"]
+            p = getattr(potential, name)
+            logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
 
-        prior = si.LogUniformPrior(_parse_quantity(a).decompose(usys).value,
-                                   _parse_quantity(b).decompose(usys).value)
-        p = si.ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
-        model.add_parameter('potential', p)
+            prior = si.LogUniformPrior(_parse_quantity(a).decompose(usys).value,
+                                       _parse_quantity(b).decompose(usys).value)
+            p = si.ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
+            model.add_parameter('potential', p)
 
     # Particle parameters
-    try:
-        particle_parameters = config['particles']['parameters']
-    except KeyError:
-        particle_parameters = None
-
-    if particle_parameters is not None:
+    if config['particles']['parameters'] is not None:
         particles = d['particles']
 
         logger.debug("Particle properties added as parameters:")
@@ -139,21 +114,18 @@ def main(config_file, mpi, threads, overwrite):
             logger.debug("\t\ttub - unbinding time of particles")
 
     # Satellite parameters
-    try:
-        satellite_parameters = config['satellite']['parameters']
-    except KeyError:
-        satellite_parameters = None
-
-    if satellite_parameters is not None:
+    if config['satellite']['parameters'] is not None:
         satellite = d['satellite']
 
         logger.debug("Satellite properties added as parameters:")
-        if satellite_parameters.has_key('_X'):
+        if config['satellite']['parameters'].has_key('_X'):
             priors = [si.LogNormalPrior(satellite._X[0],satellite._error_X[0])]
             s_X = si.ModelParameter('_X', value=satellite._X, prior=priors,
                                     truth=true_satellite._X)
             model.add_parameter('satellite', s_X)
             logger.debug("\t\t_X - satellite 6D position today")
+
+    return
 
     # make sure true posterior value is higher than any randomly sampled value
     logger.debug("Checking posterior values...")
