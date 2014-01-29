@@ -28,6 +28,10 @@ def xyz_sph_jac(hel):
     cosl, sinl = np.cos(l), np.sin(l)
     cosb, sinb = np.cos(b), np.sin(b)
 
+    Rsun = 8.
+    deet = np.log(np.abs(d**2*cosb*(Rsun**2*cosb + Rsun*d*sinb**2*cosl - 2*Rsun*d*cosl + d**2*sinb**4*cosb - d**2*cosb**5 + 2*d**2*cosb**3)))
+    return deet
+
     gc = _hel_to_gc(hel)
     x,y,z,vx,vy,vz = gc.T
 
@@ -96,12 +100,12 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
 
     p_x_hel = _gc_to_hel(p_x)
     J1 = xyz_sph_jac(p_x_hel)
-    jac1 = np.array([np.linalg.slogdet(np.linalg.inv(j))[1] for j in J1])
+    jac1 = 1./J1
     #J2 = lnRV_xyz_jac(rel_x)
     #jac2 = np.array([np.linalg.slogdet(np.linalg.inv(j))[1] for j in J2])
 
     r_tide = potential._tidal_radius(2.5e8, s_x)
-    v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
+    #v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
     v_disp = 0.017198632325
 
     R = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
@@ -109,14 +113,12 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     lnR = np.log(R)
     lnV = np.log(V)
 
-    v = 1.
-    sigma_r = np.sqrt(np.log(1 + v/r_tide**2))
-    mu_r = np.log(r_tide**2 / np.sqrt(v + r_tide**2))
+    sigma_r = 0.55
+    mu_r = np.log(r_tide)
     r_term = -0.5*(2*np.log(sigma_r) + ((lnR-mu_r)/sigma_r)**2) - np.log(R**3)
 
-    v = v_disp
-    sigma_v = np.sqrt(np.log(1 + v/v_esc**2))
-    mu_v = np.log(v_esc**2 / np.sqrt(v + v_esc**2))
+    sigma_v = 0.8
+    mu_v = np.log(v_disp)
     v_term = -0.5*(2*np.log(sigma_v) + ((lnV-mu_v)/sigma_v)**2) - np.log(V**3)
 
-    return np.sum(r_term + v_term) + np.sum(jac1)
+    return np.sum(r_term + v_term + jac1)

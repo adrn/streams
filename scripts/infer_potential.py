@@ -19,17 +19,14 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import triangle
-import yaml
 
 # Project
-from streams import usys
 from streams.coordinates.frame import galactocentric
-from streams.dynamics import ObservedParticle, Particle
 import streams.io as io
 from streams.io.sgr import SgrSimulation
 import streams.inference as si
 import streams.potential as sp
-from streams.util import get_pool, _parse_quantity, OrderedDictYAMLLoader
+from streams.util import get_pool
 
 global pool
 pool = None
@@ -37,157 +34,28 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def main(config_file, mpi, threads, overwrite):
+def main(config_file, mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
     # get a pool object given the configuration parameters
     # -- This needs to go here so I don't read in the particle file for each thread. --
     pool = get_pool(mpi=mpi, threads=threads)
 
-    # get path to streams project
-    streams_path = None
-    if os.environ.has_key('STREAMSPATH'):
-        streams_path = os.environ["STREAMSPATH"]
+    # read configuration from a YAML file
+    config = io.read_config(config_file)
 
-    # read in configurable parameters
-    with open(config_file) as f:
-        config = yaml.load(f.read(), OrderedDictYAMLLoader)
+    if not os.path.exists(config['streams_path']):
+        raise IOError("Specified streams path '{}' doesn't exist!".format(config['streams_path']))
+    logger.debug("Path to streams project: {}".format(config['streams_path']))
 
-    if config.has_key('streams_path'):
-        streams_path = config['streams_path']
-
-    if streams_path is None:
-        raise IOError("Streams path not specified.")
-    elif not os.path.exists(streams_path):
-        raise IOError("Specified streams path '{}' doesn't exist!".format(streams_path))
-    logger.debug("Path to streams project: {}".format(streams_path))
-
-    # set other paths relative to top-level streams project
-    data_path = os.path.join(streams_path, "data/observed_particles/")
-    output_path = os.path.join(streams_path, "plots/infer_potential/", config['name'])
-    if config.has_key('output_path'):
-        output_path = os.path.join(config['output_path'], config['name'])
-
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-
-    logger.debug("Writing data to:\n\t{}".format(output_path))
+    # the path to write things to
+    output_path = config["output_path"]
+    logger.debug("Will write data to:\n\t{}".format(output_path))
     output_file = os.path.join(output_path, "inference.hdf5")
 
-    # load satellite and particle data
-    data_file = os.path.join(data_path, config['data_file'])
-    logger.debug("Reading particle/satellite data from:\n\t{}".format(data_file))
-    d = io.read_hdf5(data_file,
-                     nparticles=config.get('nparticles', None),
-                     particle_idx=config.get('particle_idx', None))
-
-    true_particles = d['true_particles']
-    true_satellite = d['true_satellite']
-    nparticles = true_particles.nparticles
-    logger.info("Running with {} particles.".format(nparticles))
-
-    # integration stuff
-    t1 = float(d["t1"])
-    t2 = float(d["t2"])
-    dt = config.get("dt", -1.)
-
-    # get the potential object specified from the potential subpackage
-    Potential = getattr(sp, config["potential"]["class_name"])
-    potential = Potential()
-    logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
-
-    # Define the empty model to add parameters to
-    model = si.StreamModel(potential, lnpargs=[t1,t2,dt,1.], # 1. is the inverse temperature
-                           true_satellite=true_satellite,
-                           true_particles=true_particles)
-
-    # Potential parameters
-    potential_params = config["potential"].get("parameters", dict())
-    for ii,(name,kwargs) in enumerate(potential_params.items()):
-        a,b = kwargs["a"], kwargs["b"]
-        p = getattr(potential, name)
-        logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
-
-        prior = si.LogUniformPrior(_parse_quantity(a).decompose(usys).value,
-                                   _parse_quantity(b).decompose(usys).value)
-        p = si.ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
-        model.add_parameter('potential', p)
-
-    # Particle parameters
-    try:
-        particle_parameters = config['particles']['parameters']
-    except KeyError:
-        particle_parameters = None
-
-    if particle_parameters is not None:
-        particles = d['particles']
-
-        logger.debug("Particle properties added as parameters:")
-        if config['particles']['parameters'].has_key('_X'):
-            priors = [si.LogNormalPrior(particles._X[ii],particles._error_X[ii])
-                        for ii in range(nparticles)]
-            X = si.ModelParameter('_X', value=particles._X, prior=priors,
-                                  truth=true_particles._X)
-            model.add_parameter('particles', X)
-            logger.debug("\t\t_X - particle 6D positions today")
-
-        if config['particles']['parameters'].has_key('tub'):
-            priors = [si.LogUniformPrior(t2, t1) for ii in range(nparticles)]
-            tub = si.ModelParameter('tub', value=np.zeros(nparticles), prior=priors,
-                                    truth=true_particles.tub)
-            model.add_parameter('particles', tub)
-            logger.debug("\t\ttub - unbinding time of particles")
-
-    # Satellite parameters
-    try:
-        satellite_parameters = config['satellite']['parameters']
-    except KeyError:
-        satellite_parameters = None
-
-    if satellite_parameters is not None:
-        satellite = d['satellite']
-
-        logger.debug("Satellite properties added as parameters:")
-        if satellite_parameters.has_key('_X'):
-            priors = [si.LogNormalPrior(satellite._X[0],satellite._error_X[0])]
-            s_X = si.ModelParameter('_X', value=satellite._X, prior=priors,
-                                    truth=true_satellite._X)
-            model.add_parameter('satellite', s_X)
-            logger.debug("\t\t_X - satellite 6D position today")
-
-    # make sure true posterior value is higher than any randomly sampled value
-    logger.debug("Checking posterior values...")
-    true_ln_p = model.ln_posterior(model.truths, t1, t2, dt)
-    logger.debug("\t\t At truth: {}".format(true_ln_p))
-    p0 = model.sample_priors()
-    ln_p = model.ln_posterior(p0, t1, t2, dt)
-    logger.debug("\t\t At random sample: {}".format(ln_p))
-    assert true_ln_p > ln_p
-
+    # get a StreamModel from a config dict
+    model = si.StreamModel.from_config(config)
     logger.info("Model has {} parameters".format(model.nparameters))
-
-    ################################################
-    ################################################
-    # TEST
-    # test_path = os.path.join(output_path, "test")
-    # if not os.path.exists(test_path):
-    #     os.mkdir(test_path)
-
-    # for ii,truth in enumerate(model.truths):
-    #     p = model.truths.copy()
-    #     vals = truth*np.linspace(0.7, 1.3, 101)
-    #     Ls = []
-    #     for val in vals:
-    #         p[ii] = val
-    #         Ls.append(model(p))
-
-    #     plt.clf()
-    #     plt.plot(vals, Ls)
-    #     plt.axvline(truth)
-    #     plt.savefig(os.path.join(test_path, "test_{}.png".format(ii)))
-    # return
-    ################################################
-    ################################################
 
     if os.path.exists(output_file) and overwrite:
         logger.info("Writing over output file '{}'".format(output_file))
@@ -236,15 +104,13 @@ def main(config_file, mpi, threads, overwrite):
             acc_frac_test = sampler.acceptance_fraction < 0.05
             if np.any(acc_frac_test):
                 nbad = np.sum(acc_frac_test)
-                best_pos = np.median(sampler.flatchain, axis=0)
-                #[sampler.flatlnprobability.argmax()]
-                std = np.std(sampler.flatchain, axis=0)/2.
-                new_pos = sample_ball(best_pos, std, size=nwalkers)
+                med_pos = np.median(sampler.flatchain, axis=0)
+                std = np.std(sampler.flatchain, axis=0)
+                new_pos = sample_ball(med_pos, std, size=nwalkers)
 
                 for jj in range(nwalkers):
                     if acc_frac_test[jj]:
                         pos[jj] = new_pos[jj]
-
 
         if nsteps_final > 0:
             sampler.reset()
@@ -296,7 +162,7 @@ def main(config_file, mpi, threads, overwrite):
         thin_flatchain = flatchain
 
     # plot true_particles, true_satellite over the rest of the stream
-    gc_particles = true_particles.to_frame(galactocentric)
+    gc_particles = model.true_particles.to_frame(galactocentric)
     sgr = SgrSimulation("2.5e8")
     all_gc_particles = sgr.particles(N=1000, expr="tub!=0").to_frame(galactocentric)
 
