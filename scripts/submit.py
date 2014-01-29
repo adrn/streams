@@ -109,6 +109,8 @@ if __name__ == "__main__":
                     help="The name of the job.")
     parser.add_argument("--threads", dest="mpi_threads", default=None,
                         type=int, help="The number of MPI threads.")
+    parser.add_argument("-o","--overwrite", dest="overwrite", default=False,
+                        action="store_true", help="")
 
     args = parser.parse_args()
 
@@ -116,6 +118,7 @@ if __name__ == "__main__":
 
     filename = os.path.join(os.environ['STREAMSPATH'], args.file)
     main(filename, mpi_threads=args.mpi_threads, walltime=args.time,
-         memory=args.memory, job_name=args.job_name, astro=os.environ['ASTRO'])
+         memory=args.memory, job_name=args.job_name, astro=os.environ['ASTRO'],
+         overwrite=args.overwrite)
     sys.exit(0)
 

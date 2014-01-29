@@ -1,7 +1,7 @@
 # general
 seed: 42
 script: infer_potential.py
-name: two_particles
+name: test
 # streams_path: /path/to/streams
 
 # plots / output
@@ -38,20 +38,20 @@ potential:
             b: 140 km/s
 
 particles:
-    parameters:
-        _X:
-        tub:
+#    parameters:
+#        _X:
+#        tub:
 
 satellite:
 #     parameters:
 #         _X:
 
 # emcee
-walkers: 256
-burn_in: 1500
+walkers: 128
+burn_in: 1000
 steps: 1000
 iterate: 10
-steps_final: 5000
+steps_final: 0
 
 # satellite:
 #     _X:
