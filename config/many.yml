@@ -13,8 +13,7 @@ plot:
 
 # data
 data_file: data/observed_particles/N128.hdf5
-nparticles: 2
-particle_idx: [0,42]
+nparticles: 8
 
 # integration
 dt: -1.
@@ -25,32 +24,33 @@ potential:
     class_name: LawMajewski2010
     parameters:
         q1:
-            a: 1.1
-            b: 1.6
+            a: 1.0
+            b: 1.7
         qz:
-            a: 1.1
-            b: 1.6
+            a: 1.0
+            b: 1.7
         phi:
-            a: 90. degree
-            b: 110. degree
+            a: 80. degree
+            b: 100. degree
         v_halo:
-            a: 110 km/s
-            b: 140 km/s
+            a: 100 km/s
+            b: 150 km/s
 
 particles:
-#        _X:
-#        tub:
+    parameters:
+        _X:
+        tub:
 
 satellite:
 #     parameters:
 #         _X:
 
 # emcee
-walkers: 12
-burn_in: 10
-steps: 10
-iterate: 2
-steps_final: 2
+walkers: 512
+burn_in: 1000
+steps: 2000
+iterate: 10
+steps_final: 5000
 
 # satellite:
 #     _X:
