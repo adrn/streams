@@ -248,6 +248,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                         hist_kwargs=dict(color='k',alpha=0.75,normed=True))
             fig.savefig(os.path.join(output_path, "potential.{}".format(plot_ext)))
 
+        nparticles = model.true_particles.nparticles
         if particles_group:
             for jj in range(nparticles):
                 this_flatchain = None
