@@ -189,6 +189,73 @@ def rel_dist(**kwargs):
     axes2[1].set_xlim(-3,3)
     fig2.savefig(os.path.join(plot_path, "norm_dists.pdf".format(_m)))
 
+def costheta(**kwargs):
+
+    nbins = 50
+    fig,axes = plt.subplots(4,1,figsize=(8.5,11), sharex=True, sharey=True)
+    fig2,axes2 = plt.subplots(4,1,figsize=(8.5,11), sharex=True, sharey=True)
+
+    #_m = kwargs["mass"]
+    for kk,_m in enumerate(["2.5e6","2.5e7","2.5e8","2.5e9"]):
+        m = float(_m)
+        sgr = SgrSimulation(_m)
+        p = sgr.particles(N=5000, expr="tub!=0")
+        p_bound = sgr.particles(N=0, expr="tub==0")
+        v_disp = np.sqrt(np.var(p_bound["vx"]) + \
+                         np.var(p_bound["vy"]) + \
+                         np.var(p_bound["vz"])).value[0]
+        s = sgr.satellite()
+
+        lm10_potential = LawMajewski2010()
+
+        X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
+        V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
+        integrator = LeapfrogIntegrator(lm10_potential._acceleration_at,
+                                        np.array(X), np.array(V),
+                                        args=(X.shape[0], np.zeros_like(X)))
+        ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
+
+        s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+        p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+        t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
+
+        p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+        s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+
+        diff = p_x-s_x
+        normed_rel_r = diff[:,:3] / np.sqrt(np.sum(diff[:,:3]**2, axis=-1))[:,np.newaxis]
+        normed_rel_v = diff[:,3:] / np.sqrt(np.sum(diff[:,3:]**2, axis=-1))[:,np.newaxis]
+        normed_rs = s_x[...,:3] / np.sqrt(np.sum(s_x[...,:3]**2, axis=-1))[:,np.newaxis]
+        normed_vs = s_x[...,3:] / np.sqrt(np.sum(s_x[...,3:]**2, axis=-1))[:,np.newaxis]
+
+        costheta = np.sum(normed_rel_r*normed_vs, axis=-1)
+        sintheta = np.sum(normed_rel_r*normed_rs, axis=-1)
+
+        cosphi = np.sum(normed_rel_v*normed_vs, axis=-1)
+        sinphi = np.sum(normed_rel_v*normed_rs, axis=-1)
+
+        #mu_r, sig_r = norm.fit(np.log(rel_r))
+
+        n,bins,patches = axes[kk].hist(costheta, bins=nbins, alpha=0.25)
+        n,bins,patches = axes[kk].hist(cosphi, bins=bins, alpha=0.25)
+
+        n,bins,patches = axes2[kk].hist(sintheta, bins=nbins, alpha=0.25)
+        n,bins,patches = axes2[kk].hist(sinphi, bins=bins, alpha=0.25)
+
+        for ax in [axes[kk],axes2[kk]]:
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            ax.text(-0.75, ylim[1]-(ylim[1]-ylim[0])/5.,
+                    r"{} $M_\odot$".format(_m),
+                    fontsize=16)
+
+    axes[-1].set_xlabel(r"$\cos\theta$")
+    axes2[-1].set_xlabel(r"$\sin\theta$")
+    fig.tight_layout()
+    fig.savefig(os.path.join(plot_path, "costheta.pdf"))
+    fig2.tight_layout()
+    fig2.savefig(os.path.join(plot_path, "sintheta.pdf"))
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
     import logging
