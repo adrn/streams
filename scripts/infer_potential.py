@@ -34,14 +34,14 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def main(config_file, mpi, threads, overwrite):
+def main(config_file, mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
     # get a pool object given the configuration parameters
     # -- This needs to go here so I don't read in the particle file for each thread. --
     pool = get_pool(mpi=mpi, threads=threads)
 
-    # TODO
+    # read configuration from a YAML file
     config = io.read_config(config_file)
 
     if not os.path.exists(config['streams_path']):
@@ -55,46 +55,7 @@ def main(config_file, mpi, threads, overwrite):
 
     # get a StreamModel from a config dict
     model = si.StreamModel.from_config(config)
-
-    # make sure true posterior value is higher than any randomly sampled value
-    logger.debug("Checking posterior values...")
-    true_ln_p = model.ln_posterior(model.truths, *model.lnpargs)
-    true_ln_p2 = model(model.truths)
-    logger.debug("\t\t At truth: {}".format(true_ln_p))
-    p0 = model.sample_priors()
-    ln_p = model.ln_posterior(p0, *model.lnpargs)
-    ln_p2 = model(p0)
-    logger.debug("\t\t At random sample: {}".format(ln_p))
-    assert true_ln_p > ln_p
-    assert true_ln_p == true_ln_p2
-    assert ln_p == ln_p2
-
     logger.info("Model has {} parameters".format(model.nparameters))
-
-    return
-
-    ################################################
-    ################################################
-    # TEST
-    # test_path = os.path.join(output_path, "test")
-    # if not os.path.exists(test_path):
-    #     os.mkdir(test_path)
-
-    # for ii,truth in enumerate(model.truths):
-    #     p = model.truths.copy()
-    #     vals = truth*np.linspace(0.7, 1.3, 101)
-    #     Ls = []
-    #     for val in vals:
-    #         p[ii] = val
-    #         Ls.append(model(p))
-
-    #     plt.clf()
-    #     plt.plot(vals, Ls)
-    #     plt.axvline(truth)
-    #     plt.savefig(os.path.join(test_path, "test_{}.png".format(ii)))
-    # return
-    ################################################
-    ################################################
 
     if os.path.exists(output_file) and overwrite:
         logger.info("Writing over output file '{}'".format(output_file))
@@ -151,7 +112,6 @@ def main(config_file, mpi, threads, overwrite):
                     if acc_frac_test[jj]:
                         pos[jj] = new_pos[jj]
 
-
         if nsteps_final > 0:
             sampler.reset()
             pos, prob, state = sampler.run_mcmc(pos, nsteps_final)
@@ -202,7 +162,7 @@ def main(config_file, mpi, threads, overwrite):
         thin_flatchain = flatchain
 
     # plot true_particles, true_satellite over the rest of the stream
-    gc_particles = true_particles.to_frame(galactocentric)
+    gc_particles = model.true_particles.to_frame(galactocentric)
     sgr = SgrSimulation("2.5e8")
     all_gc_particles = sgr.particles(N=1000, expr="tub!=0").to_frame(galactocentric)
 
