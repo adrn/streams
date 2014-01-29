@@ -322,10 +322,10 @@ def main(config_file, mpi, threads, overwrite):
 
         # plot histogram of autocorrelation times
         if len(acor) > 0:
-            fig,ax = plt.subplots(1,1,figsize=(8,8))
-            ax.hist(acor, bins=12) #model.nparameters//5)
-            ax.set_xlabel("Autocorrelation time")
-            fig.suptitle("Histogram of autocorrelation times")
+            fig,ax = plt.subplots(1,1,figsize=(12,6))
+            ax.plot(acor, marker='o', linestyle='none') #model.nparameters//5)
+            ax.set_xlabel("Parameter index")
+            ax.set_ylabel("Autocorrelation time")
             fig.savefig(os.path.join(diagnostics_path, "acor.{}".format(plot_ext)))
 
         # plot histogram of acceptance fractions
