@@ -1,7 +1,7 @@
 # general
 seed: 42
 script: infer_potential.py
-name: test
+name: many_particles
 # streams_path: /path/to/streams
 
 # plots / output
