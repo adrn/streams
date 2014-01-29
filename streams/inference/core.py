@@ -33,12 +33,17 @@ class StreamModel(object):
 
     def __init__(self, potential, lnpargs=(),
                  true_satellite=None, true_particles=None):
-        """
+        """ Model for tidal streams that uses backwards integration to Rewind
+            the positions of stars.
 
             Parameters
             ----------
-            Potential : streams.Potential
+            Potential : streams.potential.Potential
                 The potential to fit.
+            lnpargs : iterable
+                Other arguments to the posterior function.
+            true_satellite : streams.dynamics.Particle
+            true_particles : streams.dynamics.Particle
         """
         self._potential_class = potential.__class__
         self._given_potential_params = dict([(k,v._value)
@@ -137,7 +142,15 @@ class StreamModel(object):
         return model
 
     def add_parameter(self, parameter_group, parameter):
-        """ """
+        """ Add a parameter to the model in the specified parameter group.
+
+            Parameters
+            ----------
+            parameter_group : str
+                Name of the parameter group to add this parameter to.
+            parameter : streams.inference.ModelParameter
+                The actual parameter.
+        """
 
         # TODO: need a ModelParameter object -- needs to have a .size, .shape
         if not self.parameters.has_key(parameter_group):
@@ -149,7 +162,8 @@ class StreamModel(object):
 
     @property
     def truths(self):
-        """ """
+        """ Returns an array of the true values of all parameters in the model """
+
         true_p = np.array([])
         for group_name,group in self.parameters.items():
             for param_name,param in group.items():
@@ -161,7 +175,13 @@ class StreamModel(object):
         return true_p
 
     def sample_priors(self, size=None):
-        """ """
+        """ Draw samples from the priors over the model parameters.
+
+            Parameters
+            ----------
+            size : int
+                Number of samples to draw.
+        """
 
         sz = size if size is not None else 1
         p0 = np.zeros((sz, self.nparameters))
@@ -178,7 +198,14 @@ class StreamModel(object):
         return np.squeeze(p0)
 
     def _decompose_vector(self, p):
-        """ """
+        """ Turns a vector of parameter values, e.g. from MCMC, and turns it into
+            a dictionary of parameters.
+
+            Parameters
+            ----------
+            p : array_like
+                The vector of model parameter values.
+        """
         d = OrderedDict()
 
         ix1 = 0
@@ -200,7 +227,14 @@ class StreamModel(object):
         return d
 
     def label_flatchain(self, flatchain):
-        """ """
+        """ Turns a flattened MCMC chain (e.g., sampler.flatchain from emcee) and
+            turns it into a dictionary of parameter samples.
+
+            Parameters
+            ----------
+            flatchain : array_like
+                The flattened MCMC chain of parameter values. Should have shape (nsteps, ndim).
+        """
         d = OrderedDict()
 
         nsamples,ndim = flatchain.shape
@@ -225,17 +259,22 @@ class StreamModel(object):
 
         return d
 
-
     def ln_posterior(self, p, *args):
-        """ """
+        """ Evaluate the log-posterior at the given parameter vector.
+
+            Parameters
+            ----------
+            p : array_like
+                The vector of model parameter values.
+        """
 
         # TODO: placeholder
-        derp = self._decompose_vector(p)
+        param_dict = self._decompose_vector(p)
 
         ln_prior = 0.
         for group_name,group in self.parameters.items():
             for param_name,param in group.items():
-                lp = param.prior(derp[group_name][param_name])
+                lp = param.prior(param_dict[group_name][param_name])
                 ln_prior += lp
 
         # short-circuit if any prior value is -infinity
@@ -244,23 +283,23 @@ class StreamModel(object):
 
         # get potential
         pparams = self._given_potential_params.copy()
-        for k,v in derp.get('potential',dict()).items():
+        for k,v in param_dict.get('potential',dict()).items():
             pparams[k] = v
 
         # heliocentric particle positions and unbinding times
         try:
-            p_hel = derp['particles']['_X']
+            p_hel = param_dict['particles']['_X']
         except KeyError:
             p_hel = self.true_particles._X
 
         try:
-            tub = derp['particles']['tub']
+            tub = param_dict['particles']['tub']
         except KeyError:
             tub = self.true_particles.tub
 
         # heliocentric satellite position
         try:
-            s_hel = derp['satellite']['_X']
+            s_hel = param_dict['satellite']['_X']
         except KeyError:
             s_hel = self.true_satellite._X
 
