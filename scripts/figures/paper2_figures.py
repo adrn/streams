@@ -192,7 +192,7 @@ def rel_dist(**kwargs):
 def costheta(**kwargs):
 
     nbins = 50
-    fig,axes = plt.subplots(4,1,figsize=(8.5,11), sharex=True, sharey=True)
+    fig,axes = plt.subplots(4,2,figsize=(8.5,11), sharex='col', sharey=True)
     fig2,axes2 = plt.subplots(4,1,figsize=(8.5,11), sharex=True, sharey=True)
 
     #_m = kwargs["mass"]
@@ -229,27 +229,27 @@ def costheta(**kwargs):
         normed_vs = s_x[...,3:] / np.sqrt(np.sum(s_x[...,3:]**2, axis=-1))[:,np.newaxis]
 
         costheta = np.sum(normed_rel_r*normed_vs, axis=-1)
-        sintheta = np.sum(normed_rel_r*normed_rs, axis=-1)
+        cosphi = np.sum(normed_rel_r*normed_rs, axis=-1)
 
-        cosphi = np.sum(normed_rel_v*normed_vs, axis=-1)
+        cos = np.sum(normed_rel_v*normed_vs, axis=-1)
         sinphi = np.sum(normed_rel_v*normed_rs, axis=-1)
 
-        #mu_r, sig_r = norm.fit(np.log(rel_r))
+        n,bins,patches = axes[kk,0].hist(costheta, bins=nbins, alpha=0.25)
+        n,bins,patches = axes[kk,1].hist(cosphi, bins=nbins, alpha=0.25)
+        print(np.sum(cosphi < 0.) / np.sum(cosphi > 0.))
 
-        n,bins,patches = axes[kk].hist(costheta, bins=nbins, alpha=0.25)
-        n,bins,patches = axes[kk].hist(cosphi, bins=bins, alpha=0.25)
+        #n,bins,patches = axes2[kk].hist(sintheta, bins=nbins, alpha=0.25)
+        #n,bins,patches = axes2[kk].hist(sinphi, bins=bins, alpha=0.25)
 
-        n,bins,patches = axes2[kk].hist(sintheta, bins=nbins, alpha=0.25)
-        n,bins,patches = axes2[kk].hist(sinphi, bins=bins, alpha=0.25)
-
-        for ax in [axes[kk],axes2[kk]]:
+        for ax in [axes[kk,0],axes2[kk]]:
             xlim = ax.get_xlim()
             ylim = ax.get_ylim()
             ax.text(-0.75, ylim[1]-(ylim[1]-ylim[0])/5.,
                     r"{} $M_\odot$".format(_m),
                     fontsize=16)
 
-    axes[-1].set_xlabel(r"$\cos\theta$")
+    axes[-1,0].set_xlabel(r"$\cos\theta$")
+    axes[-1,1].set_xlabel(r"$\cos\phi$")
     axes2[-1].set_xlabel(r"$\sin\theta$")
     fig.tight_layout()
     fig.savefig(os.path.join(plot_path, "costheta.pdf"))
