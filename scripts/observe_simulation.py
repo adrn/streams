@@ -30,7 +30,7 @@ from streams.dynamics import ObservedParticle
 import streams.io as s_io
 from streams.observation.gaia import gaia_spitzer_errors
 import streams.potential as s_potential
-from streams.util import _parse_quantity, make_path
+from streams.util import _parse_quantity
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -71,6 +71,8 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     simulation = Simulation(**class_kwargs)
 
     # read particles from the simulation class
+    sim_time = simulation.particle_units[0]/simulation.particle_units[-1]
+    selection_expr = "(tub!=0) & (tub<{})".format((6000*u.Myr).to(sim_time).value) # HACK HACK HACK
     particles = simulation.particles(N=N, expr=selection_expr)
     particles = particles.to_frame(heliocentric)
 
@@ -99,6 +101,33 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     else:
         logger.info("Not observing satellite")
         o_satellite = satellite
+
+    # make a plot of true and observed positions
+    true_gc_particles = particles.to_frame(galactocentric)
+    gc_particles = o_particles.to_frame(galactocentric)
+    all_gc_particles = simulation.particles(N=1000, expr="tub!=0")\
+                                 .to_frame(galactocentric)
+
+    fig,axes = plt.subplots(1,2,figsize=(16,8))
+    markersize = 6.
+    axes[0].plot(all_gc_particles["x"].value, all_gc_particles["z"].value,
+                 markersize=markersize, marker='o', linestyle='none', alpha=0.25)
+    axes[0].plot(true_gc_particles["x"].value, true_gc_particles["z"].value,
+                 markersize=markersize, marker='o', linestyle='none', alpha=0.5)
+    axes[0].plot(gc_particles["x"].value, gc_particles["z"].value,
+                 markersize=markersize, marker='o', linestyle='none', alpha=0.5, c='#ca0020')
+
+    axes[1].plot(all_gc_particles["vx"].to(u.km/u.s).value,
+                 all_gc_particles["vz"].to(u.km/u.s).value,
+                 markersize=markersize, marker='o', linestyle='none', alpha=0.25)
+    axes[1].plot(true_gc_particles["vx"].to(u.km/u.s).value,
+                 true_gc_particles["vz"].to(u.km/u.s).value,
+                 markersize=markersize, marker='o', linestyle='none', alpha=0.5)
+    axes[1].plot(gc_particles["vx"].to(u.km/u.s).value,
+                 gc_particles["vz"].to(u.km/u.s).value,
+                 markersize=markersize, marker='o', linestyle='none', alpha=0.5, c='#ca0020')
+    fig.savefig(os.path.join(os.path.split(output_file)[0],
+                             "xyz_vxvyvz.{}".format('png')))
 
     with h5py.File(output_file, "w") as f:
         # add particle positions to file
