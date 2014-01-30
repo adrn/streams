@@ -24,9 +24,7 @@
 \title{Back-integration likelihood}
 \author{Adrian M. Price-Whelan}
 
-Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the same star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the satellite is observed to be at heliocentric 6D position $\D_s$, with true position $\W_s$, where the subscript $s$ refers to the satellite. The true, 6D spherical, heliocentric positions of the star and satellite -- $\W$ and $\W_s$ -- have corresponding 6D cartesian, Galactocentric coordinate vectors $\X$ and $\X_s$. Initially, we assume the present-day mass of the satellite, $M_s$, and velocity dispersion, $\sigma_v$, have been measured perfectly (but we will return to this later).
-
-We model the present-day position and velocity of the disrupted star as the result of sampling from isotropic, log-normal distributions centered on the instantaneous tidal radius, $R_{\rm tide}$, and velocity dispersion, $\sigma_v$, of the satellite at some time $\tau$ in the past, evolved to present day in the parent potential, $\Phi$. In this model, we neglect the effect of self-interaction with the halo of the progenitor [TODO: maybe we need to justify this, add APW's figure from paper 1 ref. response? refer to another section]. With these assumptions we can write the joint posterior probability for the observed position of a star, satellite, and parent potential given the data as:
+Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the same star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the satellite is observed to be at heliocentric 6D position $\D_s$, with true position $\W_s$, where the subscript $s$ refers to the satellite. The true, 6D spherical, heliocentric positions of the star and satellite -- $\W$ and $\W_s$ -- have corresponding 6D cartesian, Galactocentric coordinate vectors $\X$ and $\X_s$. Initially, we assume the present-day mass of the satellite, $M_s$, and velocity dispersion, $\sigma_v$, have been measured perfectly (but we will return to this later). With this notation, we can write the joint posterior probability for the observed position of a star, satellite, and parent potential given the data as:
 \begin{align}
 	p(\Phi, \W, \W_s, \tau \given \D, \D_s) &= \frac{1}{\mathcal{Z}} p(\D \given \W) p(\D_s \given \W_s) 
 												       p(\W \given \W_s, \tau, \Phi) 
@@ -37,7 +35,13 @@ where the factor $\mathcal{Z}$ only depends on the properties of the data (the \
 	p(\D \given \W) &= \mathcal{N}(\W \given \D, \bSigma)\\
 	p(\D_s \given \W_s) &= \mathcal{N}(\W_s \given \D_s, \bSigma_s)
 \end{align}
-where the covariance matrices $\bSigma^{(i)}$ and $\bSigma_s$ represent the observational variances on the observed 6D position of star and the satellite, respectively. The likelihood for a given star is given by  [...] hmm...
+where the covariance matrices $\bSigma^{(i)}$ and $\bSigma_s$ represent the observational variances on the observed 6D position of star and the satellite, respectively. 
+
+We model the present-day position and velocity of the disrupted star as the result of sampling from isotropic, log-normal distributions centered on the instantaneous tidal radius, $R_{\rm tide}$, and velocity dispersion, $\sigma_v$, of the satellite at some time $\tau$ in the past, evolved to present day in the parent potential, $\Phi$. In this model, we neglect the effect of self-interaction with the halo of the progenitor [TODO: maybe we need to justify this, add APW's figure from paper 1 ref. response? refer to another section]. 
+
+
+The disruption of a satellite galaxy due to tidal shocking [...]. Thus, we model the present as disrupting The likelihood of a star's position today is computed by first integrating the orbit of the satellite and star backwards for several Gigayears in the parent potential, $\Phi$, by treating both as test particles. 
+
 \begin{align}
 	p(\W \given \W_s, \tau, \Phi) &= p(\X \given \X_s, \tau, \Phi) \jac{(x,y,z,v_x,v_y,v_z)}\\
 	&= \left(\mathcal{N}(\W^{(i)} \given \W_s, \V_s) \times \det{\bf J}^{(i)}\right)\rvert_{t=\tau^{(i)}}
