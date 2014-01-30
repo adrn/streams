@@ -74,11 +74,6 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers)
-        ### HACK TO INITIALIZE WALKERS NEAR true tub!
-        for ii in range(model.true_particles.nparticles):
-            jj = ii + 4 #len(c["potential_params"])
-            p0[:,jj] = np.random.normal(model.true_particles.tub[ii], 100., 
-                                        size=nwalkers)
 
         # get the sampler
         sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
@@ -208,7 +203,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             plt.clf()
             for ii in range(nwalkers):
                 plt.plot(chain[ii,:,k], alpha=0.4, drawstyle='steps', color='k')
-        
+
             plt.axhline(model.truths[k], color='r', lw=2., linestyle='-', alpha=0.5)
             plt.savefig(os.path.join(diagnostics_path, "param_{}.{}".format(k, plot_ext)))
 

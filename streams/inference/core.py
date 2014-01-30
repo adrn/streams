@@ -193,6 +193,11 @@ class StreamModel(object):
                         p0[ii,ix1:ix1+param.size] = np.ravel(param.sample().T)
                     else:
                         p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
+
+                    ### HACK TO INITIALIZE WALKERS NEAR true tub!
+                    if param_name == "tub":
+                        p0[ii,ix1:ix1+param.size] = np.random.normal(self.true_particles.tub, 100.)
+
                     ix1 += param.size
 
         return np.squeeze(p0)
