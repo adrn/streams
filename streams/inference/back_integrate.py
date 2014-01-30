@@ -32,48 +32,6 @@ def xyz_sph_jac(hel):
     deet = np.log(np.abs(d**2*cosb*(Rsun**2*cosb + Rsun*d*sinb**2*cosl - 2*Rsun*d*cosl + d**2*sinb**4*cosb - d**2*cosb**5 + 2*d**2*cosb**3)))
     return deet
 
-    gc = _hel_to_gc(hel)
-    x,y,z,vx,vy,vz = gc.T
-
-    row0 = np.zeros_like(hel.T)
-    row0[0] = -d*sinl*cosb
-    row0[1] = -d*cosl*sinb
-    row0[2] = cosl*cosb
-
-    row1 = np.zeros_like(hel.T)
-    row1[0] = d*cosl*cosb
-    row1[1] = -d*sinl*sinb
-    row1[2] = sinl*cosb
-
-    row2 = np.zeros_like(hel.T)
-    row2[0] = 0.
-    row2[1] = -d*cosb
-    row2[2] = sinb
-
-    row3 = [-vr*cosb*sinl + mul*d*cosb*cosl - mub*d*sinb*sinl,
-            -vr*sinb*cosl - mul*d*sinb*sinl + mub*d*cosb*cosl,
-            cosb*sinl*mul + sinb*cosl*mub,
-            d*cosb*sinl,
-            d*sinb*cosl,
-            cosb*cosl]
-
-    row4 = [vr*cosb*cosl + mul*d*cosb*sinl + mub*d*sinb*cosl,
-            -vr*sinb*sinl + mul*d*sinb*cosl + mub*d*cosb*sinl,
-            -cosb*cosl*mul + sinb*sinl*mub,
-            -d*cosb*cosl,
-            d*sinb*sinl,
-            cosb*sinl]
-
-    row5 = np.zeros_like(hel.T)
-    row5[0] = 0.
-    row5[1] = cosb*vr + d*sinb*mub
-    row5[2] = -cosb*mub
-    row5[3] = 0.
-    row5[4] = -d*cosb
-    row5[5] = sinb
-
-    return np.array([row0, row1, row2, row3, row4, row5]).T
-
 def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
 
     p_gc = _hel_to_gc(p_hel)
