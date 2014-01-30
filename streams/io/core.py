@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import gc
+from random import sample
 
 # Third-party
 import h5py
@@ -110,8 +111,8 @@ def read_table(filename, expr=None, N=None):
         _table = _table[idx]
 
     if N is not None and N > 0:
-        np.random.shuffle(_table)
-        _table = _table[:min(N,len(_table))]
+        idx = np.array(sample(xrange(len(_table)), min(N,len(_table))))
+        _table = _table[idx]
 
     return _table
 
