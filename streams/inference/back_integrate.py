@@ -29,7 +29,8 @@ def xyz_sph_jac(hel):
     cosb, sinb = np.cos(b), np.sin(b)
 
     Rsun = 8.
-    deet = np.log(np.abs(d**2*cosb*(Rsun**2*cosb + Rsun*d*sinb**2*cosl - 2*Rsun*d*cosl + d**2*sinb**4*cosb - d**2*cosb**5 + 2*d**2*cosb**3)))
+    dtmnt = d**2*(Rsun**2*cosb + Rsun*d*sinb**2*cosl - 2*Rsun*d*cosl + d**2*sinb**4*cosb - d**2*cosb**5 + 2*d**2*cosb**3)*cosb
+    deet = np.log(np.abs(dtmnt))
     return deet
 
 def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
@@ -57,10 +58,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     rel_x = p_x-s_x
 
     p_x_hel = _gc_to_hel(p_x)
-    J1 = xyz_sph_jac(p_x_hel)
-    jac1 = 1./J1
-    #J2 = lnRV_xyz_jac(rel_x)
-    #jac2 = np.array([np.linalg.slogdet(np.linalg.inv(j))[1] for j in J2])
+    jac1 = xyz_sph_jac(p_x_hel)
 
     r_tide = potential._tidal_radius(2.5e8, s_x)*1.6
     #v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
