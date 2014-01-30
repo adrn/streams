@@ -196,7 +196,8 @@ class StreamModel(object):
 
                     ### HACK TO INITIALIZE WALKERS NEAR true tub!
                     if param_name == "tub":
-                        p0[ii,ix1:ix1+param.size] = np.random.normal(self.true_particles.tub, 100.)
+                        p0[ii,ix1:ix1+param.size] = np.random.normal(self.true_particles.tub,
+                                                                     100.)
 
                     ix1 += param.size
 
