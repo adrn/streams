@@ -104,7 +104,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     #J2 = lnRV_xyz_jac(rel_x)
     #jac2 = np.array([np.linalg.slogdet(np.linalg.inv(j))[1] for j in J2])
 
-    r_tide = potential._tidal_radius(2.5e8, s_x)
+    r_tide = potential._tidal_radius(2.5e8, s_x)*1.6
     #v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
     v_disp = 0.017198632325
 
