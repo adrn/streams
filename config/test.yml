@@ -14,7 +14,7 @@ plot:
 # data
 data_file: data/observed_particles/N1024.hdf5
 nparticles: 2
-particle_idx: [0,42]
+particle_idx: [0,101]
 
 # integration
 dt: -1.
@@ -38,9 +38,9 @@ potential:
             b: 140 km/s
 
 particles:
-    parameters:
-        # _X:
-        tub:
+#    parameters:
+#         _X:
+#         tub:
 
 satellite:
 #     parameters:
