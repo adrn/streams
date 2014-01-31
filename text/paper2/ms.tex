@@ -3,6 +3,7 @@
 
 % packages
 \usepackage{amssymb,amsmath, amsbsy}
+\usepackage{booktabs}
 
 % commands
 \newcommand{\project}[1]{\textsl{#1}}
@@ -96,7 +97,7 @@ Things to address:
 
 \section{The model}
 
-Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the same star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the satellite is observed to be at heliocentric 6D position $\D_s$, with true position $\W_s$, where the subscript $s$ refers to the satellite. The true, 6D spherical, heliocentric positions of the star and satellite -- $\W$ and $\W_s$ -- have corresponding 6D cartesian, Galactocentric coordinate vectors $\X$ and $\X_s$. Initially, we assume the present-day mass of the satellite, $M_s$, and velocity dispersion, $\sigma_v$, have been measured perfectly (but we will return to this later). With this notation, we write the joint posterior probability for the observed position of a star, satellite, and parent potential given the data as:
+Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the same star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the satellite is observed to be at heliocentric 6D position $\D_s$, with true position $\W_s$, where the subscript $s$ refers to the satellite. The true, 6D spherical, heliocentric positions of the star and satellite -- $\W$ and $\W_s$ -- have corresponding 6D cartesian, Galactocentric coordinate vectors $\X$ and $\X_s$. Initially, we assume the present-day mass of the satellite, $M_s$, and velocity dispersion, $\sigma_v$, have been measured perfectly (but we will return to this later). With this notation, we write the joint posterior probability for the observed position of a star, satellite, and parameters for the parent potential as:
 \begin{align}
 	p(\Phi, \W, \W_s, \tau \given \D, \D_s) &= \frac{1}{\mathcal{Z}} p(\D \given \W) p(\D_s \given \W_s) 
 												       p(\W \given \W_s, \tau, \Phi) 
@@ -122,11 +123,11 @@ where in eq.~\ref{eq:int} we have implicitly integrated over and neglected the t
 In general, $p(\tau)$ is likely conditional on the observed orbit of the progenitor but this is neglected and assumed to be uniform over the entire interaction history between the satellite and parent. Similarly, the priors on potential parameters, $p(\Phi)$, are taken to be uniform.
 
 \section{Experiments}
-We conduct several tests of this method [...]. For all tests in this article, we model the potential of the parent galaxy as a three-component sum of a Miyamoto-Nagai disk \citep{}, Hernquist bulge \citep{}, and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
+We conduct several tests of this method [...]. For all tests in this article, we model the potential of the parent galaxy as a three-component sum of a Miyamoto-Nagai disk \citep{}, Hernquist bulge \citep[spheroid][]{}, and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
 \begin{align}
 	\Phi_{\rm disk} &= -\frac{GM_{\rm disk}}{\sqrt{R^2 + (a + \sqrt{z^2 + b^2})^2}}\\
-	\Phi_{\rm bulge} &= -\frac{GM_{\rm bulge}}{r + c}\\
-	\Phi_{halo} &= \frac{1}{2}v_{0}^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + R_c^2)
+	\Phi_{\rm spher} &= -\frac{GM_{\rm spher}}{r + c}\\
+	\Phi_{halo} &= v_{h}^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + r_h^2)
 \end{align}
 where $C_1$, $C_2$, and $C_3$ are combinations of the $x$ and $y$ axis
 ratios ($q_1$, $q_2$) and orientation of the halo with respect to the
@@ -137,6 +138,27 @@ baryonic disk ($\phi$):
   C_3 &= 2\sin\phi\cos\phi \left(q_1^{-2} - q_2^{-2}\right).
 \end{align}
 
+\begin{table}[h]
+	\begin{tabular}{l c c c} \toprule
+		{\bf Component} & {\bf Parameter} & {\bf Value} & {\bf Prior} \\\toprule
+		disk & $M_{\rm disk}$ & $1.0\times10^{11}M_\odot$ & -- \\ 
+		& $a$ & 6.5 kpc & --\\
+		& $b$ & 0.26 kpc & --\\
+		\midrule
+		spheroid & $M_{\rm spher}$ & $3.4\times10^{10}M_\odot$ & --\\ 
+		& $c$ & 0.7 kpc & --\\
+		\midrule
+		halo & $v_h$ & -- & $\mathcal{U}(100,200)$ km $\mathrm{s}^{-1}$ \\
+		& $q_1$ & -- & $\mathcal{U}(0.7,2)$\\
+		& $q_2$ & 1.0 & --\\
+		& $q_z$ & -- & $\mathcal{U}(0.7,2)$\\
+		& $\phi$ & -- & $\mathcal{U}(45,135)$ deg\\
+		& $r_h$ & 12 kpc & --\\
+		\bottomrule
+		\hline
+	\end{tabular}
+	\caption{Parameter values used ...}
+\end{table}
 
 [Generalization to multiple phase-space structures. Mixture of
   mixtures.]
