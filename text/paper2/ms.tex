@@ -1,8 +1,10 @@
+%\documentclass{emulateapj}
 \documentclass[letterpaper,12pt,preprint]{aastex}
 
 % packages
 \usepackage{amssymb,amsmath, amsbsy}
 
+% commands
 \newcommand{\project}[1]{\textsl{#1}}
 \newcommand{\gaia}{\project{Gaia}~}
 \newcommand{\spitzer}{\project{Spitzer}~}
@@ -10,16 +12,20 @@
 \newcommand{\dd}{\mathrm{d}}
 \newcommand{\transpose}[1]{{#1}^{\mathsf{T}}}
 \newcommand{\inverse}[1]{{#1}^{-1}}
+\newcommand{\jac}[1]{\left\vert \J{#1} \right\vert}
 
-% bold X and D
 \newcommand{\D}{{\bf D}}
+\newcommand{\W}{{\bf W}}
 \newcommand{\X}{{\bf X}}
+\newcommand{\J}{{\boldsymbol J}}
 \newcommand{\bSigma}{{\bf \Sigma}}
 \newcommand{\bsigma}{\boldsymbol\sigma}
+\newcommand{\rtide}{R_{\rm tide}}
+
 
 \begin{document}
 
-\title{Inferring the gravitational potential of the Milky Way with few, precisely measured stars}
+\title{Inferring the gravitational potential of the Milky Way with few precisely measured stars}
 \author{Adrian M. Price-Whelan, DWH, KVJ, others?}
 
 \begin{abstract}
@@ -90,80 +96,47 @@ Things to address:
 
 \section{The model}
 
-Take ${\bf D}^{(i)}$ to be the observed heliocentric 6D position of the $i$th star -- e.g., the measured $l$, $b$, $D$, $\mu_l$, $\mu_b$, $v_r$ -- and ${\bf X}^{(i)}$ to be the corresponding \emph{true} 6D position of the same star. We assume that each star was once part of a progenitor system---e.g., satellite galaxy---presently at observed position ${\bf D}_s$ (with true position ${\bf X}_s$) that is tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. We then model the measured position of a star today as the result of sampling from a time-dependent 6D distribution -- the progenitor system -- at some time $\tau^{(i)}$ in the past, and evolving that sampled 6D position to present day in the parent potential, neglecting the effect of self-interaction with the halo of the progenitor. We want to perform inference \emph{without} building and running---within an MCMC chain---a fully dynamical model of a disrupting satellite in the Milky Way. We therefore approximate the progenitor system as a 6D Gaussian with mean vector given by the position of the satellite at any given time, ${\bf X}_s(t)$, and with shape defined by a time-dependent covariance matrix $\bSigma_s(t)$ (the subscript $s$ refers to satellite or progenitor). With these assumptions, the generative model for the data is written:
+Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the same star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the satellite is observed to be at heliocentric 6D position $\D_s$, with true position $\W_s$, where the subscript $s$ refers to the satellite. The true, 6D spherical, heliocentric positions of the star and satellite -- $\W$ and $\W_s$ -- have corresponding 6D cartesian, Galactocentric coordinate vectors $\X$ and $\X_s$. Initially, we assume the present-day mass of the satellite, $M_s$, and velocity dispersion, $\sigma_v$, have been measured perfectly (but we will return to this later). With this notation, we write the joint posterior probability for the observed position of a star, satellite, and parent potential given the data as:
 \begin{align}
-	p(\Phi, \X^{(i)}, \X_s, \bSigma_s, \tau^{(i)} \given \D^{(i)}, \D_s) &\propto 
-		p(\D^{(i)} \given \X^{(i)}) p(\D_s \given \X_s) p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)})
+	p(\Phi, \W, \W_s, \tau \given \D, \D_s) &= \frac{1}{\mathcal{Z}} p(\D \given \W) p(\D_s \given \W_s) 
+												       p(\W \given \W_s, \tau, \Phi) 
+												       p(\Phi) p(\tau)
+\end{align}
+where the factor $\mathcal{Z}$ only depends on the properties of the data (the \emph{evidence}), and is thus constant when varying the model parameters. We assume that the observational errors are Gaussian in heliocentric coordinates:
+\begin{align}
+	p(\D \given \W) &= \mathcal{N}(\W \given \D, \bSigma)\\
+	p(\D_s \given \W_s) &= \mathcal{N}(\W_s \given \D_s, \bSigma_s)
+\end{align}
+where the covariance matrices $\bSigma$ and $\bSigma_s$ specify the observational variances on the observed 6D position of star and the satellite, respectively. 
+
+The disruption of a satellite galaxy due to tidal shocking [...] Thus, we model the present-day position and velocity of the disrupted star as the result of sampling from isotropic, log-normal distributions centered on the instantaneous tidal radius, $R_{\rm tide}$, and velocity dispersion, $\sigma_v$, of the satellite at some time $\tau$ in the past, evolved to present day in the parent potential, $\Phi$. In this model, we neglect the effect of self-interaction with the halo of the progenitor [TODO: maybe we need to justify this, add APW's figure from paper 1 ref. response? refer to another section]. The likelihood of a star's position today is computed by first transforming the positions to Galactocentric, cartesian coordinates and integrating the orbits of the satellite and star backwards for several Gigayears in the parent potential, $\Phi$, treating both as test particles. The distance, $R$, and velocity, $V$, of the star relative to the satellite are computed at each time-step, and the likelihood is computed as the product of an isotropic, log-normal centered on the tidal radius with an isotropic, log-normal centered on the velocity dispersion of the satellite:
+\begin{align}
+	p(\W \given \W_s, \tau, \Phi) &= p(\X \given \X_s, \tau, \Phi) \jac{(l,b,D,\mu_l,\mu_b,v_r)}\\
+	p(\X \given \X_s, \tau, \Phi) &= p(\ln R, \ln V \given \tau, \Phi) \jac{(x,y,z,v_x,v_y,v_z)}\label{eq:int} \\
+	p(\ln R, \ln V \given \tau, \Phi) &= \mathcal{N}(\ln R(\tau) | \ln \rtide(\tau))\mathcal{N}(\ln V(\tau) | \ln \sigma_v(\tau))
+\end{align}
+where in eq.~\ref{eq:int} we have implicitly integrated over and neglected the two angle coordinates associated with $\ln R$ and the two angles associated with $\ln V$.
+
+% , but the vectors $\D$ and $\W$ [exist] in different coordinate systems --- heliocentric spherical and Galactocentric cartesian, respectively --- so we must also track the Jacobian that [describes] this transformation:
+
+In general, $p(\tau)$ is likely conditional on the observed orbit of the progenitor but this is neglected and assumed to be uniform over the entire interaction history between the satellite and parent. Similarly, the priors on potential parameters, $p(\Phi)$, are taken to be uniform.
+
+\section{Experiments}
+We conduct several tests of this method [...]. For all tests in this article, we model the potential of the parent galaxy as a three-component sum of a Miyamoto-Nagai disk \citep{}, Hernquist bulge \citep{}, and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
+\begin{align}
+	\Phi_{\rm disk} &= -\frac{GM_{\rm disk}}{\sqrt{R^2 + (a + \sqrt{z^2 + b^2})^2}}\\
+	\Phi_{\rm bulge} &= -\frac{GM_{\rm bulge}}{r + c}\\
+	\Phi_{halo} &= \frac{1}{2}v_{0}^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + R_c^2)
+\end{align}
+where $C_1$, $C_2$, and $C_3$ are combinations of the $x$ and $y$ axis
+ratios ($q_1$, $q_2$) and orientation of the halo with respect to the
+baryonic disk ($\phi$):
+\begin{align}
+  C_1 &= \frac{\cos^2\phi}{q_1^2} + \frac{\sin^2\phi}{q_2^2}\\
+  C_2 &= \frac{\sin^2\phi}{q_1^2} + \frac{\cos^2\phi}{q_2^2}\\
+  C_3 &= 2\sin\phi\cos\phi \left(q_1^{-2} - q_2^{-2}\right).
 \end{align}
 
-Taking $\mathcal{N}(x \given \mu, \Sigma)$ to be the normal distribution over x with mean $\mu$ and covariance tensor $\Sigma$, the individual components are simply:
-\begin{align}
-	p(\D^{(i)} \given \X^{(i)}) &= \mathcal{N}(\X^{(i)} \given \D^{(i)}, \bsigma^{(i)})\\
-	p(\D_s \given \X_s) &= \mathcal{N}(\X_s \given \D_s, \bsigma_s)\\
-	p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}) &= \mathcal{N}(\widetilde{\X}^{(i)}(\tau^{(i)}) \given \widetilde{\X}_s(\tau^{(i)}), \bSigma_s(\tau^{(i)}))\label{eq:likelihood}
-\end{align}
-where the vectors $\bsigma^{(i)}$ and $\bsigma_s$ represent the (assumed) Gaussian, uncorrelated observational errors on the observed 6D position of star $i$ and the satellite, respectively, and the tildes denote a conversion from spherical, heliocentric to cartesian, Galactocentric coordinates. The Gaussian in Eq.~\ref{eq:likelihood} is evaluated at the time at which the $i$th star becomes unbound, $\tau^{(i)}$.
-
-We first consider the case of a progenitor described only by a single (time-dependent) spatial scale---the tidal radius, $r_{\mathrm{tide}}(t)$---and a single velocity scale---the velocity dispersion, $\sigma_\mathrm{v}$---with \emph{perfectly} observed position and velocity components. Under these assumptions, the posterior is greatly simplified:
-\begin{align}
-	p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) &\propto 
-		p(\D^{(i)} \given \X^{(i)}) p(\X^{(i)} \given \X_s, r_{\mathrm{tide}}, \sigma_\mathrm{v}, \tau^{(i)})\label{eq:posterior}
-\end{align}
-and thus the $\ln$-posterior is
-\begin{align}
-	\ln p(\Phi, \X^{(i)}, \tau^{(i)} \given \D^{(i)}) &= \ln p(\D^{(i)} \given \X^{(i)}) + \ln p(\X^{(i)} \given \X_s, r_{\mathrm{tide}}, \sigma_\mathrm{v}, \tau^{(i)}).
-\end{align}
-The first term on the RHS -- from the observed positions of the stars	-- can be expanded to:
-\begin{align}
-	\ln p(\D^{(i)} \given \X^{(i)}) &= K - \frac{1}{2}\sum_j \left[ 2\ln\sigma_j + \left(\frac{X^{(i)}_j-D^{(i)}_j}{\sigma^{(i)}_j}\right)^2\right]
-\end{align}
-where $K$ is a constant related to the dimensionality. 
- 
-The second term -- quantifying how well the potential ``returns'' the stars to the progenitor -- reads as follows (for the case of a spherical progenitor):
-\begin{align}
-	\ln p(\X^{(i)} \given \X_s, \bSigma_s, \tau^{(i)}) &= M - \frac{1}{2}\ln(\det \bSigma_s(\tau^{(i)})) - \frac{1}{2}\langle \widetilde{\X}-\widetilde{\X}_s, \bSigma_s^{-1}(\widetilde{\X}-\widetilde{\X}_s) \rangle\\
-	&= M - \left[3(\ln r_{\rm tide} + \ln \sigma_v) - \frac{1}{2}\left( \frac{({\boldsymbol r}^{(i)}-{\boldsymbol r}_s)^2}{r_{\rm tide}^2} + \frac{ ({\boldsymbol v}^{(i)}-{\boldsymbol v}_s)^2}{\sigma_v^2} \right)\right]_{t=\tau^{(i)}}\label{eq:ln_like}
-\end{align}
-where $\boldsymbol r$,$\boldsymbol v$ are the (cartesian) positions and velocities integrated \emph{backwards} in potential $\Phi$ from their present-day positions $\widetilde{\X}$, and $M$ is another additive constant. The whole expression Eq.~\ref{eq:ln_like} is evaluated at the time unbound, $\tau^{(i)}$.
-
-%The marginalization integrals require prior pdfs for the
-%parameters---or at least the nuisance parameters.  Here the nuisance
-%parameters include the 6-vector position $X_k^{(0)}$ of the
-%progenitor, the 6-tensor size $\Sigma_k$ of the progenitor, and all
-%the times $t_{nk}$:
-
-Eq.~\ref{eq:posterior} does not include the prior distributions needed to perform marginalizations (integrals) over nuisance parameters of the model. In the most naive model, the unbinding times, $\tau^{(i)}$, could be uniformly drawn from the lifetime of the progenitor; that is, the times could be drawn from a uniform pdf extending from some time, $T$, several Gyr in the past to the present day $t=0$. In what follows we adopt for simplicity the flat prior $p(\tau)=U(\tau\given T, 0)$, where $U(x\given a,b)$ is the uniform distribution for $x$ between limits $a<x<b$.
-
-%A more sophisticated model might have the
-%release times be more likely to occur near pericenter passages; that
-%is, if the progenitor has finite eccentricity (as it surely will) then
-%the probability of releasing a star is probably a strong function of
-%Galactocentric distance. 
-
-[Question for Hogg: I don't understand this paragraph -- can't we just ignore a prior on the true star positions?]
-The prior on the phase-space position $X_k$ could be built from some
-kind of maximum-entropy considerations in some baseline potential or
-in the current setting of the model potential parameters.  Or it could
-be generated from empirical distributions found for known substructures or
-satellites found in data or simulations of galaxy formation.  For
-simplicity we choose the 3-vector position part of $X_k$ to be drawn
-from the singular isothermal sphere $p(x)\propto |x|^{-2}$ in the
-range [HOGG]$<|x|<$[HOGG]~kpc and the 3-vector velocity part to be
-drawn from a spherical (diagonal) Gaussian of velocity dispersion
-[HOGG].  These priors are not really justified by prior knowledge, but
-they also don't matter enormously when the data are informative.  When
-we test the method (below), we will explicitly test in cases where
-these priors are inappropriate, to demonstrate that they don't
-substantially affect the results in realistic situations.
-
-The prior on the progenitor 6-tensor size $\Sigma_k$---which really
-has only two degrees of freedom, $\sigma_{kx}^2$ and $\sigma_{kv}^2$, the
-diagonal elements of the 3-tensor spatial extent and the diagonal
-elements of the 3-tensor velocity extent---must enforce positivity and
-(relatively speaking) ``coldness'' of the structure.  We relatively
-arbitrarily put [HOGG] priors on these with parameters [HOGG].
-
-[Milky Way ``background'' model.  Mixture model.]
 
 [Generalization to multiple phase-space structures. Mixture of
   mixtures.]
@@ -200,6 +173,9 @@ arbitrarily put [HOGG] priors on these with parameters [HOGG].
   shells and the like.]
 
 [Don't eschew low-dimensional constraints on the potential!]
+
+\bibliographystyle{apj}
+\bibliography{refs}
 
 \acknowledgements
 Binney, Rix, Sanders
