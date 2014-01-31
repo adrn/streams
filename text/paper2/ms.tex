@@ -90,10 +90,12 @@ TODO...
   run---to construct likelihood functions for many small stellar
   samples and in the end do inference by multiplying them together.
   Duh!]
-  
-Things to address:
-- Density is hard to match -- need background model, way to go from luminosity to density, needs assumptions about the mass function and structure of the satellite
--
+
+[Densities are hard to match -- need a background model, way to go from luminosity to density, needs assumptions about the mass function and structure of the satellite\
+
+[Cold vs. Hot streams in the context of observational errors]
+
+[We properly handle observational errors]
 
 \section{The model}
 
@@ -166,29 +168,20 @@ When recovering the potential, we hold fixed the disk and spheroid parameters (s
 \end{center}
 \end{table}
 
-
-
-\pagebreak
-
-(Hogg comments)
-
-[Generalization to multiple phase-space structures. Mixture of
-  mixtures.]
-
-[Comment on bow-tie structure, Kuepper work, and so on;
-  might want to generalize the Gaussian brutality.]
-
-\section{Tests on simulated data}
-
-[Each experiment requires a description of how the fake data were
-  generated, what the likelihood function is, and posterior potential
-  information obtained.]
-
 \subsection{\gaia + \spitzer}
+64 stars in Sgr-like stream
 
 \subsection{\spitzer + current data}
+64 stars in Sgr-like stream
+
+\subsection{\spitzer + current data, no progenitor}
+32 stars in Orphan-like stream, XX stars in GD-1 -like stream
 
 \section{Discussion}
+
+[Cold vs. Hot streams]
+
+[bow-tie structure, Kuepper work, and so on]
 
 [What's unrealistic about what we have done?  The kinematic model of
   the progenitor is exceedingly simplistic; why are we okay with it
@@ -200,8 +193,6 @@ When recovering the potential, we hold fixed the disk and spheroid parameters (s
   general; nothing in the method requires or suggests this.]
 
 [Issues about computation and scaling.]
-
-[Don't be afraid of nuisance parameters!]
 
 [Nothing special about streams; will work on any structures, including
   shells and the like.]
