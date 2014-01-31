@@ -12,7 +12,7 @@ plot:
 #output_path: /tmp
 
 # data
-data_file: data/observed_particles/N128.hdf5
+data_file: data/observed_particles/N1024.hdf5
 nparticles: 2
 particle_idx: [0,42]
 
@@ -38,19 +38,20 @@ potential:
             b: 140 km/s
 
 particles:
-#        _X:
-#        tub:
+    parameters:
+        # _X:
+        tub:
 
 satellite:
 #     parameters:
 #         _X:
 
 # emcee
-walkers: 12
-burn_in: 10
-steps: 10
+walkers: 32
+burn_in: 125
+steps: 100
 iterate: 2
-steps_final: 2
+steps_final: 100
 
 # satellite:
 #     _X:
