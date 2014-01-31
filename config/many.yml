@@ -13,7 +13,7 @@ plot:
 
 # data
 data_file: data/observed_particles/N128.hdf5
-nparticles: 8
+nparticles: 32
 
 # integration
 dt: -1.
@@ -46,11 +46,11 @@ satellite:
 #         _X:
 
 # emcee
-walkers: 512
+walkers: 1024
 burn_in: 1000
 steps: 2000
 iterate: 10
-steps_final: 5000
+steps_final: 2500
 
 # satellite:
 #     _X:
