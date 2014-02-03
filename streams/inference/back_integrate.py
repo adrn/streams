@@ -52,7 +52,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     # These are the unbinding time indices for each particle
     t_idx = np.array([np.argmin(np.fabs(times - t)) for t in tub])
 
-    # Gaussian shell idea:
+    # get back 6D positions for stars and satellite at tub
     p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     s_x = np.array([s_orbit[jj,0] for jj in t_idx])
     rel_x = p_x-s_x
@@ -77,4 +77,4 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     mu_v = np.log(v_disp)
     v_term = -0.5*(2*np.log(sigma_v) + ((lnV-mu_v)/sigma_v)**2) - np.log(V**3)
 
-    return np.sum(r_term + v_term + jac1)
+    return r_term + v_term + jac1
