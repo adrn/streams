@@ -78,13 +78,13 @@ lm10_c = minimum_config.format(potential_params=pot_params,
                                particles_params="",
                                satellite_params="")
 
-_configs = []
-_configs.append(minimum_config.format(potential_params=pot_params,
-                                      particles_params="",
-                                      satellite_params=""))
-# _configs.append(minimum_config.format(potential_params="",
-#                                       particles_params=ptc_params,
-#                                       satellite_params=""))
+_configs = dict()
+# _configs[0] = minimum_config.format(potential_params=pot_params,
+#                                     particles_params="",
+#                                     satellite_params="")
+_configs[1] = minimum_config.format(potential_params="",
+                                    particles_params=ptc_params,
+                                    satellite_params="")
 # _configs.append(minimum_config.format(potential_params="",
 #                                       particles_params="",
 #                                       satellite_params=sat_params))
@@ -101,11 +101,11 @@ _configs.append(minimum_config.format(potential_params=pot_params,
 class TestStreamModel(object):
 
     def setup(self):
-        self.configs = [io.read_config(config_file) for config_file in _configs]
+        self.configs = dict([(key,io.read_config(_configs[key])) for key in _configs.keys()])
 
     def test_simple(self):
 
-        for ii,c in enumerate(self.configs):
+        for ii,c in self.configs.items():
             print()
             logger.info("Testing config {}".format(ii+1))
             model = si.StreamModel.from_config(c)
@@ -191,7 +191,7 @@ class TestStreamModel(object):
     def test_model(self):
         """ Simple test of posterior """
 
-        for ii,c in enumerate(self.configs):
+        for ii,c in self.configs.items():
             print()
             logger.info("Testing config {}".format(ii+1))
             model = si.StreamModel.from_config(c)
