@@ -91,6 +91,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         logger.info("Running {} walkers for {} iterations of {} steps..."\
                     .format(nwalkers, niter, nsteps//niter))
 
+        # TODO HACK: this should be configurable
         anneal = True
         if anneal:
             anneal_schedule = np.logspace(-4,1,niter)
