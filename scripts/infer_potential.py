@@ -91,8 +91,17 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         logger.info("Running {} walkers for {} iterations of {} steps..."\
                     .format(nwalkers, niter, nsteps//niter))
 
+        # TODO HACK: this should be configurable
+        anneal = True
+        if anneal:
+            anneal_schedule = np.logspace(-4,1,niter)
+        else:
+            anneal_schedule = np.ones(niter)
+
         time0 = time.time()
         for ii in range(niter):
+            logger.debug("Iteration: {}, anneal exponent: {}".format(anneal_schedule[ii]))
+            sampler.lnprobfn.lnpargs[3] = anneal_schedule[ii]
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
 
             # if any of the samplers have less than 5% acceptance,

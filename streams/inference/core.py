@@ -313,10 +313,10 @@ class StreamModel(object):
         ln_like = back_integration_likelihood(args[0], args[1], args[2], # t1, t2, dt
                                               potential, p_hel, s_hel, tub)
 
-        # try:
-        #     return (ln_like + np.sum(ln_prior))**args[3]
-        # except:
-        return np.sum(ln_like) + np.sum(ln_prior)
+        try:
+            return (ln_like + np.sum(ln_prior))*args[3]
+        except:
+            return np.sum(ln_like) + np.sum(ln_prior)
 
     def __call__(self, p):
         # TODO: each call, adjust temperature according to self.annealing?
