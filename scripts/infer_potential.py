@@ -101,8 +101,9 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
         time0 = time.time()
         for ii in range(niter):
-            logger.debug("Iteration: {}, anneal exponent: {}".format(anneal_schedule[ii]))
-            sampler.lnprobfn.lnpargs[3] = anneal_schedule[ii]
+            logger.debug("Iteration: {}, anneal exponent: {}".format(ii, anneal_schedule[ii]))
+            model.lnpargs[3] = anneal_schedule[ii]
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
 
             # if any of the samplers have less than 5% acceptance,
