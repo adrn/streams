@@ -97,6 +97,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             anneal_schedule = np.logspace(-4,1,niter)
         else:
             anneal_schedule = np.ones(niter)
+        anneal_schedule = np.atleast_1d(anneal_schedule)
 
         time0 = time.time()
         for ii in range(niter):
