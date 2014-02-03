@@ -314,7 +314,7 @@ class StreamModel(object):
                                               potential, p_hel, s_hel, tub)
 
         try:
-            return (ln_like + np.sum(ln_prior))*args[3]
+            return (np.sum(ln_like) + np.sum(ln_prior))*args[3]
         except:
             return np.sum(ln_like) + np.sum(ln_prior)
 
