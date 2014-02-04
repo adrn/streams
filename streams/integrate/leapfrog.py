@@ -94,21 +94,32 @@ class LeapfrogIntegrator(object):
     def step(self, dt):
         """ Step forward the positions and velocities by the given timestep """
 
-        if self._dt is None:
-            self._dt = dt
-
-        r_i = self._position_step(self.r_im1, self.v_im1_2, self._dt)
-        a_i = self.acc(r_i, *self._acc_args)
-        v_i = self._velocity_halfstep(a_i, self.v_im1_2, self._dt)
-
+        #if self._dt is None:
         self._dt = dt
-        v_ip1_2 = self._velocity_halfstep(a_i, v_i, self._dt)
 
-        self.r_im1 = r_i
-        self.v_im1 = v_i
-        self.v_im1_2 = v_ip1_2
+        # #HACK r_i = self._position_step(self.r_im1, self.v_im1_2, self._dt)
+        # r_i = self.r_im1 + self.v_im1_2*self._dt
+        # a_i = self.acc(r_i, *self._acc_args)
+        # #HACK v_i = self._velocity_halfstep(a_i, self.v_im1_2, self._dt)
+        # v_i = self.v_im1_2 + a_i*self._half_dt
 
-        return r_i, v_i
+        # self._dt = dt
+        # #HACK v_ip1_2 = self._velocity_halfstep(a_i, v_i, self._dt)
+        # v_ip1_2 = v_i + a_i*self._half_dt
+
+        # self.r_im1 = r_i
+        # self.v_im1 = v_i
+        # self.v_im1_2 = v_ip1_2
+
+        # return r_i, v_i
+
+        self.r_im1 += self.v_im1_2*self._dt
+        a_i = self.acc(self.r_im1, *self._acc_args)
+
+        self.v_im1 += a_i*self._dt
+        self.v_im1_2 += a_i*self._dt
+
+        return self.r_im1, self.v_im1
 
     def _prime(self, dt):
         """ Leapfrog updates the velocities offset a half-step from the
