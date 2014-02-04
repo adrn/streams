@@ -46,8 +46,9 @@ class StreamModel(object):
             true_particles : streams.dynamics.Particle
         """
         self._potential_class = potential.__class__
-        self._given_potential_params = dict([(k,v._value)
-                                             for k,v in potential.parameters.items()])
+        self._given_potential_params = potential._parameter_dict.copy()
+        self._potential = self._potential_class(**self._given_potential_params)
+        #dict([(k,v._value) for k,v in potential.parameters.items()])
 
         self.parameters = OrderedDict()
         self.parameters['potential'] = OrderedDict()
@@ -309,6 +310,10 @@ class StreamModel(object):
         except KeyError:
             s_hel = self.true_satellite._X
 
+        # don't create new potential each time, just modify _parameter_dict
+        # self._potential._parameter_dict = pparams
+        # ln_like = back_integration_likelihood(args[0], args[1], args[2], # t1, t2, dt
+        #                                       self._potential, p_hel, s_hel, tub)
         potential = self._potential_class(**pparams)
         ln_like = back_integration_likelihood(args[0], args[1], args[2], # t1, t2, dt
                                               potential, p_hel, s_hel, tub)
