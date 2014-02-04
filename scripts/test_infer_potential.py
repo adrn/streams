@@ -79,12 +79,12 @@ lm10_c = minimum_config.format(potential_params=pot_params,
                                satellite_params="")
 
 _configs = dict()
-# _configs[0] = minimum_config.format(potential_params=pot_params,
-#                                     particles_params="",
-#                                     satellite_params="")
-_configs[1] = minimum_config.format(potential_params="",
-                                    particles_params=ptc_params,
+_configs[0] = minimum_config.format(potential_params=pot_params,
+                                    particles_params="",
                                     satellite_params="")
+# _configs[1] = minimum_config.format(potential_params="",
+#                                     particles_params=ptc_params,
+#                                     satellite_params="")
 # _configs.append(minimum_config.format(potential_params="",
 #                                       particles_params="",
 #                                       satellite_params=sat_params))
@@ -233,3 +233,32 @@ class TestStreamModel(object):
                 # plt.savefig(os.path.join(test_path, "test_{}.png".format(jj)))
 
 
+def time_likelihood(model, potential, niter=100):
+    for ii in range(niter):
+        ll = si.back_integration_likelihood(model.lnpargs[0],
+                                            model.lnpargs[1],
+                                            model.lnpargs[2],
+                                            potential,
+                                            model.true_particles._X,
+                                            model.true_satellite._X,
+                                            model.true_particles.tub)
+
+def time_posterior(model, niter=100):
+    for ii in range(niter):
+        model(model.truths)
+
+if __name__ == "__main__":
+    import cProfile
+    import pstats
+
+    c = io.read_config(lm10_c)
+    model = si.StreamModel.from_config(c)
+    potential = model._potential_class(**model._given_potential_params)
+
+    cProfile.run('time_likelihood(model, potential)', 'likelihood_stats')
+    p = pstats.Stats('likelihood_stats')
+    p.strip_dirs().sort_stats('cumulative').print_stats(25)
+
+    cProfile.run('time_posterior(model)', 'posterior_stats')
+    p = pstats.Stats('posterior_stats')
+    p.strip_dirs().sort_stats('cumulative').print_stats(25)
