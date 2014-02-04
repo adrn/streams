@@ -82,7 +82,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             logger.info("Burning in sampler for {} steps...".format(nburn))
 
             # TODO: HACK add as option
-            burn_temp = 100.
+            burn_temp = 1000.
             if burn_temp > 1.:
                 model.lnpargs[3] = 1./burn_temp
                 sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
@@ -102,7 +102,11 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
 
         else:
-            pos = p0
+            # HACK HACK HACK
+            std = np.std(p0, axis=0)
+            pos = np.array([np.random.normal(model.truths, std/10.) \
+                            for kk in range(nwalkers)])
+            #pos = p0
 
         # TODO: add annealing schedule to class
         #   - specify start temp, end temp, have it continuously change each step
