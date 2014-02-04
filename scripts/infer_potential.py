@@ -80,8 +80,27 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
         if nburn > 0:
             logger.info("Burning in sampler for {} steps...".format(nburn))
+
+            # TODO: HACK add as option
+            burn_temp = 100.
+            if burn_temp > 1.:
+                model.lnpargs[3] = 1./burn_temp
+                sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
+            #pos, xx, yy = sampler.run_mcmc(p0, nburn)
+            #sampler.reset()
+
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
-            sampler.reset()
+            best_idx = sampler.flatlnprobability.argmax()
+            best_pos = sampler.flatchain[best_idx]
+
+            std = np.std(p0, axis=0)
+            pos = np.array([np.random.normal(best_pos, std) \
+                            for kk in range(nwalkers)])
+
+            model.lnpargs[3] = 1.
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
         else:
             pos = p0
 
@@ -91,19 +110,9 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         logger.info("Running {} walkers for {} iterations of {} steps..."\
                     .format(nwalkers, niter, nsteps//niter))
 
-        # TODO HACK: this should be configurable
-        anneal = True
-        if anneal:
-            anneal_schedule = np.logspace(-4,1,niter)
-        else:
-            anneal_schedule = np.ones(niter)
-        anneal_schedule = np.atleast_1d(anneal_schedule)
-
         time0 = time.time()
         for ii in range(niter):
-            logger.debug("Iteration: {}, anneal exponent: {}".format(ii, anneal_schedule[ii]))
-            model.lnpargs[3] = anneal_schedule[ii]
-            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+            logger.debug("Iteration: {}".format(ii))
             pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
 
             # if any of the samplers have less than 5% acceptance,
