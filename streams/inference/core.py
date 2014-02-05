@@ -195,10 +195,18 @@ class StreamModel(object):
                     else:
                         p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
 
-                    ### HACK TO INITIALIZE WALKERS NEAR true tub!
+                    #######################################################
+                    ### HACK TO INITIALIZE WALKERS NEAR TRUTH
                     if param_name == "tub":
                         p0[ii,ix1:ix1+param.size] = np.random.normal(self.true_particles.tub,
-                                                                     100.)
+                                                                     50.)
+
+                    if group_name == "particles" and param_name == "_X":
+                        _X = self.true_particles._X.ravel()
+                        std = np.ravel([pr.sigma for pr in param._prior])
+                        p0[ii,ix1:ix1+param.size] = np.random.normal(_X, std)
+                    ### HACK TO INITIALIZE WALKERS NEAR TRUTH
+                    #######################################################
 
                     ix1 += param.size
 
