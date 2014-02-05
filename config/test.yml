@@ -25,33 +25,32 @@ potential:
     class_name: LawMajewski2010
     parameters:
         q1:
-            a: 1.1
-            b: 1.6
+            a: 1.
+            b: 1.7
         qz:
-            a: 1.1
-            b: 1.6
+            a: 1.
+            b: 1.75
         phi:
-            a: 90. degree
-            b: 110. degree
+            a: 80. degree
+            b: 120. degree
         v_halo:
-            a: 110 km/s
-            b: 140 km/s
+            a: 100 km/s
+            b: 200 km/s
 
 particles:
-#    parameters:
-#         _X:
-#         tub:
+#        _X:
+#        tub:
 
 satellite:
 #     parameters:
 #         _X:
 
 # emcee
-walkers: 32
-burn_in: 125
-steps: 100
-iterate: 2
-steps_final: 100
+walkers: 64
+burn_in: 1000
+steps: 1000
+iterate: 10
+steps_final: 2000
 
 # satellite:
 #     _X:
