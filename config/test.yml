@@ -14,7 +14,7 @@ plot:
 # data
 data_file: data/observed_particles/N1024.hdf5
 nparticles: 2
-particle_idx: [0,42]
+particle_idx: [0,512]
 
 # integration
 dt: -1.
@@ -39,7 +39,7 @@ potential:
 
 particles:
     parameters:
-        # _X:
+        _X:
         tub:
 
 satellite:
@@ -47,11 +47,11 @@ satellite:
 #         _X:
 
 # emcee
-walkers: 32
-burn_in: 125
-steps: 100
-iterate: 2
-steps_final: 100
+walkers: 36
+burn_in: 5
+steps: 0
+iterate: 1
+steps_final: 0
 
 # satellite:
 #     _X:
