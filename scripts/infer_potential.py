@@ -75,6 +75,12 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers)
 
+        # HACK HACK HACK
+        std = np.std(p0, axis=0)
+        p0 = np.array([np.random.normal(model.truths, std/10.) \
+                       for kk in range(nwalkers)])
+        # HACK HACK HACK
+
         # get the sampler
         sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
 
@@ -102,11 +108,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
 
         else:
-            # HACK HACK HACK
-            std = np.std(p0, axis=0)
-            pos = np.array([np.random.normal(model.truths, std/10.) \
-                            for kk in range(nwalkers)])
-            #pos = p0
+            pos = p0
 
         # TODO: add annealing schedule to class
         #   - specify start temp, end temp, have it continuously change each step
