@@ -110,34 +110,37 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
         # TODO: add annealing schedule to class
         #   - specify start temp, end temp, have it continuously change each step
-
         logger.info("Running {} walkers for {} iterations of {} steps..."\
                     .format(nwalkers, niter, nsteps//niter))
 
-        time0 = time.time()
-        for ii in range(niter):
-            logger.debug("Iteration: {}".format(ii))
-            pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
+        if nsteps > 0:
+            time0 = time.time()
+            for ii in range(niter):
+                logger.debug("Iteration: {}".format(ii))
+                pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
 
-            # if any of the samplers have less than 5% acceptance,
-            #  start them from new positions sampled from the best position
-            acc_frac_test = sampler.acceptance_fraction < 0.05
-            if np.any(acc_frac_test):
-                nbad = np.sum(acc_frac_test)
-                med_pos = np.median(sampler.flatchain, axis=0)
-                std = np.std(sampler.flatchain, axis=0)
-                new_pos = sample_ball(med_pos, std, size=nwalkers)
+                # if any of the samplers have less than 5% acceptance,
+                #  start them from new positions sampled from the best position
+                acc_frac_test = sampler.acceptance_fraction < 0.05
+                if np.any(acc_frac_test):
+                    nbad = np.sum(acc_frac_test)
+                    med_pos = np.median(sampler.flatchain, axis=0)
+                    std = np.std(sampler.flatchain, axis=0)
+                    new_pos = sample_ball(med_pos, std, size=nwalkers)
 
-                for jj in range(nwalkers):
-                    if acc_frac_test[jj]:
-                        pos[jj] = new_pos[jj]
+                    for jj in range(nwalkers):
+                        if acc_frac_test[jj]:
+                            pos[jj] = new_pos[jj]
+
+            t = time.time() - time0
+            logger.debug("Spent {} seconds on main sampling...".format(t))
 
         if nsteps_final > 0:
+            time0 = time.time()
             sampler.reset()
             pos, prob, state = sampler.run_mcmc(pos, nsteps_final)
-
-        t = time.time() - time0
-        logger.debug("Spent {} seconds on sampling...".format(t))
+            t = time.time() - time0
+            logger.debug("Spent {} seconds on final sampling...".format(t))
 
         # write the sampler data to numpy save files
         logger.info("Writing sampler data to '{}'...".format(output_file))
