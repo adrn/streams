@@ -310,18 +310,17 @@ class StreamModel(object):
         except KeyError:
             s_hel = self.true_satellite._X
 
-        # don't create new potential each time, just modify _parameter_dict
-        # self._potential._parameter_dict = pparams
-        # ln_like = back_integration_likelihood(args[0], args[1], args[2], # t1, t2, dt
-        #                                       self._potential, p_hel, s_hel, tub)
+        # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
-        ln_like = back_integration_likelihood(args[0], args[1], args[2], # t1, t2, dt
+        t1, t2, dt = args[:3]
+        ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_hel, s_hel, tub)
 
-        try:
-            return (np.sum(ln_like) + np.sum(ln_prior))*args[3]
-        except:
-            return np.sum(ln_like) + np.sum(ln_prior)
+        return np.sum(ln_like) + np.sum(ln_prior)
+        # try:
+        #     return (np.sum(ln_like) + np.sum(ln_prior))*args[3]
+        # except:
+        #     return np.sum(ln_like) + np.sum(ln_prior)
 
     def __call__(self, p):
         # TODO: each call, adjust temperature according to self.annealing?
