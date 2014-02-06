@@ -60,7 +60,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     p_x_hel = _gc_to_hel(p_x)
     jac1 = xyz_sph_jac(p_x_hel)
 
-    r_tide = potential._tidal_radius(2.5e8, s_x)*1.6
+    r_tide = potential._tidal_radius(2.5e8, s_x)#*1.6
     #v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
     v_disp = 0.017198632325
 
