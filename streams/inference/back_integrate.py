@@ -61,7 +61,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel,
     p_x_hel = _gc_to_hel(p_x)
     jac1 = xyz_sph_jac(p_x_hel)
 
-    r_tide = potential._tidal_radius(s_mass, s_x)#*1.6
+    r_tide = potential._tidal_radius(s_mass, s_x)
 
     R = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
     V = np.sqrt(np.sum(rel_x[...,3:]**2, axis=-1))
@@ -70,10 +70,10 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel,
 
     sigma_r = 0.55
     mu_r = np.log(r_tide)
-    r_term = -0.5*(2*np.log(sigma_r) + ((lnR-mu_r)/sigma_r)**2) - np.log(R**3)
+    r_term = -0.5*(np.log(sigma_r**2*R) + ((lnR-mu_r)/sigma_r)**2)
 
     sigma_v = 0.8
     mu_v = np.log(s_vdisp)
-    v_term = -0.5*(2*np.log(sigma_v) + ((lnV-mu_v)/sigma_v)**2) - np.log(V**3)
+    v_term = -0.5*(np.log(sigma_v**2*V) + ((lnV-mu_v)/sigma_v)**2)
 
-    return r_term + v_term + jac1
+    return r_term + v_term + jac1 - np.log(R**3) - np.log(V**3)
