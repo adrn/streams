@@ -126,8 +126,10 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     axes[1].plot(gc_particles["vx"].to(u.km/u.s).value,
                  gc_particles["vz"].to(u.km/u.s).value,
                  markersize=markersize, marker='o', linestyle='none', alpha=0.5, c='#ca0020')
+
+    fname = os.path.splitext(os.path.basename(output_file))[0]
     fig.savefig(os.path.join(os.path.split(output_file)[0],
-                             "xyz_vxvyvz.{}".format('png')))
+                             "{}.{}".format(fname, 'png')))
 
     with h5py.File(output_file, "w") as f:
         # add particle positions to file
@@ -178,6 +180,9 @@ if __name__ == "__main__":
     parser.add_argument("--seed", dest="seed", default=None, type=int,
                         help="Seed for random number generator.")
 
+    parser.add_argument("--mass", dest="mass", required=True, type=str,
+                        help="Satellite mass.")
+
     args = parser.parse_args()
 
     if args.verbose:
@@ -190,8 +195,8 @@ if __name__ == "__main__":
     """
         e.g.:
 python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---N=128 --file=/Users/adrian/projects/streams/data/observed_particles/N128.hdf5 \
---seed=84
+--N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024.hdf5 \
+--seed=42 --mass="2.5e8"
     """
 
     # TODO: class kwargs
@@ -200,4 +205,4 @@ python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=
     observe_simulation(args.class_name,
         particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
         selection_expr=args.expr, N=args.N, output_file=args.output_file,
-        overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass="2.5e8"))
+        overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass=args.mass))
