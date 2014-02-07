@@ -53,16 +53,21 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     t_idx = np.array([np.argmin(np.fabs(times - t)) for t in tub])
 
     # get back 6D positions for stars and satellite at tub
-    p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    s_x = np.array([s_orbit[jj,0] for jj in t_idx])
-    rel_x = p_x-s_x
+    # p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    # s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+    # rel_x = p_x-s_x
 
-    p_x_hel = _gc_to_hel(p_x)
-    jac1 = xyz_sph_jac(p_x_hel)
+    # p_x_hel = _gc_to_hel(p_x)
+    # jac1 = xyz_sph_jac(p_x_hel)
 
-    r_tide = potential._tidal_radius(2.5e8, s_x)#*1.6
+    # r_tide = potential._tidal_radius(2.5e8, s_x)#*1.6
     #v_esc = potential._escape_velocity(2.5e8, r_tide=r_tide)
     v_disp = 0.017198632325
+
+    r_tide = potential._tidal_radius(2.5e8, s_orbit)
+    p_x_hel = _gc_to_hel(p_orbits)
+    jac1 = xyz_sph_jac(p_x_hel).T
+    rel_x = p_orbits - s_orbit
 
     R = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
     V = np.sqrt(np.sum(rel_x[...,3:]**2, axis=-1))
@@ -76,5 +81,10 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, tub):
     sigma_v = 0.8
     mu_v = np.log(v_disp)
     v_term = -0.5*(2*np.log(sigma_v) + ((lnV-mu_v)/sigma_v)**2) - np.log(V**3)
+
+    ##
+    ll = r_term + v_term + jac1
+    return np.sum(ll, axis=0) / ll.shape[0]
+    ##
 
     return r_term + v_term + jac1
