@@ -194,9 +194,18 @@ if __name__ == "__main__":
 
     """
         e.g.:
+
+python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
+--N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e6_N1024.hdf5 \
+--seed=42 --mass="2.5e6" --overwrite
+
+python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
+--N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e7_N1024.hdf5 \
+--seed=42 --mass="2.5e7" --overwrite
+
 python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
 --N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024.hdf5 \
---seed=42 --mass="2.5e8"
+--seed=42 --mass="2.5e8" --overwrite
     """
 
     # TODO: class kwargs
