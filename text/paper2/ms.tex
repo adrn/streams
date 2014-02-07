@@ -26,8 +26,8 @@
 
 \begin{document}
 
-\title{Inferring the gravitational potential of the Milky Way with few precisely measured stars}
-\author{Adrian M. Price-Whelan, DWH, KVJ, others?}
+\title{Inferring the gravitational potential of the Milky Way with a few precisely measured stars}
+\author{Adrian M. Price-Whelan, David W. Hogg, Kathryn V. Johnston, [TODO: order?]}
 
 \begin{abstract}
 %Informative phase-space structures, and in particular those created by
@@ -62,24 +62,30 @@ TODO...
 
 \section{Introduction}
 
-[From KVJ:]
-- Broader comparison to other methods
-	- 'generative methods' more generally (ie N-body, plus Varghese, plus Kuepper plus new possible action-angle models....
-	- statistical methods
-	- Sanders \& Binney 2013
-- Then a short note on worries
-	- for generative models
-	- for any methods based on action/angle 
-- Then how rewinder gets round these????
-	- Reference Deg \& Widrow to say they illustrate the idea of the power of multiple streams to back up the bit where you say that's the long-term aim
+[TODO: A historical introduction to dark matter, potential measures?]
 
-[Cold streams contain tons of information.]
+Major open questions in near-field cosmology: (1) is the Milky Way potential triaxial and if so, how much? (2) How does the potential vary with radius? (3) Is there graininess to the potential? e.g., is there substructure?
 
-[GD-1 was fit as if it highlighted an orbit.  That is known to be
-  wrong.]
+Cosmological simulations of galaxy formation in the $\Lambda$CDM paradigm seem to produce triaxial dark matter halos \citep{dubinski91, jing02, kuhlen07, veraciro11}. Halos tend to be more strongly triaxial in dark-matter-only simulations, but still present with the inclusion of baryons. Baryonic processes tend to modify the dark matter structure in the inner galaxy, leading possibly to radially-dependent axis ratios and halo orientation. [statements about integrability]. [if want to connect lambda-CDM to the milky way, we need to face non-integrable potentials]
 
-[In the halo, any phase-space structure might be long-lived.  Chemical
-  tagging could in principle illuminate it.]
+[something about measuring halo shape with lensing]. 
+
+[why use tidal streams?] \cite{lm10} used N-body models to ... triaxial.
+
+Another prediction of hierarchical structure formation in $\Lambda$CDM is the presence of substructure. 
+
+- Broader comparison to other methods\\
+\indent\indent- 'generative methods' more generally (ie N-body, plus Varghese, plus Kuepper plus new possible action-angle models....\\
+\indent\indent- statistical methods\\
+\indent\indent- Sanders \& Binney 2013\\
+- Then a short note on worries\\
+\indent\indent- for generative models\\
+\indent\indent- for any methods based on action/angle \\
+\indent\indent- GD-1 was fit as if it highlighted an orbit.  That is known to be wrong.\\
+\indent\indent- Densities are hard to match: need a background model, way to go from luminosity to density, needs assumptions about the mass function and structure of the satellite\\
+\indent\indent- Triaxiality / radially-dependent shapes and substructure present problems for integral-based methods\\
+- Then how rewinder gets round these????\\
+\indent\indent- Reference Deg \& Widrow to say they illustrate the idea of the power of multiple streams to back up the bit where you say that's the long-term aim\\
 
 [Chemical tagging will always only give probabilistic information.
   But what if it delivers somewhat confident information about small
@@ -92,25 +98,15 @@ TODO...
 
 [Sometimes stellar samples might get extremely small.  For example,
   \gaia\ might find some very low-mass cold stellar streams.  For
-  another, there might only be a coupld RRL stars in a particular
+  another, there might only be a couple RRL stars in a particular
   stream, but those RRL stars might be individually extremely well
   measured in six-space.]
 
-Even if you have a ton of stars, some might be orders of magnitude more constraining (Bovy, ..., Hogg)
-
-[Obviously a small stellar sample can only tell you a small number of
-  things about the Milky Way potential.  The idea is---in the long
-  run---to construct likelihood functions for many small stellar
-  samples and in the end do inference by multiplying them together.
-  Duh!]
-
-[Densities are hard to match -- need a background model, way to go from luminosity to density, needs assumptions about the mass function and structure of the satellite\
+[Even if you have many stars, some might be orders of magnitude more constraining (Bovy, ..., Hogg)]
 
 [Cold vs. Hot streams in the context of observational errors]
 
 [We properly handle observational errors]
-
-[Are there integrable triaxial potentials?]
 
 \section{The model}
 
@@ -138,15 +134,6 @@ where in eq.~\ref{eq:int} we have implicitly integrated over and neglected the t
 % , but the vectors $\D$ and $\W$ [exist] in different coordinate systems --- heliocentric spherical and Galactocentric cartesian, respectively --- so we must also track the Jacobian that [describes] this transformation:
 
 In general, $p(\tau)$ is likely conditional on the observed orbit of the progenitor---stars are preferentially stripped at pericentric passages \citep{??}---but this is neglected and assumed to be uniform over the entire interaction history between the satellite and parent. Similarly, the priors on potential parameters, $p(\Phi)$, are taken to be uniform.
-
-Hogg:
-
-If interested in oblateness and mass, there are close integrable potentials
-
-- if want to ask the cosmological question (connection to lambda-cdm), need to face non-integrable potentials
-
-- No even approximate way to answer questions about substructure or severe triaxiality that changes with radius
-
 
 \section{Experiments}
 We conduct several tests of this method [...]. For all tests in this article, we model the potential of the parent galaxy as a three-component sum of a Miyamoto-Nagai disk \citep{}, Hernquist bulge \citep[spheroid][]{}, and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
