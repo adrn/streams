@@ -14,6 +14,7 @@ import os, sys
 # Third-party
 import numpy as np
 import astropy.units as u
+from scipy.misc import logsumexp
 
 # Project
 from ..coordinates import _hel_to_gc, _gc_to_hel
@@ -50,20 +51,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel,
     s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
     p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
-    # These are the unbinding time indices for each particle
-    t_idx = np.array([np.argmin(np.fabs(times - t)) for t in tub])
-
-    # get back 6D positions for stars and satellite at tub
-    # p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    # s_x = np.array([s_orbit[jj,0] for jj in t_idx])
-    # rel_x = p_x-s_x
-
-    # p_x_hel = _gc_to_hel(p_x)
-    # jac1 = xyz_sph_jac(p_x_hel)
-
-    r_tide = potential._tidal_radius(s_mass, s_x)
-
-    r_tide = potential._tidal_radius(2.5e8, s_orbit)
+    r_tide = potential._tidal_radius(s_mass, s_orbit)
     p_x_hel = _gc_to_hel(p_orbits)
     jac1 = xyz_sph_jac(p_x_hel).T
     rel_x = p_orbits - s_orbit
@@ -81,4 +69,4 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel,
     mu_v = np.log(s_vdisp)
     v_term = -0.5*(np.log(sigma_v**2*V) + ((lnV-mu_v)/sigma_v)**2)
 
-    return r_term + v_term + jac1 - np.log(R**3) - np.log(V**3)
+    return logsumexp(r_term + v_term + jac1 - np.log(R**3) - np.log(V**3), axis=0)
