@@ -322,7 +322,9 @@ class StreamModel(object):
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
         ln_like = back_integration_likelihood(t1, t2, dt,
-                                              potential, p_hel, s_hel, tub)
+                                              potential, p_hel, s_hel, tub,
+                                              self.true_satellite.mass,
+                                              self.true_satellite.vdisp)
 
         return np.sum(ln_like) + np.sum(ln_prior)
         # try:
