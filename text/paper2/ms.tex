@@ -26,8 +26,8 @@
 
 \begin{document}
 
-\title{Inferring the gravitational potential of the Milky Way with few precisely measured stars}
-\author{Adrian M. Price-Whelan, DWH, KVJ, others?}
+\title{Inferring the gravitational potential of the Milky Way with a few precisely measured stars}
+\author{Adrian M. Price-Whelan, David W. Hogg, Kathryn V. Johnston, [TODO: order?]}
 
 \begin{abstract}
 %Informative phase-space structures, and in particular those created by
@@ -62,13 +62,30 @@ TODO...
 
 \section{Introduction}
 
-[Cold streams contain tons of information.]
+[TODO: A historical introduction to dark matter, potential measures?]
 
-[GD-1 was fit as if it highlighted an orbit.  That is known to be
-  wrong.]
+Major open questions in near-field cosmology: (1) is the Milky Way potential triaxial and if so, how much? (2) How does the potential vary with radius? (3) Is there graininess to the potential? e.g., is there substructure?
 
-[In the halo, any phase-space structure might be long-lived.  Chemical
-  tagging could in principle illuminate it.]
+Cosmological simulations of galaxy formation in the $\Lambda$CDM paradigm seem to produce triaxial dark matter halos \citep{dubinski91, jing02, kuhlen07, veraciro11}. Halos tend to be more strongly triaxial in dark-matter-only simulations, but still present with the inclusion of baryons. Baryonic processes tend to modify the dark matter structure in the inner galaxy, leading possibly to radially-dependent axis ratios and halo orientation. [statements about integrability]. [if want to connect lambda-CDM to the milky way, we need to face non-integrable potentials]
+
+[something about measuring halo shape with lensing]. 
+
+[why use tidal streams?] \cite{lm10} used N-body models to ... triaxial.
+
+Another prediction of hierarchical structure formation in $\Lambda$CDM is the presence of substructure. 
+
+- Broader comparison to other methods\\
+\indent\indent- 'generative methods' more generally (ie N-body, plus Varghese, plus Kuepper plus new possible action-angle models....\\
+\indent\indent- statistical methods\\
+\indent\indent- Sanders \& Binney 2013\\
+- Then a short note on worries\\
+\indent\indent- for generative models\\
+\indent\indent- for any methods based on action/angle \\
+\indent\indent- GD-1 was fit as if it highlighted an orbit.  That is known to be wrong.\\
+\indent\indent- Densities are hard to match: need a background model, way to go from luminosity to density, needs assumptions about the mass function and structure of the satellite\\
+\indent\indent- Triaxiality / radially-dependent shapes and substructure present problems for integral-based methods\\
+- Then how rewinder gets round these????\\
+\indent\indent- Reference Deg \& Widrow to say they illustrate the idea of the power of multiple streams to back up the bit where you say that's the long-term aim\\
 
 [Chemical tagging will always only give probabilistic information.
   But what if it delivers somewhat confident information about small
@@ -81,17 +98,11 @@ TODO...
 
 [Sometimes stellar samples might get extremely small.  For example,
   \gaia\ might find some very low-mass cold stellar streams.  For
-  another, there might only be a coupld RRL stars in a particular
+  another, there might only be a couple RRL stars in a particular
   stream, but those RRL stars might be individually extremely well
   measured in six-space.]
 
-[Obviously a small stellar sample can only tell you a small number of
-  things about the Milky Way potential.  The idea is---in the long
-  run---to construct likelihood functions for many small stellar
-  samples and in the end do inference by multiplying them together.
-  Duh!]
-
-[Densities are hard to match -- need a background model, way to go from luminosity to density, needs assumptions about the mass function and structure of the satellite\
+[Even if you have many stars, some might be orders of magnitude more constraining (Bovy, ..., Hogg)]
 
 [Cold vs. Hot streams in the context of observational errors]
 
@@ -99,7 +110,7 @@ TODO...
 
 \section{The model}
 
-Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the same star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the satellite is observed to be at heliocentric 6D position $\D_s$, with true position $\W_s$, where the subscript $s$ refers to the satellite. The true, 6D spherical, heliocentric positions of the star and satellite -- $\W$ and $\W_s$ -- have corresponding 6D cartesian, Galactocentric coordinate vectors $\X$ and $\X_s$. Initially, we assume the present-day mass of the satellite, $M_s$, and velocity dispersion, $\sigma_v$, have been measured perfectly (but we will return to this later). With this notation, we write the joint posterior probability for the observed position of a star, satellite, and parameters for the parent potential as:
+Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the satellite is observed to be at heliocentric 6D position $\D_s$, with true position $\W_s$ (where any subscript $s$ refers to the satellite). The true 6D spherical, heliocentric positions of the star and satellite -- $\W$ and $\W_s$ -- have corresponding 6D cartesian, Galactocentric coordinate vectors $\X$ and $\X_s$. Initially we assume the present-day mass of the satellite, $M_s$, and velocity dispersion, $\sigma_v$, have been measured perfectly and neglect mass-loss from the satellite. With this notation, we write the joint posterior probability for the observed position of a star, satellite, and parameters for the parent potential as:
 \begin{align}
 	p(\Phi, \W, \W_s, \tau \given \D, \D_s) &= \frac{1}{\mathcal{Z}} p(\D \given \W) p(\D_s \given \W_s) 
 												       p(\W \given \W_s, \tau, \Phi) 
