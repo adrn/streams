@@ -37,10 +37,10 @@ name: test
 data_file: data/observed_particles/2.5e8_N1024.hdf5
 # nparticles: 4
 # particle_idx: [217, 276, 358, 470]
-nparticles: 4
-particle_idx: [77, 132, 658, 847]
-# nparticles: 8
-# particle_idx: [25, 77, 132, 140, 359, 658, 693, 847]
+#nparticles: 4
+#particle_idx: [77, 132, 658, 847]
+nparticles: 8
+particle_idx: [25, 77, 132, 140, 359, 658, 693, 847]
 # nparticles: 32
 # particle_idx: [28, 55, 65, 142, 144, 154, 243, 277, 339, 362, 374, 376, 395, 396, 434, 439, 464, 467, 467, 536, 536, 553, 584, 706, 715, 730, 734, 734, 822, 852, 862, 939]
 
@@ -73,8 +73,8 @@ pot_params = """
 
 ptc_params = """
     parameters:
-#        _X:
-        tub:
+        _X:
+#        tub:
 """
 
 sat_params = """
