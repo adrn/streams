@@ -156,7 +156,10 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         flatchain = f["flatchain"].value
         acceptance_fraction = f["acceptance_fraction"].value
         p0 = f["p0"].value
-        acor = f["acor"].value
+        try:
+            acor = f["acor"].value
+        except:
+            acor = []
 
     # thin chain
     if len(acor) > 0:
