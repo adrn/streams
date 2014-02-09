@@ -81,16 +81,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         if nburn > 0:
             logger.info("Burning in sampler for {} steps...".format(nburn))
 
-            # TODO: HACK add as option
-            burn_temp = 1000.
-            if burn_temp > 1.:
-                model.lnpargs[3] = 1./burn_temp
-                sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
-
-            #pos, xx, yy = sampler.run_mcmc(p0, nburn)
-            #sampler.reset()
-
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
+
             best_idx = sampler.flatlnprobability.argmax()
             best_pos = sampler.flatchain[best_idx]
 
@@ -98,14 +90,11 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             pos = np.array([np.random.normal(best_pos, std) \
                             for kk in range(nwalkers)])
 
-            model.lnpargs[3] = 1.
-            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+            sampler.reset()
 
         else:
             pos = p0
 
-        # TODO: add annealing schedule to class
-        #   - specify start temp, end temp, have it continuously change each step
         logger.info("Running {} walkers for {} iterations of {} steps..."\
                     .format(nwalkers, niter, nsteps//niter))
 
