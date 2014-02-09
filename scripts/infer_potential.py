@@ -79,6 +79,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
 
         if nburn > 0:
+            time0 = time.time()
             logger.info("Burning in sampler for {} steps...".format(nburn))
 
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
@@ -86,11 +87,13 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             best_idx = sampler.flatlnprobability.argmax()
             best_pos = sampler.flatchain[best_idx]
 
-            std = np.std(p0, axis=0)
+            std = np.std(p0, axis=0) / 5.
             pos = np.array([np.random.normal(best_pos, std) \
                             for kk in range(nwalkers)])
 
             sampler.reset()
+            t = time.time() - time0
+            logger.debug("Spent {} seconds on burn-in...".format(t))
 
         else:
             pos = p0
