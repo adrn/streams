@@ -34,8 +34,7 @@ def xyz_sph_jac(hel):
     deet = np.log(np.abs(dtmnt))
     return deet
 
-def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel,
-                                tub, s_mass, s_vdisp):
+def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, s_mass, s_vdisp):
 
     p_gc = _hel_to_gc(p_hel)
     s_gc = _hel_to_gc(s_hel)
