@@ -92,7 +92,7 @@ class StreamModel(object):
         logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
 
         # Define the empty model to add parameters to
-        model = cls(potential, lnpargs=[t1,t2,dt,1.], # 1. is the inverse temperature
+        model = cls(potential, lnpargs=[t1,t2,dt],
                     true_satellite=true_satellite,
                     true_particles=true_particles)
 

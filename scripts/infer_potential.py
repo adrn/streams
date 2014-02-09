@@ -174,7 +174,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
     # plot true_particles, true_satellite over the rest of the stream
     gc_particles = model.true_particles.to_frame(galactocentric)
-    sgr = SgrSimulation("2.5e8")
+    m = "{:.1e}".format(model.true_satellite.mass).replace("0","").replace("+","")
+    sgr = SgrSimulation(m)
     all_gc_particles = sgr.particles(N=1000, expr="tub!=0").to_frame(galactocentric)
 
     fig,axes = plt.subplots(1,2,figsize=(16,8))
@@ -302,9 +303,39 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             #                       hist_kwargs=dict(color='k',alpha=0.75,normed=True))
             # fig.savefig(os.path.join(output_path, "suck-it-up.{}".format(plot_ext)))
 
-        # TODO:
+        # plot the posterior for the satellite parameters
         if satellite_group:
-            raise NotImplementedError()
+            this_flatchain = None
+            this_p0 = None
+            this_truths = []
+            for ii,pname in enumerate(satellite_group.keys()):
+                p = flatchain_dict['satellite'][pname][:,0]
+                _p0 = p0_dict['satellite'][pname][:,0]
+                if p.ndim == 1:
+                    p = p[:,np.newaxis]
+                    _p0 = _p0[:,np.newaxis]
+
+                if this_flatchain is None:
+                    this_flatchain = p
+                    this_p0 = _p0
+                else:
+                    this_flatchain = np.hstack((this_flatchain, p))
+                    this_p0 = np.hstack((this_p0, _p0))
+
+                truth = model.parameters['satellite'][pname].truth[0]
+                this_truths += list(np.atleast_1d(truth))
+
+            fig = triangle.corner(this_p0,
+                        plot_kwargs=dict(color='g',alpha=1.),
+                        hist_kwargs=dict(color='g',alpha=0.75,normed=True),
+                        plot_contours=False)
+
+            fig = triangle.corner(this_flatchain,
+                        fig=fig,
+                        truths=this_truths,
+                        plot_kwargs=dict(color='k',alpha=1.),
+                        hist_kwargs=dict(color='k',alpha=0.75,normed=True))
+            fig.savefig(os.path.join(output_path, "satellite.{}".format(plot_ext)))
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
