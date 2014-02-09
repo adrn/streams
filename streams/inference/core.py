@@ -121,13 +121,6 @@ class StreamModel(object):
                 model.add_parameter('particles', X)
                 logger.debug("\t\t_X - particle 6D positions today")
 
-            if config['particles']['parameters'].has_key('tub'):
-                priors = [LogUniformPrior(t2, t1) for ii in range(nparticles)]
-                tub = ModelParameter('tub', value=np.zeros(nparticles), prior=priors,
-                                        truth=true_particles.tub)
-                model.add_parameter('particles', tub)
-                logger.debug("\t\ttub - unbinding time of particles")
-
         # Satellite parameters
         if config['satellite']['parameters'] is not None:
             satellite = d['satellite']
