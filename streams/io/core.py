@@ -167,8 +167,8 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
             s = Particle(satl["data"].value.T,
                          frame=heliocentric,
                          units=[u.Unit(x) for x in satl["units"]])
-        s.m = satl["m"].value
-        s.v_disp = satl["v_disp"].value
+        satl.mass = satl["m"].value
+        s.vdisp = satl["v_disp"].value
         return_dict["satellite"] = s
 
         if "simulation" in f.keys():

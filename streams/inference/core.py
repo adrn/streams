@@ -276,7 +276,6 @@ class StreamModel(object):
                 The vector of model parameter values.
         """
 
-        # TODO: placeholder
         param_dict = self._decompose_vector(p)
 
         ln_prior = 0.
@@ -300,11 +299,6 @@ class StreamModel(object):
         except KeyError:
             p_hel = self.true_particles._X
 
-        try:
-            tub = param_dict['particles']['tub']
-        except KeyError:
-            tub = self.true_particles.tub
-
         # heliocentric satellite position
         try:
             s_hel = param_dict['satellite']['_X']
@@ -315,7 +309,7 @@ class StreamModel(object):
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
         ln_like = back_integration_likelihood(t1, t2, dt,
-                                              potential, p_hel, s_hel, tub,
+                                              potential, p_hel, s_hel,
                                               self.true_satellite.mass,
                                               self.true_satellite.vdisp)
 
