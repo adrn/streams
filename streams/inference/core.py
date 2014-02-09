@@ -104,7 +104,7 @@ class StreamModel(object):
                 logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
 
                 prior = LogUniformPrior(_parse_quantity(a).decompose(usys).value,
-                                           _parse_quantity(b).decompose(usys).value)
+                                        _parse_quantity(b).decompose(usys).value)
                 p = ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
                 model.add_parameter('potential', p)
 
@@ -117,7 +117,7 @@ class StreamModel(object):
                 priors = [LogNormalPrior(particles._X[ii],particles._error_X[ii])
                             for ii in range(nparticles)]
                 X = ModelParameter('_X', value=particles._X, prior=priors,
-                                      truth=true_particles._X)
+                                   truth=true_particles._X)
                 model.add_parameter('particles', X)
                 logger.debug("\t\t_X - particle 6D positions today")
 
