@@ -21,7 +21,7 @@ job_sh = """#!/bin/sh
 # Directives
 #PBS -N {name}
 #PBS -W group_list={group:s}astro
-#PBS -l nodes={nodes:d}:ppn={ppn:d},walltime={time},mem={memory}
+#PBS -l nodes={nodes:d}:ppn={ppn:d}{ib},walltime={time},mem={memory}
 #PBS -M amp2217@columbia.edu
 #PBS -m abe
 #PBS -V
@@ -42,7 +42,7 @@ date
 """
 
 def main(config_file, mpi_threads=None, walltime=None, memory=None,
-         job_name=None, astro=None, overwrite=False):
+         job_name=None, astro=None, overwrite=False, infiniband=False):
 
     # Read in simulation parameters from config file
     with open(config_file) as f:
@@ -72,6 +72,11 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
     else:
         ovr = ""
 
+    if infiniband:
+        ib = ":ib"
+    else:
+        ib = ""
+
     sh = job_sh.format(mpi_threads=mpi_threads,
                        nodes=mpi_threads//nproc_per_node,
                        time=walltime,
@@ -82,7 +87,8 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
                        astro=astro,
                        group=group,
                        overwrite=ovr,
-                       ppn=nproc_per_node)
+                       ppn=nproc_per_node,
+                       ib=ib)
 
     yn = raw_input("About to submit the following job: \n\n{0}\n\n Is "
                    "this right? [y]/n: ".format(sh))
@@ -111,6 +117,8 @@ if __name__ == "__main__":
                         type=int, help="The number of MPI threads.")
     parser.add_argument("-o","--overwrite", dest="overwrite", default=False,
                         action="store_true", help="")
+    parser.add_argument("--ib", dest="infiniband", default=False,
+                        action="store_true", help="")
 
     args = parser.parse_args()
 
@@ -119,6 +127,6 @@ if __name__ == "__main__":
     filename = os.path.join(os.environ['STREAMSPATH'], args.file)
     main(filename, mpi_threads=args.mpi_threads, walltime=args.time,
          memory=args.memory, job_name=args.job_name, astro=os.environ['ASTRO'],
-         overwrite=args.overwrite)
+         overwrite=args.overwrite, infiniband=args.infiniband)
     sys.exit(0)
 
