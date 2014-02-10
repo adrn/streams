@@ -78,42 +78,89 @@ def graphical_model(**kwargs):
 def potential_contours(**kwargs):
 
     filename = os.path.join(plot_path, "potentials.pdf")
-    fig,axes = plt.subplots(2,2,figsize=(8,8), sharex=True, sharey=True)
+    fig,axes = plt.subplots(2,4,figsize=(14,7))
 
-    potentials = [LawMajewski2010Py(),
-                  LawMajewski2010Py(q1=0.7),
-                  LawMajewski2010Py(qz=0.7),
-                  LawMajewski2010Py(phi=45*u.degree)]
+    base_params = dict(q1=1., qz=1., q2=1., phi=0.)
+    potentials = []
+    potentials.append(LawMajewski2010Py(**base_params))
+
+    pp = base_params.copy()
+    pp['q1'] = 1.5
+    potentials.append(LawMajewski2010Py(**pp))
+    axes[0,1].text(0.5, 1.04, r"$q_1=1.5$",
+                   horizontalalignment='center',
+                   fontsize=20,
+                   transform=axes[0,1].transAxes)
+
+    pp = base_params.copy()
+    pp['qz'] = 1.5
+    potentials.append(LawMajewski2010Py(**pp))
+    axes[0,2].text(0.5, 1.04, r"$q_z=1.5$",
+                   horizontalalignment='center',
+                   fontsize=20,
+                   transform=axes[0,2].transAxes)
+
+    pp = base_params.copy()
+    pp['phi'] = 45*u.degree
+    pp['q1'] = 1.5
+    potentials.append(LawMajewski2010Py(**pp))
+    axes[0,3].text(0.5, 1.04, r"$q_1=1.5$, $\phi=45^\circ$",
+                   horizontalalignment='center',
+                   fontsize=20,
+                   transform=axes[0,3].transAxes)
 
     grid = np.linspace(-75, 75, 250)
     X1, X2 = np.meshgrid(grid,grid)
 
+    # top row:
     r = np.array([np.zeros_like(X1.ravel()).tolist() \
                    for xx in range(3)])
-    r[1] = X1.ravel()
-    r[2] = X2.ravel()
+    r[0] = X1.ravel()
+    r[1] = X2.ravel()
 
     levels = None
     for ii,potential in enumerate(potentials):
+        axes[0,ii].set_xticks([-50,0,50])
+        axes[0,ii].set_yticks([-50,0,50])
+
         Z = potential._value_at(r.T).reshape(X1.shape)
         if levels is None:
-            cs = axes.flat[ii].contourf(X1, X2, Z, cmap=cm.Blues_r)
+            cs = axes[0,ii].contourf(X1, X2, Z, cmap=cm.Blues_r)
             levels = cs.levels
         else:
-            cs = axes.flat[ii].contourf(X1, X2, Z, cmap=cm.Blues_r, levels=levels)
+            cs = axes[0,ii].contourf(X1, X2, Z, cmap=cm.Blues_r, levels=levels)
 
-    axes[0,0].text(-60, 50, "LM10", fontweight=400)
-    axes[0,1].text(-60, 50, r"$q_1=0.7$")
-    axes[1,0].text(-60, 50, r"$q_z=0.7$")
-    axes[1,1].text(-60, 50, r"$\phi=45^\circ$")
+        if ii > 0:
+            axes[0,ii].set_yticklabels([])
 
-    axes[0,0].set_ylabel("Z [kpc]")
+        axes[0,ii].set_xticklabels([])
+        axes[0,ii].set_aspect('equal', 'box')
+
+    # bottom row:
+    r = np.array([np.zeros_like(X1.ravel()).tolist() \
+                   for xx in range(3)])
+    r[0] = X1.ravel()
+    r[2] = X2.ravel()
+    for ii,potential in enumerate(potentials):
+        axes[1,ii].set_xticks([-50,0,50])
+        axes[1,ii].set_yticks([-50,0,50])
+
+        Z = potential._value_at(r.T).reshape(X1.shape)
+        if levels is None:
+            cs = axes[1,ii].contourf(X1, X2, Z, cmap=cm.Blues_r)
+            levels = cs.levels
+        else:
+            cs = axes[1,ii].contourf(X1, X2, Z, cmap=cm.Blues_r, levels=levels)
+
+        if ii > 0:
+            axes[1,ii].set_yticklabels([])
+        axes[1,ii].set_aspect('equal', 'box')
+        axes[1,ii].set_xlabel("X [kpc]")
+
+    axes[0,0].set_ylabel("Y [kpc]")
     axes[1,0].set_ylabel("Z [kpc]")
 
-    axes[1,0].set_xlabel("Y [kpc]")
-    axes[1,1].set_xlabel("Y [kpc]")
-
-    fig.tight_layout()
+    fig.tight_layout(pad=1.5, h_pad=0.)
     fig.savefig(filename)
 
 def gaussian(x, mu, sigma):
