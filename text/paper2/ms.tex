@@ -137,8 +137,8 @@ The disruption of a satellite galaxy due to tidal shocking [...connect to Choi w
 
 The likelihood of a star's position today is computed by first transforming the observed position to Galactocentric cartesian coordinates and integrating the orbits of the satellite and star backwards for several Gigayears in the parent potential, $\Phi$, treating both as test particles. The distance, $R$, and velocity, $V$, of the star relative to the satellite are computed at each time-step, and the likelihood is computed as the product of the isotropic, log-normal centered on the tidal radius with the isotropic, log-normal centered on the velocity dispersion of the satellite:
 \begin{align}
-	p(\W \given \W_s, \tau, \Phi) &= p(\X \given \X_s, \tau, \Phi) \jac{(l,b,D,\mu_l,\mu_b,v_r)}\\
-	p(\X \given \X_s, \tau, \Phi) &= p(\ln R, \ln V \given \tau, \Phi) \jac{(x,y,z,v_x,v_y,v_z)}\label{eq:int} \\
+	p(\W \given \W_s, \tau, \Phi) &= p(\X \given \X_s, \tau, \Phi) \jac{(l,b,D,\mu_l,\mu_b,v_r)}_{t=\tau}\\
+	p(\X \given \X_s, \tau, \Phi) &= p(\ln R, \ln V \given \tau, \Phi) \jac{(x,y,z,v_x,v_y,v_z)}_{t=\tau}\label{eq:int} \\
 	p(\ln R, \ln V \given \tau, \Phi) &= \left[\mathcal{N}(\ln R | \ln \rtide)\mathcal{N}(\ln V | \ln \sigma_v)\right]_{t=\tau}
 \end{align}
 % , but the vectors $\D$ and $\W$ [exist] in different coordinate systems --- heliocentric spherical and Galactocentric cartesian, respectively --- so we must also track the Jacobian that [describes] this transformation:
@@ -166,8 +166,6 @@ baryonic disk ($\phi$):
   C_3 &= 2\sin\phi\cos\phi \left(q_1^{-2} - q_2^{-2}\right).
 \end{align}
 
-When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:potential}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $v_h$, 100-200~kms$^{-1}$ corresponds to a range in solar circular velocities from $\sim$210-250 kms$^{-1}$ (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and mixed triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$). Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane (Y=0) and Y-Z plane (X=0) for a few choices of  $q_1$,  $q_z$, and $\phi$ while holding all other parameters fixed, as described in the figure caption.
-
 \begin{figure}[h]
 \begin{center}
 %\includegraphics[width=0.45\textwidth]{fig4.eps}
@@ -175,6 +173,8 @@ When recovering the potential, we hold fixed the disk and spheroid parameters (s
 \caption{ TODO }\label{fig:potential}
 \end{center}
 \end{figure}
+
+When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:potential}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $v_h$, 100-200~kms$^{-1}$ corresponds to a range in solar circular velocities from $\sim$210-250 kms$^{-1}$ (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and mixed triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$). Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane (Y=0) and Y-Z plane (X=0) for a few choices of  $q_1$,  $q_z$, and $\phi$ while holding all other parameters fixed, as described in the figure caption.
 
 \begin{table}[h]
 \begin{center}
@@ -201,13 +201,13 @@ When recovering the potential, we hold fixed the disk and spheroid parameters (s
 \end{table}
 
 \subsection{\gaia + \spitzer}
-64 stars in Sgr-like stream
+4 stars in Sgr-like stream
 
 \subsection{\spitzer + current data}
-64 stars in Sgr-like stream
+4 stars in Sgr-like stream
 
 \subsection{\spitzer + current data, no progenitor}
-32 stars in Orphan-like stream, XX stars in GD-1 -like stream
+4 stars in Orphan-like stream, XX stars in GD-1 -like stream
 
 \section{Discussion}
 
@@ -235,6 +235,6 @@ When recovering the potential, we hold fixed the disk and spheroid parameters (s
 \bibliography{refs}
 
 \acknowledgements
-Binney, Rix, Sanders
+
 
 \end{document}
