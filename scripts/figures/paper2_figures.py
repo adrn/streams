@@ -28,7 +28,7 @@ from scipy.stats import norm
 from streams.util import project_root
 from streams.io.sgr import SgrSimulation
 from streams.integrate import LeapfrogIntegrator
-from streams.potential.lm10 import LawMajewski2010
+from streams.potential.lm10 import LawMajewski2010, LawMajewski2010Py
 
 matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18)
@@ -74,6 +74,47 @@ def graphical_model(**kwargs):
     pgm.render()
     #pgm.figure.savefig("classic.pdf")
     pgm.figure.savefig(filename, dpi=150)
+
+def potential_contours(**kwargs):
+
+    filename = os.path.join(plot_path, "potentials.pdf")
+    fig,axes = plt.subplots(2,2,figsize=(8,8), sharex=True, sharey=True)
+
+    potentials = [LawMajewski2010Py(),
+                  LawMajewski2010Py(q1=0.7),
+                  LawMajewski2010Py(qz=0.7),
+                  LawMajewski2010Py(phi=45*u.degree)]
+
+    grid = np.linspace(-75, 75, 250)
+    X1, X2 = np.meshgrid(grid,grid)
+
+    r = np.array([np.zeros_like(X1.ravel()).tolist() \
+                   for xx in range(3)])
+    r[1] = X1.ravel()
+    r[2] = X2.ravel()
+
+    levels = None
+    for ii,potential in enumerate(potentials):
+        Z = potential._value_at(r.T).reshape(X1.shape)
+        if levels is None:
+            cs = axes.flat[ii].contourf(X1, X2, Z, cmap=cm.Blues_r)
+            levels = cs.levels
+        else:
+            cs = axes.flat[ii].contourf(X1, X2, Z, cmap=cm.Blues_r, levels=levels)
+
+    axes[0,0].text(-60, 50, "LM10", fontweight=400)
+    axes[0,1].text(-60, 50, r"$q_1=0.7$")
+    axes[1,0].text(-60, 50, r"$q_z=0.7$")
+    axes[1,1].text(-60, 50, r"$\phi=45^\circ$")
+
+    axes[0,0].set_ylabel("Z [kpc]")
+    axes[1,0].set_ylabel("Z [kpc]")
+
+    axes[1,0].set_xlabel("Y [kpc]")
+    axes[1,1].set_xlabel("Y [kpc]")
+
+    fig.tight_layout()
+    fig.savefig(filename)
 
 def gaussian(x, mu, sigma):
     return 1./np.sqrt(2*np.pi*sigma**2) * np.exp(-0.5 * ((x-mu)/sigma)**2)

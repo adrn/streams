@@ -212,3 +212,69 @@ class LawMajewski2010(CompositePotential):
         r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
         t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
         return v_esc * r_unit/t_unit
+
+class LawMajewski2010Py(CompositePotential):
+
+    def __init__(self, **parameters):
+        """ Represents the functional form of the Galaxy potential used by
+            Law and Majewski 2010.
+
+            Miyamoto-Nagai disk
+            Hernquist bulge
+            Logarithmic halo
+
+            Model parameters: q1, qz, phi, v_halo
+
+            Parameters
+            ----------
+            parameters : dict
+                A dictionary of parameters for the potential definition.
+        """
+
+        # v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
+        lm10_parameters = { 'q1' : PotentialParameter(truth=1.38,
+                                              range=(1.1, 1.7),
+                                              latex=r"$q_1$"),
+                    'q2' : PotentialParameter(truth=1.,
+                                              range=(0.7, 1.3),
+                                              latex=r"$q_2$"),
+                    'qz' : PotentialParameter(truth=1.36,
+                                              range=(1.1, 1.7),
+                                              latex=r"$q_z$"),
+                    'phi' : PotentialParameter(truth=97.*u.deg,
+                                               range=(85.*u.deg,115.*u.deg),
+                                               latex=r"$\phi$"),
+                    'v_halo' : PotentialParameter(truth=121.858*u.km/u.s,
+                                                  range=(100.*u.km/u.s,
+                                                         150.*u.km/u.s),
+                                                  latex=r"$v_{\rm halo}$"),
+                    'R_halo' : PotentialParameter(truth=12.*u.kpc,
+                                                  range=(8.*u.kpc, 16*u.kpc),
+                                                  latex=r"$R_{\rm halo}$")}
+
+        self.parameters = dict(lm10_parameters)
+        for k,v in self.parameters.items():
+            self.__dict__[k] = v
+
+        for p_name in parameters.keys():
+            if hasattr(parameters[p_name], "unit"):
+                self.parameters[p_name].value = parameters[p_name]
+            else:
+                self.parameters[p_name]._value = parameters[p_name]
+
+        bulge = HernquistPotential(usys,
+                                   m=3.4E10*u.M_sun,
+                                   c=0.7*u.kpc)
+
+        disk = MiyamotoNagaiPotential(usys,
+                                      m=1.E11*u.M_sun,
+                                      a=6.5*u.kpc,
+                                      b=0.26*u.kpc)
+
+        p_dict = dict([(k,v._value) for k,v in self.parameters.items()])
+        halo = LogarithmicPotentialLJ(usys, **p_dict)
+
+        super(LawMajewski2010Py, self).__init__(usys,
+                                              bulge=bulge,
+                                              disk=disk,
+                                              halo=halo)
