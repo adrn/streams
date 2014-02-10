@@ -127,7 +127,9 @@ class StreamModel(object):
 
             logger.debug("Satellite properties added as parameters:")
             if config['satellite']['parameters'].has_key('_X'):
-                priors = [LogNormalPrior(satellite._X[0],satellite._error_X[0])]
+                #priors = [LogNormalPrior(satellite._X[0],satellite._error_X[0])]
+                priors=[LogUniformPrior(np.array([-np.pi,-np.pi/2.,10,-0.02424,-0.02424,-0.4091]),
+                                        np.array([np.pi,np.pi/2.,100,0.02424,0.02424,0.4091]))]
                 s_X = ModelParameter('_X', value=satellite._X, prior=priors,
                                         truth=true_satellite._X)
                 model.add_parameter('satellite', s_X)
@@ -199,10 +201,10 @@ class StreamModel(object):
                         std = np.ravel([pr.sigma for pr in param._prior])
                         p0[ii,ix1:ix1+param.size] = np.random.normal(_X, std)
 
-                    if group_name == "satellite" and param_name == "_X":
-                        _X = self.true_satellite._X.ravel()
-                        std = np.ravel([pr.sigma for pr in param._prior])
-                        p0[ii,ix1:ix1+param.size] = np.random.normal(_X, std)
+                    # if group_name == "satellite" and param_name == "_X":
+                    #     _X = self.true_satellite._X.ravel()
+                    #     std = np.ravel([pr.sigma for pr in param._prior])
+                    #     p0[ii,ix1:ix1+param.size] = np.random.normal(_X, std)
 
                     ### HACK TO INITIALIZE WALKERS NEAR TRUTH
                     #######################################################
