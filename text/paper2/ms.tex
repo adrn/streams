@@ -84,10 +84,13 @@ Since the initial discovery of tidal debris from Sgr, myriad other streams and d
 
 The difficulty and computational costs associated with proper N-body modeling has motivated numerous efforts for developing approximate methods for constraining properties of the Galactic potential with cold debris structures. 
 
+% Generate approx. to N-body -> single Orbit --> Orbits + offsets --> Bovy
+% method, problem, etc. then address what we fix
+
 - Broader comparison to other methods\\
-\indent\indent- 'generative methods' more generally (ie N-body, plus Varghese, plus Kuepper plus new possible action-angle models....\\
-\indent\indent- statistical methods\\
+\indent\indent- 'generative methods' more generally (ie N-body, Bovy, plus Varghese, plus Kuepper plus new possible action-angle models....\\
 \indent\indent- Sanders \& Binney 2013\\
+\indent\indent- statistical methods, Penarrubia, Sanderson, Rewinder\\
 - Then a short note on worries\\
 \indent\indent- for generative models\\
 \indent\indent- for any methods based on action/angle \\
@@ -99,16 +102,14 @@ The difficulty and computational costs associated with proper N-body modeling ha
 
 [Another prediction of hierarchical structure formation in $\Lambda$CDM is the presence of substructure. ]
 
-[Chemical tagging will always only give probabilistic information.
-  But what if it delivers somewhat confident information about small
-  stellar families in the halo?]
+%[Chemical tagging will always only give probabilistic information.
+%  But what if it delivers somewhat confident information about small
+%  stellar families in the halo?]
 
 [Actions, angles, integrable, not, etc.  Can integrate in any
   potential, even a time-varying one. We use this to
   ``run the clock back''.  Why is an objective based on past collisions not the
   same as assuming that the stars are on the same orbit?]
-
-
 
 [Sometimes stellar samples might get extremely small.  For example,
   \gaia\ might find some very low-mass cold stellar streams.  For
@@ -122,7 +123,19 @@ The difficulty and computational costs associated with proper N-body modeling ha
 
 [We properly handle observational errors]
 
-\section{The model}
+\section{Simulations}\label{sec:sims}
+
+We [...] N-body simulations run with an SCF code [...]. [KVJ: describe simulations here?]
+
+\section{...}
+
+\subsection{Notation}
+Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the progenitor is observed to be at heliocentric 6D position $\D_p$, with true position $\W_p$ (where any subscript $p$ refers to the progenitor). The true 6D heliocentric spherical positions of the star and progenitor -- $\W$ and $\W_p$ -- have corresponding 6D Galactocentric cartesian coordinate vectors $\X$ and $\X_p$ comprised of 3D position and velocity vectors ($\bsr$,$\bsv$) and ($\bsr_p$,$\bsv_p$). Initially we assume the present-day mass of the progenitor, $M_p$, and velocity dispersion, $\sigma_v$, have been measured perfectly and neglect mass-loss from the progenitor. 
+
+\subsection{Motivation}
+In \cite{apw13}, we introduced the \emph{Rewinder} algorithm [...]. In that work, we define a phase-space distance, $D_{ps}$, as the sum of the normalized, relative position, $\frac{\bsr-\bsr_p}{\rtide}$, and velocity, $\frac{\bsv-\bsv_p}{v_{\rm esc}}$, for a stream star. We minimized the generalized variance of the 6D distribution over each normalized coordinate evaluated at the time that each star has minimum $D_ps$. This simple idea proved quite powerful for constraining properties of the LM10 potential used simulated observations of their N-body simulation. However, this method does not properly incorporate observational uncertainties. 
+
+Using the simulations described in Section~\ref{sec:sims}
 
 \begin{figure}[h]
 \begin{center}
@@ -132,9 +145,10 @@ The difficulty and computational costs associated with proper N-body modeling ha
 \end{center}
 \end{figure}
 
-[Conceptual description of the model] Figure~\ref{fig:reldist}
+%The core of this method provides a basis for the probabilistic model presented below. 
 
-Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the progenitor is observed to be at heliocentric 6D position $\D_p$, with true position $\W_p$ (where any subscript $p$ refers to the progenitor). The true 6D heliocentric spherical positions of the star and progenitor -- $\W$ and $\W_p$ -- have corresponding 6D Galactocentric cartesian coordinate vectors $\X$ and $\X_p$ comprised of 3D position and velocity vectors ($\bsr$,$\bsv$) and ($\bsr_p$,$\bsv_p$). Initially we assume the present-day mass of the progenitor, $M_p$, and velocity dispersion, $\sigma_v$, have been measured perfectly and neglect mass-loss from the progenitor. With this notation, we write the joint posterior probability for the observed position of a star, progenitor, and parent potential parameters as:
+\subsection{Probabilistic model}
+With this notation, we write the joint posterior probability for the observed position of a star, progenitor, and parent potential parameters as:
 \begin{align}
 	p(\Phi, \W, \W_p, \tau \given \D, \D_p) &= \frac{1}{\mathcal{Z}} p(\D \given \W) p(\D_p \given \W_p) 
 												       p(\W \given \W_p, \tau, \Phi) 
@@ -158,7 +172,8 @@ The likelihood of a star's position today is computed by first transforming the 
 % , but the vectors $\D$ and $\W$ [exist] in different coordinate systems --- heliocentric spherical and Galactocentric cartesian, respectively --- so we must also track the Jacobian that [describes] this transformation:
 where in eq.~\ref{eq:int} we have implicitly integrated over and neglected the two angle coordinates associated with $\ln R$ and the two angles associated with $\ln V$. 
 \begin{align}
-	\ln p(\ln R, \ln V \given \tau, \Phi) = 
+	\ln p(\ln R, \ln V \given \tau, \Phi) = -\ln(2\pi)-\ln(\sigma_R\sigma_V)-
+		\ln\left[\left(\frac{R}{\rtide}\right)^{1/\sigma_R} \left(\frac{V}{\sigma_v}\right)^{1/\sigma_V}\right]
 \end{align}
 We then compute the marginal likelihood, $p(\W \given \W_p, \Phi)$, by integrating over all possible unbinding times,
 \begin{align}
@@ -167,7 +182,6 @@ We then compute the marginal likelihood, $p(\W \given \W_p, \Phi)$, by integrati
 In general, $p(\tau)$ is likely conditional on the orbit of the progenitor --- stars are preferentially stripped at pericentric passages --- but this is neglected and is taken to be uniform over the entire interaction history between the progenitor and parent. 
 
 \section{Experiments}
-We conduct several tests of this method using N-body simulations run with an SCF code [...]. [KVJ: describe simulations here?] 
 
 For all tests in this article, we model the potential of the parent galaxy as a three-component sum of a Miyamoto-Nagai disk \citep{}, Hernquist bulge \citep[spheroid;][]{}, and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
 \begin{align}
