@@ -40,16 +40,15 @@ potential:
 particles:
     parameters:
         _X:
-        tub:
 
 satellite:
-#     parameters:
-#         _X:
+    parameters:
+        _X:
 
 # emcee
-walkers: 36
+walkers: 46
 burn_in: 5
-steps: 0
+steps: 10
 iterate: 1
 steps_final: 0
 
