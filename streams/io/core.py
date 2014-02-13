@@ -134,7 +134,11 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
         if particle_idx is None:
             particle_idx = np.arange(0, nparticles, dtype=int)
 
-        true_tub = ptcl["tub"].value
+        try:
+            true_tub = ptcl["tub"].value
+        except KeyError:
+            true_tub = np.zeros(len(particle_idx))
+
         if "error" in ptcl.keys():
             p = ObservedParticle(ptcl["data"].value[particle_idx].T,
                                  ptcl["error"].value[particle_idx].T,

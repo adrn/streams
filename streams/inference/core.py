@@ -128,7 +128,7 @@ class StreamModel(object):
             logger.debug("Satellite properties added as parameters:")
             if config['satellite']['parameters'].has_key('_X'):
                 #priors = [LogNormalPrior(satellite._X[0],satellite._error_X[0])]
-                priors=[LogUniformPrior(np.array([-np.pi,-np.pi/2.,10,−0.03879,−0.03879,-0.4091]),
+                priors=[LogUniformPrior(np.array([-np.pi,-np.pi/2.,10,-0.03879,-0.03879,-0.4091]),
                                         np.array([np.pi,np.pi/2.,50,0.03879,0.03879,0.4091]))]
                 s_X = ModelParameter('_X', value=satellite._X, prior=priors,
                                         truth=true_satellite._X)
