@@ -17,6 +17,9 @@ text/notebooks/Untitled*
 text/paper1/arxiv/*
 text/paper1/resubmit*/
 text/other_papers/*
+text/paper2/ms.pdf
+text/paper2/*.aux
+text/paper2/*.log
 *.sublime*
 *.eps
 *.mov
