@@ -31,7 +31,26 @@
 \begin{document}
 
 \title{Inferring the gravitational potential of the Milky Way with a few precisely measured stars}
-\author{Adrian M. Price-Whelan, David W. Hogg, Kathryn V. Johnston}
+\author{Adrian M. Price-Whelan\altaffilmark{\colum,\adrn}, 
+	    David W. Hogg\altaffilmark{\nyu,\mpia}, 
+	    Kathryn V. Johnston\altaffilmark{\colum}, 
+	    David Hendel\altaffilmark{\colum}}
+
+% Affiliations
+\newcommand{\colum}{1}
+\newcommand{\adrn}{2}
+\newcommand{\nyu}{3}
+\newcommand{\mpia}{4}
+\altaffiltext{\colum}{Department of Astronomy, 
+		              Columbia University, 
+		              550 W 120th St., 
+		              New York, NY 10027, USA}
+\altaffiltext{\adrn}{To whom correspondence should be addressed: \email{adrn@astro.columbia.edu}}
+\altaffiltext{\nyu}{Center for Cosmology and Particle Physics,
+                      Department of Physics, New York University,
+                      4 Washington Place, New York, NY, 10003, USA}
+\altaffiltext{\mpia}{Max-Planck-Institut f\"ur Astronomie,
+                     K\"onigstuhl 17, D-69117 Heidelberg, Germany}
 
 \begin{abstract}
 Context:
@@ -84,7 +103,7 @@ Within the Milky Way our unique vantage point allows us a three-dimensional view
 Since the initial discovery of tidal debris from Sgr, myriad other streams and debris systems have been identified in large photometric surveys, probing Galactocentric distances from $\sim$15-100 kpc. The known debris structures are $\gtrsim$10 kpc from the Sun, thus while overdensities in the halo are less contaminated by background, the constituent stars often have incomplete or poorly measured phase-space information. Perhaps the most rigorous method of modeling streams and the potential is to run full N-body simulations of satellite disruption and compare the density of observed stars to simulated stars in whatever coordinates are measured. A generative N-body model could naturally incorporate observational uncertainties, missing dimensions, and would, in principle, allow for studying any arbitrary time-dependent or non-integrable potential. However, such a model is presently computationally intractable. \cite{law10} demonstrated the power of this idea by running a grid of N-body models of the disruption of the Sagittarius (Sgr) dwarf spheroidal galaxy and matched their simulated streams to all Sgr data available at that time. By comparing the phase-space positions of their stream particles with the data, they were able to constrain the shape of the Milky Way potential out to $\sim$70 kpc and found that the best-fitting halo has a prolate, triaxial shape elongated in the Galactic Z direction, orthogonal to the plane of the disk. 
 % (though, see ... for possible complications in the Sgr debris belokurov 2012?). 
 
-The difficulty and computational costs associated with proper N-body modeling has motivated numerous efforts for developing approximate methods for constraining properties of the Galactic potential with cold debris structures. The simplest approximation is to fit a single orbit to observed debris \citep[e.g.,][]{koposov10, deg13}. This has the advantage of naturally incorporating observational errors, but is known to be invalid as debris does not exactly follow an orbit \citep[e.g.,][]{eyre11, sanders13a}. To account for this, methods have been proposed that model the debris as an orbit plus some dispersion or offset, either in phase space \citep[e.g.,][]{eyre09a, varghese11, kuepper12} or action-angle coordinates \citep{eyre11, sanders13b, bovy14}. Other statistical methods have been proposed \citep[][]{penarrubia12, sanderson14} that may prove powerful when applied to, e.g., data from the \gaia mission, where full 6D coordinates will be known for large samples of stars in the halo --- and therefore many debris structures --- but stream membership is not known for all stars (however these statistical methods do not account for observational errors).
+The difficulty and computational costs associated with proper N-body modeling has motivated numerous efforts for developing approximate methods for constraining properties of the Galactic potential with cold debris structures. The simplest approximation is to fit a single orbit to observed debris \citep[e.g.,][]{koposov10, deg13}. This has the advantage of naturally incorporating observational errors, but is known to be invalid as debris does not exactly follow an orbit \citep[e.g.,][]{eyre11, sanders13a}. To account for this, methods have been proposed that model the debris as an orbit plus some dispersion or offset, either in phase space \citep[e.g.,][]{eyre09a, varghese11, kuepper12} or action-angle coordinates \citep{eyre11, sanders13b, bovy14, sanders14}. Other statistical methods have been proposed \citep[][]{penarrubia12, sanderson14} that may prove powerful when applied to, e.g., data from the \gaia mission, where full 6D coordinates will be known for large samples of stars in the halo --- and therefore many debris structures --- but stream membership is not known for all stars (however these statistical methods do not account for observational errors).
 
 [Here we need to talk about integrable potentials and shortcomings of the methods above?] Methods that rely on action-angle coordinates, [...]. Any generative model that relies on matching densities --- whether in phase-space, action-space, or observed coordinates --- must also include details about the progenitor and a model for the background of stars. [...] 
 - Then a short note on worries\\
@@ -109,9 +128,9 @@ The difficulty and computational costs associated with proper N-body modeling ha
 
 [Even if you have many stars, some might be orders of magnitude more constraining (Bovy, ..., Hogg)]
 
-In \citet[][hereafter \paperone]{apw13}, we introduced a simple method for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential (\emph{Rewinder}). [...]
+In \citet[][hereafter \paperone]{apw13}, we introduced a simple method (\emph{Rewinder}) for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity). In this paper, we investigate how these relationships scale with the mass and orbit of the progenitor and the quality of the data, then present a new probabilistic framework for simultaneously modeling stream debris and the parent potential based on the same arguments.
 
-[We properly handle observational errors]
+In Section~\ref{sec:sims} we describe a suite of N-body simulations that span a range of progenitor masses over two characteristic orbits. In Section~\ref{sec:}
 
 \section{Simulations}\label{sec:sims}
 
