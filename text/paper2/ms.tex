@@ -22,9 +22,7 @@
 \newcommand{\bSigma}{{\bf \Sigma}}
 \newcommand{\bsigma}{\boldsymbol\sigma}
 \newcommand{\rtide}{r_{\rm tide}}
-
-\newcommand{\bsr}{\boldsymbol r}
-\newcommand{\bsv}{\boldsymbol v}
+\newcommand{\bs}{\boldsymbol}
 
 \newcommand{\paperone}{Paper 1}
 
@@ -53,11 +51,11 @@
                      K\"onigstuhl 17, D-69117 Heidelberg, Germany}
 
 \begin{abstract}
-Context:
-Aims: 
-Methods:
-Results:
-Conclusions:
+Context: Connecting cosmological simulations to observed galaxies is difficult because baryonic processes not well understood/modeled but also because they are gravitationally dominated by unobservable dark matter. 
+Aims: Develop a method for inferring higher order properties of the Galactic potential using debris from disrupted satellites.
+Methods: 
+Results: 
+Conclusions: 
 
 %Informative phase-space structures, and in particular those created by
 %disrupting stellar systems or revealed by chemical tags, may deliver
@@ -130,33 +128,39 @@ The difficulty and computational costs associated with proper N-body modeling ha
 
 In \citet[][hereafter \paperone]{apw13}, we introduced a simple method (\emph{Rewinder}) for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity). In this paper, we investigate how these relationships scale with the mass and orbit of the progenitor and the quality of the data, then present a new probabilistic framework for simultaneously modeling stream debris and the parent potential based on the same arguments.
 
-In Section~\ref{sec:sims} we describe a suite of N-body simulations that span a range of progenitor masses over two characteristic orbits. In Section~\ref{sec:}
+In Section~\ref{sec:sims} we describe a suite of N-body simulations that span a range of progenitor masses over two characteristic orbits. In Section~\ref{sec:} we 
 
 \section{Simulations}\label{sec:sims}
 
-We [...] N-body simulations run with an SCF code [...]. [KVJ: describe simulations here?]
+We [...] N-body simulations run with an SCF code [...]. [KVJ: describe simulations here?] [Describe tub]
 
-\section{Method}
+\section{[Scalings?]}
 
-\subsection{Notation}
-Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) with mass $M_p(t)$ and velocity dispersion $\sigma_p$ tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the progenitor is observed to be at heliocentric 6D position $\D_p$, with true position $\W_p$ (where any subscript $p$ refers to the progenitor). The true 6D heliocentric spherical positions of the star and progenitor -- $\W$ and $\W_p$ -- have corresponding 6D Galactocentric cartesian coordinate vectors $\X$ and $\X_p$ comprised of 3D position and velocity vectors ($\bsr$,$\bsv$) and ($\bsr_p$,$\bsv_p$). 
+In \paperone, we define a set of coordinates relative to the instantaneous phase-space position of the progenitor, $(\bs{x}_{p},\bs{v}_{p})$, normalized by the instantaneous tidal radius and escape velocity. Here we (1) instead scale the velocity coordinates by the velocity dispersion of the satellite instead of the escape velocity, (2) reduce the dimensionality by considering only the magnitude of these vectors, and (3) take the logarithm of the magnitude,
+\begin{equation}
+  R = \ln\left(\frac{\left\vert\bs{x} - \bs{x}_{p}\right\vert}{R_{\rm tide}}\right)\,\,\,\,,\,\,\,\,
+  V = \ln\left(\frac{\left\vert\bs{v} - \bs{v}_{p}\right\vert}{\sigma_v}\right).
+\end{equation}
 
-\subsection{Motivation}
-
-[Cold vs. Hot streams in the context of observational errors]
-
-In \paperone, we define a phase-space distance, $D_{ps}$, as the sum of the normalized, relative position, $\frac{\bsr-\bsr_p}{\rtide}$, and velocity, $\frac{\bsv-\bsv_p}{v_{\rm esc}}$, for a stream star. We minimized the generalized variance of the 6D distribution over each normalized coordinate evaluated at the time that each star has minimum $D_ps$. This simple idea proved quite powerful for constraining properties of the LM10 potential used simulated observations of their N-body simulation. However, this method does not properly incorporate observational uncertainties. 
+a phase-space distance, $D_{ps}$, as the sum of the normalized, relative position, $\frac{\bs{r}-\bs{r}_p}{\rtide}$, and velocity, $\frac{\bs{v}-\bs{v}_p}{v_{\rm esc}}$, for a stream star. We minimized the generalized variance of the 6D distribution over each normalized coordinate evaluated at the time that each star has minimum $D_ps$. This simple idea proved quite powerful for constraining properties of the LM10 potential used simulated observations of their N-body simulation. However, this method does not properly incorporate observational uncertainties. 
 
 Using the simulations described in Section~\ref{sec:sims}
 
 \begin{figure}[h]
 \begin{center}
-% \includegraphics[width=\textwidth]{/Users/adrian/projects/streams/plots/paper2/rel_dists.pdf}
+\includegraphics[width=\textwidth]{/Users/adrian/projects/streams/plots/paper2/rel_dists.pdf}
 \caption{ TODO }\label{fig:reldist}
 \end{center}
 \end{figure}
 
 %The core of this method provides a basis for the probabilistic model presented below. 
+
+[Cold vs. Hot streams in the context of observational errors]
+
+\section{Method}
+
+\subsection{Notation}
+Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) with mass $M_p(t)$ and velocity dispersion $\sigma_p$ tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the progenitor is observed to be at heliocentric 6D position $\D_p$, with true position $\W_p$ (where any subscript $p$ refers to the progenitor). The true 6D heliocentric spherical positions of the star and progenitor -- $\W$ and $\W_p$ -- have corresponding 6D Galactocentric cartesian coordinate vectors $\X$ and $\X_p$ comprised of 3D position and velocity vectors ($\bs{r}$,$\bs{v}$) and ($\bs{r}_p$,$\bs{v}_p$). 
 
 \subsection{Probabilistic model}
 With this notation, we write the joint posterior probability for the observed position of a star, progenitor, and parent potential parameters as:
@@ -172,7 +176,7 @@ where the factor $\mathcal{Z}$ only depends on the properties of the data (the \
 \end{align}
 where the covariance matrices $\bSigma$ and $\bSigma_p$ specify the observational uncertainties on the observed 6D position of star and the progenitor, respectively. 
 
-The disruption of a satellite galaxy due to tidal shocking [...connect to Choi work some how?] We model the present-day position and velocity of a disrupted star as the result of sampling from isotropic, log-normal distributions in relative distance, $R=\left\vert \bsr-\bsr_p \right\vert$, and relative velocity, $V=\left\vert \bsv-\bsv_p \right\vert$, at the time the star comes unbound from the progenitor, evolved to present day in the parent potential, $\Phi$. The distributions over $\ln R$ and $\ln V$ are centered on the logarithm of the instantaneous tidal radius, $\rtide$, and velocity dispersion, $\sigma_v$, of the progenitor at time $\tau$: $\mathcal{N}(\ln R \given \ln\rtide)\vert_{t=\tau}$ and $\mathcal{N}(\ln V \given \ln \sigma_v)\vert_{t=\tau}$. In this model, we neglect the effect of self-interaction with the halo of the progenitor. 
+The disruption of a satellite galaxy due to tidal shocking [...connect to Choi work some how?] We model the present-day position and velocity of a disrupted star as the result of sampling from isotropic, log-normal distributions in relative distance, $R=\left\vert \bs{r}-\bs{r}_p \right\vert$, and relative velocity, $V=\left\vert \bs{v}-\bs{v}_p \right\vert$, at the time the star comes unbound from the progenitor, evolved to present day in the parent potential, $\Phi$. The distributions over $\ln R$ and $\ln V$ are centered on the logarithm of the instantaneous tidal radius, $\rtide$, and velocity dispersion, $\sigma_v$, of the progenitor at time $\tau$: $\mathcal{N}(\ln R \given \ln\rtide)\vert_{t=\tau}$ and $\mathcal{N}(\ln V \given \ln \sigma_v)\vert_{t=\tau}$. In this model, we neglect the effect of self-interaction with the halo of the progenitor. 
 
 The likelihood of a star's position today is computed by first transforming the observed position to Galactocentric cartesian coordinates and integrating the orbits of the progenitor and star backwards for several Gigayears in the parent potential, $\Phi$, treating both as test particles. The distance, $R$, and velocity, $V$, of the star relative to the progenitor are computed at each time-step, and the likelihood is computed as the product of the isotropic, log-normal centered on the logarithm of the instantaneous tidal radius with the isotropic, log-normal centered on the logarithm of the velocity dispersion of the progenitor:
 \begin{align}
@@ -280,6 +284,6 @@ When recovering the potential, we hold fixed the disk and spheroid parameters (s
 \bibliography{refs}
 
 \acknowledgements
-
+APW: NSF GRFP, Sigma Xi
 
 \end{document}
