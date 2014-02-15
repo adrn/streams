@@ -43,7 +43,7 @@
 		              Columbia University, 
 		              550 W 120th St., 
 		              New York, NY 10027, USA}
-\altaffiltext{\adrn}{To whom correspondence should be addressed: \email{adrn@astro.columbia.edu}}
+\altaffiltext{\adrn}{To whom correspondence should be addressed: adrn@astro.columbia.edu}
 \altaffiltext{\nyu}{Center for Cosmology and Particle Physics,
                       Department of Physics, New York University,
                       4 Washington Place, New York, NY, 10003, USA}
@@ -51,36 +51,39 @@
                      K\"onigstuhl 17, D-69117 Heidelberg, Germany}
 
 \begin{abstract}
-Context: Connecting cosmological simulations to observed galaxies is difficult because baryonic processes not well understood/modeled but also because they are gravitationally dominated by unobservable dark matter. One powerful measure is the shape of the potential -- triaxial, density profile, etc. Tidal streams are excellent tracers of mass.
-
-Aims: Present a method for inferring higher order properties of the Galactic potential using debris from disrupted satellites.
-
-Methods: 
-
-Results: Can simultaneously constrain properties of progenitor, missing dimensions, and potential with a simple model for disrupted debris in phase-space. The method works well with small numbers of stars and with finite or large observational uncertainties or missing dimensions and generalizes naturally to multiple independent debris structures.
-
-Conclusions: 
-
-%Informative phase-space structures, and in particular those created by
-%disrupting stellar systems or revealed by chemical tags, may deliver
-%very precise measures of the gravitational potential in the Milky Way
-%Halo.  Here we show that even a single pair of stars---two stars that
-%are known (for some non-kinematic reason) to be likely to be
-%associated with one another at birth---could provide a significant
-%constraint on the potential.  The inference is based on a
-%probabilistic generative model---a likelihood function and priors over
-%nuisance parameters---that evolves a past putative origin disruption
-%event forward in time to the present day.  The time, six-volume, and
-%phase-space location of the origin event are nuisance parameters in
-%the model and marginalized away.  The method makes no assumption of
-%integrability, works with finite or even large observational
-%uncertainties, does not require all dimensions of phase space to be
-%observed, handles non-zero probability that the two stars are not in
-%fact associated, and generalizes naturally to larger numbers of stars
-%and multiple independent structures.  Applications to the GD-1 cold
-%stellar stream and current surveys for RR Lyrae stars in the Halo are
-%discussed.
-TODO...
+% Context
+ [this needs to get shorter, but]
+The dark-matter halo of the Milky Way is expected to be triaxial on large scales
+  and filled with substructure on all smaller scales.
+It is hoped that streams or shells of stars produced by tidal disruption
+  will produce very precise measures of the gravitational potential,
+  to test these predictions.
+% Aims
+We develop a justified method for inferring the gravitational potential
+  using precise measurements of stars in tidal streams
+  based on an approximate generative model.
+Our method does not rely on integrability of the potential;
+  we don't expect there to be any good approximation to the Milky Way potential that is integrable.
+% Methods: 
+Our model is probabilistic, with a likelihood function and priors on the parameters.
+It is based on the idea that the stars in a tidal structure
+  were close in phase space at some point in the past;
+  model parameters include a ``disruption time'' [APW adjust language] for each star,
+  and phase-space coordinates for the progenitor.
+It accounts properly for finite observational uncertainties and missing data.
+We test our method with simulated data in a non-integrable triaxial potential,
+  with realistic observational uncertainties for the next generation of surveys of RR Lyrae stars and the like.
+Importantly, the fake data were generated with an n-body simulation,
+  not with the approximate model underlying our likelihood function.
+% Results:
+We find that even with a small number (4 to 16) of well-measured stars,
+  we can precisely infer properties of the triaxial potential,
+  missing phase-space coordinates of the stars,
+  and the location of the progenitor object.
+The method generalizes to to encompass mixtures of independent debris structures,
+  or situations in which star membership in structures is unknown.
+[Get more quantitative here?]
+% Conclusions: 
 \end{abstract}
 
 \keywords{
