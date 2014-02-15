@@ -340,6 +340,23 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                         hist_kwargs=dict(color='k',alpha=0.75,normed=True))
             fig.savefig(os.path.join(output_path, "satellite.{}".format(plot_ext)))
 
+            l,b,D,mul,mub,vr = this_flatchain.T
+            l = (l*u.radian).to(u.degree).value
+            b = (b*u.radian).to(u.degree).value
+            D = D
+            mul = (mul*u.radian/u.Myr).to(u.mas/u.yr).value
+            mub = (mub*u.radian/u.Myr).to(u.mas/u.yr).value
+            vr = (vr*u.kpc/u.Myr).to(u.km/u.s).value
+            
+            print("l: {} +/- {} deg".format(np.median(l),np.std(l)))
+            print("b: {} +/- {} deg".format(np.median(b),np.std(b)))
+            print("D: {} +/- {} kpc".format(np.median(D),np.std(D)))
+            print("mu_l: {} +/- {} mas/yr".format(np.median(mul),np.std(mul)))
+            print("mu_b: {} +/- {} mas/yr".format(np.median(mub),np.std(mub)))
+            print("vr: {} +/- {} km/s".format(np.median(vr),np.std(vr)))
+            
+            
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
