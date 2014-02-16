@@ -148,7 +148,7 @@ We [...] N-body simulations run with an SCF code [...]. [describe simulations he
 \subsection{Notation}
 Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the measured position on the sky, ($l$, $b$); distance, $D$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and take $\W$ to be the corresponding \emph{true}, 6D position of the star in the same coordinate and reference frame. Assume that we have determined that this star was once part of a progenitor system (e.g., satellite galaxy) with mass $M_p(t)$ and velocity dispersion $\sigma_p$ tidally disrupting and forming a cold debris structure in the potential, $\Phi$, of some parent galaxy. The position of the progenitor is observed to be at heliocentric 6D position $\D_p$, with true position $\W_p$ (where any subscript $p$ refers to the progenitor). The true 6D heliocentric spherical positions of the star and progenitor -- $\W$ and $\W_p$ -- have corresponding 6D Galactocentric cartesian coordinate vectors $\X$ and $\X_p$ comprised of 3D position and velocity vectors ($\bs{r}$,$\bs{v}$) and ($\bs{r}_p$,$\bs{v}_p$). 
 
-\section{Scalings}
+\subsection{Scalings}
 
 In \paperone, we define a set of coordinates relative to the instantaneous phase-space position of the progenitor, $(\bs{r}_{p},\bs{v}_{p})$, normalized by the instantaneous tidal radius and escape velocity. Here we (1) instead scale the velocity coordinates by the velocity dispersion of the satellite, (2) reduce the dimensionality by considering only the magnitude of these vectors, and (3) take the logarithm of the magnitude,
 \begin{equation}
@@ -157,9 +157,11 @@ In \paperone, we define a set of coordinates relative to the instantaneous phase
 \end{equation}
 Figure~\ref{fig:reldists} shows distributions of $R$ and $V$ at $t=t_{\rm ub}$ for all particles as a function of progenitor mass from the simulations described in Section~\ref{sec:sims}. In these scaled coordinates, the distributions 
 
-a phase-space distance, $D_{ps}$, as the sum of the normalized, relative position, $\frac{\bs{r}-\bs{r}_p}{\rtide}$, and velocity, $\frac{\bs{v}-\bs{v}_p}{v_{\rm esc}}$, for a stream star. We minimized the generalized variance of the 6D distribution over each normalized coordinate evaluated at the time that each star has minimum $D_ps$. This simple idea proved quite powerful for constraining properties of the LM10 potential used simulated observations of their N-body simulation. However, this method does not properly incorporate observational uncertainties. 
+- Point out constant $\sigma$ over mass\\
+- Good until 2.5e9\\
+- Proper description models 2D distribution, but [...]
 
-Using the simulations described in Section~\ref{sec:sims}
+%a phase-space distance, $D_{ps}$, as the sum of the normalized, relative position, $\frac{\bs{r}-\bs{r}_p}{\rtide}$, and velocity, $\frac{\bs{v}-\bs{v}_p}{v_{\rm esc}}$, for a stream star. We minimized the generalized variance of the 6D distribution over each normalized coordinate evaluated at the time that each star has minimum $D_ps$. This simple idea proved quite powerful for constraining properties of the LM10 potential used simulated observations of their N-body simulation. However, this method does not properly incorporate observational uncertainties. 
 
 \begin{figure}[h]
 \begin{center}
@@ -186,7 +188,7 @@ where the factor $\mathcal{Z}$ only depends on the properties of the data (the \
 \end{align}
 where the covariance matrices $\bSigma$ and $\bSigma_p$ specify the observational uncertainties on the observed 6D position of star and the progenitor, respectively. 
 
-The disruption of a satellite galaxy due to tidal shocking [...connect to Choi work some how?] We model the present-day position and velocity of a disrupted star as the result of sampling from isotropic, log-normal distributions in relative distance, $R=\left\vert \bs{r}-\bs{r}_p \right\vert$, and relative velocity, $V=\left\vert \bs{v}-\bs{v}_p \right\vert$, at the time the star comes unbound from the progenitor, evolved to present day in the parent potential, $\Phi$. The distributions over $\ln R$ and $\ln V$ are centered on the logarithm of the instantaneous tidal radius, $\rtide$, and velocity dispersion, $\sigma_v$, of the progenitor at time $\tau$: $\mathcal{N}(\ln R \given \ln\rtide)\vert_{t=\tau}$ and $\mathcal{N}(\ln V \given \ln \sigma_v)\vert_{t=\tau}$. In this model, we neglect the effect of self-interaction with the halo of the progenitor. 
+We model the present-day position and velocity of a disrupted star as the result of sampling from isotropic, log-normal distributions in relative distance, $R=\left\vert \bs{r}-\bs{r}_p \right\vert$, and relative velocity, $V=\left\vert \bs{v}-\bs{v}_p \right\vert$, at the time the star comes unbound from the progenitor, evolved to present day in the parent potential, $\Phi$. The distributions over $\ln R$ and $\ln V$ are centered on the logarithm of the instantaneous tidal radius, $\rtide$, and velocity dispersion, $\sigma_v$, of the progenitor at time $\tau$: $\mathcal{N}(\ln R \given \ln\rtide)\vert_{t=\tau}$ and $\mathcal{N}(\ln V \given \ln \sigma_v)\vert_{t=\tau}$. In this model, we neglect the effect of self-interaction with the halo of the progenitor. 
 
 The likelihood of a star's position today is computed by first transforming the observed position to Galactocentric cartesian coordinates and integrating the orbits of the progenitor and star backwards for several Gigayears in the parent potential, $\Phi$, treating both as test particles. The distance, $R$, and velocity, $V$, of the star relative to the progenitor are computed at each time-step, and the likelihood is computed as the product of the isotropic, log-normal centered on the logarithm of the instantaneous tidal radius with the isotropic, log-normal centered on the logarithm of the velocity dispersion of the progenitor:
 \begin{align}
