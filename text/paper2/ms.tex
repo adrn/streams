@@ -132,11 +132,12 @@ Take $\D$ to be the observed, heliocentric 6D position of a star --- e.g., the m
 
 \section{Scalings}
 
-In \paperone, we define a set of coordinates relative to the instantaneous phase-space position of the progenitor, $(\bs{r}_{p},\bs{v}_{p})$, normalized by the instantaneous tidal radius and escape velocity. Here we (1) scale the velocity coordinates by the velocity dispersion of the satellite instead of the escape velocity, (2) reduce the dimensionality by considering only the magnitude of these vectors, and (3) take the logarithm of the magnitude,
+In \paperone, we define a set of coordinates relative to the instantaneous phase-space position of the progenitor, $(\bs{r}_{p},\bs{v}_{p})$, normalized by the instantaneous tidal radius and escape velocity. Here we (1) instead scale the velocity coordinates by the velocity dispersion of the satellite, (2) reduce the dimensionality by considering only the magnitude of these vectors, and (3) take the logarithm of the magnitude,
 \begin{equation}
   R = \ln\left(\frac{\left\vert\bs{r} - \bs{r}_{p}\right\vert}{R_{\rm tide}}\right)\,\,\,\,,\,\,\,\,
   V = \ln\left(\frac{\left\vert\bs{v} - \bs{v}_{p}\right\vert}{\sigma_v}\right).
 \end{equation}
+Figure~\ref{fig:reldists} shows distributions of $R$ and $V$ at $t=t_{\rm ub}$ for all particles as a function of progenitor mass from the simulations described in Section~\ref{sec:sims}. In these scaled coordinates, the distributions 
 
 a phase-space distance, $D_{ps}$, as the sum of the normalized, relative position, $\frac{\bs{r}-\bs{r}_p}{\rtide}$, and velocity, $\frac{\bs{v}-\bs{v}_p}{v_{\rm esc}}$, for a stream star. We minimized the generalized variance of the 6D distribution over each normalized coordinate evaluated at the time that each star has minimum $D_ps$. This simple idea proved quite powerful for constraining properties of the LM10 potential used simulated observations of their N-body simulation. However, this method does not properly incorporate observational uncertainties. 
 
