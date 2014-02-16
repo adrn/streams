@@ -43,7 +43,7 @@
 		              Columbia University, 
 		              550 W 120th St., 
 		              New York, NY 10027, USA}
-\altaffiltext{\adrn}{To whom correspondence should be addressed: \email{adrn@astro.columbia.edu}}
+\altaffiltext{\adrn}{To whom correspondence should be addressed: adrn@astro.columbia.edu}
 \altaffiltext{\nyu}{Center for Cosmology and Particle Physics,
                       Department of Physics, New York University,
                       4 Washington Place, New York, NY, 10003, USA}
@@ -51,36 +51,39 @@
                      K\"onigstuhl 17, D-69117 Heidelberg, Germany}
 
 \begin{abstract}
-Context: Connecting cosmological simulations to observed galaxies is difficult because baryonic processes not well understood/modeled but also because they are gravitationally dominated by unobservable dark matter. One powerful measure is the shape of the potential -- triaxial, density profile, etc. Tidal streams are excellent tracers of mass.
-
-Aims: Present a method for inferring higher order properties of the Galactic potential using debris from disrupted satellites.
-
-Methods: 
-
-Results: Can simultaneously constrain properties of progenitor, missing dimensions, and potential with a simple model for disrupted debris in phase-space. The method works well with small numbers of stars and with finite or large observational uncertainties or missing dimensions and generalizes naturally to multiple independent debris structures.
-
-Conclusions: 
-
-%Informative phase-space structures, and in particular those created by
-%disrupting stellar systems or revealed by chemical tags, may deliver
-%very precise measures of the gravitational potential in the Milky Way
-%Halo.  Here we show that even a single pair of stars---two stars that
-%are known (for some non-kinematic reason) to be likely to be
-%associated with one another at birth---could provide a significant
-%constraint on the potential.  The inference is based on a
-%probabilistic generative model---a likelihood function and priors over
-%nuisance parameters---that evolves a past putative origin disruption
-%event forward in time to the present day.  The time, six-volume, and
-%phase-space location of the origin event are nuisance parameters in
-%the model and marginalized away.  The method makes no assumption of
-%integrability, works with finite or even large observational
-%uncertainties, does not require all dimensions of phase space to be
-%observed, handles non-zero probability that the two stars are not in
-%fact associated, and generalizes naturally to larger numbers of stars
-%and multiple independent structures.  Applications to the GD-1 cold
-%stellar stream and current surveys for RR Lyrae stars in the Halo are
-%discussed.
-TODO...
+% Context
+ [this needs to get shorter, but]
+The dark-matter halo of the Milky Way is expected to be triaxial on large scales
+  and filled with substructure on all smaller scales.
+It is hoped that streams or shells of stars produced by tidal disruption
+  will produce very precise measures of the gravitational potential,
+  to test these predictions.
+% Aims
+We develop a justified method for inferring the gravitational potential
+  using precise measurements of stars in tidal streams
+  based on an approximate generative model.
+Our method does not rely on integrability of the potential;
+  we don't expect there to be any good approximation to the Milky Way potential that is integrable.
+% Methods: 
+Our model is probabilistic, with a likelihood function and priors on the parameters.
+It is based on the idea that the stars in a tidal structure
+  were close in phase space at some point in the past;
+  model parameters include a ``disruption time'' [APW adjust language] for each star,
+  and phase-space coordinates for the progenitor.
+It accounts properly for finite observational uncertainties and missing data.
+We test our method with simulated data in a non-integrable triaxial potential,
+  with realistic observational uncertainties for the next generation of surveys of RR Lyrae stars and the like.
+Importantly, the fake data were generated with an n-body simulation,
+  not with the approximate model underlying our likelihood function.
+% Results:
+We find that even with a small number (4 to 16) of well-measured stars,
+  we can precisely infer properties of the triaxial potential,
+  missing phase-space coordinates of the stars,
+  and the location of the progenitor object.
+The method generalizes to to encompass mixtures of independent debris structures,
+  or situations in which star membership in structures is unknown.
+[Get more quantitative here?]
+% Conclusions: 
 \end{abstract}
 
 \keywords{
@@ -107,15 +110,32 @@ Since the initial discovery of tidal debris from Sgr, myriad other streams and d
 
 The difficulty and computational costs associated with proper N-body modeling has motivated numerous efforts for developing approximate methods for constraining properties of the Galactic potential with cold debris structures. The simplest approximation is to fit a single orbit to observed debris \citep[e.g.,][]{koposov10, deg13}. This has the advantage of naturally incorporating observational errors, but is known to be invalid as debris does not exactly follow an orbit \citep[e.g.,][]{eyre11, sanders13a}. To account for this, methods have been proposed that model the debris as an orbit plus some dispersion or offset, either in phase space \citep[e.g.,][]{eyre09a, varghese11, kuepper12} or action-angle coordinates \citep{eyre11, sanders13b, bovy14, sanders14}. Other statistical methods have been proposed \citep[][]{penarrubia12, sanderson14} that may prove powerful when applied to, e.g., data from the \gaia mission, where full 6D coordinates will be known for large samples of stars in the halo --- and therefore many debris structures --- but stream membership is not known for all stars (however these statistical methods do not account for observational errors).
 
-The potential of the inner galaxy is likely well-described by a (set of) closely-integrable potentials, thus the dynamics of collisionless systems is plausibly captured by a transformation to some integral-of-motion-space, e.g., action-angle coordinates. However there is uncertainty in the exact shape, radial profile, and graininess of the outer halo. To test the extent to which the outer halo is well-fit by integrable potentials, we cannot use methods that \emph{assume} integrability. In this article, we present a fully probabilistic method for measuring properties of a potential that only relies on numerical orbit integration in ordinary phase-space. The model uses individual stars as constraints on the potential, and can therefore handle very small samples of stars. Generative models that instead rely on matching densities (in phase-space, action-space, or observed coordinates) must also include fine details about the progenitor (e.g., mass function or structure) and a model for the background of stars. Our method also naturally extends to using multiple debris structures \citep[see][who illustrate the power of using multiple streams to simultaneously constrain the potential]{deg14}.
+The potential of the inner galaxy is likely well-described by a (set of) nearly-integrable potentials, thus the dynamics of collisionless systems is plausibly captured by a transformation to some integral-of-motion-space, e.g., action-angle coordinates. However there is uncertainty in the exact shape, radial profile, and graininess of the outer halo. To test the extent to which the outer halo is well-fit by integrable potentials, we cannot use methods that \emph{assume} integrability. In this article, we present a fully probabilistic method for measuring properties of a potential that only relies on numerical orbit integration in ordinary phase-space. The model uses individual stars as constraints on the potential, and can therefore handle very small samples of stars. Generative models that instead rely on matching densities (in phase-space, action-space, or observed coordinates) must also include fine details about the progenitor (e.g., mass function or structure) and a model for the background of stars. Our method also naturally extends to using multiple debris structures \citep[see][who illustrate the power of using multiple streams to simultaneously constrain the potential]{deg14}.
 
-[Sometimes stellar samples might get extremely small.  For example,
-  \gaia\ might find some very low-mass cold stellar streams.  For
-  another, there might only be a couple RRL stars in a particular
-  stream, but those RRL stars might be individually extremely well
-  measured in six-space.]
+Although the \gaia\ project will deliver hundreds of millions of stars useful for dynamical inference,
+  it still might be that the most relevant stellar samples for inferring the Milky Way potential might be very small in the end.
+One reason is that if distances turn out to be important, stars that produce good distance estimates might be much more
+  valuable than typical stars in the sample.
+At halo distances, \gaia's parallaxes are not expected to be better than the distance indicators produced by the best
+  variable stars observed at the best wavelengths; for example, near-infrared observations of RR Lyrae stars
+  can in principle deliver XX percent photometric distances at essentially all halo distances (CITATIONS).
+These valuable stars are rare (and their abundances are age and metallicity dependent);
+  there could be many cold structures in the Milky Way halo that are highly constraining
+  on the potential in principle, but which contain only a few good distance-indicating members.
+That said, it is not yet known what the trade-offs are between having many stars at low precision and a few at high precision,
+  nor is it known how valuable distance information really is, when a structure contains many precisely observed members.
 
-[Even if you have many stars, some might be orders of magnitude more constraining (Bovy, ..., Hogg)]
+Another reason to think about small samples is more conceptual:
+In dynamical inferences that go beyond simple virial or Jeans arguments,
+  inference depends on the non-linear dynamical evolution of populations in phase space.
+The nonlinearities, combined with heteroskedastic data and requirements to marginalize over phase-space distribution functions,
+  lead naturally to situations in which some stars are \emph{far more informative} than others.
+For a simple example, in a toy study of the Solar System,
+  phase-space distribution marginalization was shown to make some planets are far more informative than others
+  about the gravitational potential (CITE Bovy et al).
+This is expected to be a generic feature in dynamical problems;
+  it might be that a very small fraction of \gaia's catalog entries
+  deliver a large fraction of the information about the Milky Way's potential and formation history.
 
 In \citet[][hereafter \paperone]{apw13}, we introduced a simple method (\emph{Rewinder}) for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity). In this paper, we investigate how these relationships scale with the mass and orbit of the progenitor and the quality of the data, then present a new probabilistic framework for simultaneously modeling stream debris and the parent potential based on the same arguments.
 
@@ -145,7 +165,7 @@ Using the simulations described in Section~\ref{sec:sims}
 
 \begin{figure}[h]
 \begin{center}
-\includegraphics[width=\textwidth]{/Users/adrian/projects/streams/plots/paper2/rel_dists.pdf}
+% \includegraphics[width=\textwidth]{/Users/adrian/projects/streams/plots/paper2/rel_dists.pdf}
 \caption{ TODO }\label{fig:reldist}
 \end{center}
 \end{figure}
