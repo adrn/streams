@@ -435,6 +435,89 @@ def norm_dist(**kwargs):
     fig.tight_layout()
     fig.savefig(os.path.join(plot_path, "norm_dists.pdf".format(_m)))
 
+def twod_dist(**kwargs):
+
+    m = float(kwargs["m"])
+    sgr = SgrSimulation(kwargs["m"])
+    p = sgr.particles(N=5000, expr="tub!=0")
+    p_bound = sgr.particles(N=0, expr="tub==0")
+    v_disp = np.sqrt(np.var(p_bound["vx"]) + \
+                     np.var(p_bound["vy"]) + \
+                     np.var(p_bound["vz"])).value[0]
+    s = sgr.satellite()
+
+    lm10_potential = LawMajewski2010()
+
+    X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
+    V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
+    integrator = LeapfrogIntegrator(lm10_potential._acceleration_at,
+                                    np.array(X), np.array(V),
+                                    args=(X.shape[0], np.zeros_like(X)))
+    ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
+
+    s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+    p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
+
+    p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+
+    diff = p_x-s_x
+    rel_r = np.sqrt(np.sum(diff[:,:3]**2, axis=-1))
+    rel_v = np.sqrt(np.sum(diff[:,3:]**2, axis=-1))
+
+    r_tide = lm10_potential._tidal_radius(m, s_x)*1.6
+    lnR = np.log(rel_r/r_tide)
+    lnV = np.log(rel_v/v_disp)
+
+    plt.clf()
+    gs = GridSpec(3,3)
+
+    fig = plt.figure(figsize=(12,12))
+
+    xlims = (-2,4)
+    ylims = (-2,4)
+    nbins = 50
+
+    plt.subplot(gs[0,:2])
+    bins = np.linspace(*xlims, num=nbins)
+    plt.hist(lnR, bins=bins,
+             color='#555555', normed=True,
+             histtype='stepfilled')
+    plt.plot(bins, gaussian(bins, 0., 0.45),
+             color='#2b8cbe', lw=2.)
+    plt.xticks([])
+    plt.yticks([])
+    plt.xlim(*xlims)
+
+    plt.subplot(gs[1:,2])
+    bins = np.linspace(*ylims, num=nbins)
+    plt.hist(lnV, orientation='horizontal',
+             bins=bins, normed=True,
+             color='#555555', histtype='stepfilled')
+    plt.plot(gaussian(bins, 0., 0.6), bins,
+             color='#2b8cbe', lw=2.)
+    plt.xticks([])
+    plt.yticks([])
+    plt.ylim(*ylims)
+
+    plt.subplot(gs[1:,:2])
+    plt.plot(lnR, lnV, linestyle='none',
+             marker='o', alpha=0.2)
+    #contour(X,Y,z)
+    plt.xlim(*xlims)
+    plt.ylim(*ylims)
+    plt.setp(plt.gca().get_xticklabels(), fontsize=24)
+    plt.setp(plt.gca().get_yticklabels(), fontsize=24)
+
+    plt.xlabel(r"$\ln \left[\frac{\vert r-r_p \vert}{R_{\rm tide}}\right]$ at $t=t_{ub}$")
+    plt.ylabel(r"$\ln \left[\frac{\vert v-v_p \vert}{\sigma_v}\right]$ at $t=t_{ub}$")
+
+    fig.suptitle(r"Progenitor Mass: {}$M_\odot$".format(kwargs["m"]),
+                 fontsize=32)
+    fig.subplots_adjust(hspace=0., wspace=0.)
+    fig.savefig(os.path.join(plot_path, "twod_{}.pdf".format(kwargs["m"])))
+
 def costheta(**kwargs):
 
     nbins = 50
