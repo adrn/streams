@@ -75,6 +75,52 @@ def graphical_model(**kwargs):
     #pgm.figure.savefig("classic.pdf")
     pgm.figure.savefig(filename, dpi=150)
 
+def simulated_streams(**kwargs):
+
+    filename = os.path.join(plot_path, "simulated_streams.pdf")
+    fig,axes = plt.subplots(2,4,figsize=(14,7.5),
+                            sharex=True, sharey=True)
+
+    ticks = [-100,-50,0,50]
+    alpha = 0.25
+    rcparams = {'lines.linestyle' : 'none',
+                'lines.linewidth' : 1.,
+                'lines.marker' : '.',
+                'axes.facecolor' : '#ffffff'}
+
+    for ii,_m in enumerate(range(6,9+1)):
+        mass = "2.5e{}".format(_m)
+        m = float(mass)
+
+        sgr = SgrSimulation(mass)
+        p = sgr.particles(N=5000)
+
+        with rc_context(rc=rcparams):
+            axes[0,ii].text(0.5, 1.04, r"{}$M_\odot$".format(mass),
+                   horizontalalignment='center',
+                   fontsize=24,
+                   transform=axes[0,ii].transAxes)
+
+            axes[0,ii].plot(p["x"].value, p["y"].value,
+                            alpha=alpha)
+            axes[1,ii].plot(p["x"].value, p["z"].value,
+                            alpha=alpha)
+            axes[1,ii].set_xticks(ticks)
+            axes[1,ii].set_xlabel("$X$ [kpc]")
+
+    axes[0,0].set_ylabel("$Y$ [kpc]")
+    axes[1,0].set_ylabel("$Z$ [kpc]")
+
+    axes[0,0].set_yticks(ticks)
+    axes[1,0].set_yticks(ticks)
+    axes[-1,-1].set_xlim(-100,75)
+    axes[-1,-1].set_ylim(-100,75)
+
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
+    #fig.subplots_adjust(hspace=0., wspace=0.075)
+    fig.savefig(filename)
+
 def potential_contours(**kwargs):
 
     filename = os.path.join(plot_path, "potentials.pdf")
@@ -163,52 +209,6 @@ def potential_contours(**kwargs):
     fig.tight_layout(pad=1.5, h_pad=0.)
     fig.savefig(filename)
 
-def simulated_streams(**kwargs):
-
-    filename = os.path.join(plot_path, "simulated_streams.pdf")
-    fig,axes = plt.subplots(2,4,figsize=(14,7.5),
-                            sharex=True, sharey=True)
-
-    ticks = [-100,-50,0,50]
-    alpha = 0.25
-    rcparams = {'lines.linestyle' : 'none',
-                'lines.linewidth' : 1.,
-                'lines.marker' : '.',
-                'axes.facecolor' : '#ffffff'}
-
-    for ii,_m in enumerate(range(6,9+1)):
-        mass = "2.5e{}".format(_m)
-
-        m = float(mass)
-        sgr = SgrSimulation(mass)
-        p = sgr.particles(N=5000)
-
-        with rc_context(rc=rcparams):
-            axes[0,ii].text(0.5, 1.04, r"{}$M_\odot$".format(mass),
-                   horizontalalignment='center',
-                   fontsize=24,
-                   transform=axes[0,ii].transAxes)
-
-            axes[0,ii].plot(p["x"].value, p["y"].value,
-                            alpha=alpha)
-            axes[1,ii].plot(p["x"].value, p["z"].value,
-                            alpha=alpha)
-            axes[1,ii].set_xticks(ticks)
-            axes[1,ii].set_xlabel("$X$ [kpc]")
-
-    axes[0,0].set_ylabel("$Y$ [kpc]")
-    axes[1,0].set_ylabel("$Z$ [kpc]")
-
-    axes[0,0].set_yticks(ticks)
-    axes[1,0].set_yticks(ticks)
-    axes[-1,-1].set_xlim(-100,75)
-    axes[-1,-1].set_ylim(-100,75)
-
-    fig.tight_layout()
-    fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
-    #fig.subplots_adjust(hspace=0., wspace=0.075)
-    fig.savefig(filename)
-
 def twod_dist(**kwargs):
 
     m = float(kwargs["m"])
@@ -220,11 +220,11 @@ def twod_dist(**kwargs):
                      np.var(p_bound["vz"])).value[0]
     s = sgr.satellite()
 
-    lm10_potential = LawMajewski2010()
+    potential = LawMajewski2010()
 
     X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
     V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
-    integrator = LeapfrogIntegrator(lm10_potential._acceleration_at,
+    integrator = LeapfrogIntegrator(potential._acceleration_at,
                                     np.array(X), np.array(V),
                                     args=(X.shape[0], np.zeros_like(X)))
     ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
@@ -240,7 +240,7 @@ def twod_dist(**kwargs):
     rel_r = np.sqrt(np.sum(diff[:,:3]**2, axis=-1))
     rel_v = np.sqrt(np.sum(diff[:,3:]**2, axis=-1))
 
-    r_tide = lm10_potential._tidal_radius(m, s_x)*1.6
+    r_tide = potential._tidal_radius(m, s_x)*1.6
     lnR = np.log(rel_r/r_tide)
     lnV = np.log(rel_v/v_disp)
 
@@ -291,6 +291,96 @@ def twod_dist(**kwargs):
                  fontsize=32)
     fig.subplots_adjust(hspace=0., wspace=0.)
     fig.savefig(os.path.join(plot_path, "twod_{}.pdf".format(kwargs["m"])))
+
+def R_V(**kwargs):
+
+    filename = os.path.join(plot_path, "R_V.pdf")
+    fig,axes = plt.subplots(2,4,figsize=(14,7.5),
+                            sharex=True, sharey=True)
+
+    bins = np.linspace(-3,3,50)
+    nparticles = 5000
+    for kk,_m in enumerate(range(6,9+1)):
+        mass = "2.5e{}".format(_m)
+        m = float(mass)
+        print(mass)
+
+        sgr = SgrSimulation(mass)
+        p = sgr.particles(N=nparticles, expr="(tub!=0)")#" & (tub<400)")
+
+        p_bound = sgr.particles(N=0, expr="tub==0")
+        v_disp = np.sqrt(np.var(p_bound["vx"]) + \
+                         np.var(p_bound["vy"]) + \
+                         np.var(p_bound["vz"])).value[0]
+        s = sgr.satellite()
+
+        potential = LawMajewski2010()
+
+        X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
+        V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
+        integrator = LeapfrogIntegrator(potential._acceleration_at,
+                                        np.array(X), np.array(V),
+                                        args=(X.shape[0], np.zeros_like(X)))
+        ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
+
+        s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+        p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+        t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
+
+        p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+        s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+
+        diff = p_x-s_x
+        rel_r = np.sqrt(np.sum(diff[:,:3]**2, axis=-1))
+        rel_v = np.sqrt(np.sum(diff[:,3:]**2, axis=-1))
+
+        r_tide = potential._tidal_radius(m, s_x)*1.6
+        lnR = np.log(rel_r/r_tide.mean())
+        lnV = np.log(rel_v/v_disp)
+
+        axes[0,kk].text(0.5, 1.04, r"{}$M_\odot$".format(mass),
+                   horizontalalignment='center',
+                   fontsize=24,
+                   transform=axes[0,kk].transAxes)
+
+        axes[0,kk].hist(lnR, bins=bins,
+                        color='#888888', normed=True,
+                        histtype='stepfilled')
+        args = norm.fit(lnR)
+        print("\t", args)
+        axes[0,kk].plot(bins, norm.pdf(bins,*args),
+                        lw=3., alpha=0.75, color="#3182bd")
+        axes[0,kk].text(1., 0.75, r"$\sigma=${:.2f}".format(args[1]), fontsize=18)
+
+        axes[1,kk].hist(lnV, bins=bins,
+                        color='#888888', normed=True,
+                        histtype='stepfilled')
+        args = norm.fit(lnV)
+        print("\t", args)
+        axes[1,kk].plot(bins, norm.pdf(bins,*args),
+                        lw=3., alpha=0.75, color="#3182bd")
+        axes[1,kk].text(1., 0.75, r"$\sigma=${:.2f}".format(args[1]), fontsize=18)
+
+        axes[1,kk].set_xticks(range(-2,2+1,1))
+
+        axes[0,kk].set_xlim(-3,3)
+        axes[1,kk].set_xlim(-3,3)
+        axes[0,kk].set_ylim(0,1.1)
+        axes[1,kk].set_ylim(0,1.1)
+
+    axes[0,0].set_yticks(np.arange(0.,1.1,0.5))
+    axes[1,0].set_yticks(np.arange(0.,1.1,0.5))
+
+    # plt.setp(plt.gca().get_xticklabels(), fontsize=24)
+    # plt.setp(plt.gca().get_yticklabels(), fontsize=24)
+
+    axes[0,0].set_ylabel("R", rotation='horizontal')
+    axes[1,0].set_ylabel("V", rotation='horizontal')
+
+
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
+    fig.savefig(filename)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser

@@ -162,22 +162,14 @@ In \paperone, we define a set of coordinates relative to the instantaneous phase
   R = \ln\left(\frac{\left\vert\bs{r} - \bs{r}_{p}\right\vert}{R_{\rm tide}}\right)\,\,\,\,,\,\,\,\,
   V = \ln\left(\frac{\left\vert\bs{v} - \bs{v}_{p}\right\vert}{\sigma_v}\right).
 \end{equation}
-Figure~\ref{fig:reldists} shows distributions of $R$ and $V$ at $t=t_{\rm ub}$ for all particles as a function of progenitor mass from the simulations described in Section~\ref{sec:sims}. In these scaled coordinates, the distributions 
-
-- Point out constant $\sigma$ over mass\\
-- Good until 2.5e9\\
-- Proper description models 2D distribution, but [...]
-
-%a phase-space distance, $D_{ps}$, as the sum of the normalized, relative position, $\frac{\bs{r}-\bs{r}_p}{\rtide}$, and velocity, $\frac{\bs{v}-\bs{v}_p}{v_{\rm esc}}$, for a stream star. We minimized the generalized variance of the 6D distribution over each normalized coordinate evaluated at the time that each star has minimum $D_ps$. This simple idea proved quite powerful for constraining properties of the LM10 potential used simulated observations of their N-body simulation. However, this method does not properly incorporate observational uncertainties. 
+Figure~\ref{fig:R_V} shows distributions of $R$ and $V$ --- computed at $t=t_{\rm ub}$ for each particle --- as a function of progenitor mass from the simulations described in Section~\ref{sec:sims}. In these scaled, log coordinates we model distributions in $R$ and $V$ as Gaussians. We find that for masses $\lesssim10^9M_\odot$, the variance ($\sigma^2$ in plot panels) remains approximately constant and the mean stays fixed at 0. For the largest mass simulation ($2.5\times10^9M_\odot$), the perturbation to the total potential due to the progenitor halo becomes significant and thus a large fraction of the stars are disrupted through interactions with the subhalo. For this article, we ignore covariances between $R$ and $V$. The 
 
 \begin{figure}[h]
 \begin{center}
-%\includegraphics[width=\textwidth]{../../plots/paper2/rel_dists.pdf}
-\caption{ TODO }\label{fig:reldist}
+\includegraphics[width=\textwidth]{../../plots/paper2/R_V.pdf}
+\caption{ TODO }\label{fig:R_V}
 \end{center}
 \end{figure}
-
-%The core of this method provides a basis for the probabilistic model presented below. 
 
 [Cold vs. Hot streams in the context of observational errors]
 
