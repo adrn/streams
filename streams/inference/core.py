@@ -321,11 +321,11 @@ class StreamModel(object):
                                               self.true_satellite.mass,
                                               self.true_satellite.vdisp)
 
-        return np.sum(ln_like) + np.sum(ln_prior)
-        # try:
-        #     return (np.sum(ln_like) + np.sum(ln_prior))*args[3]
-        # except:
-        #     return np.sum(ln_like) + np.sum(ln_prior)
+        #return np.sum(ln_like) + np.sum(ln_prior)
+        try:
+            return (np.sum(ln_like) + np.sum(ln_prior))*args[3]
+        except:
+            return np.sum(ln_like) + np.sum(ln_prior)
 
     def __call__(self, p):
         # TODO: each call, adjust temperature according to self.annealing?

@@ -75,19 +75,19 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers)
 
-        # get the sampler
-        sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
-
         if nburn > 0:
             time0 = time.time()
             logger.info("Burning in sampler for {} steps...".format(nburn))
 
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
 
+            model.lnpargs[3] = 0.01
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
             best_idx = sampler.flatlnprobability.argmax()
             best_pos = sampler.flatchain[best_idx]
 
-            std = np.std(p0, axis=0) / 5.
+            std = np.std(p0, axis=0) / 10.
             pos = np.array([np.random.normal(best_pos, std) \
                             for kk in range(nwalkers)])
 
@@ -98,27 +98,15 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         else:
             pos = p0
 
+        model.lnpargs[3] = 1.
+        sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
         logger.info("Running {} walkers for {} iterations of {} steps..."\
                     .format(nwalkers, niter, nsteps//niter))
 
         if nsteps > 0:
             time0 = time.time()
-            for ii in range(niter):
-                logger.debug("Iteration: {}".format(ii))
-                pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
-
-                # if any of the samplers have less than 5% acceptance,
-                #  start them from new positions sampled from the best position
-                acc_frac_test = sampler.acceptance_fraction < 0.05
-                if np.any(acc_frac_test):
-                    nbad = np.sum(acc_frac_test)
-                    med_pos = np.median(sampler.flatchain, axis=0)
-                    std = np.std(sampler.flatchain, axis=0)
-                    new_pos = sample_ball(med_pos, std, size=nwalkers)
-
-                    for jj in range(nwalkers):
-                        if acc_frac_test[jj]:
-                            pos[jj] = new_pos[jj]
+            pos, prob, state = sampler.run_mcmc(pos, nsteps)
 
             t = time.time() - time0
             logger.debug("Spent {} seconds on main sampling...".format(t))
