@@ -66,30 +66,24 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     nwalkers = config["walkers"]
     nsteps = config["steps"]
     nsteps_final = config.get("steps_final", 0)
+    ntemps = config.get("temps", 4)
     nburn = config.get("burn_in", 0)
-    niter = config.get("iterate", 1)
 
     if not os.path.exists(output_file):
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
 
         # sample starting positions
-        p0 = model.sample_priors(size=nwalkers)
+        p0 = np.array([model.sample_priors(size=nwalkers) for zz in range(ntemps)])
 
         # get the sampler
-        sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+        sampler = si.StreamModelSampler(model, ntemps, nwalkers, pool=pool)
 
         if nburn > 0:
             time0 = time.time()
             logger.info("Burning in sampler for {} steps...".format(nburn))
 
-            pos, xx, yy = sampler.run_mcmc(p0, nburn)
-
-            best_idx = sampler.flatlnprobability.argmax()
-            best_pos = sampler.flatchain[best_idx]
-
-            std = np.std(p0, axis=0) / 5.
-            pos = np.array([np.random.normal(best_pos, std) \
-                            for kk in range(nwalkers)])
+            for p, lnprob, lnlike in sampler.sample(p0, iterations=nburn):
+                pass
 
             sampler.reset()
             t = time.time() - time0
@@ -98,35 +92,26 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         else:
             pos = p0
 
-        logger.info("Running {} walkers for {} iterations of {} steps..."\
-                    .format(nwalkers, niter, nsteps//niter))
+        logger.info("Running {} walkers for {} steps..."\
+                    .format(nwalkers, nsteps))
 
         if nsteps > 0:
             time0 = time.time()
-            for ii in range(niter):
-                logger.debug("Iteration: {}".format(ii))
-                pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
 
-                # if any of the samplers have less than 5% acceptance,
-                #  start them from new positions sampled from the best position
-                acc_frac_test = sampler.acceptance_fraction < 0.05
-                if np.any(acc_frac_test):
-                    nbad = np.sum(acc_frac_test)
-                    med_pos = np.median(sampler.flatchain, axis=0)
-                    std = np.std(sampler.flatchain, axis=0)
-                    new_pos = sample_ball(med_pos, std, size=nwalkers)
-
-                    for jj in range(nwalkers):
-                        if acc_frac_test[jj]:
-                            pos[jj] = new_pos[jj]
+            for p, lnprob, lnlike in sampler.sample(p, iterations=nsteps):
+                pass
 
             t = time.time() - time0
             logger.debug("Spent {} seconds on main sampling...".format(t))
 
         if nsteps_final > 0:
+            logger.info("Running {} walkers for {} steps..."\
+                        .format(nwalkers, nsteps_final))
+
             time0 = time.time()
             sampler.reset()
-            pos, prob, state = sampler.run_mcmc(pos, nsteps_final)
+            for p, lnprob, lnlike in sampler.sample(p, iterations=nsteps_final):
+                pass
             t = time.time() - time0
             logger.debug("Spent {} seconds on final sampling...".format(t))
 
@@ -155,10 +140,10 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     plot_ext = plot_config.get("ext", "png")
 
     with h5py.File(output_file, "r") as f:
-        chain = f["chain"].value
-        flatchain = f["flatchain"].value
-        acceptance_fraction = f["acceptance_fraction"].value
-        p0 = f["p0"].value
+        chain = np.vstack(f["chain"].value)
+        flatchain = np.vstack((np.vstack(f["flatchain"].value)))
+        acceptance_fraction = np.vstack(f["acceptance_fraction"].value)
+        p0 = np.vstack(f["p0"].value)
         try:
             acor = f["acor"].value
         except:

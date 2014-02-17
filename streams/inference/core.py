@@ -331,14 +331,37 @@ class StreamModel(object):
         # TODO: each call, adjust temperature according to self.annealing?
         return self.ln_posterior(p, *self.lnpargs)
 
-class StreamModelSampler(EnsembleSampler):
+def _dumb_prior(p, *args, **kwargs):
+    return 0.
 
-    def __init__(self, model, nwalkers=None, pool=None):
+    q1,qz,phi,v_halo = p[:4]
+    if (1.0 > q1) or (q1 > 1.7):
+        return -np.inf
+
+    if (1.0 > qz) or (qz  > 1.7):
+        return -np.inf
+
+    if (1.3 > phi) or (phi > 1.9):
+        return -np.inf
+
+    if (v_halo > 0.15) or (v_halo < 0.1):
+        return -np.inf
+
+    return 0.
+
+class StreamModelSampler(PTSampler):
+
+    def __init__(self, model, ntemps, nwalkers=None, pool=None):
         """ """
 
         if nwalkers is None:
             nwalkers = model.nparameters*2 + 2
 
-        super(StreamModelSampler, self).__init__(nwalkers, model.nparameters, model,
-                                                 pool=pool)
+        dim = model.nparameters
 
+        super(StreamModelSampler, self).__init__(ntemps=ntemps,
+                                                 nwalkers=nwalkers,
+                                                 dim=dim,
+                                                 logl=model,
+                                                 logp=_dumb_prior,
+                                                 pool=pool)
