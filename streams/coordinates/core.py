@@ -19,37 +19,42 @@ import astropy.units as u
 __all__ = ["vgsr_to_vhel", "vhel_to_vgsr", \
            "gc_to_hel", "hel_to_gc", "_gc_to_hel", "_hel_to_gc"]
 
-v_sun_circ = 220.*u.km/u.s
-v_sun_lsr = [10., 5.25, 7.17]*u.km/u.s
+vcirc = 220.*u.km/u.s
+vlsr = [10., 5.25, 7.17]*u.km/u.s
 R_sun = 8.*u.kpc
 
-def vgsr_to_vhel(l, b, v_gsr,
-                 v_sun_circ=v_sun_circ,
-                 v_sun_lsr=v_sun_lsr):
+def vgsr_to_vhel(l, b, vgsr,
+                 vcirc=vcirc, vlsr=vlsr):
     """ Convert a velocity from the Galactic standard of rest (GSR) to
-        heliocentric radial velocity.
+        a barycentric radial velocity.
 
         Parameters
         ----------
-
+        l : astropy.coordinates.Angle, astropy.units.Quantity
+            Galactic longitude.
+        b : astropy.coordinates.Angle, astropy.units.Quantity
+            Galactic latitude.
+        vgsr : astropy.units.Quantity-like
+            GSR velocity.
+        vcirc :
     """
+    l = coord.Angle(l)
+    b = coord.Angle(b)
 
-    try:
-        v_lsr = v_gsr - v_sun_circ * sin(l.radian) * cos(b.radian)
-    except AttributeError:
-        raise AttributeError("All inputs must be Quantity objects")
+    # compute the velocity relative to the LSR
+    lsr = vgsr - vcirc*sin(l)*cos(b)
 
     # velocity correction for Sun relative to LSR
-    v_correct = v_sun_lsr[0]*cos(b.radian)*cos(l.radian) + \
-                v_sun_lsr[1]*cos(b.radian)*sin(l.radian) + \
-                v_sun_lsr[2]*sin(b.radian)
-    v_hel = v_lsr - v_correct
+    v_correct = vlsr[0]*cos(b)*cos(l) + \
+                vlsr[1]*cos(b)*sin(l) + \
+                vlsr[2]*sin(b)
+    vhel = lsr - v_correct
 
-    return v_hel
+    return vhel
 
-def vhel_to_vgsr(l, b, v_hel,
-                 v_sun_circ=v_sun_circ,
-                 v_sun_lsr=v_sun_lsr):
+def vhel_to_vgsr(l, b, vhel,
+                 vcirc=vcirc,
+                 vlsr=vlsr):
     """ Convert a velocity from a heliocentric radial velocity to
         the Galactic center of rest.
 
@@ -57,32 +62,32 @@ def vhel_to_vgsr(l, b, v_hel,
         ----------
 
     """
-    try:
-        v_lsr = v_hel + v_sun_circ * sin(l.radian) * cos(b.radian)
-    except AttributeError:
-        raise AttributeError("All inputs must be Quantity objects")
+    l = coord.Angle(l)
+    b = coord.Angle(b)
+
+    lsr = vhel + vcirc*sin(l)*cos(b)
 
     # velocity correction for Sun relative to LSR
-    v_correct = v_sun_lsr[0]*cos(b.radian)*cos(l.radian) + \
-                v_sun_lsr[1]*cos(b.radian)*sin(l.radian) + \
-                v_sun_lsr[2]*sin(b.radian)
-    v_gsr = v_lsr + v_correct
+    v_correct = vlsr[0]*cos(b)*cos(l) + \
+                vlsr[1]*cos(b)*sin(l) + \
+                vlsr[2]*sin(b)
+    vgsr = lsr + v_correct
 
-    return v_gsr
+    return vgsr
 
 def gc_to_hel(x,y,z,vx,vy,vz,
-              v_sun_circ=v_sun_circ,
-              v_sun_lsr=v_sun_lsr,
+              vcirc=vcirc,
+              vlsr=vlsr,
               R_sun=R_sun):
 
     # transform to heliocentric cartesian
     x = x + R_sun
-    vy = vy - v_sun_circ # don't use -= or +=!!!
+    vy = vy - vcirc # don't use -= or +=!!!
 
     # correct for motion of LSR
-    vx = vx - v_sun_lsr[0]
-    vy = vy - v_sun_lsr[1]
-    vz = vz - v_sun_lsr[2]
+    vx = vx - vlsr[0]
+    vy = vy - vlsr[1]
+    vz = vz - vlsr[2]
 
     # transform from cartesian to spherical
     d = np.sqrt(x**2 + y**2 + z**2)
@@ -101,8 +106,8 @@ def gc_to_hel(x,y,z,vx,vy,vz,
     return l,b,d,mul,mub,vr
 
 def hel_to_gc(l,b,d,mul,mub,vr,
-              v_sun_circ=v_sun_circ,
-              v_sun_lsr=v_sun_lsr,
+              vcirc=vcirc,
+              vlsr=vlsr,
               R_sun=R_sun):
     # transform from spherical to cartesian
     x = d*np.cos(b)*np.cos(l)
@@ -118,12 +123,12 @@ def hel_to_gc(l,b,d,mul,mub,vr,
     vz = z/d*vr - d*np.cos(b)*omega_b
 
     x = x - R_sun
-    vy = vy + v_sun_circ
+    vy = vy + vcirc
 
     # correct for motion of LSR
-    vx = vx + v_sun_lsr[0]
-    vy = vy + v_sun_lsr[1]
-    vz = vz + v_sun_lsr[2]
+    vx = vx + vlsr[0]
+    vy = vy + vlsr[1]
+    vz = vz + vlsr[2]
 
     return x,y,z,vx,vy,vz
 
