@@ -35,11 +35,7 @@ try:
 except AttributeError: # match not found, try __file__ instead
     matched_path = _pattr.search(__file__).groups()[0]
 
-if os.path.basename(matched_path) == "streams":
-    project_root = matched_path
-else:
-    project_root = os.path.join(matched_path, "streams")
-
+project_root = os.environ["STREAMSPATH"]
 #
 def _validate_coord(x):
     if isiterable(x):
