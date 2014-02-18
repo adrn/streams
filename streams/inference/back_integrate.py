@@ -17,12 +17,11 @@ import astropy.units as u
 from scipy.misc import logsumexp
 
 # Project
-from ..coordinates import _hel_to_gc, _gc_to_hel
+from ..coordinates import _hel_to_gc, _gc_to_hel, _xyz_sph_jac
 from ..dynamics import Particle
 from ..integrate import LeapfrogIntegrator
 
 __all__ = ["back_integration_likelihood"]
-
 
 def xyz_sph_jac(hel):
     l,b,d,mul,mub,vr = hel.T
@@ -53,9 +52,10 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, s_mass, s_v
     p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
     r_tide = potential._tidal_radius(s_mass, s_orbit)
+
     p_x_hel = _gc_to_hel(p_orbits.reshape(ntimes*nparticles,6))
-    p_x_hel = p_x_hel.reshape(p_orbits.shape)
-    jac1 = xyz_sph_jac(p_x_hel).T
+    #p_x_hel = p_x_hel.reshape(p_orbits.shape)
+    jac1 = _xyz_sph_jac(p_x_hel).reshape((ntimes,nparticles))
     rel_x = p_orbits - s_orbit
 
     R = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
