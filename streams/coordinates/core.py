@@ -18,7 +18,7 @@ import astropy.units as u
 
 __all__ = ["vgsr_to_vhel", "vhel_to_vgsr",
            "gal_xyz_to_hel_lbd", "hel_lbd_to_gal_xyz",
-           "gc_to_hel", "hel_to_gc", "_gc_to_hel", "_hel_to_gc"]
+           "gc_to_hel", "hel_to_gc"]
 
 vcirc = 220.*u.km/u.s
 vlsr = [10., 5.25, 7.17]*u.km/u.s
@@ -282,56 +282,3 @@ def hel_to_gc(l,b,d,mul,mub,vr,
     vz = vz + vlsr[2]
 
     return x,y,z,vx,vy,vz
-
-def _gc_to_hel(X):
-    """ Assumes Galactic units: kpc, Myr, radian, M_sun """
-
-    Rsun = 8.
-    Vcirc = 0.224996676312
-
-    x,y,z,vx,vy,vz = X.T
-
-    # transform to heliocentric cartesian
-    x = x + Rsun
-    vy = vy - Vcirc # don't use -= or +=!!!
-
-    # transform from cartesian to spherical
-    d = np.sqrt(x**2 + y**2 + z**2)
-    l = np.arctan2(y, x)
-    b = np.pi/2. - np.arccos(z/d)
-
-    # transform cartesian velocity to spherical
-    d_xy = np.sqrt(x**2 + y**2)
-    vr = (vx*x + vy*y + vz*z) / d # kpc/Myr
-    mul = -(vx*y - x*vy) / d_xy**2 # rad / Myr
-    mub = -(z*(x*vx + y*vy) - d_xy**2*vz) / (d**2 * d_xy) # rad / Myr
-
-    O = np.array([l,b,d,mul,mub,vr]).T
-    return O
-
-def _hel_to_gc(O):
-    """ Assumes Galactic units: kpc, Myr, radian, M_sun """
-
-    Rsun = 8.
-    Vcirc = 0.224996676312
-
-    l,b,d,mul,mub,vr = O.T
-
-    # transform from spherical to cartesian
-    x = d*np.cos(b)*np.cos(l)
-    y = d*np.cos(b)*np.sin(l)
-    z = d*np.sin(b)
-
-    # transform spherical velocity to cartesian
-    mul = -mul
-    mub = -mub
-
-    vx = x/d*vr + y*mul + z*np.cos(l)*mub
-    vy = y/d*vr - x*mul + z*np.sin(l)*mub
-    vz = z/d*vr - d*np.cos(b)*mub
-
-    x -= Rsun
-    vy += Vcirc
-
-    X = np.array([x,y,z,vx,vy,vz])
-    return X.T
