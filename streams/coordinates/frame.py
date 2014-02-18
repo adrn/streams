@@ -47,6 +47,7 @@ class ReferenceFrame(object):
             other : ReferenceFrame
             X : array_like
         """
+
         new_X = _transform_graph[self.name][other.name](X)
         return new_X
 
