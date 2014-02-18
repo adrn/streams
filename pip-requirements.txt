@@ -1,11 +1,11 @@
 pyyaml>=3.0
-numpy==1.7.1
+numpy>=1.7.1
 matplotlib>=1.0
-emcee==1.2
-scipy==0.11
+emcee>=1.2
+scipy>=0.13
 astropy>=0.3
 triangle_plot
-cython>=0.19
-mpi4py==1.3.1
-numexpr==2.0.1
+cython>=0.20
+mpi4py>=1.3.1
+numexpr>=2.0.1
 h5py>=2.2
