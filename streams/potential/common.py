@@ -187,7 +187,7 @@ def _cartesian_hernquist_model(bases):
 
     def df(r,r_0,m,c):
         rr = r-r_0
-        R = np.sqrt(np.sum(rr**2, axis=1))
+        R = np.sqrt(np.sum(rr**2, axis=1))[:,np.newaxis]
 
         fac = -_G*m / ((R + c)**2 * R)
         return fac*rr
