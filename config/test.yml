@@ -6,7 +6,7 @@ name: test
 
 # plots / output
 plot:
-    mcmc_diagnostics: True
+    mcmc_diagnostics: False
     posterior: True
     ext: png
 #output_path: /tmp
@@ -44,6 +44,7 @@ particles:
 satellite:
     parameters:
         _X:
+        logm0:
 
 # emcee
 walkers: 46
@@ -51,6 +52,7 @@ burn_in: 5
 steps: 10
 iterate: 1
 steps_final: 0
+thin_chain: False
 
 # satellite:
 #     _X:
