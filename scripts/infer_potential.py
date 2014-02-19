@@ -165,13 +165,17 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             acor = []
 
     # thin chain
-    if len(acor) > 0:
-        t_med = np.median(acor)
-        thin_chain = chain[:,::int(t_med)]
-        thin_flatchain = np.vstack(thin_chain)
-        logger.info("Median autocorrelation time: {}".format(t_med))
+    if config.get("thin_chain", True):
+        if len(acor) > 0:
+            t_med = np.median(acor)
+            thin_chain = chain[:,::int(t_med)]
+            thin_flatchain = np.vstack(thin_chain)
+            logger.info("Median autocorrelation time: {}".format(t_med))
+        else:
+            logger.warn("FAILED TO THIN CHAIN")
+            thin_chain = chain
+            thin_flatchain = flatchain
     else:
-        logger.warn("FAILED TO THIN CHAIN")
         thin_chain = chain
         thin_flatchain = flatchain
 
