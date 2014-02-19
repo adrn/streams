@@ -329,7 +329,10 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                     this_flatchain = np.hstack((this_flatchain, p))
                     this_p0 = np.hstack((this_p0, _p0))
 
-                truth = model.parameters['satellite'][pname].truth[0]
+                if pname == "_X":
+                    truth = model.parameters['satellite'][pname].truth[0]
+                else:
+                    truth = model.parameters['satellite'][pname].truth
                 this_truths += list(np.atleast_1d(truth))
 
             fig = triangle.corner(this_p0,
