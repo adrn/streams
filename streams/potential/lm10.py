@@ -107,7 +107,10 @@ class LawMajewski2010(CompositePotential):
         #        m_halo_enc
 
         # TODO: HACK!!!
-        m_halo_enc = self.parameters['v_halo']._value**2 * R/self._G
+        Rh = self.parameters['R_halo']._value
+        vh = self.parameters['v_halo']._value
+        G = self._G
+        m_halo_enc = -2*Rh**2*R*vh**2/(G*Rh**2 + G*R**2) + 2*R*vh**2/G
         m_enc = 1.E11 + 3.4E10 + m_halo_enc
 
         return m_enc

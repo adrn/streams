@@ -125,6 +125,13 @@ class StreamModel(object):
         if config['satellite']['parameters'] is not None:
             satellite = d['satellite']
 
+            if config['satellite']['parameters'].has_key('logm0'):
+                prior = LogUniformPrior(14, 23) # 2.5e6 to 2.5e10
+                logm0 = ModelParameter('logm0', value=19., prior=prior,
+                                        truth=np.log(true_satellite.mass))
+                model.add_parameter('satellite', logm0)
+                logger.debug("\t\tlogm0 - log of satellite mass today")
+
             logger.debug("Satellite properties added as parameters:")
             if config['satellite']['parameters'].has_key('_X'):
                 priors = [LogNormalPrior(satellite._X[0],satellite._error_X[0])]
@@ -311,12 +318,18 @@ class StreamModel(object):
         except KeyError:
             s_hel = self.true_satellite._X
 
+        # heliocentric satellite position
+        try:
+            logm0 = param_dict['satellite']['logm0']
+        except KeyError:
+            logm0 = np.log(self.true_satellite.mass)
+
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_hel, s_hel,
-                                              self.true_satellite.mass,
+                                              logm0,
                                               self.true_satellite.vdisp)
 
         return np.sum(ln_like) + np.sum(ln_prior)

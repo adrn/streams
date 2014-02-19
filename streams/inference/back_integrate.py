@@ -33,7 +33,7 @@ def xyz_sph_jac(hel):
     deet = np.log(np.abs(dtmnt))
     return deet
 
-def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, s_mass, s_vdisp):
+def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, s_vdisp):
 
     p_gc = _hel_to_gc(p_hel)
     s_gc = _hel_to_gc(s_hel)
@@ -51,7 +51,8 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, s_mass, s_v
     s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
     p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
-    r_tide = potential._tidal_radius(s_mass, s_orbit)
+    s_mass = np.exp(logm0)
+    r_tide = potential._tidal_radius(s_mass, s_orbit)*1.4
 
     p_x_hel = _gc_to_hel(p_orbits.reshape(ntimes*nparticles,6))
     #p_x_hel = p_x_hel.reshape(p_orbits.shape)
