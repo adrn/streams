@@ -29,7 +29,7 @@ potential:
             b: 1.7
         qz:
             a: 1.
-            b: 1.75
+            b: 1.7
         phi:
             a: 80. degree
             b: 120. degree
@@ -47,11 +47,9 @@ satellite:
         logm0:
 
 # emcee
-walkers: 46
+walkers: 48
 burn_in: 5
 steps: 10
-iterate: 1
-steps_final: 0
 thin_chain: False
 
 # satellite:
