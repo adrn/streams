@@ -74,11 +74,11 @@ pot_params = """
 ptc_params = """
     parameters:
         _X:
-#        tub:
 """
 
 sat_params = """
     parameters:
+        logm0:
         _X:
 """
 
@@ -86,9 +86,13 @@ lm10_c = minimum_config.format(potential_params=pot_params,
                                particles_params="",
                                satellite_params="")
 
-_config = minimum_config.format(potential_params=pot_params,
-                                particles_params=ptc_params,
+# _config = minimum_config.format(potential_params=pot_params,
+#                                 particles_params=ptc_params,
+#                                 satellite_params=sat_params)
+_config = minimum_config.format(potential_params="",
+                                particles_params="",
                                 satellite_params=sat_params)
+
 # particles_params=ptc_params,
 # satellite_params=sat_params
 
@@ -100,6 +104,7 @@ def make_plot(model, idx, vals1, vals2):
     fig,axes = plt.subplots(2,2,figsize=(12,12),sharex='col')
 
     p = model.truths.copy()
+
     Ls = []
     for val in vals1:
         p[idx] = val
@@ -178,10 +183,10 @@ class TestStreamModel(object):
                 ll = si.back_integration_likelihood(model.lnpargs[0],
                                                     model.lnpargs[1],
                                                     model.lnpargs[2],
-                                                    potential, model.true_particles._X,
+                                                    potential,
+                                                    model.true_particles._X,
                                                     model.true_satellite._X,
-                                                    model.true_particles.tub,
-                                                    model.true_satellite.mass,
+                                                    model.true_satellite.mass, 0.,
                                                     model.true_satellite.vdisp)
                 Ls.append(ll)
 
@@ -275,8 +280,38 @@ class TestStreamModel(object):
                             plt.close('all')
                             idx += 1
 
-                    # fig.savefig(os.path.join(test_path, "{}_{}.png".format(param_name,jj)))
-                    # plt.close('all')
+                if group_name == "satellite":
+
+                    if param_name == "logm0":
+                        print(truths)
+                        vals1 = np.linspace(param._prior.a,
+                                            param._prior.b,
+                                            Ncoarse)
+                        vals2 = np.linspace(0.9,1.1,Nfine)*truths
+                        fig = make_plot(model, idx, vals1, vals2)
+                        fig.savefig(os.path.join(test_path, "{}_{}.png".format(idx,param_name)))
+                        plt.close('all')
+                        idx += 1
+
+                    if param_name == "_X":
+                        for jj in range(param.value.shape[0]):
+                            prior = param._prior[jj]
+                            truth = truths[jj]
+
+                            for kk in range(param.value.shape[1]):
+                                mu,sigma = truth[kk],prior.sigma[kk]
+                                vals1 = np.linspace(mu-10*sigma,
+                                                    mu+10*sigma,
+                                                    Ncoarse)
+                                vals2 = np.linspace(mu-3*sigma,
+                                                    mu+3*sigma,
+                                                    Nfine)
+                                fig = make_plot(model, idx, vals1, vals2)
+                                fig.savefig(os.path.join(test_path,
+                                        "{}_{}.png".format(idx,param_name)))
+                                plt.close('all')
+                                idx += 1
+
 
     def test_apw(self):
         c = io.read_config(_configs[3])
@@ -335,7 +370,8 @@ def time_likelihood(model, potential, niter=100):
                                             potential,
                                             model.true_particles._X,
                                             model.true_satellite._X,
-                                            model.true_particles.tub)
+                                            model.true_satellite.mass,
+                                            model.true_satellite.vdisp)
 
 def time_posterior(model, niter=100):
     for ii in range(niter):
