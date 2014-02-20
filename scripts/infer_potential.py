@@ -74,6 +74,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers)
+        logger.debug("Priors sampled...")
 
         # get the sampler
         sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
