@@ -23,28 +23,13 @@ dt: -1.
 
 potential:
     class_name: LawMajewski2010
-    parameters:
-        q1:
-            a: 1.
-            b: 1.7
-        qz:
-            a: 1.
-            b: 1.75
-        phi:
-            a: 80. degree
-            b: 120. degree
-        v_halo:
-            a: 100 km/s
-            b: 200 km/s
+    parameters: [q1, qz, phi, v_halo]
 
 particles:
-    parameters:
-        _X:
+    parameters: [l,b,d,mul,mub,vr]
 
 satellite:
-    parameters:
-        _X:
-        logm0:
+    parameters: [l,b,d,mul,mub,vr,logm0]
 
 # emcee
 walkers: 46

@@ -82,24 +82,17 @@ def read_config(filename, default_filename=''):
     # potential
     _check_config_key(config, 'potential')
     _check_config_key(config['potential'], 'class_name', more="to the 'potential' section.")
-
-    pps = config['potential'].get('parameters', [])
-    if len(pps) == 0:
-        config['potential']['parameters'] = None
+    config['potential']['parameters'] = config['potential'].get('parameters', [])
 
     # particles
     _check_config_key(config, 'particles')
     config['particles'] = dict() if config['particles'] is None else config['particles']
-    pps = config['particles'].get('parameters', [])
-    if len(pps) == 0:
-        config['particles']['parameters'] = None
+    config['particles']['parameters'] = config['particles'].get('parameters', [])
 
     # satellite
     _check_config_key(config, 'satellite')
     config['satellite'] = dict() if config['satellite'] is None else config['satellite']
-    pps = config['satellite'].get('parameters', [])
-    if len(pps) == 0:
-        config['satellite']['parameters'] = None
+    config['satellite']['parameters'] = config['satellite'].get('parameters', [])
 
     return config
 
