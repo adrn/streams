@@ -6,8 +6,8 @@ name: test
 
 # plots / output
 plot:
-    mcmc_diagnostics: False
-    posterior: True
+    mcmc_diagnostics: True
+    posterior: False
     ext: png
 #output_path: /tmp
 
@@ -23,20 +23,31 @@ dt: -1.
 
 potential:
     class_name: LawMajewski2010
-    parameters: [q1, qz, phi, v_halo]
+#    parameters: [q1, qz, phi, v_halo]
 
 particles:
-    parameters: [l,b,d,mul,mub,vr]
+    parameters: [d]
+#    parameters: [l, b, d, mul, mub, vr]
 
 satellite:
-    parameters: [l,b,d,mul,mub,vr,logm0]
+#    parameters: [d, mul, mub, vr]
+
+# TODO: logm0
+
+# priors should be
+#    l - uniform in cos(l)
+#    b - uniform in cos(b)
+#    d - uniform
+#    mul - uniform
+#    mub - uniform
+#    vr - uniform
 
 # emcee
-walkers: 46
-burn_in: 5
-steps: 10
+walkers: 16
+burn_in: 0
+steps: 0
 iterate: 1
-steps_final: 0
+steps_final: 100
 thin_chain: False
 
 # satellite:
