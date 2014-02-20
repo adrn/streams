@@ -62,9 +62,11 @@ class LawMajewski2010(CompositePotential):
                             prior=LogUniformPrior((8.*u.kpc).decompose(usys).value,
                                                   (20*u.kpc).decompose(usys).value))
 
+        self._parameter_dict = dict()
         self.parameters = dict(params)
         for k,v in self.parameters.items():
-            self.__dict__[k] = v
+            #self.__dict__[k] = v
+            self._parameter_dict[k] = parameters.get(k, params[k].truth)
 
         # bulge = HernquistPotential(usys,
         #                            m=3.4E10*u.M_sun,
@@ -84,7 +86,6 @@ class LawMajewski2010(CompositePotential):
         #                                       halo=halo)
         self.units = usys
         self._G = G.decompose(bases=usys).value
-        self._parameter_dict = dict([(k,v.value) for k,v in self.parameters.items()])
 
     def _acceleration_at(self, r, n_particles, acc):
         return lm10_acceleration(r, n_particles, acc, **self._parameter_dict)
