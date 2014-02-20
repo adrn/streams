@@ -100,8 +100,8 @@ class LawMajewski2010(CompositePotential):
         #        m_halo_enc
 
         # TODO: HACK!!!
-        Rh = self.parameters['R_halo']._value
-        vh = self.parameters['v_halo']._value
+        Rh = self._parameter_dict['R_halo']
+        vh = self._parameter_dict['v_halo']
         G = self._G
         m_halo_enc = -2*Rh**2*R*vh**2/(G*Rh**2 + G*R**2) + 2*R*vh**2/G
         m_enc = 1.E11 + 3.4E10 + m_halo_enc
@@ -208,102 +208,3 @@ class LawMajewski2010(CompositePotential):
         r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
         t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
         return v_esc * r_unit/t_unit
-
-class LawMajewski2010Py(CompositePotential):
-
-    def __init__(self, **parameters):
-        """ Represents the functional form of the Galaxy potential used by
-            Law and Majewski 2010.
-
-            Miyamoto-Nagai disk
-            Hernquist bulge
-            Logarithmic halo
-
-            Model parameters: q1, qz, phi, v_halo
-
-            Parameters
-            ----------
-            parameters : dict
-                A dictionary of parameters for the potential definition.
-        """
-
-        # v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
-        lm10_parameters = { 'q1' : PotentialParameter(truth=1.38,
-                                              range=(1.1, 1.7),
-                                              latex=r"$q_1$"),
-                    'q2' : PotentialParameter(truth=1.,
-                                              range=(0.7, 1.3),
-                                              latex=r"$q_2$"),
-                    'qz' : PotentialParameter(truth=1.36,
-                                              range=(1.1, 1.7),
-                                              latex=r"$q_z$"),
-                    'phi' : PotentialParameter(truth=97.*u.deg,
-                                               range=(85.*u.deg,115.*u.deg),
-                                               latex=r"$\phi$"),
-                    'v_halo' : PotentialParameter(truth=121.858*u.km/u.s,
-                                                  range=(100.*u.km/u.s,
-                                                         150.*u.km/u.s),
-                                                  latex=r"$v_{\rm halo}$"),
-                    'R_halo' : PotentialParameter(truth=12.*u.kpc,
-                                                  range=(8.*u.kpc, 16*u.kpc),
-                                                  latex=r"$R_{\rm halo}$")}
-
-        self.parameters = dict(lm10_parameters)
-        for k,v in self.parameters.items():
-            self.__dict__[k] = v
-
-        for p_name in parameters.keys():
-            if hasattr(parameters[p_name], "unit"):
-                self.parameters[p_name].value = parameters[p_name]
-            else:
-                self.parameters[p_name]._value = parameters[p_name]
-
-        bulge = HernquistPotential(usys,
-                                   m=3.4E10*u.M_sun,
-                                   c=0.7*u.kpc)
-
-        disk = MiyamotoNagaiPotential(usys,
-                                      m=1.E11*u.M_sun,
-                                      a=6.5*u.kpc,
-                                      b=0.26*u.kpc)
-
-        p_dict = dict([(k,v._value) for k,v in self.parameters.items()])
-        halo = LogarithmicPotentialLJ(usys, **p_dict)
-
-        super(LawMajewski2010Py, self).__init__(usys,
-                                              bulge=bulge,
-                                              disk=disk,
-                                              halo=halo)
-
-        self._G = G.decompose(bases=usys).value
-
-    def _enclosed_mass(self, R):
-        """ Compute the enclosed mass at the position r. Assumes it's far from
-            the disk and bulge.
-        """
-
-        m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R/self._G
-        m_enc = self["disk"]._parameters["m"] + \
-                self["bulge"]._parameters["m"] + \
-                m_halo_enc
-
-        return m_enc
-
-    def _tidal_radius(self, m, r):
-        """ Compute the tidal radius of a massive particle at the specified
-            position(s). Assumes position and mass are in the same unit
-            system as the potential.
-
-            Parameters
-            ----------
-            m : numeric
-                Mass.
-            r : array_like
-                Position.
-        """
-
-        # Radius of Sgr center relative to galactic center
-        R_orbit = np.sqrt(np.sum(r**2., axis=-1))
-        m_enc = self._enclosed_mass(R_orbit)
-
-        return R_orbit * (m / (m_enc))**(0.33333)
