@@ -58,7 +58,7 @@ time_unit = [x for x in usys if x.is_equivalent(u.second)][0]
 h_units = [angle_unit,angle_unit,length_unit,
            angle_unit/time_unit,angle_unit/time_unit,length_unit/time_unit]
 heliocentric = ReferenceFrame(name="heliocentric",
-                              coord_names=("l","b","D","mul","mub","vr"),
+                              coord_names=("l","b","d","mul","mub","vr"),
                               units=h_units,
                               repr_units=(u.deg,u.deg,u.kpc,u.mas/u.yr,u.mas/u.yr,u.km/u.s))
 
