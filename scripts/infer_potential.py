@@ -260,7 +260,6 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         particles_group = model.parameters.get('particles', None)
         satellite_group = model.parameters.get('satellite', None)
 
-        potential_group = None # HACK HCK HACK
         if potential_group:
             this_flatchain = np.zeros((len(thin_flatchain),len(potential_group)))
             this_p0 = np.zeros((len(p0),len(potential_group)))
