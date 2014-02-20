@@ -104,7 +104,7 @@ def gaia_spitzer_errors(particles):
     M_V, dM_V = rrl_M_V(-0.5)
 
     try:
-        V = apparent_magnitude(M_V, particles["D"])
+        V = apparent_magnitude(M_V, particles["d"])
     except AttributeError:
         raise ValueError("Particles in wrong reference frame? Has "
                          "coordinates: {}".format(particles.names))
@@ -121,9 +121,9 @@ def gaia_spitzer_errors(particles):
     mub = dmu.to(particles["mub"].unit)
 
     # distance
-    D = 0.02*particles["D"]
+    d = 0.02*particles["d"]
 
     # radial velocity
     vr = 5.*u.km/u.s * np.ones_like(particles["vr"].value)
 
-    return dict(l=l, b=b, D=D, mul=mul,mub=mub,vr=vr)
+    return dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
