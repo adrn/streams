@@ -66,9 +66,9 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     # read in the number of walkers to use
     nwalkers = config["walkers"]
     nsteps = config["steps"]
-    nsteps_final = config.get("steps_final", 0)
     nburn = config.get("burn_in", 0)
-    niter = config.get("iterate", 1)
+    ncool_down = config.get("cool_down", 100)
+    burn_beta = config.get("burn_beta", 1.)
 
     if not os.path.exists(output_file):
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
@@ -77,60 +77,52 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         p0 = model.sample_priors(size=nwalkers)
         logger.debug("Priors sampled...")
 
-        # get the sampler
-        sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
-
         if nburn > 0:
+            model.lnpargs.append(burn_beta)
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
             time0 = time.time()
             logger.info("Burning in sampler for {} steps...".format(nburn))
 
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
 
-            best_idx = sampler.flatlnprobability.argmax()
-            best_pos = sampler.flatchain[best_idx]
+            if burn_beta != 1 and ncool_down > 0:
+                best_idx = sampler.flatlnprobability.argmax()
+                best_pos = sampler.flatchain[best_idx]
 
-            std = np.std(p0, axis=0) / 5.
-            pos = np.array([np.random.normal(best_pos, std) \
-                            for kk in range(nwalkers)])
+                std = np.std(p0, axis=0) / 5.
+                pos = np.array([np.random.normal(best_pos, std) \
+                                for kk in range(nwalkers)])
 
-            sampler.reset()
+                # reset temperature
+                model.lnpargs[3] = 1.
+                sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
+                pos, xx, yy = sampler.run_mcmc(pos, ncool_down)
+
             t = time.time() - time0
             logger.debug("Spent {} seconds on burn-in...".format(t))
 
         else:
             pos = p0
 
-        logger.info("Running {} walkers for {} iterations of {} steps..."\
-                    .format(nwalkers, niter, nsteps//niter))
-
         if nsteps > 0:
+            # reset temperature
+            try:
+                model.lnpargs[3] = 1.
+            except:
+                pass
+
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
+            logger.info("Running {} walkers for {} steps..."\
+                    .format(nwalkers, nsteps))
+
             time0 = time.time()
-            for ii in range(niter):
-                logger.debug("Iteration: {}".format(ii))
-                pos, prob, state = sampler.run_mcmc(pos, nsteps//niter)
-
-                # if any of the samplers have less than 5% acceptance,
-                #  start them from new positions sampled from the best position
-                acc_frac_test = sampler.acceptance_fraction < 0.05
-                if np.any(acc_frac_test):
-                    nbad = np.sum(acc_frac_test)
-                    med_pos = np.median(sampler.flatchain, axis=0)
-                    std = np.std(sampler.flatchain, axis=0)
-                    new_pos = sample_ball(med_pos, std, size=nwalkers)
-
-                    for jj in range(nwalkers):
-                        if acc_frac_test[jj]:
-                            pos[jj] = new_pos[jj]
+            pos, prob, state = sampler.run_mcmc(pos, nsteps)
 
             t = time.time() - time0
             logger.debug("Spent {} seconds on main sampling...".format(t))
-
-        if nsteps_final > 0:
-            time0 = time.time()
-            sampler.reset()
-            pos, prob, state = sampler.run_mcmc(pos, nsteps_final)
-            t = time.time() - time0
-            logger.debug("Spent {} seconds on final sampling...".format(t))
 
         # write the sampler data to numpy save files
         logger.info("Writing sampler data to '{}'...".format(output_file))
