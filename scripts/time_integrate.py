@@ -19,6 +19,7 @@ from streams.coordinates import _gc_to_hel, _hel_to_gc
 from streams.coordinates.frame import heliocentric
 from streams.potential.lm10 import LawMajewski2010
 from streams.integrate import LeapfrogIntegrator
+import streams.inference as si
 from streams.inference.back_integrate import back_integration_likelihood
 
 nparticles = 16
@@ -58,3 +59,32 @@ for ii in range(10):
     times.append(time.time()-a)
 
 print(np.min(times), "seconds per likelihood call")
+
+_config = """
+name: test
+data_file: data/observed_particles/2.5e8_N1024.hdf5
+nparticles: 4
+particle_idx: [16, 194, 575, 702]
+
+potential:
+    class_name: LawMajewski2010
+    parameters: [q1, qz, phi, v_halo]
+
+particles:
+    parameters: [d,mul,mub,vr]
+
+satellite:
+    parameters: [d,mul,mub,vr]
+"""
+
+config = io.read_config(_config)
+model = si.StreamModel.from_config(config)
+truths = model.truths
+
+times = []
+for ii in range(10):
+    a = time.time()
+    model(truths)
+    times.append(time.time()-a)
+
+print(np.min(times), "seconds per model call")
