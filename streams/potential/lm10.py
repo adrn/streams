@@ -21,8 +21,8 @@ from ._lm10_acceleration import lm10_acceleration
 from .. import usys
 from ..util import _parse_quantity
 
-#from ..inference import ModelParameter
-#from ..inference.prior import LogUniformPrior, LogPrior
+from ..inference.parameter import ModelParameter
+from ..inference.prior import LogUniformPrior
 
 class LawMajewski2010(CompositePotential):
 
@@ -42,36 +42,29 @@ class LawMajewski2010(CompositePotential):
                 A dictionary of parameters for the potential definition.
         """
 
-        # v_halo range comes from 5E11 < M < 5E12, current range of MW mass @ 200 kpc
-        lm10_parameters = { 'q1' : PotentialParameter(truth=1.38,
-                                              range=(1.1, 1.7),
-                                              latex=r"$q_1$"),
-                    'q2' : PotentialParameter(truth=1.,
-                                              range=(0.7, 1.3),
-                                              latex=r"$q_2$"),
-                    'qz' : PotentialParameter(truth=1.36,
-                                              range=(1.1, 1.7),
-                                              latex=r"$q_z$"),
-                    'phi' : PotentialParameter(truth=97.*u.deg,
-                                               range=(85.*u.deg,115.*u.deg),
-                                               latex=r"$\phi$"),
-                    'v_halo' : PotentialParameter(truth=121.858*u.km/u.s,
-                                                  range=(100.*u.km/u.s,
-                                                         150.*u.km/u.s),
-                                                  latex=r"$v_{\rm halo}$"),
-                    'R_halo' : PotentialParameter(truth=12.*u.kpc,
-                                                  range=(8.*u.kpc, 16*u.kpc),
-                                                  latex=r"$R_{\rm halo}$")}
+        params = dict()
+        params['q1'] = ModelParameter(name='q1', truth=1.38,
+                            prior=LogUniformPrior(1.0,1.7))
+        params['q2'] = ModelParameter(name='q2', truth=1.,
+                            prior=LogUniformPrior(0.71,1.5))
+        params['qz'] = ModelParameter(name='qz', truth=1.36,
+                            prior=LogUniformPrior(1.0,1.7))
+        params['phi'] = ModelParameter(name='phi',
+                            truth=(97.*u.deg).decompose(usys).value,
+                            prior=LogUniformPrior((80.*u.deg).decompose(usys).value,
+                                                  (120.*u.deg).decompose(usys).value))
+        params['v_halo'] = ModelParameter(name='v_halo',
+                            truth=(121.858*u.km/u.s).decompose(usys).value,
+                            prior=LogUniformPrior((100.*u.km/u.s).decompose(usys).value,
+                                                  (200.*u.km/u.s).decompose(usys).value))
+        params['R_halo'] = ModelParameter(name='R_halo',
+                            truth=(12.*u.kpc).decompose(usys).value,
+                            prior=LogUniformPrior((8.*u.kpc).decompose(usys).value,
+                                                  (20*u.kpc).decompose(usys).value))
 
-        self.parameters = dict(lm10_parameters)
+        self.parameters = dict(params)
         for k,v in self.parameters.items():
             self.__dict__[k] = v
-
-        for p_name in parameters.keys():
-            if hasattr(parameters[p_name], "unit"):
-                self.parameters[p_name].value = parameters[p_name]
-            else:
-                self.parameters[p_name]._value = parameters[p_name]
 
         # bulge = HernquistPotential(usys,
         #                            m=3.4E10*u.M_sun,
@@ -91,14 +84,14 @@ class LawMajewski2010(CompositePotential):
         #                                       halo=halo)
         self.units = usys
         self._G = G.decompose(bases=usys).value
-        self._parameter_dict = dict([(k,v._value) for k,v in self.parameters.items()])
+        self._parameter_dict = dict([(k,v.value) for k,v in self.parameters.items()])
 
     def _acceleration_at(self, r, n_particles, acc):
         return lm10_acceleration(r, n_particles, acc, **self._parameter_dict)
 
     def _enclosed_mass(self, R):
         """ Compute the enclosed mass at the position r. Assumes it's far from
-            the disk and bulge.
+            the disk and bulge, and is a spherically averaged approximation.
         """
 
         #m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R/self._G
@@ -132,7 +125,7 @@ class LawMajewski2010(CompositePotential):
         R_orbit = np.sqrt(np.sum(r**2., axis=-1))
         m_enc = self._enclosed_mass(R_orbit)
 
-        return R_orbit * (m / (m_enc))**(0.33333)
+        return R_orbit * (m / m_enc)**(0.33333)
 
     def tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified
