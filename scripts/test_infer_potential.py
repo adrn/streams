@@ -56,30 +56,15 @@ satellite:
 """
 
 pot_params = """
-    parameters:
-        q1:
-            a: 1.
-            b: 1.6
-        qz:
-            a: 1.
-            b: 1.6
-        phi:
-            a: 80. degree
-            b: 120. degree
-        v_halo:
-            a: 100 km/s
-            b: 200 km/s
+    parameters: [q1, qz, phi, v_halo]
 """
 
 ptc_params = """
-    parameters:
-        _X:
+    parameters: [l, b, d, mul, mub, vr]
 """
 
 sat_params = """
-    parameters:
-        logm0:
-        _X:
+    parameters: [d, mul, mub, vr]
 """
 
 lm10_c = minimum_config.format(potential_params=pot_params,
@@ -232,6 +217,7 @@ class TestStreamModel(object):
             os.mkdir(test_path)
 
         truth_dict = model._decompose_vector(model.truths)
+        model.sample_priors()
 
         idx = 0
         for group_name,group in truth_dict.items():
@@ -250,67 +236,52 @@ class TestStreamModel(object):
                     idx += 1
 
                 if group_name == "particles":
-                    if param_name == "_X":
-                        for jj in range(param.value.shape[0]):
-                            prior = param._prior[jj]
-                            truth = truths[jj]
+                    for jj in range(param.value.shape[0]):
+                        prior = model._prior_cache[("particles",param_name)]
+                        truth = truths[jj]
 
-                            for kk in range(param.value.shape[1]):
-                                mu,sigma = truth[kk],prior.sigma[kk]
-                                vals1 = np.linspace(mu-10*sigma,
-                                                    mu+10*sigma,
-                                                    Ncoarse)
-                                vals2 = np.linspace(mu-3*sigma,
-                                                    mu+3*sigma,
-                                                    Nfine)
-                                fig = make_plot(model, idx, vals1, vals2)
-                                fig.savefig(os.path.join(test_path,
-                                        "{}_{}.png".format(idx,param_name)))
-                                plt.close('all')
-                                idx += 1
-
-                    elif param_name =="tub":
-                        for jj in range(param.value.shape[0]):
-                            vals1 = np.linspace(param._prior[jj].a,
-                                                param._prior[jj].b,
-                                                Ncoarse)
-                            vals2 = np.linspace(-500,500,Nfine) + truths[jj]
-                            fig = make_plot(model, idx, vals1, vals2)
-                            fig.savefig(os.path.join(test_path, "{}_{}.png".format(idx,param_name)))
-                            plt.close('all')
-                            idx += 1
-
-                if group_name == "satellite":
-
-                    if param_name == "logm0":
-                        print(truths)
-                        vals1 = np.linspace(param._prior.a,
-                                            param._prior.b,
+                        mu,sigma = truth,prior.sigma[jj]
+                        vals1 = np.linspace(mu-10*sigma,
+                                            mu+10*sigma,
                                             Ncoarse)
-                        vals2 = np.linspace(0.9,1.1,Nfine)*truths
+                        vals2 = np.linspace(mu-3*sigma,
+                                            mu+3*sigma,
+                                            Nfine)
                         fig = make_plot(model, idx, vals1, vals2)
-                        fig.savefig(os.path.join(test_path, "{}_{}.png".format(idx,param_name)))
+                        fig.savefig(os.path.join(test_path,
+                                "ptcl{}_{}.png".format(idx,param_name)))
                         plt.close('all')
                         idx += 1
 
-                    if param_name == "_X":
-                        for jj in range(param.value.shape[0]):
-                            prior = param._prior[jj]
-                            truth = truths[jj]
+                if group_name == "satellite":
 
-                            for kk in range(param.value.shape[1]):
-                                mu,sigma = truth[kk],prior.sigma[kk]
-                                vals1 = np.linspace(mu-10*sigma,
-                                                    mu+10*sigma,
-                                                    Ncoarse)
-                                vals2 = np.linspace(mu-3*sigma,
-                                                    mu+3*sigma,
-                                                    Nfine)
-                                fig = make_plot(model, idx, vals1, vals2)
-                                fig.savefig(os.path.join(test_path,
-                                        "{}_{}.png".format(idx,param_name)))
-                                plt.close('all')
-                                idx += 1
+                    # if param_name == "logm0":
+                    #     print(truths)
+                    #     vals1 = np.linspace(param._prior.a,
+                    #                         param._prior.b,
+                    #                         Ncoarse)
+                    #     vals2 = np.linspace(0.9,1.1,Nfine)*truths
+                    #     fig = make_plot(model, idx, vals1, vals2)
+                    #     fig.savefig(os.path.join(test_path, "{}_{}.png".format(idx,param_name)))
+                    #     plt.close('all')
+                    #     idx += 1
+
+                    for jj in range(param.value.shape[0]):
+                        prior = model._prior_cache[("satellite",param_name)]
+                        truth = truths
+
+                        mu,sigma = truth,prior.sigma
+                        vals1 = np.linspace(mu-10*sigma,
+                                            mu+10*sigma,
+                                            Ncoarse)
+                        vals2 = np.linspace(mu-3*sigma,
+                                            mu+3*sigma,
+                                            Nfine)
+                        fig = make_plot(model, idx, vals1, vals2)
+                        fig.savefig(os.path.join(test_path,
+                                "sat{}_{}.png".format(idx,param_name)))
+                        plt.close('all')
+                        idx += 1
 
 
     def test_apw(self):
