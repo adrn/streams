@@ -56,6 +56,7 @@ class LogCoordinatePrior(LogUniformPrior):
 class StreamModel(object):
 
     def __init__(self, potential, lnpargs=(),
+                 satellite=None, particles=None,
                  true_satellite=None, true_particles=None):
         """ Model for tidal streams that uses backwards integration to Rewind
             the positions of stars.
@@ -82,6 +83,8 @@ class StreamModel(object):
 
         self.lnpargs = lnpargs
 
+        self.satellite = satellite
+        self.particles = particles
         self.true_satellite = true_satellite
         self.true_particles = true_particles
 
@@ -102,6 +105,8 @@ class StreamModel(object):
 
         true_particles = d['true_particles']
         true_satellite = d['true_satellite']
+        satellite = d.get('satellite', None)
+        particles = d.get('particles', None)
         nparticles = true_particles.nparticles
         logger.info("Running with {} particles.".format(nparticles))
 
@@ -118,6 +123,8 @@ class StreamModel(object):
 
         # Define the empty model to add parameters to
         model = cls(potential, lnpargs=[t1,t2,dt],
+                    particles=particles,
+                    satellite=satellite,
                     true_satellite=true_satellite,
                     true_particles=true_particles)
 
@@ -130,8 +137,6 @@ class StreamModel(object):
 
         # Particle parameters
         if config['particles']['parameters']:
-            particles = d['particles']
-
             logger.debug("Particle properties added as parameters:")
             for ii,name in enumerate(config["particles"]["parameters"]):
                 # prior = LogNormalPrior(particles[name].decompose(usys).value,
@@ -146,8 +151,6 @@ class StreamModel(object):
 
         # Satellite parameters
         if config['satellite']['parameters']:
-            satellite = d['satellite']
-
             logger.debug("Satellite properties added as parameters:")
             for ii,name in enumerate(config["satellite"]["parameters"]):
                 # prior = LogNormalPrior(satellite[name].decompose(usys).value,
@@ -210,6 +213,8 @@ class StreamModel(object):
                 Number of samples to draw.
         """
 
+        _prior_cache = dict()
+
         sz = size if size is not None else 1
         p0 = np.zeros((sz, self.nparameters))
         for ii in range(sz):
@@ -220,6 +225,21 @@ class StreamModel(object):
                         p0[ii,ix1:ix1+param.size] = np.ravel(param.sample().T)
                     else:
                         p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
+
+                    if param_name in ['l','b','d','mul','mub','vr']:
+                        if group_name == 'particles':
+                            p = self.particles
+                        elif group_name == 'satellite':
+                            p = self.satellite
+
+                        try:
+                            prior = _prior_cache[(group_name,param_name)]
+                        except KeyError:
+                            prior = LogNormalPrior(p[param_name].decompose(usys).value,
+                                                   p.errors[param_name].decompose(usys).value)
+                            _prior_cache[(group_name,param_name)] = prior
+
+                        p0[ii,ix1:ix1+param.size] = np.ravel(prior.sample().T)
 
                     ix1 += param.size
 
@@ -287,26 +307,23 @@ class StreamModel(object):
 
         return d
 
-    def ln_posterior(self, p, *args):
-        """ Evaluate the log-posterior at the given parameter vector.
-
-            Parameters
-            ----------
-            p : array_like
-                The vector of model parameter values.
-        """
-
-        param_dict = self._decompose_vector(p)
-
+    def ln_prior(self, param_dict, *args):
         ln_prior = 0.
         for group_name,group in self.parameters.items():
             for param_name,param in group.items():
                 lp = param.prior(param_dict[group_name][param_name])
                 ln_prior += lp
 
-        # short-circuit if any prior value is -infinity
-        if np.any(np.isinf(ln_prior)):
-            return -np.inf
+        return ln_prior
+
+    def ln_likelihood(self, param_dict, *args):
+        """ Evaluate the log-posterior at the given parameter set.
+
+            Parameters
+            ----------
+            param_dict : dict
+                The dictionary of model parameter values.
+        """
 
         # get potential
         pparams = self._given_potential_params.copy()
@@ -348,7 +365,22 @@ class StreamModel(object):
                                               logm0,
                                               self.true_satellite.vdisp)
 
+        return ln_like
+
+    def ln_posterior(self, p, *args):
+
+        param_dict = self._decompose_vector(p)
+
+        ln_prior = self.ln_prior(param_dict, *args)
+
+        # short-circuit if any prior value is -infinity
+        if np.any(np.isinf(ln_prior)):
+            return -np.inf
+
+        ln_like = self.ln_likelihood(param_dict, *args)
+
         return np.sum(ln_like) + np.sum(ln_prior)
+
         # try:
         #     return (np.sum(ln_like) + np.sum(ln_prior))*args[3]
         # except:
