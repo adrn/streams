@@ -87,9 +87,10 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
 
             if burn_beta != 1 and ncool_down > 0:
-                best_idx = sampler.flatlnprobability.argmax()
-                best_pos = sampler.flatchain[best_idx]
+                #best_idx = sampler.flatlnprobability.argmax()
+                #best_pos = sampler.flatchain[best_idx]
 
+                best_pos = np.median(sampler.flatchain, axis=0)
                 std = np.std(p0, axis=0) / 10.
                 pos = np.array([np.random.normal(best_pos, std) \
                                 for kk in range(nwalkers)])
