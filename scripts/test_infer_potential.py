@@ -36,11 +36,9 @@ minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8_N1024.hdf5
 # nparticles: 4
-# particle_idx: [217, 276, 358, 470]
-#nparticles: 4
-#particle_idx: [77, 132, 658, 847]
+# particle_idx: [16, 194, 575, 702]
 nparticles: 8
-particle_idx: [25, 77, 132, 140, 359, 658, 693, 847]
+particle_idx: [9, 162, 421, 518, 541, 590, 733, 1002]
 # nparticles: 32
 # particle_idx: [28, 55, 65, 142, 144, 154, 243, 277, 339, 362, 374, 376, 395, 396, 434, 439, 464, 467, 467, 536, 536, 553, 584, 706, 715, 730, 734, 734, 822, 852, 862, 939]
 
@@ -60,7 +58,7 @@ pot_params = """
 """
 
 ptc_params = """
-    parameters: [l, b, d, mul, mub, vr]
+    parameters: [d]
 """
 
 sat_params = """
@@ -74,12 +72,15 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 # _config = minimum_config.format(potential_params=pot_params,
 #                                 particles_params=ptc_params,
 #                                 satellite_params=sat_params)
-_config = minimum_config.format(potential_params="",
-                                particles_params="",
-                                satellite_params=sat_params)
+_config = minimum_config.format(potential_params=pot_params,
+                                particles_params=ptc_params,
+                                satellite_params="")
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
+
+Ncoarse = 21
+Nfine = 51
 
 output_path = os.path.join(project_root, 'plots', 'tests', 'infer_potential')
 if not os.path.exists(output_path):
@@ -171,7 +172,7 @@ class TestStreamModel(object):
                                                     potential,
                                                     model.true_particles._X,
                                                     model.true_satellite._X,
-                                                    model.true_satellite.mass, 0.,
+                                                    np.log(model.true_satellite.mass),
                                                     model.true_satellite.vdisp)
                 Ls.append(ll)
 
@@ -206,9 +207,6 @@ class TestStreamModel(object):
 
     def test_model(self):
         """ Simple test of posterior """
-
-        Ncoarse = 51
-        Nfine = 71
 
         model = self.model
 
