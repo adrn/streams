@@ -7,6 +7,7 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
+from collections import defaultdict
 import os, sys
 import logging
 import shutil
@@ -234,6 +235,22 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         plt.close('all')
 
     if plot_config.get("posterior", False):
+        _label_map = dict(q1="$q_1$", q2="$q_2$", qz="$q_z$",
+                          phi=r"$\phi$ [deg]", v_halo=r"$v_h$ [km/s]", R_halo=r"$R_h$ [kpc]",
+                          l="$l$ [deg]", b="$b$ [deg]", d="$d$ [kpc]",
+                          mul=r"$\mu_l$ [mas/yr]", mub=r"$\mu_b$ [mas/yr]", vr=r"$v_r$ [km/s]")
+
+        _unit_transform = defaultdict(lambda: lambda x: x)
+        _unit_transform['phi'] = lambda x: (x*u.rad).to(u.degree).value
+        _unit_transform["v_halo"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
+        _unit_transform["R_halo"] = lambda x: (x*u.kpc).to(u.kpc).value
+        _unit_transform["l"] = lambda x: (x*u.rad).to(u.degree).value
+        _unit_transform["b"] = lambda x: (x*u.rad).to(u.degree).value
+        _unit_transform["d"] = lambda x: (x*u.kpc).to(u.kpc).value
+        _unit_transform["mul"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
+        _unit_transform["mub"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
+        _unit_transform["vr"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
+
         logger.debug("Plotting posterior distributions...")
 
         flatchain_dict = model.label_flatchain(thin_flatchain)
@@ -243,109 +260,93 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         particles_group = model.parameters.get('particles', None)
         satellite_group = model.parameters.get('satellite', None)
 
+        potential_group = None # HACK HCK HACK
         if potential_group:
             this_flatchain = np.zeros((len(thin_flatchain),len(potential_group)))
             this_p0 = np.zeros((len(p0),len(potential_group)))
-            for ii,param_name in enumerate(potential_group.keys()):
-                this_flatchain[:,ii] = np.squeeze(flatchain_dict['potential'][param_name])
-                this_p0[:,ii] = np.squeeze(p0_dict['potential'][param_name])
-
-            fig = triangle.corner(this_p0,
-                        plot_kwargs=dict(color='g',alpha=0.1),
-                        hist_kwargs=dict(color='g',alpha=0.75,normed=True),
-                        plot_contours=False)
-            # fig = triangle.corner(this_flatchain,
-            #             fig=fig,
-            #             truths=[p.truth for p in model.parameters['potential'].values()],
-            #             truth_color="r",
-            #             plot_kwargs=dict(color='k',alpha=0.0001),
-            #             hist_kwargs=dict(color='k',alpha=0.0001,normed=True))
-            fig = triangle.corner(this_flatchain,
-                        fig=fig,
-                        truths=[p.truth for p in model.parameters['potential'].values()],
-                        labels=potential_group.keys(),
-                        plot_kwargs=dict(color='k',alpha=1.),
-                        hist_kwargs=dict(color='k',alpha=0.75,normed=True))
-            fig.savefig(os.path.join(output_path, "potential.{}".format(plot_ext)))
-
-        nparticles = model.true_particles.nparticles
-        if particles_group:
-            for jj in range(nparticles):
-                this_flatchain = None
-                this_p0 = None
-                this_truths = []
-                for ii,pname in enumerate(particles_group.keys()):
-                    p = flatchain_dict['particles'][pname][:,jj]
-                    _p0 = p0_dict['particles'][pname][:,jj]
-                    if p.ndim == 1:
-                        p = p[:,np.newaxis]
-                        _p0 = _p0[:,np.newaxis]
-
-                    if this_flatchain is None:
-                        this_flatchain = p
-                        this_p0 = _p0
-                    else:
-                        this_flatchain = np.hstack((this_flatchain, p))
-                        this_p0 = np.hstack((this_p0, _p0))
-
-                    truth = model.parameters['particles'][pname].truth[jj]
-                    this_truths += list(np.atleast_1d(truth))
-
-                fig = triangle.corner(this_p0,
-                            plot_kwargs=dict(color='g',alpha=1.),
-                            hist_kwargs=dict(color='g',alpha=0.75,normed=True),
-                            plot_contours=False)
-
-                # labels=potential_group.keys(),
-                fig = triangle.corner(this_flatchain,
-                            fig=fig,
-                            truths=this_truths,
-                            plot_kwargs=dict(color='k',alpha=1.),
-                            hist_kwargs=dict(color='k',alpha=0.75,normed=True))
-                fig.savefig(os.path.join(output_path, "particle{}.{}".format(jj,plot_ext)))
-
-            # HACK this is the Hogg suck-it-up plot
-            # fig = triangle.corner(thin_flatchain,
-            #                       truths=model.truths,
-            #                       plot_kwargs=dict(color='k',alpha=1.),
-            #                       hist_kwargs=dict(color='k',alpha=0.75,normed=True))
-            # fig.savefig(os.path.join(output_path, "suck-it-up.{}".format(plot_ext)))
-
-        # plot the posterior for the satellite parameters
-        if satellite_group:
-            this_flatchain = None
-            this_p0 = None
             this_truths = []
-            for ii,pname in enumerate(satellite_group.keys()):
-                p = flatchain_dict['satellite'][pname][:,0]
-                _p0 = p0_dict['satellite'][pname][:,0]
-                if p.ndim == 1:
-                    p = p[:,np.newaxis]
-                    _p0 = _p0[:,np.newaxis]
+            this_extents = []
+            for ii,pname in enumerate(potential_group.keys()):
+                f = _unit_transform[pname]
+                p = model.parameters['potential'][pname]
 
-                if this_flatchain is None:
-                    this_flatchain = p
-                    this_p0 = _p0
-                else:
-                    this_flatchain = np.hstack((this_flatchain, p))
-                    this_p0 = np.hstack((this_p0, _p0))
-
-                if pname == "_X":
-                    truth = model.parameters['satellite'][pname].truth[0]
-                else:
-                    truth = model.parameters['satellite'][pname].truth
-                this_truths += list(np.atleast_1d(truth))
+                this_flatchain[:,ii] = f(np.squeeze(flatchain_dict['potential'][pname]))
+                this_p0[:,ii] = f(np.squeeze(p0_dict['potential'][pname]))
+                this_truths.append(f(p.truth))
+                this_extents.append((f(p._prior.a), f(p._prior.b)))
 
             fig = triangle.corner(this_p0,
-                        plot_kwargs=dict(color='g',alpha=1.),
-                        hist_kwargs=dict(color='g',alpha=0.75,normed=True),
+                        point_kwargs=dict(color='#2b8cbe',alpha=0.1),
+                        hist_kwargs=dict(color='#2b8cbe',alpha=0.75,normed=True,bins=50),
                         plot_contours=False)
 
             fig = triangle.corner(this_flatchain,
                         fig=fig,
                         truths=this_truths,
-                        plot_kwargs=dict(color='k',alpha=1.),
-                        hist_kwargs=dict(color='k',alpha=0.75,normed=True))
+                        labels=[_label_map[k] for k in potential_group.keys()],
+                        extents=this_extents,
+                        point_kwargs=dict(color='k',alpha=1.),
+                        hist_kwargs=dict(color='k',alpha=0.75,normed=True,bins=50))
+            fig.savefig(os.path.join(output_path, "potential.{}".format(plot_ext)))
+
+        nparticles = model.true_particles.nparticles
+        if particles_group:
+            for jj in range(nparticles):
+                this_flatchain = np.zeros((len(thin_flatchain),len(particles_group)))
+                this_p0 = np.zeros((len(p0),len(particles_group)))
+                this_truths = []
+                this_extents = None
+                for ii,pname in enumerate(particles_group.keys()):
+                    f = _unit_transform[pname]
+                    p = model.parameters['particles'][pname]
+
+                    this_flatchain[:,ii] = f(np.squeeze(flatchain_dict['particles'][pname][:,jj]))
+                    this_p0[:,ii] = f(np.squeeze(p0_dict['particles'][pname][:,jj]))
+                    this_truths.append(f(p.truth[jj]))
+                    #this_extents.append((f(p._prior.a), f(p._prior.b)))
+
+                fig = triangle.corner(this_p0,
+                            point_kwargs=dict(color='#2b8cbe',alpha=0.1),
+                            hist_kwargs=dict(color='#2b8cbe',alpha=0.75,normed=True,bins=50),
+                            plot_contours=False)
+
+                fig = triangle.corner(this_flatchain,
+                            fig=fig,
+                            truths=this_truths,
+                            labels=[_label_map[k] for k in particles_group.keys()],
+                            extents=this_extents,
+                            point_kwargs=dict(color='k',alpha=1.),
+                            hist_kwargs=dict(color='k',alpha=0.75,normed=True,bins=50))
+                fig.savefig(os.path.join(output_path, "particle{}.{}".format(jj,plot_ext)))
+
+        # plot the posterior for the satellite parameters
+        if satellite_group:
+            jj = 0
+            this_flatchain = np.zeros((len(thin_flatchain),len(satellite_group)))
+            this_p0 = np.zeros((len(p0),len(satellite_group)))
+            this_truths = []
+            this_extents = None
+            for ii,pname in enumerate(satellite_group.keys()):
+                f = _unit_transform[pname]
+                p = model.parameters['satellite'][pname]
+
+                this_flatchain[:,ii] = f(np.squeeze(flatchain_dict['satellite'][pname][:,jj]))
+                this_p0[:,ii] = f(np.squeeze(p0_dict['satellite'][pname][:,jj]))
+                this_truths.append(f(p.truth[jj]))
+                #this_extents.append((f(p._prior.a), f(p._prior.b)))
+
+            fig = triangle.corner(this_p0,
+                        point_kwargs=dict(color='#2b8cbe',alpha=0.1),
+                        hist_kwargs=dict(color='#2b8cbe',alpha=0.75,normed=True,bins=50),
+                        plot_contours=False)
+
+            fig = triangle.corner(this_flatchain,
+                        fig=fig,
+                        truths=this_truths,
+                        labels=[_label_map[k] for k in satellite_group.keys()],
+                        extents=this_extents,
+                        point_kwargs=dict(color='k',alpha=1.),
+                        hist_kwargs=dict(color='k',alpha=0.75,normed=True,bins=50))
             fig.savefig(os.path.join(output_path, "satellite.{}".format(plot_ext)))
 
 if __name__ == "__main__":
