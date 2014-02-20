@@ -90,7 +90,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                 best_idx = sampler.flatlnprobability.argmax()
                 best_pos = sampler.flatchain[best_idx]
 
-                std = np.std(p0, axis=0) / 5.
+                std = np.std(p0, axis=0) / 10.
                 pos = np.array([np.random.normal(best_pos, std) \
                                 for kk in range(nwalkers)])
 
