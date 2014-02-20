@@ -21,7 +21,6 @@ from .back_integrate import back_integration_likelihood
 from ..io import read_hdf5
 from .parameter import ModelParameter
 from .prior import *
-from .. import potential as sp
 from ..util import _parse_quantity
 from .. import usys
 
@@ -112,6 +111,7 @@ class StreamModel(object):
         dt = config.get("dt", -1.)
 
         # get the potential object specified from the potential subpackage
+        from .. import potential as sp
         Potential = getattr(sp, config["potential"]["class_name"])
         potential = Potential()
         logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
@@ -136,9 +136,10 @@ class StreamModel(object):
             for ii,name in enumerate(config["particles"]["parameters"]):
                 # prior = LogNormalPrior(particles[name].decompose(usys).value,
                 #                        particles.errors[name].decompose(usys).value)
+                priors = [LogCoordinatePrior(name) for ii in range(nparticles)]
                 X = ModelParameter(name,
                                    value=particles[name].decompose(usys).value,
-                                   prior=LogCoordinatePrior(name),
+                                   prior=priors,
                                    truth=true_particles[name].decompose(usys).value)
                 model.add_parameter('particles', X)
                 logger.debug("\t\t{}".format(name))
@@ -219,25 +220,6 @@ class StreamModel(object):
                         p0[ii,ix1:ix1+param.size] = np.ravel(param.sample().T)
                     else:
                         p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
-
-                    #######################################################
-                    ### HACK TO INITIALIZE WALKERS NEAR TRUTH
-                    # if param_name == "tub":
-                    #     p0[ii,ix1:ix1+param.size] = np.random.normal(self.true_particles.tub,
-                    #                                                  50.)
-
-                    if group_name == "particles" and param_name == "_X":
-                        _X = self.true_particles._X.ravel()
-                        std = np.ravel([pr.sigma for pr in param._prior])
-                        p0[ii,ix1:ix1+param.size] = np.random.normal(_X, std)
-
-                    if group_name == "satellite" and param_name == "_X":
-                        _X = self.true_satellite._X.ravel()
-                        std = np.ravel([pr.sigma for pr in param._prior])
-                        p0[ii,ix1:ix1+param.size] = np.random.normal(_X, std)
-
-                    ### HACK TO INITIALIZE WALKERS NEAR TRUTH
-                    #######################################################
 
                     ix1 += param.size
 
@@ -331,23 +313,32 @@ class StreamModel(object):
         for k,v in param_dict.get('potential',dict()).items():
             pparams[k] = v
 
-        # heliocentric particle positions and unbinding times
-        try:
-            p_hel = param_dict['particles']['_X']
-        except KeyError:
-            p_hel = self.true_particles._X
+        # heliocentric particle positions
+        p_hel = []
+        for k in ['l','b','d','mul','mub','vr']:
+            try:
+                p_hel.append(param_dict['particles'][k])
+            except KeyError:
+                p_hel.append(self.true_particles[k].decompose(usys).value)
+        p_hel = np.vstack(p_hel).T
 
-        # heliocentric satellite position
-        try:
-            s_hel = param_dict['satellite']['_X']
-        except KeyError:
-            s_hel = self.true_satellite._X
+        # heliocentric satellite positions
+        s_hel = []
+        for k in ['l','b','d','mul','mub','vr']:
+            try:
+                s_hel.append(param_dict['satellite'][k])
+            except KeyError:
+                s_hel.append(self.true_satellite[k].decompose(usys).value)
+        s_hel = np.vstack(s_hel).T
 
-        # heliocentric satellite position
-        try:
-            logm0 = param_dict['satellite']['logm0']
-        except KeyError:
-            logm0 = np.log(self.true_satellite.mass)
+        # satellite mass
+        # try:
+        #     logm0 = param_dict['satellite']['logm0']
+        # except KeyError:
+        #     logm0 = np.log(self.true_satellite.mass)
+        logm0 = np.log(self.true_satellite.mass)
+
+        # TODO: evaluate data likelihood here
 
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
