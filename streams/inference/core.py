@@ -88,6 +88,8 @@ class StreamModel(object):
         self.true_satellite = true_satellite
         self.true_particles = true_particles
 
+        self._prior_cache = dict()
+
     @classmethod
     def from_config(cls, config):
         """ Construct a StreamModel from a configuration dictionary.
@@ -213,8 +215,6 @@ class StreamModel(object):
                 Number of samples to draw.
         """
 
-        _prior_cache = dict()
-
         sz = size if size is not None else 1
         p0 = np.zeros((sz, self.nparameters))
         for ii in range(sz):
@@ -233,11 +233,11 @@ class StreamModel(object):
                             p = self.satellite
 
                         try:
-                            prior = _prior_cache[(group_name,param_name)]
+                            prior = self._prior_cache[(group_name,param_name)]
                         except KeyError:
                             prior = LogNormalPrior(p[param_name].decompose(usys).value,
                                                    p.errors[param_name].decompose(usys).value)
-                            _prior_cache[(group_name,param_name)] = prior
+                            self._prior_cache[(group_name,param_name)] = prior
 
                         p0[ii,ix1:ix1+param.size] = np.ravel(prior.sample().T)
 
@@ -332,9 +332,23 @@ class StreamModel(object):
 
         # heliocentric particle positions
         p_hel = []
+        # TODO: only use true_particles if none of these are specified.
+        #       otherwise, fix at the "observed" position, e.g.
+        # if len(param_dict['particles']) == 0:
+        #     ...true positions...
+        # else:
+        #     for k in ['l','b','d','mul','mub','vr']:
+        #         try:
+        #             p_hel.append(param_dict['particles'][k])
+        #         except KeyError:
+        #             p_hel.append(self.particles[k].decompose(usys).value)
+
+        data_like = 0.
         for k in ['l','b','d','mul','mub','vr']:
             try:
                 p_hel.append(param_dict['particles'][k])
+                fn = self._prior_cache[('particles',k)]
+                data_like += fn(param_dict['particles'][k])
             except KeyError:
                 p_hel.append(self.true_particles[k].decompose(usys).value)
         p_hel = np.vstack(p_hel).T
@@ -344,6 +358,8 @@ class StreamModel(object):
         for k in ['l','b','d','mul','mub','vr']:
             try:
                 s_hel.append(param_dict['satellite'][k])
+                fn = self._prior_cache[('satellite',k)]
+                data_like += fn(param_dict['satellite'][k])
             except KeyError:
                 s_hel.append(self.true_satellite[k].decompose(usys).value)
         s_hel = np.vstack(s_hel).T
@@ -355,8 +371,6 @@ class StreamModel(object):
         #     logm0 = np.log(self.true_satellite.mass)
         logm0 = np.log(self.true_satellite.mass)
 
-        # TODO: evaluate data likelihood here
-
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
@@ -365,7 +379,7 @@ class StreamModel(object):
                                               logm0,
                                               self.true_satellite.vdisp)
 
-        return ln_like
+        return np.sum(ln_like) + data_like
 
     def ln_posterior(self, p, *args):
 
