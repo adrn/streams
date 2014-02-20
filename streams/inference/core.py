@@ -29,6 +29,31 @@ __all__ = ["StreamModel", "StreamModelSampler"]
 
 logger = logging.getLogger(__name__)
 
+class LogCoordinatePrior(LogUniformPrior):
+
+    def __init__(self, name):
+        """ Return 0 if value is outside of the range
+            defined by a < value < b.
+        """
+        if name == 'l':
+            self.a = (0.*u.deg).decompose(usys).value
+            self.b = (360.*u.deg).decompose(usys).value
+        elif name == 'b':
+            self.a = (-90.*u.deg).decompose(usys).value
+            self.b = (90.*u.deg).decompose(usys).value
+        elif name == 'd':
+            self.a = (5.*u.kpc).decompose(usys).value
+            self.b = (150.*u.kpc).decompose(usys).value
+        elif name == 'mul':
+            self.a = (-100.*u.mas/u.yr).decompose(usys).value
+            self.b = (100.*u.mas/u.yr).decompose(usys).value
+        elif name == 'mub':
+            self.a = (-100.*u.mas/u.yr).decompose(usys).value
+            self.b = (100.*u.mas/u.yr).decompose(usys).value
+        elif name == 'vr':
+            self.a = (-1000.*u.km/u.s).decompose(usys).value
+            self.b = (1000.*u.km/u.s).decompose(usys).value
+
 class StreamModel(object):
 
     def __init__(self, potential, lnpargs=(),
@@ -97,48 +122,48 @@ class StreamModel(object):
                     true_particles=true_particles)
 
         # Potential parameters
-        if config["potential"]["parameters"] is not None:
-            for ii,(name,kwargs) in enumerate(config["potential"]["parameters"].items()):
-                a,b = kwargs["a"], kwargs["b"]
-                p = getattr(potential, name)
-                logger.debug("Prior on {}: Uniform({}, {})".format(name, a, b))
-
-                prior = LogUniformPrior(_parse_quantity(a).decompose(usys).value,
-                                        _parse_quantity(b).decompose(usys).value)
-                p = ModelParameter(name, prior=prior, truth=potential.parameters[name]._truth)
+        if config["potential"]["parameters"]:
+            for ii,name in enumerate(config["potential"]["parameters"]):
+                p = potential.parameters[name].copy()
+                logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a, p._prior.b))
                 model.add_parameter('potential', p)
 
         # Particle parameters
-        if config['particles']['parameters'] is not None:
+        if config['particles']['parameters']:
             particles = d['particles']
 
             logger.debug("Particle properties added as parameters:")
-            if config['particles']['parameters'].has_key('_X'):
-                priors = [LogNormalPrior(particles._X[ii],particles._error_X[ii])
-                            for ii in range(nparticles)]
-                X = ModelParameter('_X', value=particles._X, prior=priors,
-                                   truth=true_particles._X)
+            for ii,name in enumerate(config["particles"]["parameters"]):
+                # prior = LogNormalPrior(particles[name].decompose(usys).value,
+                #                        particles.errors[name].decompose(usys).value)
+                X = ModelParameter(name,
+                                   value=particles[name].decompose(usys).value,
+                                   prior=LogCoordinatePrior(name),
+                                   truth=true_particles[name].decompose(usys).value)
                 model.add_parameter('particles', X)
-                logger.debug("\t\t_X - particle 6D positions today")
+                logger.debug("\t\t{}".format(name))
 
         # Satellite parameters
-        if config['satellite']['parameters'] is not None:
+        if config['satellite']['parameters']:
             satellite = d['satellite']
 
-            if config['satellite']['parameters'].has_key('logm0'):
-                prior = LogUniformPrior(14, 23) # 2.5e6 to 2.5e10
-                logm0 = ModelParameter('logm0', value=19., prior=prior,
-                                        truth=np.log(true_satellite.mass))
-                model.add_parameter('satellite', logm0)
-                logger.debug("\t\tlogm0 - log of satellite mass today")
-
             logger.debug("Satellite properties added as parameters:")
-            if config['satellite']['parameters'].has_key('_X'):
-                priors = [LogNormalPrior(satellite._X[0],satellite._error_X[0])]
-                s_X = ModelParameter('_X', value=satellite._X, prior=priors,
-                                        truth=true_satellite._X)
-                model.add_parameter('satellite', s_X)
-                logger.debug("\t\t_X - satellite 6D position today")
+            for ii,name in enumerate(config["satellite"]["parameters"]):
+                # prior = LogNormalPrior(satellite[name].decompose(usys).value,
+                #                        satellite.errors[name].decompose(usys).value)
+                X = ModelParameter(name,
+                                   value=satellite[name].decompose(usys).value,
+                                   prior=LogCoordinatePrior(name),
+                                   truth=true_satellite[name].decompose(usys).value)
+                model.add_parameter('satellite', X)
+                logger.debug("\t\t{}".format(name))
+
+            # if config['satellite']['parameters'].has_key('logm0'):
+            #     prior = LogUniformPrior(14, 23) # 2.5e6 to 2.5e10
+            #     logm0 = ModelParameter('logm0', value=19., prior=prior,
+            #                             truth=np.log(true_satellite.mass))
+            #     model.add_parameter('satellite', logm0)
+            #     logger.debug("\t\tlogm0 - log of satellite mass today")
 
         return model
 
