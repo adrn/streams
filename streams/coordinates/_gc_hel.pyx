@@ -29,6 +29,7 @@ def _gc_to_hel(np.ndarray[double, ndim=2] X not None):
 
     cdef double x, y, z, vx, vy, vz, d_xy
     cdef double l,b,d,mul,mub,vr
+    cdef double twopi = np.pi*2
 
     for ii in range(nparticles):
         # transform to heliocentric cartesian
@@ -43,6 +44,9 @@ def _gc_to_hel(np.ndarray[double, ndim=2] X not None):
         d = sqrt(x**2 + y**2 + z**2)
         l = atan2(y, x)
         b = 1.5707963267948966 - acos(z/d)
+
+        if l < 0:
+            l = l+twopi
 
         # transform cartesian velocity to spherical
         d_xy = sqrt(x**2 + y**2)
