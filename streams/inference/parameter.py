@@ -86,3 +86,6 @@ class ModelParameter(u.Quantity):
         nd_state, own_state = state
         super(ModelParameter, self).__setstate__(nd_state)
         self.__dict__.update(own_state)
+
+    def __str__(self):
+        return "{}: {}".format(self.name, super(ModelParameter, self).__str__())
