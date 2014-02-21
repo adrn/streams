@@ -29,8 +29,9 @@ from streams.coordinates.frame import heliocentric, galactocentric
 from streams.dynamics import ObservedParticle
 import streams.io as s_io
 from streams.observation.gaia import gaia_spitzer_errors
-import streams.potential as s_potential
+from streams.potential.lm10 import LawMajewski2010
 from streams.util import _parse_quantity
+from streams.integrate import LeapfrogIntegrator
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -72,17 +73,46 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
 
     # read particles from the simulation class
     sim_time = simulation.particle_units[0]/simulation.particle_units[-1]
-    selection_expr = "(tub!=0) & (tub<{})".format((6000*u.Myr).to(sim_time).value) # HACK HACK HACK
+
+    # HACK HACK HACK
+    selection_expr = "(tub!=0) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<50)".format((6000*u.Myr).to(sim_time).value)
     particles = simulation.particles(N=N, expr=selection_expr)
-    particles = particles.to_frame(heliocentric)
 
     logger.debug("Read in {} particles with expr='{}'"\
                  .format(particles.nparticles, selection_expr))
 
     # read the satellite position
     satellite = simulation.satellite()
-    satellite = satellite.to_frame(heliocentric)
     logger.debug("Read in present position of satellite...")
+
+    ################################################################
+    # HACK: Figure out if in leading or trailing tail
+    s = satellite
+    p = particles
+    lm10_potential = LawMajewski2010()
+    X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
+    V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
+    integrator = LeapfrogIntegrator(lm10_potential._acceleration_at,
+                                    np.array(X), np.array(V),
+                                    args=(X.shape[0], np.zeros_like(X)))
+    ts, rs, vs = integrator.run(t1=simulation.t1, t2=simulation.t2, dt=-1)
+
+    s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+    p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
+
+    p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+    diff = p_x-s_x
+
+    norm_r = s_x[:,:3] / np.sqrt(np.sum(s_x[:,:3]**2, axis=-1))[:,np.newaxis]
+    norm_diff_r = diff[:,:3] / np.sqrt(np.sum(diff[:,:3]**2, axis=-1))[:,np.newaxis]
+    dot_prod_r = np.sum(norm_diff_r*norm_r, axis=-1)
+    tail_bit = (dot_prod_r > 0.).astype(int)*2 - 1
+    ################################################################
+
+    satellite = satellite.to_frame(heliocentric)
+    particles = particles.to_frame(heliocentric)
 
     # observe the particles if necessary
     if particle_error_model is not None:
@@ -142,6 +172,7 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
         grp["coordinate_names"] = o_particles.frame.coord_names
         grp["units"] = [str(x) for x in o_particles._repr_units]
         grp["tub"] = o_particles.tub
+        grp["tail_bit"] = tail_bit
 
         grp = f.create_group("satellite")
         grp["data"] = o_satellite._repr_X
@@ -196,15 +227,15 @@ if __name__ == "__main__":
         e.g.:
 
 python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---N=1024 --file=/Users/adrian/Projects/streams/data/observed_particles/2.5e6_N1024.hdf5 \
+--N=256 --file=/Users/adrian/Projects/streams/data/observed_particles/2.5e6_N1024.hdf5 \
 --seed=42 --mass="2.5e6" --overwrite
 
 python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e7_N1024.hdf5 \
+--N=256 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e7_N1024.hdf5 \
 --seed=42 --mass="2.5e7" --overwrite
 
 python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024.hdf5 \
+--N=256 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024.hdf5 \
 --seed=42 --mass="2.5e8" --overwrite
     """
 
