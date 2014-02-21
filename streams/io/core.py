@@ -128,6 +128,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
             particle_idx = np.arange(0, nparticles, dtype=int)
 
         true_tub = ptcl["tub"].value
+        true_tail_bit = ptcl["tail_bit"].value
         if "error" in ptcl.keys():
             p = ObservedParticle(ptcl["data"].value[particle_idx].T,
                                  ptcl["error"].value[particle_idx].T,
@@ -138,12 +139,14 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
                               frame=heliocentric,
                               units=[u.Unit(x) for x in ptcl["units"]])
             true_p.tub = true_tub[particle_idx]
+            true_p.tail_bit = true_tail_bit[particle_idx]
             return_dict["true_particles"] = true_p
         else:
             p = Particle(ptcl["data"].value.T,
                          frame=heliocentric,
                          units=[u.Unit(x) for x in ptcl["units"]])
             p.tub = true_tub
+            p.tail_bit = true_tail_bit
         return_dict["particles"] = p
 
         if "error" in satl.keys():
