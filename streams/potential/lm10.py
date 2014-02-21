@@ -104,7 +104,7 @@ class LawMajewski2010(CompositePotential):
         Rh = self._parameter_dict['R_halo']
         vh = self._parameter_dict['v_halo']
         G = self._G
-        m_halo_enc = -2*Rh**2*R*vh**2/(G*Rh**2 + G*R**2) + 2*R*vh**2/G
+        m_halo_enc = (2*R**3*vh**2) / (G*(R**2 + Rh**2))
         m_enc = 1.E11 + 3.4E10 + m_halo_enc
 
         return m_enc
@@ -126,7 +126,11 @@ class LawMajewski2010(CompositePotential):
         R_orbit = np.sqrt(np.sum(r**2., axis=-1))
         m_enc = self._enclosed_mass(R_orbit)
 
-        return R_orbit * (m / m_enc)**(0.33333)
+        Rh = self._parameter_dict['R_halo']
+        dlnM_dlnR = (3*Rh**2 + R_orbit**2)/(Rh**2 + R_orbit**2)
+        f = (1 - dlnM_dlnR/3.)**(-0.3333333333333)
+
+        return R_orbit * (m / m_enc)**(0.3333333333333)
 
     def tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified
