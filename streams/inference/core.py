@@ -371,13 +371,17 @@ class StreamModel(object):
         #     logm0 = np.log(self.true_satellite.mass)
         logm0 = np.log(self.true_satellite.mass)
 
+        # HACK
+        tail_bit = self.true_particles.tail_bit
+
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_hel, s_hel,
                                               logm0,
-                                              self.true_satellite.vdisp)
+                                              self.true_satellite.vdisp,
+                                              tail_bit)
 
         return np.sum(ln_like) + data_like
 
