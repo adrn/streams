@@ -38,9 +38,6 @@ data_file: data/observed_particles/2.5e8_N1024.hdf5
 # nparticles: 4
 # particle_idx: [16, 194, 575, 702]
 nparticles: 8
-particle_idx: [9, 162, 421, 518, 541, 590, 733, 1002]
-# nparticles: 32
-# particle_idx: [28, 55, 65, 142, 144, 154, 243, 277, 339, 362, 374, 376, 395, 396, 434, 439, 464, 467, 467, 536, 536, 553, 584, 706, 715, 730, 734, 734, 822, 852, 862, 939]
 
 potential:
     class_name: LawMajewski2010
@@ -73,7 +70,7 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 #                                 particles_params=ptc_params,
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params=pot_params,
-                                particles_params=ptc_params,
+                                particles_params="",
                                 satellite_params="")
 
 # particles_params=ptc_params,
@@ -161,9 +158,9 @@ class TestStreamModel(object):
             vals = np.linspace(0.9, 1.1, 71)
             Ls = []
             for val in vals:
-                p = true_potential.parameters[key]
+                p = true_potential._parameter_dict[key]
                 pparams = model._given_potential_params.copy()
-                pparams[key] = p._value*val
+                pparams[key] = p*val
                 potential = model._potential_class(**pparams)
 
                 ll = si.back_integration_likelihood(model.lnpargs[0],
@@ -173,15 +170,17 @@ class TestStreamModel(object):
                                                     model.true_particles._X,
                                                     model.true_satellite._X,
                                                     np.log(model.true_satellite.mass),
-                                                    model.true_satellite.vdisp)
+                                                    model.true_satellite.vdisp,
+                                                tail_bit=np.array([-1, -1, -1, -1, 1, 1, 1, -1]))
                 Ls.append(ll)
 
             Ls = np.array(Ls)
             for kk in range(model.true_particles.nparticles):
+                print(Ls[:,kk])
                 line, = axes[0].plot(vals, Ls[:,kk], alpha=0.5,lw=2.)
-                _X = model.true_particles.to_frame(galactocentric)._X[kk]
 
                 if jj == 0:
+                    _X = model.true_particles.to_frame(galactocentric)._X[kk]
                     if kk == 0:
                         axes2[0].plot(all_gc_particles._X[:,0], all_gc_particles._X[:,2],
                                       marker='.',alpha=0.1, color='k',linestyle='none',ms=5)
