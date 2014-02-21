@@ -33,10 +33,11 @@ def xyz_sph_jac(hel):
     deet = np.log(np.abs(dtmnt))
     return deet
 
-def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, s_vdisp):
+def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, s_vdisp, tail_bit):
 
     p_gc = _hel_to_gc(p_hel)
     s_gc = _hel_to_gc(s_hel)
+    tail_bit = np.sign(tail_bit)
 
     gc = np.vstack((s_gc,p_gc)).copy()
     acc = np.zeros_like(gc[:,:3])
@@ -59,17 +60,15 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, s_vd
     jac1 = _xyz_sph_jac(p_x_hel).reshape((ntimes,nparticles))
     rel_x = p_orbits - s_orbit
 
-    R = np.sqrt(np.sum(rel_x[...,:3]**2, axis=-1))
-    V = np.sqrt(np.sum(rel_x[...,3:]**2, axis=-1))
-    lnR = np.log(R)
-    lnV = np.log(V)
+    s_R_orbit = np.sqrt(np.sum(rs[:,0]**2, axis=-1))[:,np.newaxis]
+    a_pm = (s_R_orbit + r_tide*tail_bit[np.newaxis]) / s_R_orbit
 
     sigma_r = 0.55
-    mu_r = np.log(r_tide)
-    r_term = -0.5*(np.log(sigma_r**2*R) + ((lnR-mu_r)/sigma_r)**2)
+    R = rs[:,1:] - a_pm[...,np.newaxis]*s_orbit[...,:3]
+    r_term = -0.5*(6*np.log(sigma_r) + np.sum((R/sigma_r)**2,axis=-1))
 
-    sigma_v = 0.8
-    mu_v = np.log(s_vdisp)
-    v_term = -0.5*(np.log(sigma_v**2*V) + ((lnV-mu_v)/sigma_v)**2)
+    sigma_v = s_vdisp
+    V = vs[:,1:] - s_orbit[...,3:]
+    v_term = -0.5*(6*np.log(sigma_v) + np.sum((V/sigma_v)**2,axis=-1))
 
-    return logsumexp(r_term + v_term + jac1 - np.log(R**3) - np.log(V**3), axis=0)
+    return logsumexp(r_term + v_term + jac1, axis=0)
