@@ -25,3 +25,4 @@ text/paper2/*.log
 *.mov
 text/poster/*
 *.JPG
+config/

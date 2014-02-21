@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+
+from collections import defaultdict
+import re
+import subprocess
+import astropy.units as u
+import numpy as np
+
+pattr = re.compile("^[0-9]+[a-z\.\[\]]+\s+[a-z0-9]+\s+([a-z0-9]+)"
+                   "\s+[^ ]+\s+[0-9\-]+\s+([0-9]+)\s+([0-9]+)\s+([0-9a-z]+)")
+
+def parse_qstat(qstat):
+    batches = defaultdict(dict)
+
+    for line in qstat:
+        m = pattr.match(line)
+        try:
+            batch,nodes,cores,ram =  m.groups()
+        except:
+            continue
+        
+        try:
+            ram = int(ram)
+            unit = "mb"
+        except ValueError: # has units
+            #ram,unit = re.split('(\d+)',ram)
+            xx,ram,unit = re.split('(\d+)',ram)
+            ram = int(ram)
+     
+        if unit.startswith("b"):
+            unit = "byte"
+        elif unit.startswith("k"):
+            unit = "kbyte"
+        elif unit.startswith("m"):
+            unit = "Mbyte"
+        elif unit.startswith("g"):
+            unit = "Gbyte"
+        else:
+            raise ValueError("Invalid RAM unit '{}'".format(unit))
+        unit = u.Unit(unit)
+        
+        try:
+            batches[batch]["nodes"].append(int(nodes))
+            batches[batch]["cores"].append(int(cores))
+            batches[batch]["ram"].append(ram*unit)
+        except KeyError:
+            batches[batch]["nodes"] = [int(nodes)]
+            batches[batch]["cores"] = [int(cores)]
+            batches[batch]["ram"] = []
+        
+    return batches
+         
+if __name__ == "__main__":
+    qstat = subprocess.check_output(["qstat", "-a"])
+    qstat = qstat.split("\n")
+    batches = parse_qstat(qstat)
+    
+
+    totram = 0
+    totcores = 0
+    totnodes = 0
+
+    print("="*42)
+    print("Per batch:")
+    print("="*42)
+    for batch in sorted(batches.keys()):
+        cores = sum(batches[batch]["cores"])
+        nodes = sum(batches[batch]["nodes"])
+        ram = sum([q.to(u.Gbyte).value for q in batches[batch]["ram"]])
+
+        print(batch)
+        print("\t{} cores over {} nodes".format(cores, nodes))
+        print("\t{} GB RAM".format(ram))
+        print("-"*42)
+        
+        totcores += cores
+        totnodes += nodes
+        totram += ram
+    
+    print("\n")
+    print("="*42)
+    print("Total:")
+    print("="*42)
+    print("\t{} cores over {} nodes ({:.1f}%)".format(totcores, totnodes, totcores/1616.*100.))
+    print("\t{} GB RAM ({:.1f}%)".format(totram,totram/576.*100.))
+    print("-"*42)
+
