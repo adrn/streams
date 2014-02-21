@@ -44,10 +44,10 @@ satellite:
 
 # emcee
 walkers: 16
-burn_in: 0
-steps: 0
-iterate: 1
-steps_final: 100
+burn_in: 10
+burn_beta: 0.01
+cool_down: 10
+steps: 10
 thin_chain: False
 
 # satellite:
