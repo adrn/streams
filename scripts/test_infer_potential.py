@@ -21,7 +21,7 @@ import numpy as np
 import triangle
 
 # Project
-from streams.coordinates.frame import galactocentric
+from streams.coordinates.frame import galactocentric, heliocentric
 import streams.io as io
 from streams.io.sgr import SgrSimulation
 import streams.inference as si
@@ -37,7 +37,8 @@ name: test
 data_file: data/observed_particles/2.5e8_N1024.hdf5
 # nparticles: 4
 # particle_idx: [16, 194, 575, 702]
-nparticles: 8
+nparticles: 32
+# particle_idx: [16, 32, 64, 128]
 
 potential:
     class_name: LawMajewski2010
@@ -55,11 +56,11 @@ pot_params = """
 """
 
 ptc_params = """
-    parameters: [d]
+    parameters: [d, mul, mub, vr]
 """
 
 sat_params = """
-    parameters: [d, mul, mub, vr]
+    parameters: [d, mul, mub, vr, logmass]
 """
 
 lm10_c = minimum_config.format(potential_params=pot_params,
@@ -71,13 +72,13 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params=pot_params,
                                 particles_params="",
-                                satellite_params="")
+                                satellite_params=sat_params)
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
 
 Ncoarse = 21
-Nfine = 51
+Nfine = 71
 
 output_path = os.path.join(project_root, 'plots', 'tests', 'infer_potential')
 if not os.path.exists(output_path):
@@ -252,31 +253,31 @@ class TestStreamModel(object):
 
                 if group_name == "satellite":
 
-                    # if param_name == "logm0":
-                    #     print(truths)
-                    #     vals1 = np.linspace(param._prior.a,
-                    #                         param._prior.b,
-                    #                         Ncoarse)
-                    #     vals2 = np.linspace(0.9,1.1,Nfine)*truths
-                    #     fig = make_plot(model, idx, vals1, vals2)
-                    #     fig.savefig(os.path.join(test_path, "{}_{}.png".format(idx,param_name)))
-                    #     plt.close('all')
-                    #     idx += 1
+                    if param_name in heliocentric.coord_names:
+                        for jj in range(param.value.shape[0]):
+                            prior = model._prior_cache[("satellite",param_name)]
+                            truth = truths
 
-                    for jj in range(param.value.shape[0]):
-                        prior = model._prior_cache[("satellite",param_name)]
-                        truth = truths
+                            mu,sigma = truth,prior.sigma
+                            vals1 = np.linspace(mu-10*sigma,
+                                                mu+10*sigma,
+                                                Ncoarse)
+                            vals2 = np.linspace(mu-3*sigma,
+                                                mu+3*sigma,
+                                                Nfine)
+                            fig = make_plot(model, idx, vals1, vals2)
+                            fig.savefig(os.path.join(test_path,
+                                    "sat{}_{}.png".format(idx,param_name)))
+                            plt.close('all')
+                            idx += 1
 
-                        mu,sigma = truth,prior.sigma
-                        vals1 = np.linspace(mu-10*sigma,
-                                            mu+10*sigma,
+                    elif param_name == "logmass":
+                        vals1 = np.linspace(param._prior.a,
+                                            param._prior.b,
                                             Ncoarse)
-                        vals2 = np.linspace(mu-3*sigma,
-                                            mu+3*sigma,
-                                            Nfine)
+                        vals2 = np.linspace(0.9,1.1,Nfine)*truths
                         fig = make_plot(model, idx, vals1, vals2)
-                        fig.savefig(os.path.join(test_path,
-                                "sat{}_{}.png".format(idx,param_name)))
+                        fig.savefig(os.path.join(test_path, "sat{}_{}.png".format(idx,param_name)))
                         plt.close('all')
                         idx += 1
 
