@@ -22,6 +22,7 @@ import astropy.coordinates as coord
 import yaml
 
 # Project
+from ..inference import ModelParameter, LogUniformPrior
 from ..coordinates.frame import heliocentric, galactocentric
 from ..dynamics import Particle, ObservedParticle, Orbit
 from ..util import OrderedDictYAMLLoader
@@ -146,7 +147,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
                          frame=heliocentric,
                          units=[u.Unit(x) for x in ptcl["units"]])
             p.tub = true_tub
-            p.tail_bit = true_tail_bit
+            p.tail_bit = true_tail_bit # TODO: update tail_bit to be a modelparameter
         return_dict["particles"] = p
 
         if "error" in satl.keys():
@@ -157,13 +158,17 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
                                                      frame=heliocentric,
                                                      units=[u.Unit(x) for x in satl["units"]])
             return_dict["true_satellite"].mass = satl["m"].value
+            return_dict["true_satellite"].logmass = np.log(satl["m"].value)
             return_dict["true_satellite"].vdisp = satl["v_disp"].value
 
         else:
             s = Particle(satl["data"].value.T,
                          frame=heliocentric,
                          units=[u.Unit(x) for x in satl["units"]])
-        satl.mass = satl["m"].value
+        s.mass = satl["m"].value
+        s.logmass = ModelParameter(name="logmass",
+                                   truth=np.log(satl["m"].value),
+                                   prior=LogUniformPrior(13.85,22.))
         s.vdisp = satl["v_disp"].value
         return_dict["satellite"] = s
 
