@@ -18,7 +18,7 @@ import astropy.units as u
 
 # Project
 from .back_integrate import back_integration_likelihood
-from ..io import read_hdf5
+from ..coordinates.frame import heliocentric
 from .parameter import ModelParameter
 from .prior import *
 from ..util import _parse_quantity
@@ -99,6 +99,8 @@ class StreamModel(object):
             ----------
             config : dict
         """
+        from ..io import read_hdf5
+
         # load satellite and particle data
         logger.debug("Reading particle/satellite data from:\n\t{}".format(config["data_file"]))
         d = read_hdf5(config["data_file"],
@@ -140,36 +142,42 @@ class StreamModel(object):
         # Particle parameters
         if config['particles']['parameters']:
             logger.debug("Particle properties added as parameters:")
+
             for ii,name in enumerate(config["particles"]["parameters"]):
-                # prior = LogNormalPrior(particles[name].decompose(usys).value,
-                #                        particles.errors[name].decompose(usys).value)
-                priors = [LogCoordinatePrior(name) for ii in range(nparticles)]
-                X = ModelParameter(name,
-                                   value=particles[name].decompose(usys).value,
-                                   prior=priors,
-                                   truth=true_particles[name].decompose(usys).value)
-                model.add_parameter('particles', X)
-                logger.debug("\t\t{}".format(name))
+                if name in heliocentric.coord_names:
+                    # prior = LogNormalPrior(particles[name].decompose(usys).value,
+                    #                        particles.errors[name].decompose(usys).value)
+                    priors = [LogCoordinatePrior(name) for ii in range(nparticles)]
+                    X = ModelParameter(name,
+                                       value=particles[name].decompose(usys).value,
+                                       prior=priors,
+                                       truth=true_particles[name].decompose(usys).value)
+                    model.add_parameter('particles', X)
+                    logger.debug("\t\t{}".format(name))
+                else:
+                    p = getattr(paricles,name)
+                    logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a,
+                                                                             p._prior.b))
+                    model.add_parameter('particles', p)
 
         # Satellite parameters
         if config['satellite']['parameters']:
             logger.debug("Satellite properties added as parameters:")
             for ii,name in enumerate(config["satellite"]["parameters"]):
-                # prior = LogNormalPrior(satellite[name].decompose(usys).value,
-                #                        satellite.errors[name].decompose(usys).value)
-                X = ModelParameter(name,
-                                   value=satellite[name].decompose(usys).value,
-                                   prior=LogCoordinatePrior(name),
-                                   truth=true_satellite[name].decompose(usys).value)
-                model.add_parameter('satellite', X)
-                logger.debug("\t\t{}".format(name))
-
-            # if config['satellite']['parameters'].has_key('logm0'):
-            #     prior = LogUniformPrior(14, 23) # 2.5e6 to 2.5e10
-            #     logm0 = ModelParameter('logm0', value=19., prior=prior,
-            #                             truth=np.log(true_satellite.mass))
-            #     model.add_parameter('satellite', logm0)
-            #     logger.debug("\t\tlogm0 - log of satellite mass today")
+                if name in heliocentric.coord_names:
+                    # prior = LogNormalPrior(satellite[name].decompose(usys).value,
+                    #                        satellite.errors[name].decompose(usys).value)
+                    X = ModelParameter(name,
+                                       value=satellite[name].decompose(usys).value,
+                                       prior=LogCoordinatePrior(name),
+                                       truth=true_satellite[name].decompose(usys).value)
+                    model.add_parameter('satellite', X)
+                    logger.debug("\t\t{}".format(name))
+                else:
+                    p = getattr(satellite,name)
+                    logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a,
+                                                                             p._prior.b))
+                    model.add_parameter('satellite', p)
 
         return model
 
@@ -365,11 +373,10 @@ class StreamModel(object):
         s_hel = np.vstack(s_hel).T
 
         # satellite mass
-        # try:
-        #     logm0 = param_dict['satellite']['logm0']
-        # except KeyError:
-        #     logm0 = np.log(self.true_satellite.mass)
-        logm0 = np.log(self.true_satellite.mass)
+        try:
+            logmass = param_dict['satellite']['logmass']
+        except KeyError:
+            logmass = self.true_satellite.logmass
 
         # HACK
         tail_bit = self.true_particles.tail_bit
@@ -379,7 +386,7 @@ class StreamModel(object):
         t1, t2, dt = args[:3]
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_hel, s_hel,
-                                              logm0,
+                                              logmass,
                                               self.true_satellite.vdisp,
                                               tail_bit)
 
