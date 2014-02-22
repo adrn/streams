@@ -53,7 +53,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, s_vd
     p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
     s_mass = np.exp(logm0)
-    r_tide = potential._tidal_radius(s_mass, s_orbit)*1.4
+    r_tide = potential._tidal_radius(s_mass, s_orbit)
 
     p_x_hel = _gc_to_hel(p_orbits.reshape(ntimes*nparticles,6))
     #p_x_hel = p_x_hel.reshape(p_orbits.shape)
@@ -63,7 +63,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, s_vd
     s_R_orbit = np.sqrt(np.sum(rs[:,0]**2, axis=-1))[:,np.newaxis]
     a_pm = (s_R_orbit + r_tide*tail_bit[np.newaxis]) / s_R_orbit
 
-    sigma_r = 0.55
+    sigma_r = 0.65
     R = rs[:,1:] - a_pm[...,np.newaxis]*s_orbit[...,:3]
     r_term = -0.5*(6*np.log(sigma_r) + np.sum((R/sigma_r)**2,axis=-1))
 
