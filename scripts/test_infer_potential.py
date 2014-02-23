@@ -37,7 +37,7 @@ name: test
 data_file: data/observed_particles/2.5e8_N1024.hdf5
 # nparticles: 4
 # particle_idx: [16, 194, 575, 702]
-nparticles: 32
+nparticles: 16
 # particle_idx: [16, 32, 64, 128]
 
 potential:
@@ -62,6 +62,7 @@ ptc_params = """
 sat_params = """
     parameters: [d, mul, mub, vr, logmass]
 """
+#    parameters: [logmass]
 
 lm10_c = minimum_config.format(potential_params=pot_params,
                                particles_params="",
