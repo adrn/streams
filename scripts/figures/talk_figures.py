@@ -21,12 +21,13 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from matplotlib import rc_context, rcParams, cm
-from matplotlib.patches import Rectangle, Ellipse
+from matplotlib import rc_context, rcParams, cm, animation
+from matplotlib.patches import Rectangle, Ellipse, Circle
 import scipy.optimize as so
 
 from streams.integrate import LeapfrogIntegrator
 import streams.io as io
+from streams.io.sgr import SgrSimulation
 from streams.observation import apparent_magnitude
 from streams.observation.gaia import parallax_error, proper_motion_error
 from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
@@ -105,11 +106,10 @@ def sgr():
         plt.tight_layout(pad=0.)
         fig.savefig(os.path.join(plot_path, "sgr_black.pdf"), bbox_inches='tight', transparent=True)
 
-def rho(r, Rs):
-    rr = r/Rs
-    return 1/(rr*(1+rr)**2)
-
 def nfw():
+    def rho(r, Rs):
+        rr = r/Rs
+        return 1/(rr*(1+rr)**2)
 
     fig,ax = plt.subplots(1,1,figsize=(12,8))
     ax.plot(1,1)
@@ -128,6 +128,94 @@ def nfw():
     ax.spines['left'].set_color('k')
     fig.savefig(os.path.join(plot_path, "nfw.pdf"), transparent=True)
 
+def movies():
+
+    N = 5000
+    speedup = 10
+    _m = "2.5e9"
+    m = float(_m)
+    sgr = SgrSimulation(_m)
+    lm10_potential = LawMajewski2010()
+    filename = os.path.join(plot_path, "{}.mp4".format(_m))
+
+    p_bound = sgr.particles(N=0, expr="tub==0")
+    v_disp = np.sqrt(np.var(p_bound["vx"]) + np.var(p_bound["vy"]) + \
+                     np.var(p_bound["vz"])).value[0]
+
+    p = sgr.particles(N=N, expr="(tub!=0) & (tub<{})".format((5000*u.Myr).to(sgr.particle_units[0]/sgr.particle_units[-1]).value))
+    s = sgr.satellite()
+
+    X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
+    V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
+    integrator = LeapfrogIntegrator(lm10_potential._acceleration_at,
+                                    np.array(X), np.array(V),
+                                    args=(X.shape[0], np.zeros_like(X)))
+    ts, rs, vs = integrator.run(t1=sgr.t1, t2=0., dt=-1.)
+
+    s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+    p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+
+    full_diff = p_orbits-s_orbit
+    full_diff = full_diff
+    full_rel_r = np.sqrt(np.sum(full_diff[...,:3]**2, axis=-1))
+    full_rel_v = np.sqrt(np.sum(full_diff[...,3:]**2, axis=-1))
+
+    sat_r_tide = np.squeeze(lm10_potential._tidal_radius(m, s_orbit))*1.8
+    full_D_ps = np.sqrt((full_rel_r/sat_r_tide[:,np.newaxis])**2 + (full_rel_v/v_disp)**2)
+    D_ps = np.min(full_D_ps, axis=0)
+
+    idxx = np.ones(full_D_ps.shape[1]).astype(bool)
+    idx = []
+    for i in range(full_D_ps.shape[0]):
+        idxx = idxx & (full_D_ps[i] > 2.)
+        idx.append(idxx.copy())
+    idx = np.array(idx)
+
+    # First set up the figure, the axis, and the plot element we want to animate
+    rcparams = dict()
+    rcparams['lines.marker'] = '.'
+    rcparams['lines.markersize'] = 6.
+    rcparams['lines.linestyle'] = 'none'
+    rcparams['axes.facecolor'] = '#333333'
+    rcparams['fig.facecolor'] = rcparams['axes.facecolor']
+    rcparams['axes.edgecolor'] = rcparams['axes.facecolor']
+
+    with rc_context(rc=rcparams):
+        fig = plt.figure(figsize=(8,8))
+        ax = plt.axes(xlim=(-100, 100), ylim=(-100, 100))
+        line_p, = ax.plot([], [], color='#92c5de', alpha=0.5)
+        circ_s = Circle((0., 0.), radius=0., color='#b2182b', alpha=0.5)
+        ax.add_patch(circ_s)
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        # initialization function: plot the background of each frame
+        def init():
+            line_p.set_data([], [])
+            circ_s.center = (0.,0.)
+            circ_s.set_radius(0.)
+            return line_p,circ_s
+
+        # animation function.  This is called sequentially
+        def animate(ii):
+            i = ii*speedup
+            if i > idx.shape[0]:
+                i = -1
+
+            line_p.set_data(full_diff[i,idx[i],0], full_diff[i,idx[i],2])
+            circ_s.center = (0.,0.)
+            circ_s.set_radius(sat_r_tide[i])
+            ax.set_title("{:.2f} Myr".format(ts[i]))
+            return line_p,circ_s
+
+        # call the animator.  blit=True means only re-draw the parts that have changed.
+        frames = full_diff.shape[0]//speedup + 1
+        anim = animation.FuncAnimation(fig, animate, init_func=init,
+                                       frames=frames, interval=20, blit=True) # frame=6248
+        anim.save(filename, fps=20, extra_args=['-vcodec', 'libx264'],
+                  savefig_kwargs=dict(facecolor=rcParams['fig.facecolor']))
+
 if __name__ == "__main__":
     #sgr()
-    nfw()
+    #nfw()
+    movies()
