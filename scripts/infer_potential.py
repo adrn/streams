@@ -35,6 +35,32 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
+_label_map = defaultdict(lambda: lambda x: x)
+_label_map['q1'] = "$q_1$"
+_label_map['q2'] = "$q_2$"
+_label_map['qz'] = "$q_z$",
+_label_map['phi'] = r"$\phi$ [deg]"
+_label_map['v_halo'] = r"$v_h$ [km/s]"
+_label_map['R_halo'] = r"$R_h$ [kpc]"
+_label_map['l'] = "$l$ [deg]"
+_label_map['b'] = "$b$ [deg]"
+_label_map['d'] = "$d$ [kpc]"
+_label_map['mul'] = r"$\mu_l$ [mas/yr]"
+_label_map['mub'] = r"$\mu_b$ [mas/yr]"
+_label_map['vr'] = r"$v_r$ [km/s]"
+_label_map['logmass'] = r"$\log M$"
+
+_unit_transform = defaultdict(lambda: lambda x: x)
+_unit_transform['phi'] = lambda x: (x*u.rad).to(u.degree).value
+_unit_transform["v_halo"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
+_unit_transform["R_halo"] = lambda x: (x*u.kpc).to(u.kpc).value
+_unit_transform["l"] = lambda x: (x*u.rad).to(u.degree).value
+_unit_transform["b"] = lambda x: (x*u.rad).to(u.degree).value
+_unit_transform["d"] = lambda x: (x*u.kpc).to(u.kpc).value
+_unit_transform["mul"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
+_unit_transform["mub"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
+_unit_transform["vr"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
+
 def main(config_file, mpi=False, threads=None, overwrite=False):
     """ TODO: """
 
@@ -228,23 +254,6 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         plt.close('all')
 
     if plot_config.get("posterior", False):
-        _label_map = dict(q1="$q_1$", q2="$q_2$", qz="$q_z$",
-                          phi=r"$\phi$ [deg]", v_halo=r"$v_h$ [km/s]", R_halo=r"$R_h$ [kpc]",
-                          l="$l$ [deg]", b="$b$ [deg]", d="$d$ [kpc]",
-                          mul=r"$\mu_l$ [mas/yr]", mub=r"$\mu_b$ [mas/yr]", vr=r"$v_r$ [km/s]")
-        _label_map['logmass'] = r"$\log M$"
-
-        _unit_transform = defaultdict(lambda: lambda x: x)
-        _unit_transform['phi'] = lambda x: (x*u.rad).to(u.degree).value
-        _unit_transform["v_halo"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
-        _unit_transform["R_halo"] = lambda x: (x*u.kpc).to(u.kpc).value
-        _unit_transform["l"] = lambda x: (x*u.rad).to(u.degree).value
-        _unit_transform["b"] = lambda x: (x*u.rad).to(u.degree).value
-        _unit_transform["d"] = lambda x: (x*u.kpc).to(u.kpc).value
-        _unit_transform["mul"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
-        _unit_transform["mub"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
-        _unit_transform["vr"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
-
         logger.debug("Plotting posterior distributions...")
 
         flatchain_dict = model.label_flatchain(thin_flatchain)
