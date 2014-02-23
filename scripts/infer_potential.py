@@ -232,6 +232,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                           phi=r"$\phi$ [deg]", v_halo=r"$v_h$ [km/s]", R_halo=r"$R_h$ [kpc]",
                           l="$l$ [deg]", b="$b$ [deg]", d="$d$ [kpc]",
                           mul=r"$\mu_l$ [mas/yr]", mub=r"$\mu_b$ [mas/yr]", vr=r"$v_r$ [km/s]")
+        _label_map['logmass'] = r"$\log M$"
 
         _unit_transform = defaultdict(lambda: lambda x: x)
         _unit_transform['phi'] = lambda x: (x*u.rad).to(u.degree).value
@@ -324,7 +325,10 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
                 this_flatchain[:,ii] = f(np.squeeze(flatchain_dict['satellite'][pname][:,jj]))
                 this_p0[:,ii] = f(np.squeeze(p0_dict['satellite'][pname][:,jj]))
-                this_truths.append(f(p.truth[jj]))
+                try:
+                    this_truths.append(f(p.truth[jj]))
+                except IndexError:
+                    this_truths.append(f(p.truth))
                 #this_extents.append((f(p._prior.a), f(p._prior.b)))
 
             fig = triangle.corner(this_p0,
