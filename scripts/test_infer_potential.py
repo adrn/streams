@@ -16,6 +16,7 @@ import time
 import astropy.units as u
 from astropy.utils import isiterable
 import h5py
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import triangle
@@ -28,6 +29,8 @@ import streams.inference as si
 import streams.potential as sp
 from streams.util import project_root
 
+matplotlib.rc('lines', marker=None, linestyle='-')
+
 # Create logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -35,10 +38,9 @@ logging.basicConfig(level=logging.DEBUG)
 minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8_N1024.hdf5
-# nparticles: 4
-# particle_idx: [16, 194, 575, 702]
-nparticles: 16
-# particle_idx: [16, 32, 64, 128]
+nparticles: 4
+particle_idx: [16, 32, 64, 128]
+# nparticles: 16
 
 potential:
     class_name: LawMajewski2010
@@ -60,7 +62,7 @@ ptc_params = """
 """
 
 sat_params = """
-    parameters: [d, mul, mub, vr, logmass]
+    parameters: [logmass, d]
 """
 #    parameters: [logmass]
 
@@ -282,70 +284,70 @@ class TestStreamModel(object):
                         plt.close('all')
                         idx += 1
 
+    def test_twod(self):
+        sat_params = """
+    parameters: [logmass,d]
+        """
+        _config = minimum_config.format(potential_params="",
+                                        particles_params="",
+                                        satellite_params=sat_params)
+        config = io.read_config(_config)
+        model = si.StreamModel.from_config(config)
+        model.sample_priors()
+        truth_dict = model._decompose_vector(model.truths)
 
-    def test_apw(self):
-        c = io.read_config(_configs[3])
-        model = si.StreamModel.from_config(c)
+        nbins = 12
+        logmass_vals = np.linspace(0.95,1.05,nbins)*truth_dict['satellite']['logmass']
+        d_vals = np.linspace(0.95,1.05,nbins)*truth_dict['satellite']['d']
 
-        p = np.array([1.1515709829358736, 1.3061651589219028, 1.6554345936276273, 0.12323310142846752, 3.0522815366139735, -0.57442121586774952, 36.751323505513533, 0.0066999310241279029, -0.0042394488370680371, -0.19422152398249989, -2.1543975690443853, 1.0121210540890484, 38.821645607755585, 0.0010389207842562375, -0.0062815802063840367, -0.009289155208715285, 5306.9338333741944, 1187.7455521689817])
+        vals = []
+        X,Y = np.meshgrid(logmass_vals, d_vals)
+        for x,y in zip(X.ravel(), Y.ravel()):
+            lp = model(np.array([x,y]))
+            vals.append(lp)
+        vals = np.array(vals)
+        vals = vals.reshape(nbins, nbins)
 
-        print(list(model.truths))
-        print(list(model.parameters['particles']['_X']._prior[0].mu) + \
-              list(model.parameters['particles']['_X']._prior[1].mu))
-        print(list(model.parameters['particles']['_X']._prior[0].sigma) + \
-              list(model.parameters['particles']['_X']._prior[1].sigma))
+        plt.clf()
+        plt.pcolor(X,Y,vals)
+        plt.axvline(truth_dict['satellite']['logmass'])
+        plt.axhline(truth_dict['satellite']['d'])
+        plt.savefig(os.path.join(output_path, "log_twod.png"))
 
-        #print(model(p))
+        vals = np.exp(vals-np.max(vals))
+        plt.clf()
+        plt.pcolor(X,Y,vals)
+        plt.axvline(truth_dict['satellite']['logmass'])
+        plt.axhline(truth_dict['satellite']['d'])
+        plt.savefig(os.path.join(output_path, "twod.png"))
 
-        return
+    def test_sanity(self):
+        sat_params = """
+    parameters: [logmass,d]
+        """
+        _config = minimum_config.format(potential_params="",
+                                        particles_params="",
+                                        satellite_params=sat_params)
+        config = io.read_config(_config)
+        model = si.StreamModel.from_config(config)
+        model.sample_priors()
+        truth_dict = model._decompose_vector(model.truths)
 
-        for jj,truth in enumerate(model.truths):
-            fig,axes = plt.subplots(1,2,figsize=(12,6))
+        v1 = model(model.truths)
 
-            p = model.truths.copy()
-            vals = truth*np.linspace(0.25, 1.75, 51)
-            Ls = []
-            for val in vals:
-                p[jj] = val
-                Ls.append(model(p))
-            axes[0].plot(vals, Ls)
+        sat_params = """
+    parameters: [d]
+        """
+        _config = minimum_config.format(potential_params="",
+                                        particles_params="",
+                                        satellite_params=sat_params)
+        config = io.read_config(_config)
+        model = si.StreamModel.from_config(config)
+        model.sample_priors()
+        truth_dict = model._decompose_vector(model.truths)
+        v2 = model(model.truths)
 
-            p = model.truths.copy()
-            vals = truth*np.linspace(0.9, 1.1, 121)
-            Ls = []
-            for val in vals:
-                p[jj] = val
-                Ls.append(model(p))
-
-            logger.debug("{} vs truth {}".format(vals[np.argmax(Ls)], truth))
-            logger.debug("{:.2f}% off".format(abs(vals[np.argmax(Ls)] - truth)/truth*100.))
-
-            axes[1].plot(vals, Ls)
-            axes[0].axvline(truth)
-            axes[1].axvline(truth)
-
-            fig.savefig(os.path.join(test_path, "log_test_{}.png".format(jj)))
-
-            # plt.clf()
-            # plt.plot(vals, np.exp(Ls))
-            # plt.axvline(truth)
-            # plt.savefig(os.path.join(test_path, "test_{}.png".format(jj)))
-
-
-def time_likelihood(model, potential, niter=100):
-    for ii in range(niter):
-        ll = si.back_integration_likelihood(model.lnpargs[0],
-                                            model.lnpargs[1],
-                                            model.lnpargs[2],
-                                            potential,
-                                            model.true_particles._X,
-                                            model.true_satellite._X,
-                                            model.true_satellite.mass,
-                                            model.true_satellite.vdisp)
-
-def time_posterior(model, niter=100):
-    for ii in range(niter):
-        model(model.truths)
+        print(v1, v2)
 
 if __name__ == "__main__":
     import cProfile
