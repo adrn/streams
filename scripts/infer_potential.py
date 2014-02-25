@@ -262,6 +262,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         potential_group = model.parameters.get('potential', None)
         particles_group = model.parameters.get('particles', None)
         satellite_group = model.parameters.get('satellite', None)
+        flatchains = dict()
 
         if potential_group:
             this_flatchain = np.zeros((len(thin_flatchain),len(potential_group)))
@@ -292,6 +293,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                         point_kwargs=dict(color='k',alpha=1.),
                         hist_kwargs=dict(color='k',alpha=0.75,normed=True,bins=50))
             fig.savefig(os.path.join(output_path, "potential.{}".format(plot_ext)))
+
+            flatchains['potential'] = this_flatchain
 
         nparticles = model.true_particles.nparticles
         if particles_group:
@@ -355,6 +358,18 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                         point_kwargs=dict(color='k',alpha=1.),
                         hist_kwargs=dict(color='k',alpha=0.75,normed=True,bins=50))
             fig.savefig(os.path.join(output_path, "satellite.{}".format(plot_ext)))
+
+            flatchains['satellite'] = this_flatchain
+
+        if flatchains.has_key('potential') and flatchains.has_key('satellite'):
+            this_flatchain = np.hstack((flatchains['potential'],flatchains['satellite']))
+            labels = [_label_map[k] for k in potential_group.keys()+satellite_group.keys()]
+            fig = triangle.corner(this_flatchain,
+                        labels=labels,
+                        point_kwargs=dict(color='k',alpha=1.),
+                        hist_kwargs=dict(color='k',alpha=0.75,normed=True,bins=50))
+            fig.savefig(os.path.join(output_path, "suck-it-up.{}".format(plot_ext)))
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
