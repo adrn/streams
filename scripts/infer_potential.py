@@ -101,7 +101,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers)
-        if config.get("start_truth", True):
+        if config.get("start_truth", False):
             p0 = np.random.normal(model.truths,
                                   np.std(p0,axis=0)/10.,
                                   size=p0.shape)
