@@ -351,26 +351,50 @@ class StreamModel(object):
         #         except KeyError:
         #             p_hel.append(self.particles[k].decompose(usys).value)
 
-        data_like = 0.
+        W_ij = []
+        D_ij = []
+        sig_ij = []
+        #data_like = 0.
         for k in ['l','b','d','mul','mub','vr']:
             try:
                 p_hel.append(param_dict['particles'][k])
-                fn = self._prior_cache[('particles',k)]
-                data_like += fn(param_dict['particles'][k])
+                W_ij.append(param_dict['particles'][k])
+                D_ij.append(self.particles[k].decompose(usys).value)
+                sig_ij.append(self.particles.errors[k].decompose(usys).value)
+                # fn = self._prior_cache[('particles',k)]
+                # data_like += fn(param_dict['particles'][k])
             except KeyError:
                 p_hel.append(self.true_particles[k].decompose(usys).value)
         p_hel = np.vstack(p_hel).T
 
+        W_ij = np.array(W_ij)
+        D_ij = np.array(D_ij)
+        sig_ij = np.array(sig_ij)
+        data_like = -W_ij.shape[0]/2.*np.log(2*np.pi) - \
+                     np.sum(0.5*(np.log(sig_ij**2) + ((W_ij - D_ij)/sig_ij)**2), axis=0)
+
         # heliocentric satellite positions
         s_hel = []
+        W_j = []
+        D_j = []
+        sig_j = []
         for k in ['l','b','d','mul','mub','vr']:
             try:
                 s_hel.append(param_dict['satellite'][k])
-                fn = self._prior_cache[('satellite',k)]
-                data_like += fn(param_dict['satellite'][k])
+                # fn = self._prior_cache[('satellite',k)]
+                # data_like += fn(param_dict['satellite'][k])
+                W_j.append(param_dict['satellite'][k])
+                D_j.append(self.satellite[k].decompose(usys).value)
+                sig_j.append(self.satellite.errors[k].decompose(usys).value)
             except KeyError:
                 s_hel.append(self.true_satellite[k].decompose(usys).value)
         s_hel = np.vstack(s_hel).T
+
+        W_j = np.array(W_j)
+        D_j = np.squeeze(D_j)
+        sig_j = np.squeeze(sig_j)
+        sat_like = -W_j.shape[0]/2.*np.log(2*np.pi) - \
+                    np.sum(0.5*(np.log(sig_j**2) + ((W_j - D_j)/sig_j)**2), axis=0)
 
         # satellite mass
         try:
@@ -390,7 +414,13 @@ class StreamModel(object):
                                               self.true_satellite.vdisp,
                                               tail_bit)
 
-        return np.sum(ln_like) + data_like
+        # print("data / back-integrate", data_like / ln_like)
+        # print("sat", sat_like)
+        # print("sum", np.sum(ln_like + data_like) + sat_like)
+        # print("\n"*2)
+
+        #return ln_like + data_like + sat_like
+        return np.sum(ln_like + data_like) + sat_like
 
     def ln_posterior(self, p, *args):
 
