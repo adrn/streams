@@ -26,7 +26,7 @@ potential:
     parameters: [q1, qz, phi, v_halo]
 
 particles:
-#    parameters: [d]
+    parameters: [d]
 #    parameters: [l, b, d, mul, mub, vr]
 
 satellite:
@@ -43,6 +43,7 @@ satellite:
 #    vr - uniform
 
 # emcee
+start_truth: True
 walkers: 32
 burn_in: 500
 burn_beta: 0.00001
