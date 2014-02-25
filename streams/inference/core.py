@@ -249,6 +249,9 @@ class StreamModel(object):
 
                         p0[ii,ix1:ix1+param.size] = np.ravel(prior.sample().T)
 
+                    #else:
+                    #    self._prior_cache[(group_name,param_name)] = prior
+
                     ix1 += param.size
 
         return np.squeeze(p0)
@@ -377,7 +380,13 @@ class StreamModel(object):
         try:
             tub = param_dict['particles']['tub']
         except KeyError:
-            tub = self.true_satellite.tub
+            tub = self.particles.tub.truth
+
+        # particle unbinding time
+        try:
+            tail_bit = param_dict['particles']['tail_bit']
+        except KeyError:
+            tail_bit = self.particles.tail_bit.truth
 
         # heliocentric satellite positions
         s_hel = []
@@ -406,10 +415,7 @@ class StreamModel(object):
         try:
             logmass = param_dict['satellite']['logmass']
         except KeyError:
-            logmass = self.true_satellite.logmass
-
-        # HACK
-        tail_bit = self.true_particles.tail_bit
+            logmass = self.satellite.logmass.truth
 
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
