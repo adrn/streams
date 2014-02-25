@@ -31,7 +31,8 @@ class ModelParameter(u.Quantity):
         try:
             value = value.decompose(usys)
         except:
-            pass
+            value = np.zeros_like(truth)
+            value[...] = np.nan
 
         self = super(ModelParameter, cls).__new__(cls, value)
 
