@@ -101,6 +101,11 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers)
+        if config.get("start_truth", True):
+            p0 = np.random.normal(model.truths,
+                                  np.std(p0,axis=0)/10.,
+                                  size=p0.shape)
+
         logger.debug("Priors sampled...")
 
         if nburn > 0:
