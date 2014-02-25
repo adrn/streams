@@ -23,16 +23,15 @@ dt: -1.
 
 potential:
     class_name: LawMajewski2010
-    parameters: [q1, qz, phi, v_halo]
+    parameters: [q1, qz]
+#    parameters: [q1, qz, phi, v_halo]
 
 particles:
-    parameters: [d]
+    parameters: [d, tub]
 #    parameters: [l, b, d, mul, mub, vr]
 
 satellite:
-    parameters: [d, mul, mub, vr, logmass]
-
-# TODO: logm0
+#    parameters: [d, mul, mub, vr, logmass]
 
 # priors should be
 #    l - uniform in cos(l)
@@ -43,12 +42,12 @@ satellite:
 #    vr - uniform
 
 # emcee
-start_truth: True
+start_truth: False
 walkers: 32
-burn_in: 500
-burn_beta: 0.00001
-cool_down: 500
-steps: 500
+burn_in: 10
+burn_beta: 0.0001
+cool_down: 0
+steps: 5
 thin_chain: False
 
 # satellite:
