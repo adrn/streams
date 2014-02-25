@@ -38,8 +38,8 @@ logging.basicConfig(level=logging.DEBUG)
 minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8_N1024.hdf5
-nparticles: 4
-particle_idx: [16, 32, 64, 128]
+nparticles: 8
+particle_idx: [62, 151, 247, 47, 9, 215, 137, 200]
 # nparticles: 16
 
 potential:
@@ -58,11 +58,12 @@ pot_params = """
 """
 
 ptc_params = """
-    parameters: [d, mul, mub, vr]
+    parameters: [d, mul]
 """
+#    parameters: [d, mul, mub, vr]
 
 sat_params = """
-    parameters: [logmass, d]
+    parameters: [logmass, mul, mub, vr, d]
 """
 #    parameters: [logmass]
 
@@ -73,7 +74,7 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 # _config = minimum_config.format(potential_params=pot_params,
 #                                 particles_params=ptc_params,
 #                                 satellite_params=sat_params)
-_config = minimum_config.format(potential_params=pot_params,
+_config = minimum_config.format(potential_params="",
                                 particles_params="",
                                 satellite_params=sat_params)
 
@@ -123,6 +124,7 @@ class TestStreamModel(object):
     def setup(self):
         config = io.read_config(_config)
         self.model = si.StreamModel.from_config(config)
+        self.model.sample_priors()
 
     def test_simple(self):
 
@@ -285,9 +287,13 @@ class TestStreamModel(object):
                         idx += 1
 
     def test_twod(self):
+
+        x_param = 'mul'
+        y_param = 'mub'
+
         sat_params = """
-    parameters: [logmass,d]
-        """
+    parameters: [{}, {}]
+        """.format(x_param, y_param)
         _config = minimum_config.format(potential_params="",
                                         particles_params="",
                                         satellite_params=sat_params)
@@ -297,11 +303,11 @@ class TestStreamModel(object):
         truth_dict = model._decompose_vector(model.truths)
 
         nbins = 12
-        logmass_vals = np.linspace(0.95,1.05,nbins)*truth_dict['satellite']['logmass']
-        d_vals = np.linspace(0.95,1.05,nbins)*truth_dict['satellite']['d']
+        x_vals = np.linspace(0.95,1.05,nbins)*truth_dict['satellite'][x_param]
+        y_vals = np.linspace(0.95,1.05,nbins)*truth_dict['satellite'][y_param]
 
         vals = []
-        X,Y = np.meshgrid(logmass_vals, d_vals)
+        X,Y = np.meshgrid(x_vals, y_vals)
         for x,y in zip(X.ravel(), Y.ravel()):
             lp = model(np.array([x,y]))
             vals.append(lp)
@@ -310,16 +316,16 @@ class TestStreamModel(object):
 
         plt.clf()
         plt.pcolor(X,Y,vals)
-        plt.axvline(truth_dict['satellite']['logmass'])
-        plt.axhline(truth_dict['satellite']['d'])
-        plt.savefig(os.path.join(output_path, "log_twod.png"))
+        plt.axvline(truth_dict['satellite'][x_param])
+        plt.axhline(truth_dict['satellite'][y_param])
+        plt.savefig(os.path.join(output_path, "log_twod_{}_{}.png".format(x_param, y_param)))
 
         vals = np.exp(vals-np.max(vals))
         plt.clf()
         plt.pcolor(X,Y,vals)
-        plt.axvline(truth_dict['satellite']['logmass'])
-        plt.axhline(truth_dict['satellite']['d'])
-        plt.savefig(os.path.join(output_path, "twod.png"))
+        plt.axvline(truth_dict['satellite'][x_param])
+        plt.axhline(truth_dict['satellite'][y_param])
+        plt.savefig(os.path.join(output_path, "twod_{}_{}.png".format(x_param, y_param)))
 
     def test_sanity(self):
         sat_params = """
