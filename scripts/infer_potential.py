@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 _label_map = defaultdict(lambda: lambda x: x)
 _label_map['q1'] = "$q_1$"
 _label_map['q2'] = "$q_2$"
-_label_map['qz'] = "$q_z$",
+_label_map['qz'] = "$q_z$"
 _label_map['phi'] = r"$\phi$ [deg]"
 _label_map['v_halo'] = r"$v_h$ [km/s]"
 _label_map['R_halo'] = r"$R_h$ [kpc]"
@@ -113,10 +113,10 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
 
             if burn_beta != 1 and ncool_down > 0:
-                #best_idx = sampler.flatlnprobability.argmax()
-                #best_pos = sampler.flatchain[best_idx]
+                best_idx = sampler.flatlnprobability.argmax()
+                best_pos = sampler.flatchain[best_idx]
 
-                best_pos = np.median(sampler.flatchain, axis=0)
+                #best_pos = np.median(sampler.flatchain, axis=0)
                 std = np.std(p0, axis=0) / 10.
                 pos = np.array([np.random.normal(best_pos, std) \
                                 for kk in range(nwalkers)])
@@ -276,6 +276,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                 this_p0[:,ii] = f(np.squeeze(p0_dict['potential'][pname]))
                 this_truths.append(f(p.truth))
                 this_extents.append((f(p._prior.a), f(p._prior.b)))
+
+                print(pname, np.median(this_flatchain[:,ii]), np.std(this_flatchain[:,ii]))
 
             fig = triangle.corner(this_p0,
                         point_kwargs=dict(color='#2b8cbe',alpha=0.1),
