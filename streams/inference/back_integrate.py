@@ -63,12 +63,16 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, s_vd
     s_R_orbit = np.sqrt(np.sum(rs[:,0]**2, axis=-1))[:,np.newaxis]
     a_pm = (s_R_orbit + r_tide*tail_bit[np.newaxis]) / s_R_orbit
 
+    M_enc = potential._enclosed_mass(s_R_orbit)
+    vdisp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * (s_mass/M_enc)**(0.33333333)
+
     sigma_r = r_tide
     R = rs[:,1:] - a_pm[...,np.newaxis]*s_orbit[...,:3]
     r_term = -0.5*(6*np.log(sigma_r) + np.sum((R/sigma_r[...,np.newaxis])**2,axis=-1))
 
-    sigma_v = s_vdisp
+    #sigma_v = s_vdisp
+    sigma_v = vdisp
     V = vs[:,1:] - s_orbit[...,3:]
-    v_term = -0.5*(6*np.log(sigma_v) + np.sum((V/sigma_v)**2,axis=-1))
+    v_term = -0.5*(6*np.log(sigma_v) + np.sum((V/sigma_v[...,np.newaxis])**2,axis=-1))
 
     return logsumexp(r_term + v_term + jac1, axis=0)
