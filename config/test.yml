@@ -7,13 +7,14 @@ name: test
 # plots / output
 plot:
     mcmc_diagnostics: True
-    posterior: False
+    posterior: True
     ext: png
 #output_path: /tmp
 
 # data
 data_file: data/observed_particles/2.5e8_N1024.hdf5
 nparticles: 8
+particle_idx: [62, 151, 247, 47, 9, 215, 137, 200]
 
 # integration
 dt: -1.
@@ -29,7 +30,7 @@ particles:
 #    parameters: [l, b, d, mul, mub, vr]
 
 satellite:
-    parameters: [d, mul, mub, logmass]
+    parameters: [d, mul, mub, vr, logmass]
 
 # TODO: logm0
 
@@ -42,11 +43,11 @@ satellite:
 #    vr - uniform
 
 # emcee
-walkers: 24
-burn_in: 100
-burn_beta: 0.01
-cool_down: 20
-steps: 100
+walkers: 32
+burn_in: 500
+burn_beta: 0.00001
+cool_down: 500
+steps: 500
 thin_chain: False
 
 # satellite:
