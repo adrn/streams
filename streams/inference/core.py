@@ -155,7 +155,7 @@ class StreamModel(object):
                     model.add_parameter('particles', X)
                     logger.debug("\t\t{}".format(name))
                 else:
-                    p = getattr(paricles,name)
+                    p = getattr(particles,name)
                     logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a,
                                                                              p._prior.b))
                     model.add_parameter('particles', p)
@@ -373,6 +373,12 @@ class StreamModel(object):
         data_like = -W_ij.shape[0]/2.*np.log(2*np.pi) - \
                      np.sum(0.5*(np.log(sig_ij**2) + ((W_ij - D_ij)/sig_ij)**2), axis=0)
 
+        # particle unbinding time
+        try:
+            tub = param_dict['particles']['tub']
+        except KeyError:
+            tub = self.true_satellite.tub
+
         # heliocentric satellite positions
         s_hel = []
         W_j = []
@@ -411,15 +417,9 @@ class StreamModel(object):
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_hel, s_hel,
                                               logmass,
-                                              self.true_satellite.vdisp,
+                                              tub,
                                               tail_bit)
 
-        # print("data / back-integrate", data_like / ln_like)
-        # print("sat", sat_like)
-        # print("sum", np.sum(ln_like + data_like) + sat_like)
-        # print("\n"*2)
-
-        #return ln_like + data_like + sat_like
         return np.sum(ln_like + data_like) + sat_like
 
     def ln_posterior(self, p, *args):
