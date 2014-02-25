@@ -128,8 +128,16 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
         if particle_idx is None:
             particle_idx = np.arange(0, nparticles, dtype=int)
 
-        true_tub = ptcl["tub"].value
-        true_tail_bit = ptcl["tail_bit"].value
+        true_tub = ptcl["tub"].value[particle_idx]
+        true_tail_bit = ptcl["tail_bit"].value[particle_idx]
+
+        tub = ModelParameter(name="tub",
+                             truth=true_tub,
+                             prior=LogUniformPrior([0.]*nparticles,[6266.]*nparticles))
+        tail_bit = ModelParameter(name="tail_bit",
+                                  truth=true_tail_bit,
+                                  prior=LogUniformPrior([-1.]*nparticles,[1.]*nparticles))
+
         if "error" in ptcl.keys():
             p = ObservedParticle(ptcl["data"].value[particle_idx].T,
                                  ptcl["error"].value[particle_idx].T,
@@ -139,15 +147,16 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
             true_p = Particle(ptcl["true_data"].value[particle_idx].T,
                               frame=heliocentric,
                               units=[u.Unit(x) for x in ptcl["units"]])
-            true_p.tub = true_tub[particle_idx]
-            true_p.tail_bit = true_tail_bit[particle_idx]
+            true_p.tub = true_tub
+            true_p.tail_bit = true_tail_bit
             return_dict["true_particles"] = true_p
         else:
             p = Particle(ptcl["data"].value.T,
                          frame=heliocentric,
                          units=[u.Unit(x) for x in ptcl["units"]])
-            p.tub = true_tub
-            p.tail_bit = true_tail_bit # TODO: update tail_bit to be a modelparameter
+
+        p.tub = tub
+        p.tail_bit = tail_bit # TODO: update tail_bit to be a modelparameter
         return_dict["particles"] = p
 
         if "error" in satl.keys():
