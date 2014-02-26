@@ -136,7 +136,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
                              prior=LogUniformPrior([0.]*nparticles,[6266.]*nparticles))
         tail_bit = ModelParameter(name="tail_bit",
                                   truth=true_tail_bit,
-                                  prior=LogUniformPrior([-1.]*nparticles,[1.]*nparticles))
+                                  prior=LogUniformPrior([-2.]*nparticles,[2.]*nparticles))
 
         if "error" in ptcl.keys():
             p = ObservedParticle(ptcl["data"].value[particle_idx].T,
