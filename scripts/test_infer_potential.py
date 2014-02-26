@@ -58,12 +58,12 @@ pot_params = """
 """
 
 ptc_params = """
-    parameters: [tub]
+    parameters: [d]
 """
 #    parameters: [d, mul, mub, vr]
 
 sat_params = """
-    parameters: [logmass, mul, mub, vr, d]
+    parameters: [logmass, d, mul, mub, vr]
 """
 #    parameters: [logmass]
 
@@ -71,12 +71,12 @@ lm10_c = minimum_config.format(potential_params=pot_params,
                                particles_params="",
                                satellite_params="")
 
-# _config = minimum_config.format(potential_params=pot_params,
-#                                 particles_params=ptc_params,
-#                                 satellite_params=sat_params)
-_config = minimum_config.format(potential_params="",
+_config = minimum_config.format(potential_params=pot_params,
                                 particles_params=ptc_params,
-                                satellite_params="")
+                                satellite_params=sat_params)
+# _config = minimum_config.format(potential_params="",
+#                                 particles_params=ptc_params,
+#                                 satellite_params="")
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
