@@ -57,7 +57,8 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, tub,
     s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
 
     s_mass = np.exp(logm0)
-    r_tide = potential._tidal_radius(s_mass, s_orbit)*0.69336 #*1.4
+    #r_tide = potential._tidal_radius(s_mass, s_orbit)*0.69336 #*1.4
+    r_tide = potential._tidal_radius(s_mass, s_orbit)*1.4
 
     p_x_hel = _gc_to_hel(p_orbits)
     jac1 = _xyz_sph_jac(p_x_hel)
@@ -65,8 +66,9 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, tub,
     s_R_orbit = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
     a_pm = (s_R_orbit + r_tide*tail_bit) / s_R_orbit
 
-    M_enc = potential._enclosed_mass(s_R_orbit)
-    vdisp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * (s_mass/(3*M_enc))**(0.33333333)
+    f = r_tide / s_R_orbit
+    vdisp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * f / 1.4
+    #vdisp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * (s_mass/(3*M_enc))**(0.33333333)
 
     sigma_r = r_tide
     R = p_orbits[:,:3] - (a_pm[:,np.newaxis]*s_orbit[:,:3])
