@@ -35,7 +35,7 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-_label_map = defaultdict(lambda x: x)
+_label_map = defaultdict(lambda: "")
 _label_map['q1'] = "$q_1$"
 _label_map['q2'] = "$q_2$"
 _label_map['qz'] = "$q_z$"
