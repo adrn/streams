@@ -75,7 +75,9 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     sim_time = simulation.particle_units[0]/simulation.particle_units[-1]
 
     # HACK HACK HACK
-    selection_expr = "(tub!=0) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<50)".format((6000*u.Myr).to(sim_time).value)
+    selection_expr = "(tub!=0) & (tub>{}) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<50)"\
+                     .format((2000*u.Myr).to(sim_time).value,
+                             (5200*u.Myr).to(sim_time).value)
     particles = simulation.particles(N=N, expr=selection_expr)
 
     logger.debug("Read in {} particles with expr='{}'"\
