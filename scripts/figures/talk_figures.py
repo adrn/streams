@@ -24,6 +24,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib import rc_context, rcParams, cm, animation
 from matplotlib.patches import Rectangle, Ellipse, Circle
 import scipy.optimize as so
+from scipy.stats import chi2
 
 from streams.integrate import LeapfrogIntegrator
 import streams.io as io
@@ -128,94 +129,122 @@ def nfw():
     ax.spines['left'].set_color('k')
     fig.savefig(os.path.join(plot_path, "nfw.pdf"), transparent=True)
 
-def movies():
+def q_p(**kwargs):
 
-    N = 5000
-    speedup = 10
-    _m = "2.5e9"
-    m = float(_m)
-    sgr = SgrSimulation(_m)
-    lm10_potential = LawMajewski2010()
-    filename = os.path.join(plot_path, "{}.mp4".format(_m))
+    filename = os.path.join(plot_path, "q_p.pdf")
+    fig,axes = plt.subplots(2,4,figsize=(14,7.5),
+                            sharex=True, sharey=True)
 
-    p_bound = sgr.particles(N=0, expr="tub==0")
-    v_disp = np.sqrt(np.var(p_bound["vx"]) + np.var(p_bound["vy"]) + \
-                     np.var(p_bound["vz"])).value[0]
+    bins = np.linspace(0.,10,40)
+    nparticles = 5000
+    for kk,_m in enumerate(range(6,9+1)):
+        mass = "2.5e{}".format(_m)
+        m = float(mass)
+        print(mass)
 
-    p = sgr.particles(N=N, expr="(tub!=0) & (tub<{})".format((5000*u.Myr).to(sgr.particle_units[0]/sgr.particle_units[-1]).value))
-    s = sgr.satellite()
+        sgr = SgrSimulation(mass)
+        p = sgr.particles(N=nparticles, expr="(tub!=0)")#" & (tub<400)")
+        tub = p.tub
+        s = sgr.satellite()
 
-    X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
-    V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
-    integrator = LeapfrogIntegrator(lm10_potential._acceleration_at,
-                                    np.array(X), np.array(V),
-                                    args=(X.shape[0], np.zeros_like(X)))
-    ts, rs, vs = integrator.run(t1=sgr.t1, t2=0., dt=-1.)
+        potential = LawMajewski2010()
 
-    s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
-    p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+        X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
+        V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
+        integrator = LeapfrogIntegrator(potential._acceleration_at,
+                                        np.array(X), np.array(V),
+                                        args=(X.shape[0], np.zeros_like(X)))
+        ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
 
-    full_diff = p_orbits-s_orbit
-    full_diff = full_diff
-    full_rel_r = np.sqrt(np.sum(full_diff[...,:3]**2, axis=-1))
-    full_rel_v = np.sqrt(np.sum(full_diff[...,3:]**2, axis=-1))
+        s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+        p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+        t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
 
-    sat_r_tide = np.squeeze(lm10_potential._tidal_radius(m, s_orbit))*1.8
-    full_D_ps = np.sqrt((full_rel_r/sat_r_tide[:,np.newaxis])**2 + (full_rel_v/v_disp)**2)
-    D_ps = np.min(full_D_ps, axis=0)
+        p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+        s_x = np.array([s_orbit[jj,0] for jj in t_idx])
 
-    idxx = np.ones(full_D_ps.shape[1]).astype(bool)
-    idx = []
-    for i in range(full_D_ps.shape[0]):
-        idxx = idxx & (full_D_ps[i] > 2.)
-        idx.append(idxx.copy())
-    idx = np.array(idx)
+        #############################################
+        # determine tail_bit
+        diff = p_x-s_x
+        norm_r = s_x[:,:3] / np.sqrt(np.sum(s_x[:,:3]**2, axis=-1))[:,np.newaxis]
+        norm_diff_r = diff[:,:3] / np.sqrt(np.sum(diff[:,:3]**2, axis=-1))[:,np.newaxis]
+        dot_prod_r = np.sum(norm_diff_r*norm_r, axis=-1)
+        tail_bit = (dot_prod_r > 0.).astype(int)*2 - 1
+        #############################################
 
-    # First set up the figure, the axis, and the plot element we want to animate
-    rcparams = dict()
-    rcparams['lines.marker'] = '.'
-    rcparams['lines.markersize'] = 6.
-    rcparams['lines.linestyle'] = 'none'
-    rcparams['axes.facecolor'] = '#333333'
-    rcparams['fig.facecolor'] = rcparams['axes.facecolor']
-    rcparams['axes.edgecolor'] = rcparams['axes.facecolor']
+        r_tide = potential._tidal_radius(m, s_orbit[...,:3])#*0.69336
+        s_R_orbit = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
+        a_pm = (s_R_orbit + r_tide*tail_bit) / s_R_orbit
+        q = np.sqrt(np.sum((p_x[:,:3] - s_x[:,:3])**2,axis=-1))
 
-    with rc_context(rc=rcparams):
-        fig = plt.figure(figsize=(8,8))
-        ax = plt.axes(xlim=(-100, 100), ylim=(-100, 100))
-        line_p, = ax.plot([], [], color='#92c5de', alpha=0.5)
-        circ_s = Circle((0., 0.), radius=0., color='#b2182b', alpha=0.5)
-        ax.add_patch(circ_s)
-        ax.set_xticks([])
-        ax.set_yticks([])
+        f = r_tide / s_R_orbit
+        vdisp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * f / 1.4
+        p = np.sqrt(np.sum((p_x[:,3:] - s_x[...,3:])**2,axis=-1))
 
-        # initialization function: plot the background of each frame
-        def init():
-            line_p.set_data([], [])
-            circ_s.center = (0.,0.)
-            circ_s.set_radius(0.)
-            return line_p,circ_s
+        fig,axes = plt.subplots(2,1,figsize=(10,6),sharex=True)
 
-        # animation function.  This is called sequentially
-        def animate(ii):
-            i = ii*speedup
-            if i > idx.shape[0]:
-                i = -1
+        axes[0].plot(tub, q, marker='.', alpha=0.5, color='#666666')
+        axes[0].plot(ts, r_tide*1.4, linewidth=2., alpha=0.8, color='k',
+                     linestyle='-', marker=None)
+        axes[0].set_ylim(0., max(r_tide)*4)
 
-            line_p.set_data(full_diff[i,idx[i],0], full_diff[i,idx[i],2])
-            circ_s.center = (0.,0.)
-            circ_s.set_radius(sat_r_tide[i])
-            ax.set_title("{:.2f} Myr".format(ts[i]))
-            return line_p,circ_s
+        axes[1].plot(tub, (p*u.kpc/u.Myr).to(u.km/u.s).value,
+                     marker='.', alpha=0.5, color='#666666')
+        axes[1].plot(ts, (vdisp*u.kpc/u.Myr).to(u.km/u.s).value, color='k',
+                     linewidth=2., alpha=0.75, linestyle='-', marker=None)
+        axes[1].set_ylim(0., max((vdisp*u.kpc/u.Myr).to(u.km/u.s).value)*4)
 
-        # call the animator.  blit=True means only re-draw the parts that have changed.
-        frames = full_diff.shape[0]//speedup + 1
-        anim = animation.FuncAnimation(fig, animate, init_func=init,
-                                       frames=frames, interval=20, blit=True) # frame=6248
-        anim.save(filename, fps=20, extra_args=['-vcodec', 'libx264'],
-                  savefig_kwargs=dict(facecolor=rcParams['fig.facecolor']))
+        axes[0].set_xlim(min(ts), max(ts))
+
+        fig.savefig(os.path.join(plot_path, "q_p_{}.png".format(mass)),
+                    transparent=True)
+
+        continue
+
+        axes[0,kk].text(0.5, 1.04, r"{}$M_\odot$".format(mass),
+                   horizontalalignment='center',
+                   fontsize=24,
+                   transform=axes[0,kk].transAxes)
+
+        axes[0,kk].hist(q, bins=bins,
+                        color='#888888', normed=True,
+                        histtype='stepfilled')
+        args = chi2.fit(q)
+        print("\t", args)
+        axes[0,kk].plot(bins, chi2.pdf(bins,*args),
+                        lw=3., alpha=0.75, color="#3182bd",
+                        linestyle='-', marker=None)
+        # axes[0,kk].text(1., 0.75, r"$\sigma=${:.2f}".format(args[1]), fontsize=18)
+
+        axes[1,kk].hist(p, bins=bins,
+                        color='#888888', normed=True,
+                        histtype='stepfilled')
+        args = chi2.fit(p)
+        print("\t", args)
+        axes[1,kk].plot(bins, chi2.pdf(bins,*args),
+                        lw=3., alpha=0.75, color="#3182bd",
+                        linestyle='-', marker=None)
+        # axes[1,kk].text(1., 0.75, r"$\sigma=${:.2f}".format(args[1]), fontsize=18)
+
+        #axes[1,kk].set_xticks(range(-2,2+1,1))
+
+        axes[0,kk].set_xlim(min(bins),max(bins))
+        #axes[1,kk].set_ylim(0,1.1)
+
+    #axes[0,0].set_yticks(np.arange(0.,1.1,0.5))
+    #axes[1,0].set_yticks(np.arange(0.,1.1,0.5))
+
+    # plt.setp(plt.gca().get_xticklabels(), fontsize=24)
+    # plt.setp(plt.gca().get_yticklabels(), fontsize=24)
+
+    axes[0,0].set_ylabel("q", rotation='horizontal')
+    axes[1,0].set_ylabel("p", rotation='horizontal')
+
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
+    fig.savefig(filename)
 
 if __name__ == "__main__":
     #sgr()
     #nfw()
-    movies()
+    q_p()
