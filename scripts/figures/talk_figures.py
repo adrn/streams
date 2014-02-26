@@ -35,6 +35,7 @@ from streams.observation.rrlyrae import rrl_M_V, rrl_V_minus_I
 from streams.plot import plot_point_cov
 from streams.potential import LawMajewski2010
 from streams.util import project_root
+from streams import usys
 
 matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18)
@@ -178,7 +179,8 @@ def q_p(**kwargs):
         q = np.sqrt(np.sum((p_x[:,:3] - s_x[:,:3])**2,axis=-1))
 
         f = r_tide / s_R_orbit
-        vdisp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * f / 1.4
+        s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
+        vdisp = s_V * f / 1.4
         p = np.sqrt(np.sum((p_x[:,3:] - s_x[...,3:])**2,axis=-1))
 
         fig,axes = plt.subplots(2,1,figsize=(10,6),sharex=True)
@@ -192,6 +194,16 @@ def q_p(**kwargs):
                      marker='.', alpha=0.5, color='#666666')
         axes[1].plot(ts, (vdisp*u.kpc/u.Myr).to(u.km/u.s).value, color='k',
                      linewidth=2., alpha=0.75, linestyle='-', marker=None)
+
+        M_enc = potential._enclosed_mass(s_R_orbit)
+        #delta_E = 4/3.*G.decompose(usys).value**2*m*(M_enc / s_V)**2*r_tide**2/s_R_orbit**4
+        delta_v2 = 4/3.*G.decompose(usys).value**2*(M_enc / s_V)**2*\
+                        np.mean(r_tide**2)/s_R_orbit**4
+        delta_v = (np.sqrt(2*delta_v2)*u.kpc/u.Myr).to(u.km/u.s).value
+
+        axes[1].plot(ts, delta_v, linewidth=2., color='#2166AC',
+                     alpha=0.75, linestyle='--', marker=None)
+
         axes[1].set_ylim(0., max((vdisp*u.kpc/u.Myr).to(u.km/u.s).value)*4)
 
         axes[0].set_xlim(min(ts), max(ts))
@@ -199,50 +211,9 @@ def q_p(**kwargs):
         fig.savefig(os.path.join(plot_path, "q_p_{}.png".format(mass)),
                     transparent=True)
 
-        continue
-
-        axes[0,kk].text(0.5, 1.04, r"{}$M_\odot$".format(mass),
-                   horizontalalignment='center',
-                   fontsize=24,
-                   transform=axes[0,kk].transAxes)
-
-        axes[0,kk].hist(q, bins=bins,
-                        color='#888888', normed=True,
-                        histtype='stepfilled')
-        args = chi2.fit(q)
-        print("\t", args)
-        axes[0,kk].plot(bins, chi2.pdf(bins,*args),
-                        lw=3., alpha=0.75, color="#3182bd",
-                        linestyle='-', marker=None)
-        # axes[0,kk].text(1., 0.75, r"$\sigma=${:.2f}".format(args[1]), fontsize=18)
-
-        axes[1,kk].hist(p, bins=bins,
-                        color='#888888', normed=True,
-                        histtype='stepfilled')
-        args = chi2.fit(p)
-        print("\t", args)
-        axes[1,kk].plot(bins, chi2.pdf(bins,*args),
-                        lw=3., alpha=0.75, color="#3182bd",
-                        linestyle='-', marker=None)
-        # axes[1,kk].text(1., 0.75, r"$\sigma=${:.2f}".format(args[1]), fontsize=18)
-
-        #axes[1,kk].set_xticks(range(-2,2+1,1))
-
-        axes[0,kk].set_xlim(min(bins),max(bins))
-        #axes[1,kk].set_ylim(0,1.1)
-
-    #axes[0,0].set_yticks(np.arange(0.,1.1,0.5))
-    #axes[1,0].set_yticks(np.arange(0.,1.1,0.5))
-
-    # plt.setp(plt.gca().get_xticklabels(), fontsize=24)
-    # plt.setp(plt.gca().get_yticklabels(), fontsize=24)
-
-    axes[0,0].set_ylabel("q", rotation='horizontal')
-    axes[1,0].set_ylabel("p", rotation='horizontal')
-
-    fig.tight_layout()
-    fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
-    fig.savefig(filename)
+    # fig.tight_layout()
+    # fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
+    # fig.savefig(filename)
 
 if __name__ == "__main__":
     #sgr()
