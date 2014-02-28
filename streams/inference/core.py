@@ -154,6 +154,10 @@ class StreamModel(object):
                                        truth=true_particles[name].decompose(usys).value)
                     model.add_parameter('particles', X)
                     logger.debug("\t\t{}".format(name))
+                elif name == 'sigma_r' or name == 'sigma_v':
+                    p = getattr(particles,name)
+                    logger.debug("Prior on {}: Exponential(lambda={})".format(name, p._prior.a))
+                    model.add_parameter('particles', p)
                 else:
                     p = getattr(particles,name)
                     logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a,
