@@ -29,7 +29,7 @@ plot_path = os.path.join(project_root, "plots")
 
 potential = LawMajewski2010()
 nparticles = 2000
-T = 3500.
+T = 3000.
 dt = 0.1
 _m = "2.e4"
 np.random.seed(42)
@@ -132,23 +132,36 @@ plt.clf()
 fig = plt.figure(figsize=(6,6))
 ax = fig.add_subplot(111)
 
+fig2 = plt.figure(figsize=(6,6))
+ax2 = fig.add_subplot(111)
+
 hel = _gc_to_hel(orbits[-1])
 
 l,b = hel[:,0], hel[:,1]
 l = coord.Angle(l*u.rad).to(u.degree).wrap_at(180*u.deg).value
 b = coord.Angle(b*u.rad).to(u.degree).value
+_g = coord.Galactic(l*u.deg,b*u.deg).icrs
 ax.plot(l, b,
         alpha=0.75, linestyle='none')
+ax2.plot(_g.ra.degree, _g.dec.degree,
+         alpha=0.75, linestyle='none')
 
 l = coord.Angle(s_hel[:,0]*u.rad).to(u.degree).wrap_at(180*u.deg).value
 b = coord.Angle(s_hel[:,1]*u.rad).to(u.degree).value
+_g = coord.Galactic(l*u.deg,b*u.deg).icrs
 ax.plot(l,b)
+ax2.plot(_g.ra.degree, _g.dec.degree,
+         alpha=0.75, linestyle='none')
+
+ax2.set_xlim(245, 225)
+ax2.set_ylim(-2, 10)
 
 # ax.plot(satellite_orbit[:,0,0], satellite_orbit[:,0,1],
 #              alpha=0.75, marker=None)
 #axes[0].set_xlim(-80,40)
 #axes[0].set_ylim(-60,60)
 fig.savefig(os.path.join(plot_path, "generate_lb.png"))
+fig2.savefig(os.path.join(plot_path, "generate_ad.png"))
 
 
 sys.exit(0)
