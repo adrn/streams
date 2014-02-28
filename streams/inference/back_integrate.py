@@ -34,7 +34,7 @@ def xyz_sph_jac(hel):
     return deet
 
 def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logmdot,
-                                tub, tail_bit, sigma_r, sigma_v):
+                                tub, tail_bit, fac_R, fac_V):
 
     """ Compute the likelihood of 6D heliocentric star positions today given the
         potential and position of the satellite.
@@ -59,11 +59,11 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
             Array of unbinding times for each star.
         tail_bit : array_like
             Array of tail bits (K) to specify leading/trailing tail for each star.
-        sigma_r : array_like
-            Array of variance hyper-parameters for stars to handle spread in distance
+        fac_R : float
+            Variance hyper-parameters for stars to handle spread in distance
             during shocks.
-        sigma_v : array_like
-            Array of variance hyper-parameters for stars to handle spread in velocity
+        fac_V : float
+            Variance hyper-parameters for stars to handle spread in velocity
             during shocks.
 
     """
@@ -111,13 +111,13 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     f = r_tide / s_R_orbit
     v_disp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * f / 2.2 # remove extra r_tide factor
 
-    var_r = (0.25*r_tide)**2 + sigma_r**2
+    var_r = (0.25*r_tide)**2 + fac_R*(v_disp/v_disp.max())**4
     # TODO: magnitude or full vector?
     # R = p_orbits[:,:3] - (a_pm[:,np.newaxis]*s_orbit[:,:3])
     R = np.sqrt(np.sum((p_orbits[...,:3] - (a_pm[...,np.newaxis]*s_orbit[...,:3]))**2, axis=-1))
     r_term = -0.5*(3*np.log(var_r) + (R/var_r))
 
-    var_v = v_disp**2 + sigma_v**2
+    var_v = v_disp**2 + fac_V*(v_disp/v_disp.max())**4
     V = np.sqrt(np.sum((p_orbits[...,3:] - s_orbit[...,3:])**2, axis=-1))
     #v_term = -0.5*(6*np.log(sigma_v) + np.sum((V/sigma_v[...,np.newaxis])**2,axis=-1))
     v_term = 0.5*np.log(2/np.pi) + 2*np.log(V) - 1.5*np.log(var_v) - V**2 / (2*var_v)
