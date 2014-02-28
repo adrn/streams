@@ -42,11 +42,12 @@ def plot_energies(potential, ts, xs, vs, axes1=None):
     axes1[2].set_ylabel(r"$\Delta E/E \times 100$")
     axes1[2].set_ylim(-1., 1.)
 
-    grid = np.linspace(np.min(xs)-1., np.max(xs)+1., 100)*u.kpc
+    grid = np.linspace(np.min(xs)-1., np.max(xs)+1., 200)*u.kpc
     fig2, axes2 = potential.plot(ndim=3, grid=grid)
-    axes2[0,0].plot(xs[...,0], xs[...,1], color='w', marker=None)
-    axes2[1,0].plot(xs[...,0], xs[...,2], color='w', marker=None)
-    axes2[1,1].plot(xs[...,1], xs[...,2], color='w', marker=None)
+    axes2[0,0].plot(xs[...,0], xs[...,1], color='w', marker=None, linestyle='-')
+    axes2[0,1].plot(xs[...,1],xs[...,1])
+    axes2[1,0].plot(xs[...,0], xs[...,2], color='w', marker=None, linestyle='-')
+    axes2[1,1].plot(xs[...,1], xs[...,2], color='w', marker=None, linestyle='-')
 
     return fig1,fig2
 
@@ -87,6 +88,46 @@ class TestIntegrate(object):
         fig1,fig2 = plot_energies(potential,ts, xs, vs)
         fig1.savefig(os.path.join(plot_path,"point_mass_energy_{0}.png".format(name)))
         fig2.savefig(os.path.join(plot_path,"point_mass_{0}.png".format(name)))
+
+    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ])
+    def test_point_mass_forward(self, name, Integrator):
+        potential = PointMassPotential(units=(u.M_sun, u.au, u.yr),
+                                       m=1*u.M_sun,
+                                       r_0=[0.,0.,0.]*u.au)
+
+        initial_position = np.array([1.0, 0.0, 0.]) # au
+        initial_velocity = np.array([0.0, 2*np.pi, 0.]) # au/yr
+
+        integrator = Integrator(potential._acceleration_at,
+                                initial_position, initial_velocity)
+        ts, xs, vs = integrator.run(t1=0., t2=0.5, dt=0.01)
+
+        fig1,fig2 = plot_energies(potential,ts, xs, vs)
+        fig2.savefig(os.path.join(plot_path,"point_mass_forward_{0}.png".format(name)))
+
+        plt.clf()
+        plt.plot(vs[...,0], vs[...,1])
+        plt.savefig(os.path.join(plot_path,"point_mass_forward_v_{0}.png".format(name)))
+
+    @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ])
+    def test_point_mass_backward(self, name, Integrator):
+        potential = PointMassPotential(units=(u.M_sun, u.au, u.yr),
+                                       m=1*u.M_sun,
+                                       r_0=[0.,0.,0.]*u.au)
+
+        initial_position = np.array([1.0, 0.0, 0.]) # au
+        initial_velocity = np.array([0.0, 2*np.pi, 0.]) # au/yr
+
+        integrator = Integrator(potential._acceleration_at,
+                                initial_position, initial_velocity)
+        ts, xs, vs = integrator.run(t1=0., t2=-0.5, dt=-0.01)
+
+        fig1,fig2 = plot_energies(potential,ts, xs, vs)
+        fig2.savefig(os.path.join(plot_path,"point_mass_backward_{0}.png".format(name)))
+
+        plt.clf()
+        plt.plot(vs[...,0], vs[...,1])
+        plt.savefig(os.path.join(plot_path,"point_mass_backward_v_{0}.png".format(name)))
 
     @pytest.mark.parametrize(("name","Integrator"), [('leapfrog',LeapfrogIntegrator), ])
     def test_hernquist_energy(self, name, Integrator):

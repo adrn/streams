@@ -89,13 +89,13 @@ class LeapfrogIntegrator(object):
         """ The 'kick' part of the leapfrog integration. Update the velocities
             given a velocity.
         """
-        return v + a*self._half_dt
+        return v + a*dt/2.
 
     def step(self, dt):
         """ Step forward the positions and velocities by the given timestep """
 
         #if self._dt is None:
-        self._dt = dt
+        #self._dt = dt
 
         # #HACK r_i = self._position_step(self.r_im1, self.v_im1_2, self._dt)
         # r_i = self.r_im1 + self.v_im1_2*self._dt
@@ -113,11 +113,11 @@ class LeapfrogIntegrator(object):
 
         # return r_i, v_i
 
-        self.r_im1 += self.v_im1_2*self._dt
+        self.r_im1 += self.v_im1_2*dt
         a_i = self.acc(self.r_im1, *self._acc_args)
 
-        self.v_im1 += a_i*self._dt
-        self.v_im1_2 += a_i*self._dt
+        self.v_im1 += a_i*dt
+        self.v_im1_2 += a_i*dt
 
         return self.r_im1, self.v_im1
 
@@ -158,10 +158,16 @@ class LeapfrogIntegrator(object):
         """
 
         times = _parse_time_specification(**time_spec)
-        dts = times[1:]-times[:-1]
+        _dt = times[1]-times[0]
         Ntimesteps = len(times)
 
-        self._prime(dts[0])
+        if _dt < 0.:
+            self.v_im1 *= -1.
+            dt = np.abs(_dt)
+        else:
+            dt = _dt
+
+        self._prime(dt)
 
         rs = np.zeros((Ntimesteps,) + self.r_im1.shape, dtype=float)
         vs = np.zeros((Ntimesteps,) + self.v_im1.shape, dtype=float)
@@ -170,9 +176,12 @@ class LeapfrogIntegrator(object):
         rs[0] = self.r_im1
         vs[0] = self.v_im1
 
-        for ii,dt in enumerate(dts):
+        for ii in range(Ntimesteps-1):
             r_i, v_i = self.step(dt)
             rs[ii+1] = r_i
             vs[ii+1] = v_i
 
-        return times, rs, vs
+        if _dt < 0:
+            return times, rs, -vs
+        else:
+            return times, rs, vs
