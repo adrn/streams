@@ -33,7 +33,40 @@ def xyz_sph_jac(hel):
     deet = np.log(np.abs(dtmnt))
     return deet
 
-def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, tub, tail_bit):
+def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logmdot,
+                                tub, tail_bit, sigma_r, sigma_v):
+
+    """ Compute the likelihood of 6D heliocentric star positions today given the
+        potential and position of the satellite.
+
+        Parameters
+        ----------
+        t1, t2, dt : float
+            Integration parameters
+        potential : streams.Potential
+            The potential class.
+        p_hel : array_like
+            A (nparticles, 6) shaped array containing 6D heliocentric coordinates
+            for all stars.
+        s_hel : array_like
+            A (1, 6) shaped array containing 6D heliocentric coordinates
+            for the satellite.
+        logm0 : float
+            Log of the initial mass of the satellite.
+        logmdot : float
+            Log of the mass loss rate.
+        tub : array_like
+            Array of unbinding times for each star.
+        tail_bit : array_like
+            Array of tail bits (K) to specify leading/trailing tail for each star.
+        sigma_r : array_like
+            Array of variance hyper-parameters for stars to handle spread in distance
+            during shocks.
+        sigma_v : array_like
+            Array of variance hyper-parameters for stars to handle spread in velocity
+            during shocks.
+
+    """
 
     p_gc = _hel_to_gc(p_hel)
     s_gc = _hel_to_gc(s_hel)
@@ -56,9 +89,11 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, tub,
     p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
 
-    s_mass = np.exp(logm0)
-    #r_tide = potential._tidal_radius(s_mass, s_orbit)*0.69336 #*1.4
-    r_tide = potential._tidal_radius(s_mass, s_orbit)*1.4
+    m0 = np.exp(logm0)
+    mdot = np.exp(logmdot)
+    m_t = (-mdot*ts + m0)[:,np.newaxis]
+    #r_tide = potential._tidal_radius(s_mass, s_orbit)
+    r_tide = potential._tidal_radius(m_t, s_orbit)
 
     p_x_hel = _gc_to_hel(p_orbits)
     jac1 = _xyz_sph_jac(p_x_hel)
@@ -67,16 +102,18 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, tub,
     a_pm = (s_R_orbit + r_tide*tail_bit) / s_R_orbit
 
     f = r_tide / s_R_orbit
-    vdisp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * f / 1.4
-    #vdisp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * (s_mass/(3*M_enc))**(0.33333333)
+    v_disp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * f / 2.2 # remove extra r_tide factor
 
-    sigma_r = r_tide
-    R = p_orbits[:,:3] - (a_pm[:,np.newaxis]*s_orbit[:,:3])
-    r_term = -0.5*(6*np.log(sigma_r) + np.sum((R/sigma_r[...,np.newaxis])**2,axis=-1))
+    var_r = (0.25*r_tide)**2 + sigma_r**2
+    # TODO: magnitude or full vector?
+    # R = p_orbits[:,:3] - (a_pm[:,np.newaxis]*s_orbit[:,:3])
+    R = np.sqrt(np.sum((p_orbits[...,:3] - (a_pm[...,np.newaxis]*s_orbit[...,:3]))**2, axis=-1))
+    r_term = -0.5*(3*np.log(var_r) + (R/var_r))
 
-    sigma_v = vdisp
-    V = p_orbits[:,3:] - s_orbit[...,3:]
-    v_term = -0.5*(6*np.log(sigma_v) + np.sum((V/sigma_v[...,np.newaxis])**2,axis=-1))
+    var_v = v_disp**2 + sigma_v**2
+    V = np.sqrt(np.sum((p_orbits[...,3:] - s_orbit[...,3:])**2, axis=-1))
+    #v_term = -0.5*(6*np.log(sigma_v) + np.sum((V/sigma_v[...,np.newaxis])**2,axis=-1))
+    v_term = 0.5*np.log(2/np.pi) + 2*np.log(V) - 1.5*np.log(var_v) - V**2 / (2*var_v)
 
     return (r_term + v_term + jac1)
 
