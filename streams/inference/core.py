@@ -154,10 +154,6 @@ class StreamModel(object):
                                        truth=true_particles[name].decompose(usys).value)
                     model.add_parameter('particles', X)
                     logger.debug("\t\t{}".format(name))
-                elif name == 'sigma_r' or name == 'sigma_v':
-                    p = getattr(particles,name)
-                    logger.debug("Prior on {}: Exponential(lambda={})".format(name, p._prior.a))
-                    model.add_parameter('particles', p)
                 else:
                     p = getattr(particles,name)
                     logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a,
@@ -177,6 +173,12 @@ class StreamModel(object):
                                        truth=true_satellite[name].decompose(usys).value)
                     model.add_parameter('satellite', X)
                     logger.debug("\t\t{}".format(name))
+
+                elif name == 'fac_R' or name == 'fac_V':
+                    p = getattr(satellite,name)
+                    logger.debug("Prior on {}: Exponential(lambda={})".format(name, p._prior.a))
+                    model.add_parameter('satellite', p)
+
                 else:
                     p = getattr(satellite,name)
                     logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a,
@@ -392,18 +394,6 @@ class StreamModel(object):
         except KeyError:
             tail_bit = self.particles.tail_bit.truth
 
-        # hyper-parameter variance for distance
-        try:
-            sigma_r = param_dict['particles']['sigma_r']
-        except KeyError:
-            sigma_r = self.particles.sigma_r.truth
-
-        # hyper-parameter variance for velocity
-        try:
-            sigma_v = param_dict['particles']['sigma_v']
-        except KeyError:
-            sigma_v = self.particles.sigma_v.truth
-
         # heliocentric satellite positions
         s_hel = []
         W_j = []
@@ -439,6 +429,18 @@ class StreamModel(object):
         except KeyError:
             logmdot = self.satellite.logmdot.truth
 
+        # hyper-parameter variance for distance
+        try:
+            fac_R = param_dict['satellite']['fac_R']
+        except KeyError:
+            fac_R = self.satellite.fac_R.truth
+
+        # hyper-parameter variance for velocity
+        try:
+            fac_V = param_dict['satellite']['fac_V']
+        except KeyError:
+            fac_V = self.satellite.fac_V.truth
+
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
@@ -446,7 +448,7 @@ class StreamModel(object):
                                               potential, p_hel, s_hel,
                                               logmass, logmdot,
                                               tub, tail_bit,
-                                              sigma_r, sigma_v)
+                                              fac_R, fac_V)
 
         return np.sum(ln_like + data_like) + sat_like
 

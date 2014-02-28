@@ -44,7 +44,7 @@ class LogExponentialPrior(LogPrior):
 
     def __call__(self, value):
         if np.any(value < 0):
-            return np.ones_like(value)*-np.inf
+            return -np.inf
 
         return self.lna - self.a*value
 
@@ -52,11 +52,11 @@ class LogExponentialPrior(LogPrior):
         """ Logarithm of exponential distribution with scale or
             rate parameter 'a'.
         """
-        self.a = np.array(a)
+        self.a = a
         self.lna = np.log(a)
 
     def sample(self, size=None):
-        x = np.random.uniform([0.]*len(self.a), [1.]*len(self.a), size=size)
+        x = np.random.uniform(0., 1., size=size)
         return x
 
 class LogNormalCovPrior(LogPrior):
