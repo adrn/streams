@@ -22,7 +22,7 @@ import astropy.coordinates as coord
 import yaml
 
 # Project
-from ..inference import ModelParameter, LogUniformPrior
+from ..inference import ModelParameter, LogUniformPrior, LogExponentialPrior
 from ..coordinates.frame import heliocentric, galactocentric
 from ..dynamics import Particle, ObservedParticle, Orbit
 from ..util import OrderedDictYAMLLoader
@@ -137,6 +137,12 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
         tail_bit = ModelParameter(name="tail_bit",
                                   truth=true_tail_bit,
                                   prior=LogUniformPrior([-2.]*nparticles,[2.]*nparticles))
+        sigma_r = ModelParameter(name="sigma_r",
+                                 truth=np.zeros_like(true_tail_bit) + 1e-5,
+                                 prior=LogExponentialPrior([0.75]*nparticles))
+        sigma_v = ModelParameter(name="sigma_v",
+                                 truth=np.zeros_like(true_tail_bit) + 1e-5,
+                                 prior=LogExponentialPrior([0.75*100]*nparticles))
 
         if "error" in ptcl.keys():
             p = ObservedParticle(ptcl["data"].value[particle_idx].T,
@@ -157,6 +163,8 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
 
         p.tub = tub
         p.tail_bit = tail_bit # TODO: update tail_bit to be a modelparameter
+        p.sigma_r = sigma_r
+        p.sigma_v = sigma_v
         return_dict["particles"] = p
 
         if "error" in satl.keys():
@@ -178,6 +186,10 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
         s.logmass = ModelParameter(name="logmass",
                                    truth=np.log(satl["m"].value),
                                    prior=LogUniformPrior(13.85,22.))
+        # HACK? Check mass-loss rates...
+        s.logmdot = ModelParameter(name="logmdot",
+                                   truth=np.log(1.6E-4) + np.log(satl["m"].value),
+                                   prior=LogUniformPrior(5.,15.))
         s.vdisp = satl["v_disp"].value
         return_dict["satellite"] = s
 
