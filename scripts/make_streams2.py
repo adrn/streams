@@ -29,7 +29,7 @@ plot_path = os.path.join(project_root, "plots")
 
 potential = LawMajewski2010()
 nparticles = 2000
-T = 4000.
+T = 3500.
 dt = 0.1
 _m = "2.e4"
 np.random.seed(42)
@@ -47,7 +47,7 @@ mass = float(_m)
 # s_hel = satellite._X.copy()
 # s_gc = _hel_to_gc(s_hel)
 s_gc = np.array([[8.363919011, 0.243352771, 16.864546659,
-                  -0.04468993,-0.12392801,-0.01664498]]) # Pal5
+                  -0.04468993, -0.12392801, -0.01664498]]) # Pal5
 s_hel = _gc_to_hel(s_gc)
 
 # First integrate the orbit of the satellite back to get initial conditions
