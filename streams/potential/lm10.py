@@ -68,22 +68,24 @@ class LawMajewski2010(CompositePotential):
             #self.__dict__[k] = v
             self._parameter_dict[k] = parameters.get(k, params[k].truth)
 
-        # bulge = HernquistPotential(usys,
-        #                            m=3.4E10*u.M_sun,
-        #                            c=0.7*u.kpc)
+        ####################
+        bulge = HernquistPotential(usys,
+                                   m=3.4E10*u.M_sun,
+                                   c=0.7*u.kpc)
 
-        # disk = MiyamotoNagaiPotential(usys,
-        #                               m=1.E11*u.M_sun,
-        #                               a=6.5*u.kpc,
-        #                               b=0.26*u.kpc)
+        disk = MiyamotoNagaiPotential(usys,
+                                      m=1.E11*u.M_sun,
+                                      a=6.5*u.kpc,
+                                      b=0.26*u.kpc)
 
-        # p_dict = dict([(k,v._value) for k,v in self.parameters.items()])
-        # halo = LogarithmicPotentialLJ(usys, **p_dict)
+        p_dict = dict([(k,v) for k,v in self._parameter_dict.items()])
+        halo = LogarithmicPotentialLJ(usys, **p_dict)
 
-        # super(LawMajewski2010, self).__init__(usys,
-        #                                       bulge=bulge,
-        #                                       disk=disk,
-        #                                       halo=halo)
+        super(LawMajewski2010, self).__init__(usys,
+                                              bulge=bulge,
+                                              disk=disk,
+                                              halo=halo)
+        ####################
         self.units = usys
         self._G = G.decompose(bases=usys).value
 
@@ -130,7 +132,7 @@ class LawMajewski2010(CompositePotential):
         dlnM_dlnR = (3*Rh**2 + R_orbit**2)/(Rh**2 + R_orbit**2)
         f = (1 - dlnM_dlnR/3.)**(-0.3333333333333)
 
-        return R_orbit * (m / m_enc)**(0.3333333333333)
+        return R_orbit * (m / m_enc)**(0.3333333333333) * 1.8
 
     def tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified
