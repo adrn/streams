@@ -43,6 +43,9 @@ class LogUniformPrior(LogPrior):
 class LogExponentialPrior(LogPrior):
 
     def __call__(self, value):
+        if np.any(value < 0):
+            return -np.inf
+
         return self.lna - self.a*value
 
     def __init__(self, a):
@@ -53,7 +56,7 @@ class LogExponentialPrior(LogPrior):
         self.lna = np.log(a)
 
     def sample(self, size=None):
-        x = np.random.uniform(0., 5./self.a, size=size)
+        x = np.random.uniform(0., 1., size=size)
         return x
 
 class LogNormalCovPrior(LogPrior):
