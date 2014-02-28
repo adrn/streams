@@ -82,21 +82,28 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     ntimes = len(ts)
     nparticles = gc.shape[0]-1
 
-    s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
-    p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
-
-    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
-    p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
-
+    # mass of the satellite vs. time
     m0 = np.exp(logm0)
     mdot = np.exp(logmdot)
     m_t = (-mdot*ts + m0)[:,np.newaxis]
+
+    s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+    p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+
+    # t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
+    # s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
+    # p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    # m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
+    # p_x_hel = _gc_to_hel(p_orbits)
+    # jac1 = _xyz_sph_jac(p_x_hel)
+
+    # if marg. tub
+    p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6))
+    jac1 = _xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
+    #
+
     #r_tide = potential._tidal_radius(s_mass, s_orbit)
     r_tide = potential._tidal_radius(m_t, s_orbit)
-
-    p_x_hel = _gc_to_hel(p_orbits)
-    jac1 = _xyz_sph_jac(p_x_hel)
 
     s_R_orbit = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
     a_pm = (s_R_orbit + r_tide*tail_bit) / s_R_orbit
@@ -115,6 +122,5 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     #v_term = -0.5*(6*np.log(sigma_v) + np.sum((V/sigma_v[...,np.newaxis])**2,axis=-1))
     v_term = 0.5*np.log(2/np.pi) + 2*np.log(V) - 1.5*np.log(var_v) - V**2 / (2*var_v)
 
-    return (r_term + v_term + jac1)
-
-    #return logsumexp(r_term + v_term + jac1, axis=0)
+    # return (r_term + v_term + jac1)
+    return logsumexp(r_term + v_term + jac1, axis=0)
