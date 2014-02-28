@@ -14,7 +14,7 @@ import logging
 import numpy as np
 import astropy.units as u
 
-__all__ = ["LogPrior", "LogUniformPrior", "LogNormalPrior"]
+__all__ = ["LogPrior", "LogUniformPrior", "LogExponentialPrior", "LogNormalPrior"]
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +34,27 @@ class LogUniformPrior(LogPrior):
         """ Return 0 if value is outside of the range
             defined by a < value < b.
         """
-        self.a = a
-        self.b = b
+        self.a = np.array(a)
+        self.b = np.array(b)
 
     def sample(self, size=None):
         return np.random.uniform(self.a, self.b, size=size)
+
+class LogExponentialPrior(LogPrior):
+
+    def __call__(self, value):
+        return self.lna - self.a*value
+
+    def __init__(self, a):
+        """ Logarithm of exponential distribution with scale or
+            rate parameter 'a'.
+        """
+        self.a = np.array(a)
+        self.lna = np.log(a)
+
+    def sample(self, size=None):
+        x = np.random.uniform(0., 5./self.a, size=size)
+        return x
 
 class LogNormalCovPrior(LogPrior):
 

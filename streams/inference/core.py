@@ -388,6 +388,18 @@ class StreamModel(object):
         except KeyError:
             tail_bit = self.particles.tail_bit.truth
 
+        # hyper-parameter variance for distance
+        try:
+            sigma_r = param_dict['particles']['sigma_r']
+        except KeyError:
+            sigma_r = self.particles.sigma_r.truth
+
+        # hyper-parameter variance for velocity
+        try:
+            sigma_v = param_dict['particles']['sigma_v']
+        except KeyError:
+            sigma_v = self.particles.sigma_v.truth
+
         # heliocentric satellite positions
         s_hel = []
         W_j = []
@@ -417,14 +429,20 @@ class StreamModel(object):
         except KeyError:
             logmass = self.satellite.logmass.truth
 
+        # satellite mass-loss
+        try:
+            logmdot = param_dict['satellite']['logmdot']
+        except KeyError:
+            logmdot = self.satellite.logmdot.truth
+
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_hel, s_hel,
-                                              logmass,
-                                              tub,
-                                              tail_bit)
+                                              logmass, logmdot,
+                                              tub, tail_bit,
+                                              sigma_r, sigma_v)
 
         return np.sum(ln_like + data_like) + sat_like
 
