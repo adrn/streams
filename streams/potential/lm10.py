@@ -69,22 +69,22 @@ class LawMajewski2010(CompositePotential):
             self._parameter_dict[k] = parameters.get(k, params[k].truth)
 
         ####################
-        bulge = HernquistPotential(usys,
-                                   m=3.4E10*u.M_sun,
-                                   c=0.7*u.kpc)
+        # bulge = HernquistPotential(usys,
+        #                            m=3.4E10*u.M_sun,
+        #                            c=0.7*u.kpc)
 
-        disk = MiyamotoNagaiPotential(usys,
-                                      m=1.E11*u.M_sun,
-                                      a=6.5*u.kpc,
-                                      b=0.26*u.kpc)
+        # disk = MiyamotoNagaiPotential(usys,
+        #                               m=1.E11*u.M_sun,
+        #                               a=6.5*u.kpc,
+        #                               b=0.26*u.kpc)
 
-        p_dict = dict([(k,v) for k,v in self._parameter_dict.items()])
-        halo = LogarithmicPotentialLJ(usys, **p_dict)
+        # p_dict = dict([(k,v) for k,v in self._parameter_dict.items()])
+        # halo = LogarithmicPotentialLJ(usys, **p_dict)
 
-        super(LawMajewski2010, self).__init__(usys,
-                                              bulge=bulge,
-                                              disk=disk,
-                                              halo=halo)
+        # super(LawMajewski2010, self).__init__(usys,
+        #                                       bulge=bulge,
+        #                                       disk=disk,
+        #                                       halo=halo)
         ####################
         self.units = usys
         self._G = G.decompose(bases=usys).value
