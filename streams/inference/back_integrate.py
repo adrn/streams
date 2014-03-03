@@ -86,41 +86,53 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     m0 = np.exp(logm0)
     mdot = np.exp(logmdot)
     m_t = (-mdot*ts + m0)[:,np.newaxis]
+    if np.any(m_t < 0):
+        return -np.inf
 
+    # separate out the orbit of the satellite from the orbit of the stars
     s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
     p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
+    #########################################################################
+    # if not marginalizing over unbinding time, get the orbit index closest to
+    #   tub for each star
     # t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
     # s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
     # p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     # m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
     # p_x_hel = _gc_to_hel(p_orbits)
     # jac1 = _xyz_sph_jac(p_x_hel)
+    #########################################################################
 
-    # if marg. tub
+    #########################################################################
+    # if marginalizing over tub, just use the full orbits
     p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6))
     jac1 = _xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
-    #
+    #########################################################################
 
     #r_tide = potential._tidal_radius(s_mass, s_orbit)
-    r_tide = potential._tidal_radius(m_t, s_orbit)
+    r_tide = potential._tidal_radius(m_t, s_orbit[...,:3])*0.75
 
     s_R_orbit = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
-    a_pm = (s_R_orbit + r_tide*tail_bit) / s_R_orbit
+    s_V_orbit = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
+    L_pts = (1 + tail_bit*r_tide/s_R_orbit)[...,np.newaxis] * s_orbit[...,:3]
 
     f = r_tide / s_R_orbit
-    v_disp = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1)) * f / 2.2 # remove extra r_tide factor
+    v_disp = s_V_orbit * f / 2.2 # remove extra r_tide factor
 
-    var_r = (0.25*r_tide)**2 + fac_R*(v_disp/v_disp.max())**4
+    var_r = 0.8**2
     # TODO: magnitude or full vector?
     # R = p_orbits[:,:3] - (a_pm[:,np.newaxis]*s_orbit[:,:3])
-    R = np.sqrt(np.sum((p_orbits[...,:3] - (a_pm[...,np.newaxis]*s_orbit[...,:3]))**2, axis=-1))
-    r_term = -0.5*(3*np.log(var_r) + (R/var_r))
+    # r_term = -0.5*(3*np.log(var_r) + np.sum(R**2/var_r[:,np.newaxis], axis=-1))
+    R2 = np.sqrt(np.sum((p_orbits[...,:3] - L_pts)**2, axis=-1))
+    r_term = -0.5*(3*np.log(var_r) + R2/var_r)
 
-    var_v = v_disp**2 + fac_V*(v_disp/v_disp.max())**4
-    V = np.sqrt(np.sum((p_orbits[...,3:] - s_orbit[...,3:])**2, axis=-1))
+    var_v = v_disp**2
+    V2 = np.sum((p_orbits[...,3:] - s_orbit[...,3:])**2, axis=-1)
     #v_term = -0.5*(6*np.log(sigma_v) + np.sum((V/sigma_v[...,np.newaxis])**2,axis=-1))
-    v_term = 0.5*np.log(2/np.pi) + 2*np.log(V) - 1.5*np.log(var_v) - V**2 / (2*var_v)
+    v_term = 0.5*np.log(2/np.pi) + np.log(V2) - 1.5*np.log(var_v) - V2 / (2*var_v)
 
-    # return (r_term + v_term + jac1)
+    #print(r_term, v_term, jac1)
+
+    #return (r_term + v_term + jac1)
     return logsumexp(r_term + v_term + jac1, axis=0)

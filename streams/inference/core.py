@@ -117,7 +117,7 @@ class StreamModel(object):
         # integration stuff
         t1 = config.get("t1", float(d["t1"]))
         t2 = config.get("t2", float(d["t2"]))
-        dt = config.get("dt", -1.)
+        dt = config.get("dt", config.get('dt', -1.))
 
         # get the potential object specified from the potential subpackage
         from .. import potential as sp
