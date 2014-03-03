@@ -10,6 +10,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 import copy
 import logging
+import random
 
 # Third-party
 import astropy.units as u
@@ -61,6 +62,7 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
 
     logger.debug("Using seed: {}".format(seed))
     np.random.seed(seed)
+    random.seed(seed)
 
     try:
         Simulation = getattr(s_io, class_name)
@@ -75,9 +77,9 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     sim_time = simulation.particle_units[0]/simulation.particle_units[-1]
 
     # HACK HACK HACK
-    selection_expr = "(tub!=0) & (tub>{}) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<50)"\
-                     .format((2000*u.Myr).to(sim_time).value,
-                             (5200*u.Myr).to(sim_time).value)
+    selection_expr = "(tub!=0) & (tub>{}) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<75)"\
+                     .format((1750*u.Myr).to(sim_time).value,
+                             (4700*u.Myr).to(sim_time).value)
     particles = simulation.particles(N=N, expr=selection_expr)
 
     logger.debug("Read in {} particles with expr='{}'"\
@@ -237,7 +239,7 @@ python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=
 --seed=42 --mass="2.5e7" --overwrite
 
 python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---N=256 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024.hdf5 \
+--N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024.hdf5 \
 --seed=42 --mass="2.5e8" --overwrite
     """
 
