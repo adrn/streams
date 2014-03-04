@@ -14,6 +14,7 @@ import math
 import numpy as np
 import astropy.units as u
 from astropy.constants import G
+from scipy.signal import argrelmin,argrelmax
 
 from .core import CartesianPotential, CompositePotential, PotentialParameter
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
@@ -133,6 +134,34 @@ class LawMajewski2010(CompositePotential):
         f = (1 - dlnM_dlnR/3.)**(-0.3333333333333)
 
         return R_orbit * (m / m_enc)**(0.3333333333333) * 1.75
+
+    def _read_tidal_radius(self, m, r, alpha=1.):
+        """ Compute the tidal radius of a massive particle at the specified
+            position(s). Assumes position and mass are in the same unit
+            system as the potential.
+
+            Parameters
+            ----------
+            m : numeric
+                Mass.
+            r : array_like
+                Position.
+            alpha : numeric
+                1 for prograde, 0 for radial, -1 for retrograde orbits.
+        """
+
+        # Radius of Sgr center relative to galactic center
+        R = np.sqrt(np.sum(r**2., axis=-1))
+
+        gal_vdisp = self._parameter_dict['v_halo']
+        sat_vdisp = 0.01719863232
+
+        peris = np.median(R[argrelmin(R)])
+        apos = np.median(R[argrelmax(R)])
+        L = (2 * apos**2 * peris**2 / (peris**2 - apos**2) * np.log(peris/apos))
+
+        _tmp = np.sqrt(L*sat_vdisp**2/gal_vdisp**2)
+        return _tmp * (-alpha + np.sqrt(alpha**2 + 1 + R**2/L)) / (1 + L/R**2)
 
     def tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified
