@@ -34,7 +34,7 @@ def xyz_sph_jac(hel):
     return deet
 
 def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logmdot,
-                                tub, tail_bit, fac_R, fac_V):
+                                tub, tail_bit):
 
     """ Compute the likelihood of 6D heliocentric star positions today given the
         potential and position of the satellite.
@@ -96,43 +96,65 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     #########################################################################
     # if not marginalizing over unbinding time, get the orbit index closest to
     #   tub for each star
-    # t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
-    # s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
-    # p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    # m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
-    # p_x_hel = _gc_to_hel(p_orbits)
-    # jac1 = _xyz_sph_jac(p_x_hel)
+    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
+    s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
+    p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
+    p_x_hel = _gc_to_hel(p_orbits)
+    jac1 = _xyz_sph_jac(p_x_hel)
     #########################################################################
 
     #########################################################################
     # if marginalizing over tub, just use the full orbits
-    p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6))
-    jac1 = _xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
+    # p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6))
+    # jac1 = _xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
     #########################################################################
 
+    s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
+    s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
+
     #r_tide = potential._tidal_radius(s_mass, s_orbit)
-    r_tide = potential._tidal_radius(m_t, s_orbit[...,:3])*0.75
+    r_tide = potential._tidal_radius(m_t, s_orbit[...,:3])
+    v_disp = s_V * r_tide / s_R / 2.2
 
-    s_R_orbit = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
-    s_V_orbit = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
-    L_pts = (1 + tail_bit*r_tide/s_R_orbit)[...,np.newaxis] * s_orbit[...,:3]
+    # instantaneous cartesian basis to project into
+    x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
+    y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
+    z_hat = np.cross(x_hat, y_hat)
 
-    f = r_tide / s_R_orbit
-    v_disp = s_V_orbit * f / 2.2 # remove extra r_tide factor
+    # translate to satellite position
+    rel_orbits = p_orbits - s_orbit
+    rel_pos = rel_orbits[...,:3]
+    rel_vel = rel_orbits[...,3:]
 
-    var_r = 0.8**2
-    # TODO: magnitude or full vector?
-    # R = p_orbits[:,:3] - (a_pm[:,np.newaxis]*s_orbit[:,:3])
-    # r_term = -0.5*(3*np.log(var_r) + np.sum(R**2/var_r[:,np.newaxis], axis=-1))
-    R2 = np.sqrt(np.sum((p_orbits[...,:3] - L_pts)**2, axis=-1))
-    r_term = -0.5*(3*np.log(var_r) + R2/var_r)
+    # project onto each
+    X = np.sum(rel_pos * x_hat, axis=-1)
+    Y = np.sum(rel_pos * y_hat, axis=-1)
+    Z = np.sum(rel_pos * z_hat, axis=-1)
 
-    var_v = v_disp**2
-    V2 = np.sum((p_orbits[...,3:] - s_orbit[...,3:])**2, axis=-1)
-    #v_term = -0.5*(6*np.log(sigma_v) + np.sum((V/sigma_v[...,np.newaxis])**2,axis=-1))
-    v_term = 0.5*np.log(2/np.pi) + np.log(V2) - 1.5*np.log(var_v) - V2 / (2*var_v)
+    VX = np.sum(rel_vel * x_hat, axis=-1)
+    VY = np.sum(rel_vel * y_hat, axis=-1)
+    VZ = np.sum(rel_vel * z_hat, axis=-1)
 
-    #print(r_term, v_term, jac1)
+    # TODO: add hyper parameter for these scales
+    extra_var_r = np.median(r_tide)**2 * 0.4
+    extra_var_v = np.median(v_disp)**2 * 3.
 
-    #return (r_term + v_term + jac1)
-    return logsumexp(r_term + v_term + jac1, axis=0)
+    # position likelihood is gaussian at lagrange points
+    var_x = (np.median(r_tide)/4.)**2
+    var_y = var_x + extra_var_r
+    var_z = var_x
+    r_term = -0.5*((np.log(var_x) + (X - tail_bit*r_tide)**2/var_x) + \
+                   (np.log(var_y) + (Y)**2/var_y) + \
+                   (np.log(var_z) + (Z)**2/var_z))
+
+    var_vx = np.median(v_disp)**2 + extra_var_v
+    var_vy = np.median(v_disp)**2
+    var_vz = np.median(v_disp)**2
+
+    v_term = -0.5*((np.log(var_vx) + (VX)**2/var_vx) + \
+                   (np.log(var_vy) + (VY)**2/var_vy) + \
+                   (np.log(var_vz) + (VZ)**2/var_vz))
+
+    # return logsumexp(r_term + v_term + jac1, axis=0)
+    return (r_term + v_term + jac1)
