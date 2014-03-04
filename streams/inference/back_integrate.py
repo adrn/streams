@@ -119,8 +119,9 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
 
     # instantaneous cartesian basis to project into
     x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
-    y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
-    z_hat = np.cross(x_hat, y_hat)
+    _y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
+    z_hat = np.cross(x_hat, _y_hat)
+    y_hat = -np.cross(x_hat, z_hat)
 
     # translate to satellite position
     rel_orbits = p_orbits - s_orbit
@@ -136,25 +137,17 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     VY = np.sum(rel_vel * y_hat, axis=-1)
     VZ = np.sum(rel_vel * z_hat, axis=-1)
 
-    # TODO: add hyper parameter for these scales
-    extra_var_r = np.median(r_tide)**2 * 0.4
-    extra_var_v = np.median(v_disp)**2 * 3.
-
     # position likelihood is gaussian at lagrange points
-    var_x = (np.median(r_tide)/4.)**2
-    var_y = var_x + extra_var_r
-    var_z = var_x
+    var_x = (np.median(r_tide)/5.)**2
     r_term = -0.5*((np.log(var_x) + (X - tail_bit*r_tide)**2/var_x) + \
-                   (np.log(var_y) + (Y)**2/var_y) + \
-                   (np.log(var_z) + (Z)**2/var_z))
+                   (np.log(3*var_x) + (Y)**2/(3*var_x)) + \
+                   (np.log(var_x) + (Z)**2/var_x))
 
-    var_vx = np.median(v_disp)**2 + extra_var_v
-    var_vy = np.median(v_disp)**2
-    var_vz = np.median(v_disp)**2
+    var_vx = np.median(v_disp)**2/2.
 
-    v_term = -0.5*((np.log(var_vx) + (VX)**2/var_vx) + \
-                   (np.log(var_vy) + (VY)**2/var_vy) + \
-                   (np.log(var_vz) + (VZ)**2/var_vz))
+    v_term = -0.5*((np.log(3*var_vx) + (VX)**2/(3*var_vx)) + \
+                   (np.log(var_vx) + (VY)**2/var_vx) + \
+                   (np.log(var_vx) + (VZ)**2/var_vx))
 
     # return logsumexp(r_term + v_term + jac1, axis=0)
     return (r_term + v_term + jac1)
