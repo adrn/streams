@@ -132,7 +132,7 @@ class LawMajewski2010(CompositePotential):
         dlnM_dlnR = (3*Rh**2 + R_orbit**2)/(Rh**2 + R_orbit**2)
         f = (1 - dlnM_dlnR/3.)**(-0.3333333333333)
 
-        return R_orbit * (m / m_enc)**(0.3333333333333) * 1.35
+        return R_orbit * (m / m_enc)**(0.3333333333333) * 1.75
 
     def tidal_radius(self, m, r):
         """ Compute the tidal radius of a massive particle at the specified
