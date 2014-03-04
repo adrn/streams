@@ -166,30 +166,23 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
             return_dict["true_satellite"] = Particle(satl["true_data"].value.T,
                                                      frame=heliocentric,
                                                      units=[u.Unit(x) for x in satl["units"]])
-            return_dict["true_satellite"].mass = satl["m"].value
-            return_dict["true_satellite"].logmass = np.log(satl["m"].value)
-            return_dict["true_satellite"].vdisp = satl["v_disp"].value
+            return_dict["true_satellite"].mass = satl["m0"].value
+            return_dict["true_satellite"].logmass = np.log(satl["m0"].value)
 
         else:
             s = Particle(satl["data"].value.T,
                          frame=heliocentric,
                          units=[u.Unit(x) for x in satl["units"]])
-        s.mass = satl["m"].value
+        s.mass = satl["m0"].value
         s.logmass = ModelParameter(name="logmass",
-                                   truth=np.log(satl["m"].value),
+                                   truth=np.log(satl["m0"].value),
                                    prior=LogUniformPrior(13.85,22.))
-        # HACK? Check mass-loss rates...
-        s.logmdot = ModelParameter(name="logmdot",
-                                   truth=np.log(1.6E-4) + np.log(satl["m"].value),
-                                   prior=LogUniformPrior(5.,15.))
 
-        s.fac_R = ModelParameter(name="fac_R",
-                                 truth=0.,
-                                 prior=LogExponentialPrior(0.02))
-        s.fac_V = ModelParameter(name="fac_V",
-                                 truth=0.,
-                                 prior=LogExponentialPrior(0.01))
-        s.vdisp = satl["v_disp"].value
+        # TODO HACK? Check mass-loss rates...these only valid for Sgr sims
+        s.logmdot = ModelParameter(name="logmdot",
+                                   truth=np.log(3.2*10**(np.floor(np.log10(2.5e8))-4)),
+                                   prior=LogUniformPrior(3.,15.))
+
         return_dict["satellite"] = s
 
         if "simulation" in f.keys():

@@ -25,6 +25,8 @@ from ..dynamics import Particle, Orbit
 from .core import read_table
 from ..util import project_root
 from ..coordinates.frame import galactocentric
+from ..integrate import LeapfrogIntegrator
+from ..potential.lm10 import LawMajewski2010
 
 __all__ = ["SgrSimulation"]
 
@@ -60,6 +62,8 @@ class SgrSimulation(object):
         self.particle_units = [self._units["length"]]*3 + \
                               [self._units["length"]/self._units["time"]]*3
 
+        self.true_potential = LawMajewski2010()
+
         self.mass = mass
         self.t1 = (4.189546E+02 * self._units["time"]).decompose(usys).value
         self.t2 = 0
@@ -93,7 +97,62 @@ class SgrSimulation(object):
             meta[col] = np.array(tbl[col])
 
         p = Particle(q, frame=galactocentric, meta=meta)
-        return p.decompose(usys)
+        p = p.decompose(usys)
+
+        ################################################################
+        # HACK: Figure out if in leading or trailing tail
+        # separate out the orbit of the satellite from the orbit of the stars
+        s = self.satellite()
+        X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
+        V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
+        integrator = LeapfrogIntegrator(self.true_potential._acceleration_at,
+                                        np.array(X), np.array(V),
+                                        args=(X.shape[0], np.zeros_like(X)))
+        ts, rs, vs = integrator.run(t1=self.t1, t2=self.t2, dt=-1.)
+        s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+        p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+
+        # m_t = -s.mdot*ts + s.m0
+        # s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
+        # s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
+        # r_tide = self.true_potential._tidal_radius(m_t, s_orbit[...,:3])
+        # v_disp = s_V * r_tide / s_R
+
+        t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
+        s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
+        p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+        # r_tide = np.array([r_tide[jj,0] for jj in t_idx])
+        # v_disp = np.array([v_disp[jj,0] for jj in t_idx])
+
+        # instantaneous cartesian basis to project into
+        x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
+        y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
+        z_hat = np.cross(x_hat, y_hat)
+
+        # translate to satellite position
+        rel_orbits = p_orbits - s_orbit
+        rel_pos = rel_orbits[...,:3]
+        rel_vel = rel_orbits[...,3:]
+
+        # project onto X
+        X = np.sum(rel_pos * x_hat, axis=-1)
+        Y = np.sum(rel_pos * y_hat, axis=-1)
+        Z = np.sum(rel_pos * z_hat, axis=-1)
+
+        VX = np.sum(rel_vel * x_hat, axis=-1)
+        VY = np.sum(rel_vel * y_hat, axis=-1)
+        VZ = np.sum(rel_vel * z_hat, axis=-1)
+
+        Phi = np.arctan2(Y, X)
+        tail_bit = np.ones(p.nparticles)
+        tail_bit[:] = np.nan
+        tail_bit[np.cos(Phi) < -0.5] = -1.
+        tail_bit[np.cos(Phi) > 0.5] = 1.
+
+        p.meta["tail_bit"] = p.tail_bit = tail_bit
+        ################################################################
+
+        return p
 
     def satellite(self):
         """ Return a Particle object with the present-day position of the
@@ -112,6 +171,11 @@ class SgrSimulation(object):
         v_disp = np.sqrt(np.sum(np.var(q[3:],axis=1)))
         meta["v_disp"] = (v_disp*self.particle_units[-1]).decompose(usys).value
         meta["m"] = float(self.mass)
+
+        m0 = float(self.mass)
+        alpha = 3.3*10**(np.floor(np.log10(m0))-4)
+        meta['m0'] = m0
+        meta['mdot'] = alpha
 
         q = np.median(q, axis=1)
         p = Particle(q, frame=galactocentric,
