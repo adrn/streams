@@ -174,10 +174,10 @@ class StreamModel(object):
                     model.add_parameter('satellite', X)
                     logger.debug("\t\t{}".format(name))
 
-                elif name == 'fac_R' or name == 'fac_V':
-                    p = getattr(satellite,name)
-                    logger.debug("Prior on {}: Exponential(lambda={})".format(name, p._prior.a))
-                    model.add_parameter('satellite', p)
+                # elif name == 'fac_R' or name == 'fac_V':
+                #     p = getattr(satellite,name)
+                #     logger.debug("Prior on {}: Exponential(lambda={})".format(name, p._prior.a))
+                #     model.add_parameter('satellite', p)
 
                 else:
                     p = getattr(satellite,name)
@@ -430,16 +430,16 @@ class StreamModel(object):
             logmdot = self.satellite.logmdot.truth
 
         # hyper-parameter variance for distance
-        try:
-            fac_R = param_dict['satellite']['fac_R']
-        except KeyError:
-            fac_R = self.satellite.fac_R.truth
+        # try:
+        #     fac_R = param_dict['satellite']['fac_R']
+        # except KeyError:
+        #     fac_R = self.satellite.fac_R.truth
 
-        # hyper-parameter variance for velocity
-        try:
-            fac_V = param_dict['satellite']['fac_V']
-        except KeyError:
-            fac_V = self.satellite.fac_V.truth
+        # # hyper-parameter variance for velocity
+        # try:
+        #     fac_V = param_dict['satellite']['fac_V']
+        # except KeyError:
+        #     fac_V = self.satellite.fac_V.truth
 
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
@@ -447,8 +447,7 @@ class StreamModel(object):
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_hel, s_hel,
                                               logmass, logmdot,
-                                              tub, tail_bit,
-                                              fac_R, fac_V)
+                                              tub, tail_bit)
 
         return np.sum(ln_like + data_like) + sat_like
 
