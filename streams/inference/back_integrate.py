@@ -115,7 +115,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
 
     #r_tide = potential._tidal_radius(s_mass, s_orbit)
     r_tide = potential._tidal_radius(m_t, s_orbit[...,:3])
-    v_disp = s_V * r_tide / s_R / 2.2
+    v_disp = s_V * r_tide / s_R
 
     # instantaneous cartesian basis to project into
     x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
@@ -129,25 +129,63 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     rel_vel = rel_orbits[...,3:]
 
     # project onto each
-    X = np.sum(rel_pos * x_hat, axis=-1)
-    Y = np.sum(rel_pos * y_hat, axis=-1)
-    Z = np.sum(rel_pos * z_hat, axis=-1)
+    X = np.sum(rel_pos * x_hat, axis=-1) / r_tide
+    Y = np.sum(rel_pos * y_hat, axis=-1) / r_tide
+    Z = np.sum(rel_pos * z_hat, axis=-1) / r_tide
 
-    VX = np.sum(rel_vel * x_hat, axis=-1)
-    VY = np.sum(rel_vel * y_hat, axis=-1)
-    VZ = np.sum(rel_vel * z_hat, axis=-1)
+    VX = np.sum(rel_vel * x_hat, axis=-1) / v_disp
+    VY = np.sum(rel_vel * y_hat, axis=-1) / v_disp
+    VZ = np.sum(rel_vel * z_hat, axis=-1) / v_disp
 
     # position likelihood is gaussian at lagrange points
-    var_x = (np.median(r_tide)/5.)**2
-    r_term = -0.5*((np.log(var_x) + (X - tail_bit*r_tide)**2/var_x) + \
-                   (np.log(3*var_x) + (Y)**2/(3*var_x)) + \
-                   (np.log(var_x) + (Z)**2/var_x))
+    var_x = var_z = 0.1
+    var_y = 0.1
+    r_term = -0.5*((np.log(var_x) + (X-tail_bit)**2/var_x) + \
+                   (np.log(var_y) + (Y)**2/var_y) + \
+                   (np.log(var_z) + (Z)**2/var_z))
 
-    var_vx = np.median(v_disp)**2/2.
+    var_vx = 0.2
+    var_vy = 0.1
+    var_vz = 0.1
+    v_term = -0.5*((np.log(var_vx) + (VX)**2/var_vx) + \
+                   (np.log(var_vy) + (VY)**2/var_vy) + \
+                   (np.log(var_vz) + (VZ)**2/var_vz))
 
-    v_term = -0.5*((np.log(3*var_vx) + (VX)**2/(3*var_vx)) + \
-                   (np.log(var_vx) + (VY)**2/var_vx) + \
-                   (np.log(var_vx) + (VZ)**2/var_vx))
+    # import matplotlib.pyplot as plt
+    # fig,axes = plt.subplots(1,3,figsize=(16,5),sharex=True)
+    # bins = np.linspace(-3.,3.,50)
+    # axes[0].hist(X - tail_bit, bins=bins, normed=True)
+    # axes[1].hist(Y, bins=bins, normed=True)
+    # axes[2].hist(Z, bins=bins, normed=True)
+    # axes[0].hist(np.random.normal(0., np.sqrt(var_x),size=10000),
+    #              bins=bins, alpha=0.3, normed=True)
+    # axes[1].hist(np.random.normal(0., np.sqrt(var_y),size=10000),
+    #              bins=bins, alpha=0.3, normed=True)
+    # axes[2].hist(np.random.normal(0., np.sqrt(var_z),size=10000),
+    #              bins=bins, alpha=0.3, normed=True)
+
+    # [axes[0].axvline(x) for x in (X-tail_bit)]
+    # [axes[1].axvline(x) for x in Y]
+    # [axes[2].axvline(x) for x in Z]
+    # fig.savefig("/Users/adrian/Desktop/derp.png")
+
+    # fig,axes = plt.subplots(1,3,figsize=(16,5),sharex=True)
+    # bins = np.linspace(-3.,3.,50)
+    # axes[0].hist(VX, bins=bins, normed=True)
+    # axes[1].hist(VY, bins=bins, normed=True)
+    # axes[2].hist(VZ, bins=bins, normed=True)
+    # axes[0].hist(np.random.normal(0., np.sqrt(var_vx),size=10000),
+    #              bins=bins, alpha=0.3, normed=True)
+    # axes[1].hist(np.random.normal(0., np.sqrt(var_vy),size=10000),
+    #              bins=bins, alpha=0.3, normed=True)
+    # axes[2].hist(np.random.normal(0., np.sqrt(var_vz),size=10000),
+    #              bins=bins, alpha=0.3, normed=True)
+
+    # [axes[0].axvline(x) for x in VX]
+    # [axes[1].axvline(x) for x in VY]
+    # [axes[2].axvline(x) for x in VZ]
+    # fig.savefig("/Users/adrian/Desktop/derp2.png")
+    # sys.exit(0)
 
     # return logsumexp(r_term + v_term + jac1, axis=0)
     return (r_term + v_term + jac1)
