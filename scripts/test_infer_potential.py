@@ -38,9 +38,12 @@ logging.basicConfig(level=logging.DEBUG)
 minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8_N1024.hdf5
+# nparticles: 7
+# particle_idx: [758, 635, 503, 122, 961, 713, 360]
 nparticles: 8
-particle_idx: [62, 151, 247, 47, 9, 215, 137, 200]
+particle_idx: [1019, 606, 740, 301, 261, 39, 735, 448]
 # nparticles: 16
+# nparticles: 128
 
 potential:
     class_name: LawMajewski2010
@@ -63,20 +66,20 @@ ptc_params = """
 #    parameters: [d, mul, mub, vr]
 
 sat_params = """
-    parameters: [logmass, d, mul, mub, vr]
+    parameters: [logmass, logmdot, d, mul, mub, vr]
 """
-#    parameters: [logmass]
+#    parameters: [logmass, logmdot, d, mul, mub, vr]
 
 lm10_c = minimum_config.format(potential_params=pot_params,
                                particles_params="",
                                satellite_params="")
 
-_config = minimum_config.format(potential_params=pot_params,
-                                particles_params=ptc_params,
-                                satellite_params=sat_params)
-# _config = minimum_config.format(potential_params="",
+# _config = minimum_config.format(potential_params=pot_params,
 #                                 particles_params=ptc_params,
-#                                 satellite_params="")
+#                                 satellite_params=sat_params)
+_config = minimum_config.format(potential_params=pot_params,
+                                particles_params="",
+                                satellite_params=sat_params)
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
@@ -142,73 +145,6 @@ class TestStreamModel(object):
         assert true_ln_p > ln_p
         assert true_ln_p == true_ln_p2
         assert ln_p == ln_p2
-
-    def test_likelihood(self):
-
-        simulation = SgrSimulation("2.5e8")
-        all_gc_particles = simulation.particles(N=1000, expr="tub!=0")\
-                                     .to_frame(galactocentric)
-
-        c = io.read_config(lm10_c)
-        model = si.StreamModel.from_config(c)
-        true_potential = model._potential_class(**model._given_potential_params)
-
-        test_path = os.path.join(output_path, "likelihood")
-        if not os.path.exists(test_path):
-            os.mkdir(test_path)
-
-        for jj,key in enumerate(sorted(true_potential.parameters.keys())):
-            fig,axes = plt.subplots(2,1,figsize=(6,12),sharex=True)
-            fig2,axes2 = plt.subplots(1,2,figsize=(12,6))
-
-            vals = np.linspace(0.9, 1.1, 71)
-            Ls = []
-            for val in vals:
-                p = true_potential._parameter_dict[key]
-                pparams = model._given_potential_params.copy()
-                pparams[key] = p*val
-                potential = model._potential_class(**pparams)
-
-                ll = si.back_integration_likelihood(model.lnpargs[0],
-                                                    model.lnpargs[1],
-                                                    model.lnpargs[2],
-                                                    potential,
-                                                    model.true_particles._X,
-                                                    model.true_satellite._X,
-                                                    np.log(model.true_satellite.mass),
-                                                    model.true_satellite.vdisp,
-                                                tail_bit=np.array([-1, -1, -1, -1, 1, 1, 1, -1]))
-                Ls.append(ll)
-
-            Ls = np.array(Ls)
-            for kk in range(model.true_particles.nparticles):
-                print(Ls[:,kk])
-                line, = axes[0].plot(vals, Ls[:,kk], alpha=0.5,lw=2.)
-
-                if jj == 0:
-                    _X = model.true_particles.to_frame(galactocentric)._X[kk]
-                    if kk == 0:
-                        axes2[0].plot(all_gc_particles._X[:,0], all_gc_particles._X[:,2],
-                                      marker='.',alpha=0.1, color='k',linestyle='none',ms=5)
-                        axes2[1].plot(all_gc_particles._X[:,3], all_gc_particles._X[:,5],
-                                      marker='.',alpha=0.1, color='k',linestyle='none',ms=5)
-
-                    axes2[0].plot(_X[0],_X[2],marker='o',alpha=1.,
-                                  color=line.get_color(),ms=8,
-                                  label="{}, tub={}".format(kk,model.true_particles.tub[kk]))
-                    axes2[1].plot(_X[3],_X[5],marker='o',alpha=1.,color=line.get_color(),ms=8)
-
-            if jj == 0:
-                axes2[0].legend(loc='lower left', fontsize=8)
-                axes2[0].set_xlabel("X")
-                axes2[0].set_ylabel("Z")
-                axes2[1].set_xlabel("vx")
-                axes2[1].set_ylabel("vz")
-                fig2.savefig(os.path.join(test_path, "particles.png"))
-
-            axes[1].plot(vals, np.sum(Ls,axis=1), alpha=0.75,lw=2.,color='k')
-            fig.suptitle(key)
-            fig.savefig(os.path.join(test_path, "log_test_{}.png".format(jj)))
 
     def test_model(self):
         """ Simple test of posterior """
@@ -290,7 +226,37 @@ class TestStreamModel(object):
                             plt.close('all')
                             idx += 1
 
+                    elif param_name == "fac_R":
+                        vals1 = np.linspace(0., 100., Ncoarse)
+                        vals2 = np.linspace(0.75, 1.25, Nfine)*truths
+
+                        fig = make_plot(model, idx, vals1, vals2)
+                        fig.savefig(os.path.join(test_path,
+                                "ptcl{}_{}.png".format(idx,param_name)))
+                        plt.close('all')
+                        idx += 1
+
+                    elif param_name == "fac_V":
+                        vals1 = np.linspace(0., 100., Ncoarse)
+                        vals2 = np.linspace(0.75, 1.25, Nfine)*truths
+
+                        fig = make_plot(model, idx, vals1, vals2)
+                        fig.savefig(os.path.join(test_path,
+                                "ptcl{}_{}.png".format(idx,param_name)))
+                        plt.close('all')
+                        idx += 1
+
                     elif param_name == "logmass":
+                        vals1 = np.linspace(param._prior.a,
+                                            param._prior.b,
+                                            Ncoarse)
+                        vals2 = np.linspace(0.9,1.1,Nfine)*truths
+                        fig = make_plot(model, idx, vals1, vals2)
+                        fig.savefig(os.path.join(test_path, "sat{}_{}.png".format(idx,param_name)))
+                        plt.close('all')
+                        idx += 1
+
+                    elif param_name == "logmdot":
                         vals1 = np.linspace(param._prior.a,
                                             param._prior.b,
                                             Ncoarse)
