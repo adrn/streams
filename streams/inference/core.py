@@ -399,7 +399,7 @@ class StreamModel(object):
             shocked_bit = param_dict['particles']['shocked_bit']
         except KeyError:
             shocked_bit = self.particles.shocked_bit.truth
-            shocked_bit = np.array([0,0,0,0,0,1,1,0])
+            #shocked_bit = np.array([0,0,0,0,0,1,1,0])
 
         # heliocentric satellite positions
         s_hel = []
