@@ -21,14 +21,14 @@ import daft
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib import rc_context, rcParams, cm
-from matplotlib.patches import Rectangle, Ellipse
+from matplotlib.patches import Rectangle, Ellipse, Circle
 import scipy.optimize as so
 from scipy.stats import norm
 
 from streams.util import project_root
 from streams.io.sgr import SgrSimulation
 from streams.integrate import LeapfrogIntegrator
-from streams.potential.lm10 import LawMajewski2010, LawMajewski2010Py
+from streams.potential.lm10 import LawMajewski2010#, LawMajewski2010Py
 
 matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18)
@@ -209,112 +209,27 @@ def potential_contours(**kwargs):
     fig.tight_layout(pad=1.5, h_pad=0.)
     fig.savefig(filename)
 
-def twod_dist(**kwargs):
-
-    m = float(kwargs["m"])
-    sgr = SgrSimulation(kwargs["m"])
-    p = sgr.particles(N=5000, expr="tub!=0")
-    p_bound = sgr.particles(N=0, expr="tub==0")
-    v_disp = np.sqrt(np.var(p_bound["vx"]) + \
-                     np.var(p_bound["vy"]) + \
-                     np.var(p_bound["vz"])).value[0]
-    s = sgr.satellite()
+def Lpts(**kwargs):
 
     potential = LawMajewski2010()
+    filename = os.path.join(plot_path, "Lpts_r.png")
+    filename2 = os.path.join(plot_path, "Lpts_v.png")
 
-    X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
-    V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
-    integrator = LeapfrogIntegrator(potential._acceleration_at,
-                                    np.array(X), np.array(V),
-                                    args=(X.shape[0], np.zeros_like(X)))
-    ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
-
-    s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
-    p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
-    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
-
-    p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    s_x = np.array([s_orbit[jj,0] for jj in t_idx])
-
-    diff = p_x-s_x
-    rel_r = np.sqrt(np.sum(diff[:,:3]**2, axis=-1))
-    rel_v = np.sqrt(np.sum(diff[:,3:]**2, axis=-1))
-
-    r_tide = potential._tidal_radius(m, s_x)*1.6
-    lnR = np.log(rel_r/r_tide)
-    lnV = np.log(rel_v/v_disp)
-
-    plt.clf()
-    gs = GridSpec(3,3)
-
-    fig = plt.figure(figsize=(12,12))
-
-    xlims = (-2,4)
-    ylims = (-2,4)
-    nbins = 50
-
-    plt.subplot(gs[0,:2])
-    bins = np.linspace(*xlims, num=nbins)
-    plt.hist(lnR, bins=bins,
-             color='#555555', normed=True,
-             histtype='stepfilled')
-    plt.plot(bins, gaussian(bins, 0., 0.45),
-             color='#2b8cbe', lw=2.)
-    plt.xticks([])
-    plt.yticks([])
-    plt.xlim(*xlims)
-
-    plt.subplot(gs[1:,2])
-    bins = np.linspace(*ylims, num=nbins)
-    plt.hist(lnV, orientation='horizontal',
-             bins=bins, normed=True,
-             color='#555555', histtype='stepfilled')
-    plt.plot(gaussian(bins, 0., 0.6), bins,
-             color='#2b8cbe', lw=2.)
-    plt.xticks([])
-    plt.yticks([])
-    plt.ylim(*ylims)
-
-    plt.subplot(gs[1:,:2])
-    plt.plot(lnR, lnV, linestyle='none',
-             marker='o', alpha=0.2)
-    #contour(X,Y,z)
-    plt.xlim(*xlims)
-    plt.ylim(*ylims)
-    plt.setp(plt.gca().get_xticklabels(), fontsize=24)
-    plt.setp(plt.gca().get_yticklabels(), fontsize=24)
-
-    plt.xlabel(r"$\ln \left[\frac{\vert r-r_p \vert}{R_{\rm tide}}\right]$ at $t=t_{ub}$")
-    plt.ylabel(r"$\ln \left[\frac{\vert v-v_p \vert}{\sigma_v}\right]$ at $t=t_{ub}$")
-
-    fig.suptitle(r"Progenitor Mass: {}$M_\odot$".format(kwargs["m"]),
-                 fontsize=32)
-    fig.subplots_adjust(hspace=0., wspace=0.)
-    fig.savefig(os.path.join(plot_path, "twod_{}.pdf".format(kwargs["m"])))
-
-def R_V(**kwargs):
-
-    filename = os.path.join(plot_path, "R_V.pdf")
     fig,axes = plt.subplots(2,4,figsize=(14,7.5),
                             sharex=True, sharey=True)
+    fig2,axes2 = plt.subplots(2,4,figsize=(14,7.5),
+                              sharex=True, sharey=True)
 
     bins = np.linspace(-3,3,50)
-    nparticles = 5000
-    for kk,_m in enumerate(range(6,9+1)):
+    nparticles = 2000
+    for k,_m in enumerate(range(6,9+1)):
         mass = "2.5e{}".format(_m)
         m = float(mass)
         print(mass)
 
         sgr = SgrSimulation(mass)
-        p = sgr.particles(N=nparticles, expr="(tub!=0)")#" & (tub<400)")
-
-        p_bound = sgr.particles(N=0, expr="tub==0")
-        v_disp = np.sqrt(np.var(p_bound["vx"]) + \
-                         np.var(p_bound["vy"]) + \
-                         np.var(p_bound["vz"])).value[0]
+        p = sgr.particles(N=nparticles, expr="(tub!=0) & (tub<355) & (tub>94)")
         s = sgr.satellite()
-
-        potential = LawMajewski2010()
 
         X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
         V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
@@ -327,60 +242,101 @@ def R_V(**kwargs):
         p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
         t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
 
-        p_x = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-        s_x = np.array([s_orbit[jj,0] for jj in t_idx])
+        m_t = (-s.mdot*ts + s.m0)[:,np.newaxis]
+        s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
+        s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
+        r_tide = sgr.true_potential._tidal_radius(m_t, s_orbit[...,:3])
+        v_disp = s_V * r_tide / s_R
 
-        diff = p_x-s_x
-        rel_r = np.sqrt(np.sum(diff[:,:3]**2, axis=-1))
-        rel_v = np.sqrt(np.sum(diff[:,3:]**2, axis=-1))
+        # cartesian basis to project into
+        x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
+        _y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
+        z_hat = np.cross(x_hat, _y_hat)
+        y_hat = -np.cross(x_hat, z_hat)
 
-        r_tide = potential._tidal_radius(m, s_x)*1.6
-        lnR = np.log(rel_r/r_tide.mean())
-        lnV = np.log(rel_v/v_disp)
+        # translate to satellite position
+        rel_orbits = p_orbits - s_orbit
+        rel_pos = rel_orbits[...,:3]
+        rel_vel = rel_orbits[...,3:]
 
-        axes[0,kk].text(0.5, 1.04, r"{}$M_\odot$".format(mass),
-                   horizontalalignment='center',
-                   fontsize=24,
-                   transform=axes[0,kk].transAxes)
+        # project onto each
+        X = np.sum(rel_pos * x_hat, axis=-1)
+        Y = np.sum(rel_pos * y_hat, axis=-1)
+        Z = np.sum(rel_pos * z_hat, axis=-1)
 
-        axes[0,kk].hist(lnR, bins=bins,
-                        color='#888888', normed=True,
-                        histtype='stepfilled')
-        args = norm.fit(lnR)
-        print("\t", args)
-        axes[0,kk].plot(bins, norm.pdf(bins,*args),
-                        lw=3., alpha=0.75, color="#3182bd")
-        axes[0,kk].text(1., 0.75, r"$\sigma=${:.2f}".format(args[1]), fontsize=18)
+        VX = np.sum(rel_vel * x_hat, axis=-1)
+        VY = np.sum(rel_vel * y_hat, axis=-1)
+        VZ = np.sum(rel_vel * z_hat, axis=-1)
+        VV = np.sqrt(VX**2+VY**2+VZ**2)
 
-        axes[1,kk].hist(lnV, bins=bins,
-                        color='#888888', normed=True,
-                        histtype='stepfilled')
-        args = norm.fit(lnV)
-        print("\t", args)
-        axes[1,kk].plot(bins, norm.pdf(bins,*args),
-                        lw=3., alpha=0.75, color="#3182bd")
-        axes[1,kk].text(1., 0.75, r"$\sigma=${:.2f}".format(args[1]), fontsize=18)
+        for ii,jj in enumerate(t_idx):
+            tcross = r_tide[jj,0] / VV[jj,ii]
+            bnd = int(tcross / 4)
+            axes[0,k].plot(X[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
+                           Y[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
+                           linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+            axes[1,k].plot(X[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
+                           Z[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
+                           linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
 
-        axes[1,kk].set_xticks(range(-2,2+1,1))
+        circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
+                      edgecolor='k', linestyle='solid')
+        axes[0,k].add_patch(circ)
+        circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
+                      edgecolor='k', linestyle='solid')
+        axes[1,k].add_patch(circ)
 
-        axes[0,kk].set_xlim(-3,3)
-        axes[1,kk].set_xlim(-3,3)
-        axes[0,kk].set_ylim(0,1.1)
-        axes[1,kk].set_ylim(0,1.1)
+        axes[0,k].axhline(0., color='k', alpha=0.75)
+        axes[1,k].axhline(0., color='k', alpha=0.75)
 
-    axes[0,0].set_yticks(np.arange(0.,1.1,0.5))
-    axes[1,0].set_yticks(np.arange(0.,1.1,0.5))
+        axes[0,k].set_xlim(-3,3)
+        axes[0,k].set_ylim(axes[0,k].get_xlim())
 
-    # plt.setp(plt.gca().get_xticklabels(), fontsize=24)
-    # plt.setp(plt.gca().get_yticklabels(), fontsize=24)
+        axes[1,k].set_xlabel(r"$X$")
 
-    axes[0,0].set_ylabel("R", rotation='horizontal')
-    axes[1,0].set_ylabel("V", rotation='horizontal')
+        if k == 0:
+            axes[0,k].set_ylabel(r"$Y$")
+            axes[1,k].set_ylabel(r"$Z$")
 
+        for ii,jj in enumerate(t_idx):
+            tcross = r_tide[jj,0] / VV[jj,ii]
+            bnd = int(tcross / 4)
+            axes2[0,k].plot(VX[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
+                            VY[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
+                            linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+            axes2[1,k].plot(VX[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
+                            VZ[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
+                            linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+
+        circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
+                      edgecolor='k', linestyle='solid')
+        axes2[0,k].add_patch(circ)
+        circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
+                      edgecolor='k', linestyle='solid')
+        axes2[1,k].add_patch(circ)
+
+        axes2[0,k].axhline(0., color='k', alpha=0.75)
+        axes2[1,k].axhline(0., color='k', alpha=0.75)
+
+        axes2[1,k].set_xlim(-3,3)
+        axes2[1,k].set_ylim(axes2[1,k].get_xlim())
+
+        axes2[1,k].set_xlabel(r"$V_X$")
+
+        if k == 0:
+            axes2[0,k].set_ylabel(r"$V_Y$")
+            axes2[1,k].set_ylabel(r"$V_Z$")
+
+        axes[0,k].set_title(r"$2.5\times10^{}M_\odot$".format(_m))
+        axes2[0,k].set_title(r"$2.5\times10^{}M_\odot$".format(_m))
 
     fig.tight_layout()
     fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
     fig.savefig(filename)
+
+    fig2.tight_layout()
+    fig2.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
+    fig2.savefig(filename2)
 
 def num_recombine(**kwargs):
     N_particles = kwargs.get('N', 1000)
