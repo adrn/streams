@@ -34,7 +34,7 @@ def xyz_sph_jac(hel):
     return deet
 
 def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logmdot,
-                                tub, tail_bit):
+                                tub, tail_bit, shocked_bit):
 
     """ Compute the likelihood of 6D heliocentric star positions today given the
         potential and position of the satellite.
@@ -59,18 +59,15 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
             Array of unbinding times for each star.
         tail_bit : array_like
             Array of tail bits (K) to specify leading/trailing tail for each star.
-        fac_R : float
-            Variance hyper-parameters for stars to handle spread in distance
-            during shocks.
-        fac_V : float
-            Variance hyper-parameters for stars to handle spread in velocity
-            during shocks.
+        shocked_bit : array_like
+            Probability the star was shocked.
 
     """
 
     p_gc = _hel_to_gc(p_hel)
     s_gc = _hel_to_gc(s_hel)
     tail_bit = np.sign(tail_bit)
+    shocked_bit = np.round(shocked_bit).astype(int)
 
     gc = np.vstack((s_gc,p_gc)).copy()
     acc = np.zeros_like(gc[:,:3])
@@ -150,6 +147,22 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     v_term = -0.5*((np.log(var_vx) + (VX)**2/var_vx) + \
                    (np.log(var_vy) + (VY)**2/var_vy) + \
                    (np.log(var_vz) + (VZ)**2/var_vz))
+
+    not_shocked = (r_term + v_term + jac1)[shocked_bit == 0]
+
+    # shocked
+    var_x = 2.0
+    r_term2 = -0.5*(3*np.log(var_x) + X/var_x + Y/var_x + Z/var_x)
+
+    var_v = 2.0
+    v_term2 = -0.5*(3*np.log(var_v) + VX/var_x + VY/var_v + VZ/var_v)
+
+    like = np.zeros_like(r_term)
+
+    like[shocked_bit == 0] = (r_term + v_term + jac1)[shocked_bit == 0]
+    like[shocked_bit == 1] = (r_term2 + v_term2 + jac1)[shocked_bit == 1]
+
+    return like
 
     # import matplotlib.pyplot as plt
     # fig,axes = plt.subplots(1,3,figsize=(16,5),sharex=True)

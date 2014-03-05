@@ -61,7 +61,7 @@ pot_params = """
 """
 
 ptc_params = """
-    parameters: [d]
+    parameters: [shocked_bit]
 """
 #    parameters: [d, mul, mub, vr]
 
@@ -79,7 +79,7 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params=pot_params,
                                 particles_params="",
-                                satellite_params=sat_params)
+                                satellite_params="")
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
@@ -187,6 +187,21 @@ class TestStreamModel(object):
                             vals2 = np.linspace(mu-3*sigma,
                                                 mu+3*sigma,
                                                 Nfine)
+                            fig = make_plot(model, idx, vals1, vals2)
+                            fig.savefig(os.path.join(test_path,
+                                    "ptcl{}_{}.png".format(idx,param_name)))
+                            plt.close('all')
+                            idx += 1
+
+                    elif param_name == 'shocked_bit':
+                        for jj in range(param.value.shape[0]):
+                            vals1 = np.linspace(param._prior.a[jj],
+                                                param._prior.b[jj],
+                                                Ncoarse)
+                            vals2 = np.linspace(param._prior.a[jj],
+                                                param._prior.b[jj],
+                                                Nfine)
+
                             fig = make_plot(model, idx, vals1, vals2)
                             fig.savefig(os.path.join(test_path,
                                     "ptcl{}_{}.png".format(idx,param_name)))
