@@ -14,7 +14,7 @@ plot:
 # data
 data_file: data/observed_particles/2.5e8_N1024.hdf5
 nparticles: 8
-particle_idx: [62, 151, 247, 47, 9, 215, 137, 200]
+particle_idx: [1019, 606, 740, 301, 261, 39, 735, 448]
 
 # integration
 dt: -1.
@@ -27,7 +27,7 @@ potential:
 #    parameters: [q1, qz, phi, v_halo]
 
 particles:
-    parameters: [d, tub]
+    parameters: [d, shocked_bit]
 #    parameters: [l, b, d, mul, mub, vr]
 
 satellite:
