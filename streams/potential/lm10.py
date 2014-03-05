@@ -126,14 +126,14 @@ class LawMajewski2010(CompositePotential):
         """
 
         # Radius of Sgr center relative to galactic center
-        R_orbit = np.sqrt(np.sum(r**2., axis=-1))
-        m_enc = self._enclosed_mass(R_orbit)
-
+        R = np.sqrt(np.sum(r**2., axis=-1))
+        m_enc = self._enclosed_mass(R)
         Rh = self._parameter_dict['R_halo']
-        dlnM_dlnR = (3*Rh**2 + R_orbit**2)/(Rh**2 + R_orbit**2)
+
+        dlnM_dlnR = (3*Rh**2 + R**2)/(Rh**2 + R**2)
         f = (1 - dlnM_dlnR/3.)**(-0.3333333333333)
 
-        return R_orbit * (m / m_enc)**(0.3333333333333) * 1.75
+        return R * (m / m_enc)**(0.3333333333333) * f * 1.4
 
     def _read_tidal_radius(self, m, r, alpha=1.):
         """ Compute the tidal radius of a massive particle at the specified
