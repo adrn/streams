@@ -79,7 +79,7 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params=pot_params,
                                 particles_params="",
-                                satellite_params="")
+                                satellite_params=sat_params)
 
 # particles_params=ptc_params,
 # satellite_params=sat_params

@@ -151,8 +151,8 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     not_shocked = (r_term + v_term + jac1)[shocked_bit == 0]
 
     # shocked
-    var_x = 2.0
-    r_term2 = -0.5*(3*np.log(var_x) + X/var_x + Y/var_x + Z/var_x)
+    var_r = 2.0
+    r_term2 = -0.5*(3*np.log(var_r) + X/var_r + Y/var_r + Z/var_r)
 
     var_v = 2.0
     v_term2 = -0.5*(3*np.log(var_v) + VX/var_x + VY/var_v + VZ/var_v)
@@ -161,8 +161,6 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
 
     like[shocked_bit == 0] = (r_term + v_term + jac1)[shocked_bit == 0]
     like[shocked_bit == 1] = (r_term2 + v_term2 + jac1)[shocked_bit == 1]
-
-    return like
 
     # import matplotlib.pyplot as plt
     # fig,axes = plt.subplots(1,3,figsize=(16,5),sharex=True)
@@ -177,9 +175,14 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     # axes[2].hist(np.random.normal(0., np.sqrt(var_z),size=10000),
     #              bins=bins, alpha=0.3, normed=True)
 
-    # [axes[0].axvline(x) for x in (X-tail_bit)]
-    # [axes[1].axvline(x) for x in Y]
-    # [axes[2].axvline(x) for x in Z]
+    # for ii in range(nparticles):
+    #     if shocked_bit[ii] == 0:
+    #         c = 'k'
+    #     else:
+    #         c = 'r'
+    #     axes[0].axvline(X[ii]-tail_bit[ii], c=c)
+    #     axes[1].axvline(Y[ii], c=c)
+    #     axes[2].axvline(Z[ii], c=c)
     # fig.savefig("/Users/adrian/Desktop/derp.png")
 
     # fig,axes = plt.subplots(1,3,figsize=(16,5),sharex=True)
@@ -194,11 +197,17 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     # axes[2].hist(np.random.normal(0., np.sqrt(var_vz),size=10000),
     #              bins=bins, alpha=0.3, normed=True)
 
-    # [axes[0].axvline(x) for x in VX]
-    # [axes[1].axvline(x) for x in VY]
-    # [axes[2].axvline(x) for x in VZ]
+    # for ii in range(nparticles):
+    #     if shocked_bit[ii] == 0:
+    #         c = 'k'
+    #     else:
+    #         c = 'r'
+    #     axes[0].axvline(VX[ii], c=c)
+    #     axes[1].axvline(VY[ii], c=c)
+    #     axes[2].axvline(VZ[ii], c=c)
     # fig.savefig("/Users/adrian/Desktop/derp2.png")
     # sys.exit(0)
 
+    return like
+
     # return logsumexp(r_term + v_term + jac1, axis=0)
-    return (r_term + v_term + jac1)
