@@ -107,7 +107,7 @@ Alternatively, the statistical properties of gravitationally lensed background s
 
 Within the Milky Way our unique vantage point allows us a three-dimensional view of the structure in own dark matter halo. Our proximity allows us to use individual stars as kinematic tracers and hence build much larger samples that probe deeper into the halo than the globular cluster and planetary nebula studies of external galaxies. For example, \cite{deason12a} used halo BHB stars selected from the Sloan Digital Sky Survey \cite[SDSS;][]{york00} as a random tracer population to measure the mass and slope of a power-law fit. Such studies assume that the tracer orbits are randomly sampled from a smooth distribution function and are fully phase mixed. However, large photometric surveys such as the SDSS have discovered large amounts of substructure --- in streams and associations of stars --- in the Milky Way halo, thus demonstrating that the stellar distribution is not phase-mixed. Since the initial discovery of tidal debris from the Sagittarius (Sgr) dwarf spheroidal galaxy, myriad other streams and debris systems have been identified probing Galactocentric distances from $\sim$15-100 kpc. The existence of large-scale substructure in stellar streams and clouds is known to bias mass and velocity inferences by several tens of percent \citep{yencho06}.
 
-Another approach to using halo stars as potential measures is to exploit the non-random nature of halo. For example, \cite{law10} used N-body simulations of the disruption of the Sgr dwarf to simultaneously model the debris and underlying Milky Way potential. By varying parameters of the Milky Way potential, they found ``best-fit'' parameters by comparing the properties of observed Sgr stars to their simulated debris over a grid of potential parameters. The computational costs of running N-body simulations limited their search to a grid of values and forced the authors to fix many other parameters (e.g., properties of the disk and bulge). Nevertheless, they were able to constrain the shape of the Milky Way potential out to $\sim$70 kpc and found that the best-fitting halo has a prolate, triaxial shape elongated in the Galactic Z direction, orthogonal to the plane of the disk. Though an unlikely orientation for the halo --- e.g., \cite{debattista13} find that the disk of the Milky Way would not remain stable in such a configuration --- LM10 showed that the data is at a state where such inference can be attempted. The computational costs associated with N-body modeling has motivated many methods that approximately model tidal streams.
+Another approach to using halo stars as potential measures is to exploit the non-random nature of halo. For example, \citet[][LM10]{law10} used N-body simulations of the disruption of the Sgr dwarf to simultaneously model the debris and underlying Milky Way potential. By varying parameters of the Milky Way potential, they found ``best-fit'' parameters by comparing the properties of observed Sgr stars to their simulated debris over a grid of potential parameters. The computational costs of running N-body simulations limited their search to a grid of values and forced the authors to fix many other parameters (e.g., properties of the disk and bulge). Nevertheless, they were able to constrain the shape of the Milky Way potential out to $\sim$70 kpc and found that the best-fitting halo has a prolate, triaxial shape elongated in the Galactic Z direction, orthogonal to the plane of the disk. Though an unlikely orientation for the halo --- e.g., \cite{debattista13} find that the disk of the Milky Way would not remain stable in such a configuration --- LM10 showed that the data is at a state where such inference can be attempted. The computational costs associated with N-body modeling has motivated many methods that approximately model tidal streams.
 
 Tidal streams are dynamically cold systems --- debris typically have small distributions of energy and angular momentum --- and thus require orders of magnitude fewer tracers than a random sample to get constraints of comparable accuracy. For example, in the simplest case we might assume that debris stars are actually still on the same orbit as their progenitor system \citep[a \emph{wrong} assumption, see e.g.,][]{eyre11}. Then we can imagine measuring the full-space velocities ${\bf v}$ at different points ${\bf x}$ in the structure (e.g., along a stream), which would give us a direct measure of differences in a potential, $\Phi$, without running a full model of the disruption. An extension of this idea is to fit a single orbit to observed debris \citep[e.g.,][]{koposov10, deg13}. Though this is known to be incorrect and leads to biases in inferred properties of the underlying potential \citep[e.g.,][]{eyre11, lux13, sanders13a}, \cite{deg14} and \cite{lux13} have used orbit fitting to demonstrate the power of combining multiple streams in dynamical inference. To account for the offset between the orbit of the progenitor and the orbits of the debris stars, methods have been proposed that model the debris as an orbit plus some dispersion or offset, either in phase space \citep[e.g.,][]{eyre09a, varghese11, kuepper12} or action-angle coordinates \citep{eyre11, sanders13b, bovy14, sanders14}. Other statistical methods have been proposed \citep[][]{penarrubia12, sanderson14} that may prove powerful when applied to, e.g., data from the \gaia\, mission, where full 6D coordinates will be known for large samples of stars in the halo --- and therefore many debris structures --- but stream membership is not known for all stars.
 
@@ -147,6 +147,14 @@ The total potential then is just
 \begin{equation}
 	\Phi_{\rm tot} = \Phi_{\rm disk} + \Phi_{\rm spher} + \Phi_{\rm halo}\label{eq:lm10}.
 \end{equation}
+Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane (Y=0) and Y-Z plane (X=0) for a few choices of  $q_1$,  $q_z$, and $\phi$ while holding all other parameters fixed, as described in the figure caption.
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/potentials.pdf}
+\caption{ TODO }\label{fig:potential}
+\end{center}
+\end{figure}
 
 \begin{figure}[h]
 \begin{center}
@@ -240,18 +248,7 @@ where the factor $\mathcal{Z}$ only depends on the properties of the data (the \
 % In general, $p(\tub)$ is likely conditional on the orbit of the progenitor --- stars are preferentially stripped at pericentric passages --- but this is neglected and is taken to be uniform over the entire interaction history between the progenitor and parent. 
 
 \section{Experiments}
-In what follows, we apply this model to ``observations'' of the N-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{}).
-
-Initially we assume the present-day mass of the progenitor, $M_p$, and velocity dispersion, $\sigma_v$, have been measured perfectly and neglect mass-loss from the progenitor. 
-
-\begin{figure}[h]
-\begin{center}
-% \includegraphics[width=\textwidth]{/Users/adrian/projects/streams/plots/paper2/potentials.pdf}
-\caption{ TODO }\label{fig:potential}
-\end{center}
-\end{figure}
- 
-When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:potential}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $v_h$, 100-200~kms$^{-1}$ corresponds to a range in solar circular velocities from $\sim$210-250 kms$^{-1}$ (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and mixed triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$). Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane (Y=0) and Y-Z plane (X=0) for a few choices of  $q_1$,  $q_z$, and $\phi$ while holding all other parameters fixed, as described in the figure caption.
+In what follows, we apply the model described above to ``observations'' of the N-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{eq:lm10}). When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:potential}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $v_h$, 100-200~kms$^{-1}$ corresponds to a range in solar circular velocities from $\sim$210-250 kms$^{-1}$ (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and generic triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$).
 
 \begin{table}[h]
 \begin{center}
@@ -277,8 +274,12 @@ When recovering the potential, we hold fixed the disk and spheroid parameters (s
 \end{center}
 \end{table}
 
+\subsection{Perfect data}
+
 \subsection{\gaia + \spitzer}
-4 stars in Sgr-like stream
+8 stars in Sgr-like stream
+
+We assume the present-day mass of the progenitor, $M_p$, and velocity dispersion, $\sigma_v$, have been measured perfectly and neglect mass-loss from the progenitor. 
 
 \subsection{\spitzer + current data}
 4 stars in Sgr-like stream
