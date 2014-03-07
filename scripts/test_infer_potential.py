@@ -38,10 +38,10 @@ logging.basicConfig(level=logging.DEBUG)
 minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8_N1024.hdf5
-# nparticles: 7
-# particle_idx: [758, 635, 503, 122, 961, 713, 360]
 nparticles: 8
 particle_idx: [1019, 606, 740, 301, 261, 39, 735, 448]
+# nparticles: 4
+# particle_idx: [1019, 606, 740, 301]
 # nparticles: 16
 # nparticles: 128
 
@@ -61,7 +61,7 @@ pot_params = """
 """
 
 ptc_params = """
-    parameters: [shocked_bit]
+    parameters: [p_shocked]
 """
 #    parameters: [d, mul, mub, vr]
 
@@ -77,9 +77,9 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 # _config = minimum_config.format(potential_params=pot_params,
 #                                 particles_params=ptc_params,
 #                                 satellite_params=sat_params)
-_config = minimum_config.format(potential_params=pot_params,
-                                particles_params="",
-                                satellite_params=sat_params)
+_config = minimum_config.format(potential_params="",
+                                particles_params=ptc_params,
+                                satellite_params="")
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
@@ -193,7 +193,7 @@ class TestStreamModel(object):
                             plt.close('all')
                             idx += 1
 
-                    elif param_name == 'shocked_bit':
+                    elif param_name == 'p_shocked':
                         for jj in range(param.value.shape[0]):
                             vals1 = np.linspace(param._prior.a[jj],
                                                 param._prior.b[jj],

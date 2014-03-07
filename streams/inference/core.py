@@ -398,8 +398,7 @@ class StreamModel(object):
         try:
             p_shocked = param_dict['particles']['p_shocked']
         except KeyError:
-            #p_shocked = self.particles.p_shocked.truth
-            p_shocked = np.array([0,0,0,0,0,1,0,0.])
+            p_shocked = self.particles.p_shocked.truth
 
         # heliocentric satellite positions
         s_hel = []
