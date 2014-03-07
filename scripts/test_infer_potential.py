@@ -66,7 +66,7 @@ ptc_params = """
 #    parameters: [d, mul, mub, vr]
 
 sat_params = """
-    parameters: [logmass, logmdot, d, mul, mub, vr]
+    parameters: [c]
 """
 #    parameters: [logmass, logmdot, d, mul, mub, vr]
 
@@ -78,8 +78,8 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 #                                 particles_params=ptc_params,
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params="",
-                                particles_params=ptc_params,
-                                satellite_params="")
+                                particles_params="",
+                                satellite_params=sat_params)
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
@@ -276,6 +276,14 @@ class TestStreamModel(object):
                                             param._prior.b,
                                             Ncoarse)
                         vals2 = np.linspace(0.9,1.1,Nfine)*truths
+                        fig = make_plot(model, idx, vals1, vals2)
+                        fig.savefig(os.path.join(test_path, "sat{}_{}.png".format(idx,param_name)))
+                        plt.close('all')
+                        idx += 1
+
+                    elif param_name == "c":
+                        vals1 = np.linspace(0.5, 3.5, Ncoarse)
+                        vals2 = np.linspace(0.9, 1.1, Nfine)*truths
                         fig = make_plot(model, idx, vals1, vals2)
                         fig.savefig(os.path.join(test_path, "sat{}_{}.png".format(idx,param_name)))
                         plt.close('all')
