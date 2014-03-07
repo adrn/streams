@@ -174,10 +174,10 @@ class StreamModel(object):
                     model.add_parameter('satellite', X)
                     logger.debug("\t\t{}".format(name))
 
-                # elif name == 'fac_R' or name == 'fac_V':
-                #     p = getattr(satellite,name)
-                #     logger.debug("Prior on {}: Exponential(lambda={})".format(name, p._prior.a))
-                #     model.add_parameter('satellite', p)
+                elif name == 'c':
+                    p = getattr(satellite,name)
+                    logger.debug("Prior on {}: ".format(name))
+                    model.add_parameter('satellite', p)
 
                 else:
                     p = getattr(satellite,name)
@@ -439,8 +439,7 @@ class StreamModel(object):
         try:
             c = param_dict['satellite']['c']
         except KeyError:
-            #logmdot = self.satellite.logmdot.truth
-            c = 2.1
+            c = self.satellite.c.truth
 
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)

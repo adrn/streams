@@ -22,7 +22,7 @@ import astropy.coordinates as coord
 import yaml
 
 # Project
-from ..inference import ModelParameter, LogUniformPrior, LogExponentialPrior
+from ..inference import ModelParameter, LogUniformPrior, LogExponentialPrior, LogNormalPrior
 from ..coordinates.frame import heliocentric, galactocentric
 from ..dynamics import Particle, ObservedParticle, Orbit
 from ..util import OrderedDictYAMLLoader
@@ -188,6 +188,11 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
         s.logmdot = ModelParameter(name="logmdot",
                                    truth=np.log(3.2*10**(np.floor(np.log10(2.5e8))-4)),
                                    prior=LogUniformPrior(3.,15.))
+
+        # TODO HACK? Check tidal radius offset -- will vary?
+        s.c = ModelParameter(name="c",
+                             truth=2.,
+                             prior=LogNormalPrior(2.,0.5))
 
         return_dict["satellite"] = s
 
