@@ -396,10 +396,10 @@ class StreamModel(object):
 
         # whether the particle was shocked or evaporated
         try:
-            shocked_bit = param_dict['particles']['shocked_bit']
+            p_shocked = param_dict['particles']['p_shocked']
         except KeyError:
-            shocked_bit = self.particles.shocked_bit.truth
-            #shocked_bit = np.array([0,0,0,0,0,1,1,0])
+            #p_shocked = self.particles.p_shocked.truth
+            p_shocked = np.array([0,0,0,0,0,1,0,0.])
 
         # heliocentric satellite positions
         s_hel = []
@@ -436,13 +436,21 @@ class StreamModel(object):
         except KeyError:
             logmdot = self.satellite.logmdot.truth
 
+        # position of effective tidal radius
+        try:
+            c = param_dict['satellite']['c']
+        except KeyError:
+            #logmdot = self.satellite.logmdot.truth
+            c = 2.1
+
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_hel, s_hel,
                                               logmass, logmdot,
-                                              tub, tail_bit, shocked_bit)
+                                              tub, tail_bit, p_shocked,
+                                              c)
 
         return np.sum(ln_like + data_like) + sat_like
 

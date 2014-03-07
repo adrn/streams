@@ -137,8 +137,8 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
         tail_bit = ModelParameter(name="tail_bit",
                                   truth=true_tail_bit,
                                   prior=LogUniformPrior([-2.]*nparticles,[2.]*nparticles))
-        shocked_bit = ModelParameter(name="shocked_bit",
-                                   truth=[0.]*nparticles,
+        p_shocked = ModelParameter(name="p_shocked",
+                                   truth=[0.]*p_shocked,
                                    prior=LogUniformPrior([0.]*nparticles,[1.]*nparticles))
 
         if "error" in ptcl.keys():
@@ -160,7 +160,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
 
         p.tub = tub
         p.tail_bit = tail_bit
-        p.shocked_bit = shocked_bit
+        p.p_shocked = p_shocked
         return_dict["particles"] = p
 
         if "error" in satl.keys():

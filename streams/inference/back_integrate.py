@@ -34,7 +34,7 @@ def xyz_sph_jac(hel):
     return deet
 
 def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logmdot,
-                                tub, tail_bit, shocked_bit):
+                                tub, tail_bit, p_shocked, c):
 
     """ Compute the likelihood of 6D heliocentric star positions today given the
         potential and position of the satellite.
@@ -59,15 +59,17 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
             Array of unbinding times for each star.
         tail_bit : array_like
             Array of tail bits (K) to specify leading/trailing tail for each star.
-        shocked_bit : array_like
+        p_shocked : array_like
             Probability the star was shocked.
+        c : float
+            Position of effective tidal radius.
 
     """
 
     p_gc = _hel_to_gc(p_hel)
     s_gc = _hel_to_gc(s_hel)
-    tail_bit = np.sign(tail_bit)
-    shocked_bit = np.round(shocked_bit).astype(int)
+    K = np.sign(tail_bit)
+    p_shocked = np.array(p_shocked)
 
     gc = np.vstack((s_gc,p_gc)).copy()
     acc = np.zeros_like(gc[:,:3])
@@ -135,32 +137,33 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     VZ = np.sum(rel_vel * z_hat, axis=-1) / v_disp
 
     # position likelihood is gaussian at lagrange points
-    var_x = var_z = 0.1
-    var_y = 0.1
-    r_term = -0.5*((np.log(var_x) + (X-tail_bit)**2/var_x) + \
-                   (np.log(var_y) + (Y)**2/var_y) + \
-                   (np.log(var_z) + (Z)**2/var_z))
+    r_term = -0.5*((np.log(r_tide) + (X-c*K)**2) + \
+                   (np.log(r_tide) + Y**2) + \
+                   (np.log(r_tide) + Z**2))
 
-    var_vx = 0.2
-    var_vy = 0.1
-    var_vz = 0.1
-    v_term = -0.5*((np.log(var_vx) + (VX)**2/var_vx) + \
-                   (np.log(var_vy) + (VY)**2/var_vy) + \
-                   (np.log(var_vz) + (VZ)**2/var_vz))
+    v_term = -0.5*((np.log(v_disp) + VX**2) + \
+                   (np.log(v_disp) + VY**2) + \
+                   (np.log(v_disp) + VZ**2))
 
-    not_shocked = (r_term + v_term + jac1)[shocked_bit == 0]
+    not_shocked = (r_term + v_term + jac1)
 
     # shocked
-    var_r = 2.0
+    var_r = 3.0
     r_term2 = -0.5*(3*np.log(var_r) + X/var_r + Y/var_r + Z/var_r)
 
-    var_v = 2.0
-    v_term2 = -0.5*(3*np.log(var_v) + VX/var_x + VY/var_v + VZ/var_v)
+    var_v = 3.0
+    v_term2 = -0.5*(3*np.log(var_v) + VX/var_v + VY/var_v + VZ/var_v)
 
-    like = np.zeros_like(r_term)
+    shocked = (r_term2 + v_term2 + jac1)
+    arg = np.vstack((shocked, not_shocked))
 
-    like[shocked_bit == 0] = (r_term + v_term + jac1)[shocked_bit == 0]
-    like[shocked_bit == 1] = (r_term2 + v_term2 + jac1)[shocked_bit == 1]
+    scale = np.ones_like(arg)
+    scale[0,:] = p_shocked
+    scale[1,:] = 1-p_shocked
+
+    lnlike = logsumexp(arg, b=scale, axis=0)
+
+    return lnlike
 
     # import matplotlib.pyplot as plt
     # fig,axes = plt.subplots(1,3,figsize=(16,5),sharex=True)
@@ -207,7 +210,5 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     #     axes[2].axvline(VZ[ii], c=c)
     # fig.savefig("/Users/adrian/Desktop/derp2.png")
     # sys.exit(0)
-
-    return like
 
     # return logsumexp(r_term + v_term + jac1, axis=0)
