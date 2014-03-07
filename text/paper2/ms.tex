@@ -65,8 +65,8 @@ We develop a justified method for inferring the gravitational potential
   using precise measurements of stars in tidal streams
   based on an approximate generative model.
 Our method does not rely on integrability of the potential;
-  we don't expect there to be any good approximation to the large-scale 
-  Milky Way potential that is integrable.
+  we do not know that any good approximation to the large-scale 
+  Milky Way potential is integrable.
 % Methods: 
 Our model is probabilistic, with a likelihood function and priors on the parameters.
 It is based on the idea that the stars in a tidal structure
@@ -74,6 +74,7 @@ It is based on the idea that the stars in a tidal structure
   Model parameters include the present-day phase-space position for each star
   and the progenitor, and thus properly accounts for finite observational uncertainties 
   and missing data.
+This method advances in a few key points that have not been jointly addressed in prior work: assumptions of integrability, proper accounting for observational uncertainties, and allowing for missing dimensions.
 We test our method with simulated data in a non-integrable triaxial potential, with realistic observational uncertainties for RR Lyrae stars.
 Importantly, the fake data were generated with an n-body simulation,
   not with the approximate model underlying our likelihood function.
@@ -98,53 +99,54 @@ The method generalizes to to encompass mixtures of independent debris structures
 
 \section{Introduction}
 
-Cosmological simulations of galaxy formation in the $\Lambda$CDM paradigm predict dark matter halos that (1) are permeated with substructure on many scales, (2) are triaxial in shape, and (3) have density profiles and shapes that vary with radius \citep{dubinski91, jing02, kuhlen07, veraciro11}. Dark-matter-only simulations produce triaxial halos \citep{jing02} with large density fluctuations \citep{zemp09}. Including baryons tends to soften the triaxiality and graininess in the inner galaxy through a combination of dissipative infall \citep{dubinski94} or cooling \citep{bryan13}. These processes combined with the gravity from a baryonic disk (ellipsoid) can act to make the inner halo more oblate (spherical), however these processes do not erase the clumpy, triaxial nature of the outer halo \citep[e.g.,][]{pontzen12}. This leads to radially-dependent axis ratios and orientation, density profile, and smoothness, thus suggesting complicated, non-intregrable potential forms for Milky Way-like galaxies.
+Early large-scale, cosmological simulations of galaxy formation in the $\Lambda$CDM paradigm suggested that the spherically-averaged density profiles of dark matter halos follow a universal profile across a huge dynamic range in mass \citep{navarro96}. Since then, higher resolution simulations --- both with and without baryons --- have produced dark matter halos that (1) are permeated with substructure on many scales, (2) are triaxial in shape, and (3) have shapes and orientations that vary with radius \citep{dubinski91, jing02, kuhlen07, veraciro11}. Dark-matter-only simulations produce triaxial halos \citep{jing02} with large density fluctuations \citep{zemp09}. Including baryons tends to soften the triaxiality and graininess in the inner galaxy through a combination of dissipative infall \citep{dubinski94} or cooling \citep{bryan13}. These processes combined with the gravity from a baryonic disk or ellipsoid can act to make the inner halo more oblate or spherical, however they do not seem to erase the clumpy, triaxial nature of the outer halo \citep[e.g.,][]{pontzen12}. This leads to radially-dependent axis ratios, orientation, and smoothness, thus suggesting complicated mass distributions for Milky Way-like galaxies that are not easily represented by integrable potentials.
 
-The bulk of the baryonic matter in galaxies spans roughly 5-10\% of the extent of the host dark matter halo. Hence, the major observable components of a galaxy are sensitive to the inner portion of its host halo's mass distribution. For example, the rotation curves of disk galaxies are excellent probes of the inner mass, especially since matter in disks can be assumed to move on near circular orbits. Conversely, measuring the dark matter distribution at large radii is complicated by the low density of visible tracers, observational difficulties, and [unclear what assumptions can be made about the integrability and smoothness of the mass distribution]. Around external galaxies, the extended mass distribution has been probed using a variety of approaches \citep[see][for a a complete and detailed review]{courteau13}. For example, the kinematics of tracer populations such as globular clusters or planetary nebulae can be used to derive mass estimates under the assumptions that these satellite systems are relaxed and well-mixed \citep[early investigations include][]{mendez01,cote03}. Simple, parameterized models of both the mass and orbit distribution have been simultaneously constrained using such data \citep[e.g.][]{napolitano11,deason12c}. 
+The bulk of the baryonic matter in galaxies spans roughly 5-10\% of the extent of the host dark matter halo. Hence, the major observable components of a galaxy are sensitive to the inner portion of its host halo's mass distribution. For example, the rotation curves of disk galaxies are excellent probes of the inner mass, especially since matter in disks can be assumed to move on near circular orbits. Conversely, measuring the dark matter distribution at large radii is complicated by the low density of visible tracers, observational difficulties, and assumptions about the smoothness and analytic representation. Around external galaxies, the extended mass distribution has been probed using a variety of approaches \citep[see][for a a complete and detailed review]{courteau13}. For example, the kinematics of tracer populations such as globular clusters or planetary nebulae can be used to derive mass estimates under the assumptions that these satellite systems are relaxed and well-mixed \citep[early investigations include][]{mendez01,cote03}. Simple, parameterized models of both the mass and orbit distribution have been simultaneously constrained using such data \citep[e.g.][]{napolitano11,deason12c}. 
 %\citep{romanowsky03,douglas07,romanowsky09,napolitano11,lee11}
 Alternatively, the statistical properties of gravitationally lensed background sources around a galaxy can be used to constrain the \emph{projected} shape, orientation, and radial profile of mass \citep[as done by the Lens Structure and Dynamics Survey described in][]{koopmans02}. Of course, lensing reconstructions can only be performed for galaxies which closely intersect our line of sight to background sources, but the advent of large photometric catalogues has allowed automatic searches for such chance alignments and significant increases in the number of objects studied in this way \citep[e.g. the Sloan Lens ACS Survey, see][]{bolton06}.
 
-Within the Milky Way our unique vantage point allows us a three-dimensional view of the structure in own dark matter halo. Our proximity allows us to use individual stars as kinematic tracers and hence build much larger samples that probe deeper into the halo than the globular cluster and planetary nebula studies of external galaxies. For example, \cite{deason12a} used halo BHB stars selected from the Sloan Digital Sky Survey \cite[SDSS;][]{york00} as a random tracer population to measure the mass and slope of a simple, power-law fit to the Galactic potential. Such studies assume that the tracer orbits are randomly sampled from a smooth distribution function and phase mixed, however the existence of large-scale substructure in stellar streams and clouds is known to bias mass and velocity inferences that ignore this fact. Another approach is to exploit the non-random nature of the stellar populations in the halo. Tidal streams are dynamically cold systems --- debris typically have small distributions of energy and angular momentum --- and thus require orders of magnitude fewer tracers than a random sample to get constraints of comparable accuracy. For example, in the simplest case we might assume that debris stars are actually still on the same orbit as their progenitor system \citep[a \emph{wrong} assumption, see e.g.,][]{eyre11}. Then we can imagine measuring the full-space velocities ${\bf v}$ at different points ${\bf x}$ in the structure (e.g., along a stream), which would give us a direct measure of differences in a potential, $\Phi$. 
-%In practice, simple methods such as orbit fitting lead to systematic biases in inferred properties of the underlying potential because streams do not strictly delineate orbits [cite eyre binney work]. 
+Within the Milky Way our unique vantage point allows us a three-dimensional view of the structure in own dark matter halo. Our proximity allows us to use individual stars as kinematic tracers and hence build much larger samples that probe deeper into the halo than the globular cluster and planetary nebula studies of external galaxies. For example, \cite{deason12a} used halo BHB stars selected from the Sloan Digital Sky Survey \cite[SDSS;][]{york00} as a random tracer population to measure the mass and slope of a power-law fit. Such studies assume that the tracer orbits are randomly sampled from a smooth distribution function and are fully phase mixed. However, large photometric surveys such as the SDSS have discovered large amounts of substructure --- in streams and associations of stars --- in the Milky Way halo, thus demonstrating that the stellar distribution is not phase-mixed. Since the initial discovery of tidal debris from the Sagittarius (Sgr) dwarf spheroidal galaxy, myriad other streams and debris systems have been identified probing Galactocentric distances from $\sim$15-100 kpc. The existence of large-scale substructure in stellar streams and clouds is known to bias mass and velocity inferences by several tens of percent \citep{yencho06}.
 
-Since the initial discovery of tidal debris from Sgr, myriad other streams and debris systems have been identified in large photometric surveys, probing Galactocentric distances from $\sim$15-100 kpc. The known debris structures are $\gtrsim$10 kpc from the Sun, thus while overdensities in the halo are less contaminated by background, the constituent stars often have incomplete or poorly measured phase-space information. Perhaps the most rigorous method of modeling streams and the potential is to run full N-body simulations of satellite disruption and compare the density of observed stars to simulated stars in whatever coordinates are measured. A generative N-body model could naturally incorporate observational uncertainties, missing dimensions, and would, in principle, allow for studying any arbitrary time-dependent or non-integrable potential. However, such a model is presently computationally intractable. \cite{law10} demonstrated the power of this idea by running a grid of N-body models of the disruption of the Sagittarius (Sgr) dwarf spheroidal galaxy and matched their simulated streams to all Sgr data available at that time. By comparing the phase-space positions of their stream particles with the data, they were able to constrain the shape of the Milky Way potential out to $\sim$70 kpc and found that the best-fitting halo has a prolate, triaxial shape elongated in the Galactic Z direction, orthogonal to the plane of the disk. 
-% (though, see ... for possible complications in the Sgr debris belokurov 2012?). 
+Another approach to using halo stars as potential measures is to exploit the non-random nature of halo. For example, \cite{law10} used N-body simulations of the disruption of the Sgr dwarf to simultaneously model the debris and underlying Milky Way potential. By varying parameters of the Milky Way potential, they found ``best-fit'' parameters by comparing the properties of observed Sgr stars to their simulated debris over a grid of potential parameters. The computational costs of running N-body simulations limited their search to a grid of values and forced the authors to fix many other parameters (e.g., properties of the disk and bulge). Nevertheless, they were able to constrain the shape of the Milky Way potential out to $\sim$70 kpc and found that the best-fitting halo has a prolate, triaxial shape elongated in the Galactic Z direction, orthogonal to the plane of the disk. Though an unlikely orientation for the halo --- e.g., \cite{debattista13} find that the disk of the Milky Way would not remain stable in such a configuration --- LM10 showed that the data is at a state where such inference can be attempted. The computational costs associated with N-body modeling has motivated many methods that approximately model tidal streams.
 
-The difficulty and computational costs associated with proper N-body modeling has motivated numerous efforts for developing approximate methods for constraining properties of the Galactic potential with cold debris structures. The simplest approximation is to fit a single orbit to observed debris \citep[e.g.,][]{koposov10, deg13}. This has the advantage of naturally incorporating observational errors, but is known to be invalid as debris does not exactly follow an orbit \citep[e.g.,][]{eyre11, sanders13a}. To account for this, methods have been proposed that model the debris as an orbit plus some dispersion or offset, either in phase space \citep[e.g.,][]{eyre09a, varghese11, kuepper12} or action-angle coordinates \citep{eyre11, sanders13b, bovy14, sanders14}. Other statistical methods have been proposed \citep[][]{penarrubia12, sanderson14} that may prove powerful when applied to, e.g., data from the \gaia\, mission, where full 6D coordinates will be known for large samples of stars in the halo --- and therefore many debris structures --- but stream membership is not known for all stars (however these statistical methods do not account for observational errors).
+Tidal streams are dynamically cold systems --- debris typically have small distributions of energy and angular momentum --- and thus require orders of magnitude fewer tracers than a random sample to get constraints of comparable accuracy. For example, in the simplest case we might assume that debris stars are actually still on the same orbit as their progenitor system \citep[a \emph{wrong} assumption, see e.g.,][]{eyre11}. Then we can imagine measuring the full-space velocities ${\bf v}$ at different points ${\bf x}$ in the structure (e.g., along a stream), which would give us a direct measure of differences in a potential, $\Phi$, without running a full model of the disruption. An extension of this idea is to fit a single orbit to observed debris \citep[e.g.,][]{koposov10, deg13}. Though this is known to be incorrect and leads to biases in inferred properties of the underlying potential \citep[e.g.,][]{eyre11, lux13, sanders13a}, \cite{deg14} and \cite{lux13} have used orbit fitting to demonstrate the power of combining multiple streams in dynamical inference. To account for the offset between the orbit of the progenitor and the orbits of the debris stars, methods have been proposed that model the debris as an orbit plus some dispersion or offset, either in phase space \citep[e.g.,][]{eyre09a, varghese11, kuepper12} or action-angle coordinates \citep{eyre11, sanders13b, bovy14, sanders14}. Other statistical methods have been proposed \citep[][]{penarrubia12, sanderson14} that may prove powerful when applied to, e.g., data from the \gaia\, mission, where full 6D coordinates will be known for large samples of stars in the halo --- and therefore many debris structures --- but stream membership is not known for all stars.
 
-The potential of the inner galaxy is likely well-described by a (set of) nearly-integrable potentials, thus the dynamics of collisionless systems is plausibly captured by a transformation to some integral-of-motion-space, e.g., action-angle coordinates. However there is uncertainty in the exact shape, radial profile, and graininess of the outer halo. To test the extent to which the outer halo is well-fit by integrable potentials, we cannot use methods that \emph{assume} integrability. In this article, we present a fully probabilistic method for measuring properties of a potential that only relies on numerical orbit integration in ordinary phase-space. The model uses individual stars as constraints on the potential, and can therefore handle very small samples of stars. Generative models that instead rely on matching densities (in phase-space, action-space, or observed coordinates) must also include fine details about the progenitor (e.g., mass function or structure) and a model for the background of stars. Our method also naturally extends to using multiple debris structures \citep[see][who illustrate the power of using multiple streams to simultaneously constrain the potential]{deg14}.
+We identify XXX problems with the approximate models mentioned above; each method solves only a subset of these issues:
+\begin{enumerate}
+	\item The known debris structures are $\gtrsim$10 kpc from the Sun, thus while overdensities in the halo are less contaminated by background, the constituent stars often have incomplete or poorly measured phase-space information. Thus it is critical for any approximate model of tidal debris to incorporate observational uncertainties and missing dimensions in a consistent and justified way. 
+	\item The potential of the inner galaxy is plausibly well-described by a (set of) nearly-integrable potentials, thus the dynamics of collisionless systems is conceivably captured by a transformation to some integral-of-motion-space, e.g., action-angle coordinates. However there is large uncertainty in the radial profile, shape, orientation, and graininess of the outer halo and the constancy of these parameters over distance. To test the degree to which the outer halo is well-fit by integrable potentials, it is problematic to use methods that \emph{assume} integrability. 
+	\item Matching densities, small numbers of stars in Gaia %Generative models that instead rely on matching densities (in phase-space, action-space, or observed coordinates) must also include fine details about the progenitor (e.g., mass function or structure) and a model for the background of stars. 
+	\item Multiple streams and other information
+	\item Computational costs [...]
+\end{enumerate}
 
-Although the \gaia\, project will deliver hundreds of millions of stars useful for dynamical inference,
-  it still might be that the most relevant stellar samples for inferring the Milky Way potential might be very small in the end.
-For instance, stars that produce good distance estimates might be much more valuable than typical stars in the sample.
-At halo distances, \gaia's parallaxes are not expected to be better than the distance indicators produced by the best
-  variable stars observed at the best wavelengths; for example, near-infrared observations of RR Lyrae stars
-  can in principle deliver $\sim$2\% percent photometric distances at essentially all halo distances \citep{madore12}.
-These valuable stars are rare (and their abundances are age and metallicity dependent);
-  there could be many cold structures in the Milky Way halo that are highly constraining
-  on the potential in principle, but which contain only a few good distance-indicating members.
-That said, it is not yet known what the trade-offs are between having many stars at low precision and a few at high precision,
-  nor is it known how valuable distance information really is, when a structure contains many precisely observed members.
+%[][hereafter \paperone]
+In \citet{apw13}, we introduced a simple method (\emph{Rewinder}) for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity). In this article, we use these simple scalings --- which depend only on the mass and orbit of the progenitor and parent potential --- to present a fully probabilistic method for modeling tidal streams in any underlying potential given data with realistic uncertainties. The method relies on numerical orbit integration in ordinary phase-space and can thus incorporate arbitrarily complex models for the parent potential. The model uses individual stars as constraints --- not density matching --- and can therefore handle very small samples of stars. The model trivially extends to incorporating multiple streams, debris structures, and other kinematic information. [...something about computational cost]
 
-Another reason to think about small samples is more conceptual:
-in dynamical inferences that go beyond simple virial or Jeans arguments,
-  inference depends on the non-linear dynamical evolution of populations in phase space.
-The nonlinearities, combined with heteroskedastic data and requirements to marginalize over phase-space distribution functions,
-  lead naturally to situations in which some stars are \emph{far more informative} than others.
-For a simple example, in a toy study of the Solar System,
-  phase-space distribution marginalization was shown to make some planets are far more informative than others
-  about the gravitational potential \citep{bovy10}.
-This is expected to be a generic feature in dynamical problems:
-  it might be that a very small fraction of \gaia's catalog entries
-  deliver a large fraction of the information about the Milky Way's potential and formation history.
-
-In \citet[][hereafter \paperone]{apw13}, we introduced a simple method (\emph{Rewinder}) for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity). In this paper, we investigate how these relationships scale with the mass and orbit of the progenitor and the quality of the data, then present a new probabilistic framework for simultaneously modeling stream debris and the parent potential based on the same arguments.
-
-In Section~\ref{sec:sims} we describe a suite of N-body simulations that span a range of progenitor masses over two characteristic orbits. In Section~\ref{sec:} we 
+In Section~\ref{sec:sims} we describe a suite of N-body simulations that span a range of progenitor masses on a characteristic, mildly eccentric orbit. In Section~\ref{sec:} we describe [...]
 
 \section{Simulations}\label{sec:sims}
 [David Hendel]
 We [...] N-body simulations run with an SCF code [...]. [describe simulations here] [Describe tub]
+
+The potential is taken to be a three-component sum of a Miyamoto-Nagai disk \citep{}, Hernquist bulge \citep[spheroid;][]{}, and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
+\begin{align}
+	&\Phi_{\rm disk}(R,z) = -\frac{GM_{\rm disk}}{\sqrt{R^2 + (a + \sqrt{z^2 + b^2})^2}}\\
+	&\Phi_{\rm spher}(r) = -\frac{GM_{\rm spher}}{r + c}\\
+	&\Phi_{\rm halo}(x,y,z) = v_{h}^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + r_h^2)
+\end{align}
+where $C_1$, $C_2$, and $C_3$ are combinations of the $x$ and $y$ axis
+ratios ($q_1$, $q_2$) and orientation of the halo with respect to the
+baryonic disk ($\phi$):
+\begin{align}
+  C_1 &= \frac{\cos^2\phi}{q_1^2} + \frac{\sin^2\phi}{q_2^2}\\
+  C_2 &= \frac{\sin^2\phi}{q_1^2} + \frac{\cos^2\phi}{q_2^2}\\
+  C_3 &= 2\sin\phi\cos\phi \left(q_1^{-2} - q_2^{-2}\right).
+\end{align}
+The total potential then is just
+\begin{equation}
+	\Phi_{\rm tot} = \Phi_{\rm disk} + \Phi_{\rm spher} + \Phi_{\rm halo}\label{eq:lm10}.
+\end{equation}
 
 \begin{figure}[h]
 \begin{center}
@@ -157,25 +159,23 @@ We [...] N-body simulations run with an SCF code [...]. [describe simulations he
 
 \subsection{Tidal debris}\label{sec:debris}
 
-For a satellite galaxy on a mildly eccentric orbit, mass-loss is driven via tidal stripping due to the tidal field of the parent system or tidal shocking due to the rapidly changing tidal field as the progenitor system moves through pericenter. The interplay between these two processes as a function of orbital properties will be studied in forthcoming work and focus below on the slow disruption of stars due to steady tidal forcing. 
+For a satellite galaxy on a mildly eccentric orbit, mass-loss is driven by a combination of tidal stripping due to the tidal field of the parent system and tidal shocking due to the rapidly changing tidal field as the progenitor system moves through pericenter. The interplay between these two processes as a function of orbital properties will be studied in forthcoming work; we focus below on the slow disruption of stars due to steady tidal forcing. 
 
-Consider a point-mass satellite of mass $m$ on a circular orbit with frequency $\Omega$ around a point-mass of mass $M\gg m$ \citep[the restricted three-body problem, e.g.,][]{binneytremaine}. In a frame rotating with the orbital frequency of the satellite, the effective potential around the satellite has (amongst others) two stationary, unstable points located around $\sim R \pm r_J$, where $R$ is the distance to the satellite and $r_J$ is the Jacobi or tidal radius,
+Consider a point-mass satellite of mass $m$ on a circular orbit with frequency $\Omega$ around a point-mass of mass $M\gg m$ \citep[the restricted three-body problem; e.g., \S 8.3][]{binneytremaine}. In a frame rotating with the orbital frequency of the satellite, the effective potential around the satellite has (amongst others) two stationary, unstable points located around $\sim R \pm r_J$, where $R$ is the distance to the satellite and $r_J$ is the Jacobi or tidal radius,
 \begin{equation}
 	r_J \sim R\left(\frac{m}{3M}\right)^{1/3}.\label{eq:ptmass}
 \end{equation}
 Particles that would be bound to the satellite system in isolation may have enough (Jacobi) energy to overcome the effective potential barrier at these Lagrange points and thus will be preferentially stripped from the satellite at these points (Fig.~8.6 of BT). For a spherical, extended parent mass distribution the tidal radius instead scales with the enclosed mass of the parent system at a given orbital position, $R$, with additional terms that account for the local slope of the density profile. Thus, in a more general parent potential the effective Lagrange points may not be symmetric about the center of the satellite and may deviate from the point-mass tidal radius (Eq.~\ref{eq:ptmass}) by factors of order unity. We thus simply adopt 
 \begin{equation}
-	r_{\rm tide} = R\left(\frac{m_{\rm sat}}{3M_{\rm enc}}\right)^{1/3}\label{eq:tidalradius}
+	r_{\rm tide} = R\left(\frac{m}{3M_{\rm enc}}\right)^{1/3}\label{eq:tidalradius}
 \end{equation}
-as a normalizing distance scale.
-
-At pericenter, the velocity of the satellite will be of order $V\sim \sqrt{GM_{\rm enc}/R}$. If the velocity dispersion of the satellite is $\sigma_v \sim \sqrt{Gm/r_J}$, then
+as a normalizing distance scale, where $M_{\rm enc}$ is the instantaneous enclosed mass of the parent system within orbital radius $R$. At pericenter, the velocity of the satellite will be of order $V\sim \sqrt{GM_{\rm enc}/R}$. If the velocity dispersion of the satellite is $\sigma_v \sim \sqrt{Gm/r_J}$, then
 \begin{equation}
-	\sigma_v \sim V\left(\frac{m_{\rm sat}}{M_{\rm enc}}\right)^{1/3}\label{eq:velscale}.
+	\sigma_v \sim V\left(\frac{m}{M_{\rm enc}}\right)^{1/3}\label{eq:velscale}.
 \end{equation}
-Thus, we expect the particle velocities to scale with $(m/M)^{1/3}$. 
+Thus, we expect the particle velocities to scale with $(m/M_{\rm enc})^{1/3}$. 
 
-In a triaxial potential (e.g., Equation~\ref{eq:lm10}), the orbital plane of the satellite is not fixed but we still expect there to be effective Lagrange points along the line of centers connecting the origin of the parent potential to the satellite. We thus proceed by defining a coordinate system relative to the position and velocity of the progenitor, ($\bs{r}_p$,$\bs{v}_p$), rotated into the instantaneous orbital plane defined by $\bs{r}_p \times \bs{v}_p$, and normalized by the instantaneous tidal radius for positions (Eq.~\ref{eq:tidalradius}) and instantaneous velocity scale for velocity (Eq.~\ref{eq:velscale}). 
+In a triaxial potential, the orbital plane of the satellite is not fixed but we still expect there to be effective Lagrange points along the line of centers connecting the origin of the parent potential to the satellite. We thus proceed by defining a coordinate system relative to the position and velocity of the progenitor, ($\bs{r}_p$,$\bs{v}_p$), rotated into the instantaneous orbital plane defined by $\bs{r}_p \times \bs{v}_p$, and normalized by the instantaneous tidal radius for positions (Eq.~\ref{eq:tidalradius}) and instantaneous velocity scale for velocity (Eq.~\ref{eq:velscale}). 
 % where $\hat{\bs r}_p = {\bs r}_p / |{\bs r}_p|$ and $\hat{\bs v}_p = {\bs v}_p / |{\bs v}_p|$
 The (time-dependent) basis vectors are given by
 \begin{align}
@@ -183,7 +183,8 @@ The (time-dependent) basis vectors are given by
 	\hat{x}_2 &= -\hat{x}_1 \times \hat{x}_3\\
 	\hat{x}_3 &= \frac{\bs{r}_p \times \bs{v}_p}{\|\bs{r}_p \times \bs{v}_p\|}.
 \end{align}
-Figure~\ref{fig:lpts_r} shows sections of particle orbits in this coordinate system, symmetric around the unbinding time, $\tub$ (Section~\ref{sec:sims}), as a function of progenitor mass. In these coordinates, the classical Lagrange points would be located around $x_1=\pm1,x_2=0,x_3=0$ (illustrated by the unit circle in top panels of Figure~\ref{fig:lpts_r}). Figure~\ref{fig:lpts_v} shows the same for the velocity of each star. Though not centered on the point-mass Lagrange points, the location of and dispersion about the effective Lagrange points in these scaled coordinates remain remarkably consistent across the range of progenitor masses explored at $x_1\sim\pm2$. Furthermore, the dispersion in velocity is well-normalized by the velocity scale of Eq.~\ref{eq:velscale}, though it is clear that the velocity dispersion along $\hat{x}_1$, the radial vector to the satellite position, is larger than that in other dimensions. The phase-space dispersion of tidally stripped debris scales with the mass ratio $(m_{\rm sat} / M_{\rm enc})^{1/3}$, the orbital radius, and the orbital velocity of the progenitor system.
+%(Section~\ref{sec:sims})
+Figure~\ref{fig:lpts_r} shows sections of particle orbits in this coordinate system, symmetric around the unbinding time, $\tub$, as a function of progenitor mass. In these coordinates, the classical Lagrange points would be located around $x_1=\pm1,x_2=0,x_3=0$ (illustrated by the unit circle in top panels of Figure~\ref{fig:lpts_r}). Figure~\ref{fig:lpts_v} shows the same for the velocity of each star. Though not centered on the point-mass Lagrange points, the location of and dispersion about the effective Lagrange points in these scaled coordinates remain remarkably consistent across the range of progenitor masses explored. Furthermore, the dispersion in velocity is well-normalized by the velocity scale of Eq.~\ref{eq:velscale}, though it is clear that the velocity dispersion along $\hat{x}_1$, the radial vector to the satellite position, is larger than that in other dimensions, possibly due to mild tidal shocking. Even in a triaxial potential, the phase-space dispersion of tidally stripped debris scales with the mass ratio $(m / M_{\rm enc})^{1/3}$. %, the orbital radius, and the orbital velocity of the progenitor system.
 
 \begin{figure}[h]
 \begin{center}
@@ -218,15 +219,15 @@ We assume that the observational uncertainties are Gaussian in heliocentric, sph
 \end{align}
 where $\mathcal{N}$ represents the normal distribution, and the covariance matrices $\bSigma$ and $\bSigma_\sat$ specify the observational uncertainties on the observed 6D position of the star and progenitor, respectively. 
 
-To model the true, 6D, present-day position of the star, $\W$, we first transform to cartesian, Galactocentric coordinates where ($\bs{r},\bs{v}$) and ($\bs{r}_\sat,\bs{v}_\sat$) are the position and velocity of the star and progenitor, respectively. In cartesian coordinates, the present-day position of the star is modeled as having been sampled at $t=\tub$ from an isotropic Gaussian centered on one of the instantaneous, effective Lagrange points in position, and an isotropic Gaussian centered on the origin in velocity, and evolved to present day in the parent potential, $\Phi$. That is, we assume that once the star becomes ``unbound'' from the satellite the potential of the satellite can be ignored, and thus treat the star as a test particle. 
+To model the true, 6D, present-day position of the star, $\W$, we first transform to cartesian, Galactocentric coordinates where ($\bs{r},\bs{v}$) and ($\bs{r}_\sat,\bs{v}_\sat$) are the position and velocity of the star and progenitor, respectively. In cartesian coordinates, the present-day position of the star is taken as having been sampled at $t=\tub$ from an isotropic Gaussian centered on one of the instantaneous, effective Lagrange points in position, and an isotropic Gaussian centered on the origin in velocity, and evolved to present day in the parent potential, $\Phi$. That is, we assume that once the star becomes ``unbound'' from the satellite the potential of the satellite can be ignored, and thus treat the star as a test particle. We add two other parameters: $K$, a ``bit'' that is either $+1$ or $-1$ depending on whether the star is in the leading or trailing tail, and a constant offset, $c$, that specifies the exact position of the effective Lagrange points relative to the classical tidal radius.
 \begin{align}
 	p(\W \given \W_\sat, \tub, \Phi, K, c) &= p(\bs{r} \given \bs{r}_\sat, \tub, \Phi, K, c)p(\bs{v} \given \bs{v}_\sat, \tub, \Phi) \left\vert\J\right\vert_{t=\tub}\\
-	p(\bs{r} \given \bs{r}_\sat, \tub, \Phi, K, c) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - cK\rtide \hat{x}_1, \sigma_1)_{t=\tub}\\
+	p(\bs{r} \given \bs{r}_\sat, \tub, \Phi, K, c) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - cK\rtide \hat{x}_1, \sigma_r)_{t=\tub}\\
 	p(\bs{v} \given \bs{v}_\sat, \tub, \Phi) &= \mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma_v)_{t=\tub}
 \end{align}
-where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, $\sigma_v$ by Eq.~\ref{eq:velscale}, $K$ is either $+1$ or $-1$ depending on whether the star is in the leading or trailing tail, and $c$ is a hyper-parameter that specifies the exact position of the effective Lagrange points. $\J$ is the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. This model could trivially allow for mass loss by incorporating the initial satellite mass, $m$ and, e.g., a constant mass-loss term, $\dot{m}$, but for now we neglect this.
+where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, $\sigma_v$ by Eq.~\ref{eq:velscale}. $\J$ is the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. This model could trivially allow for mass loss by incorporating the initial satellite mass, $m$ and, e.g., a constant mass-loss term, $\dot{m}$.
 
-The full posterior probability for the observed position of a star, progenitor, and parent potential is
+The full posterior probability for the position of a star, progenitor, and properties of the parent potential, given the data, is then
 \begin{equation}
 	p(\Phi, \W, \W_\sat, \tub, K, c \given \D, \D_\sat) = \frac{1}{\mathcal{Z}} p(\D \given \W) p(\D_\sat \given \W_\sat) 
 												       p(\W \given \W_\sat, \tub, \Phi, K, c)
@@ -234,30 +235,14 @@ The full posterior probability for the observed position of a star, progenitor, 
 \end{equation}
 where the factor $\mathcal{Z}$ only depends on the properties of the data (the \emph{evidence}), and is thus constant when varying the model parameters. 
 
+[...]
 
-In general, $p(\tub)$ is likely conditional on the orbit of the progenitor --- stars are preferentially stripped at pericentric passages --- but this is neglected and is taken to be uniform over the entire interaction history between the progenitor and parent. 
+% In general, $p(\tub)$ is likely conditional on the orbit of the progenitor --- stars are preferentially stripped at pericentric passages --- but this is neglected and is taken to be uniform over the entire interaction history between the progenitor and parent. 
 
 \section{Experiments}
-Initially we assume the present-day mass of the progenitor, $M_p$, and velocity dispersion, $\sigma_v$, have been measured perfectly and neglect mass-loss from the progenitor. 
+In what follows, we apply this model to ``observations'' of the N-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{}).
 
-For all tests in this article, we model the potential of the parent galaxy as a three-component sum of a Miyamoto-Nagai disk \citep{}, Hernquist bulge \citep[spheroid;][]{}, and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
-\begin{align}
-	&\Phi_{\rm disk}(R,z) = -\frac{GM_{\rm disk}}{\sqrt{R^2 + (a + \sqrt{z^2 + b^2})^2}}\\
-	&\Phi_{\rm spher}(r) = -\frac{GM_{\rm spher}}{r + c}\\
-	&\Phi_{\rm halo}(x,y,z) = v_{h}^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + r_h^2)
-\end{align}
-where $C_1$, $C_2$, and $C_3$ are combinations of the $x$ and $y$ axis
-ratios ($q_1$, $q_2$) and orientation of the halo with respect to the
-baryonic disk ($\phi$):
-\begin{align}
-  C_1 &= \frac{\cos^2\phi}{q_1^2} + \frac{\sin^2\phi}{q_2^2}\\
-  C_2 &= \frac{\sin^2\phi}{q_1^2} + \frac{\cos^2\phi}{q_2^2}\\
-  C_3 &= 2\sin\phi\cos\phi \left(q_1^{-2} - q_2^{-2}\right).
-\end{align}
-The total potential then is just
-\begin{equation}
-	\Phi_{\rm tot} = \Phi_{\rm disk} + \Phi_{\rm spher} + \Phi_{\rm halo}\label{eq:lm10}.
-\end{equation}
+Initially we assume the present-day mass of the progenitor, $M_p$, and velocity dispersion, $\sigma_v$, have been measured perfectly and neglect mass-loss from the progenitor. 
 
 \begin{figure}[h]
 \begin{center}
@@ -302,6 +287,32 @@ When recovering the potential, we hold fixed the disk and spheroid parameters (s
 4 stars in Orphan-like stream, XX stars in GD-1 -like stream
 
 \section{Discussion}
+
+Our method also naturally extends to using multiple debris structures \citep[see][who illustrate the power of using multiple streams to simultaneously constrain the potential]{deg14}.
+
+Although the \gaia\, project will deliver hundreds of millions of stars useful for dynamical inference,
+  it still might be that the most relevant stellar samples for inferring the Milky Way potential might be very small in the end.
+For instance, stars that produce good distance estimates might be much more valuable than typical stars in the sample.
+At halo distances, \gaia's parallaxes are not expected to be better than the distance indicators produced by the best
+  variable stars observed at the best wavelengths; for example, near-infrared observations of RR Lyrae stars
+  can in principle deliver $\sim$2\% percent photometric distances at essentially all halo distances \citep{madore12}.
+These valuable stars are rare (and their abundances are age and metallicity dependent);
+  there could be many cold structures in the Milky Way halo that are highly constraining
+  on the potential in principle, but which contain only a few good distance-indicating members.
+That said, it is not yet known what the trade-offs are between having many stars at low precision and a few at high precision,
+  nor is it known how valuable distance information really is, when a structure contains many precisely observed members.
+
+Another reason to think about small samples is more conceptual:
+in dynamical inferences that go beyond simple virial or Jeans arguments,
+  inference depends on the non-linear dynamical evolution of populations in phase space.
+The nonlinearities, combined with heteroskedastic data and requirements to marginalize over phase-space distribution functions,
+  lead naturally to situations in which some stars are \emph{far more informative} than others.
+For a simple example, in a toy study of the Solar System,
+  phase-space distribution marginalization was shown to make some planets are far more informative than others
+  about the gravitational potential \citep{bovy10}.
+This is expected to be a generic feature in dynamical problems:
+  it might be that a very small fraction of \gaia's catalog entries
+  deliver a large fraction of the information about the Milky Way's potential and formation history.
 
 [Cold vs. Hot streams]
 
