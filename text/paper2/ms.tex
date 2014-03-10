@@ -83,9 +83,9 @@ We find that even with a small number (4 to 16) of well-measured stars,
   we can precisely infer properties of the triaxial potential,
   missing phase-space coordinates of the stars,
   and the location of the progenitor object.
-The method generalizes to to encompass mixtures of independent debris structures,
+The method generalizes to encompass mixtures of independent debris structures,
   or situations in which star membership in structures is unknown.
-[Get more quantitative here?]
+% [Get more quantitative here?]
 % Conclusions: 
 \end{abstract}
 
@@ -107,27 +107,27 @@ Alternatively, the statistical properties of gravitationally lensed background s
 
 Within the Milky Way our unique vantage point allows us a three-dimensional view of the structure in own dark matter halo. Our proximity allows us to use individual stars as kinematic tracers and hence build much larger samples that probe deeper into the halo than the globular cluster and planetary nebula studies of external galaxies. For example, \cite{deason12a} used halo BHB stars selected from the Sloan Digital Sky Survey \cite[SDSS;][]{york00} as a random tracer population to measure the mass and slope of a power-law fit. Such studies assume that the tracer orbits are randomly sampled from a smooth distribution function and are fully phase mixed. However, large photometric surveys such as the SDSS have discovered large amounts of substructure --- in streams and associations of stars --- in the Milky Way halo, thus demonstrating that the stellar distribution is not phase-mixed. Since the initial discovery of tidal debris from the Sagittarius (Sgr) dwarf spheroidal galaxy, myriad other streams and debris systems have been identified probing Galactocentric distances from $\sim$15-100 kpc. The existence of large-scale substructure in stellar streams and clouds is known to bias mass and velocity inferences by several tens of percent \citep{yencho06}.
 
-Another approach to using halo stars as potential measures is to exploit the non-random nature of halo. For example, \citet[][LM10]{law10} used N-body simulations of the disruption of the Sgr dwarf to simultaneously model the debris and underlying Milky Way potential. By varying parameters of the Milky Way potential, they found ``best-fit'' parameters by comparing the properties of observed Sgr stars to their simulated debris over a grid of potential parameters. The computational costs of running N-body simulations limited their search to a grid of values and forced the authors to fix many other parameters (e.g., properties of the disk and bulge). Nevertheless, they were able to constrain the shape of the Milky Way potential out to $\sim$70 kpc and found that the best-fitting halo has a prolate, triaxial shape elongated in the Galactic Z direction, orthogonal to the plane of the disk. Though an unlikely orientation for the halo --- e.g., \cite{debattista13} find that the disk of the Milky Way would not remain stable in such a configuration --- LM10 showed that the data is at a state where such inference can be attempted. The computational costs associated with N-body modeling has motivated many methods that approximately model tidal streams.
+Another approach to using halo stars as potential measures is to exploit the non-random nature of halo. For example, \citet[][LM10]{law10} used n-body simulations of the disruption of the Sgr dwarf to simultaneously model the debris and underlying Milky Way potential. By varying parameters of the Milky Way potential, they found ``best-fit'' parameters by comparing the properties of observed Sgr stars to their simulated debris over a grid of potential parameters. The computational costs of running n-body simulations limited their search to a grid of values and forced the authors to fix many other parameters (e.g., properties of the disk and bulge). Nevertheless, they were able to constrain the shape of the Milky Way potential out to $\sim$70 kpc and found that the best-fitting halo has a prolate, triaxial shape elongated in the Galactic Z direction, orthogonal to the plane of the disk. Though an unlikely orientation for the halo --- e.g., \cite{debattista13} find that the disk of the Milky Way would not remain stable in such a configuration --- LM10 showed that the data is at a state where such inference can be attempted. The computational costs associated with n-body modeling has motivated many methods that approximately model tidal streams.
 
 Tidal streams are dynamically cold systems --- debris typically have small distributions of energy and angular momentum --- and thus require orders of magnitude fewer tracers than a random sample to get constraints of comparable accuracy. For example, in the simplest case we might assume that debris stars are actually still on the same orbit as their progenitor system \citep[a \emph{wrong} assumption, see e.g.,][]{eyre11}. Then we can imagine measuring the full-space velocities ${\bf v}$ at different points ${\bf x}$ in the structure (e.g., along a stream), which would give us a direct measure of differences in a potential, $\Phi$, without running a full model of the disruption. An extension of this idea is to fit a single orbit to observed debris \citep[e.g.,][]{koposov10, deg13}. Though this is known to be incorrect and leads to biases in inferred properties of the underlying potential \citep[e.g.,][]{eyre11, lux13, sanders13a}, \cite{deg14} and \cite{lux13} have used orbit fitting to demonstrate the power of combining multiple streams in dynamical inference. To account for the offset between the orbit of the progenitor and the orbits of the debris stars, methods have been proposed that model the debris as an orbit plus some dispersion or offset, either in phase space \citep[e.g.,][]{eyre09a, varghese11, kuepper12} or action-angle coordinates \citep{eyre11, sanders13b, bovy14, sanders14}. Other statistical methods have been proposed \citep[][]{penarrubia12, sanderson14} that may prove powerful when applied to, e.g., data from the \gaia\, mission, where full 6D coordinates will be known for large samples of stars in the halo --- and therefore many debris structures --- but stream membership is not known for all stars.
 
-We identify XXX problems with the approximate models mentioned above; each method solves only a subset of these issues:
+We identify a number of problems with approximate models; each method  mentioned above solves only a subset of these issues:
 \begin{enumerate}
 	\item The known debris structures are $\gtrsim$10 kpc from the Sun, thus while overdensities in the halo are less contaminated by background, the constituent stars often have incomplete or poorly measured phase-space information. Thus it is critical for any approximate model of tidal debris to incorporate observational uncertainties and missing dimensions in a consistent and justified way. 
 	\item The potential of the inner galaxy is plausibly well-described by a (set of) nearly-integrable potentials, thus the dynamics of collisionless systems is conceivably captured by a transformation to some integral-of-motion-space, e.g., action-angle coordinates. However there is large uncertainty in the radial profile, shape, orientation, and graininess of the outer halo and the constancy of these parameters over distance. To test the degree to which the outer halo is well-fit by integrable potentials, it is problematic to use methods that \emph{assume} integrability. 
-	\item Matching densities, small numbers of stars in Gaia %Generative models that instead rely on matching densities (in phase-space, action-space, or observed coordinates) must also include fine details about the progenitor (e.g., mass function or structure) and a model for the background of stars. 
-	\item Multiple streams and other information
-	\item Computational costs [...]
+	\item Near-future photometric surveys such as \gaia\, and LSST will likely discover many new streams and kinematic associations of stars. Potential recovery methods should be able to simultaneously model multiple streams and incorporate other dynamical constraints.
+	\item Matching generated models to observed stream densities is difficult: models that rely on this must account for observational biases and properly model the underlying background of halo stars. 
+	\item Full N-body models are expensive to run. Incorporating an n-body model into a general model and then performing a parameter search would be computationally intensive and, presently, intractable. 
 \end{enumerate}
 
 %[][hereafter \paperone]
-In \citet{apw13}, we introduced a simple method (\emph{Rewinder}) for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity). In this article, we use these simple scalings --- which depend only on the mass and orbit of the progenitor and parent potential --- to present a fully probabilistic method for modeling tidal streams in any underlying potential given data with realistic uncertainties. The method relies on numerical orbit integration in ordinary phase-space and can thus incorporate arbitrarily complex models for the parent potential. The model uses individual stars as constraints --- not density matching --- and can therefore handle very small samples of stars. The model trivially extends to incorporating multiple streams, debris structures, and other kinematic information. [...something about computational cost]
+In \citet{apw13}, we introduced a simple method (\emph{Rewinder}) for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity).  Specifically, a better model for the potential is one in which orbits of test particle stars (integrated backwards from their present position) came close (within the tidal radius in position, and escape velocity in velocity) to the orbit of the progenitor. In this article, we use these simple scalings --- which depend only on the mass and orbit of the progenitor and parent potential --- to present a fully probabilistic method for modeling tidal streams in any underlying potential given data with realistic uncertainties. The method relies on numerical orbit integration in ordinary phase-space and can thus incorporate arbitrarily complex models for the parent potential. The model uses individual stars as constraints --- not density matching --- and can therefore handle very small samples of well-measured stars (e.g., 4-16). The model trivially extends to incorporating multiple streams, debris structures, and other kinematic information. 
 
-In Section~\ref{sec:sims} we describe a suite of N-body simulations that span a range of progenitor masses on a characteristic, mildly eccentric orbit. In Section~\ref{sec:} we describe [...]
+In Section~\ref{sec:sims} we describe a suite of n-body simulations that span a range of progenitor masses on a characteristic, mildly eccentric orbit. In Section~\ref{sec:} we describe [...]
 
 \section{Simulations}\label{sec:sims}
 [David Hendel]
-We [...] N-body simulations run with an SCF code [...]. [describe simulations here] [Describe tub]
+We [...] n-body simulations run with an SCF code [...]. [describe simulations here] [Describe tub]
 
 The potential is taken to be a three-component sum of a Miyamoto-Nagai disk \citep{}, Hernquist bulge \citep[spheroid;][]{}, and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
 \begin{align}
@@ -152,7 +152,7 @@ Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane 
 \begin{figure}[h]
 \begin{center}
 \includegraphics[width=\textwidth]{../../plots/paper2/potentials.pdf}
-\caption{ TODO }\label{fig:potential}
+\caption{ Equipotential contours for the LM10 potential (Eq.~\ref{eq:lm10}) in Galactocentric, cartesian coordinates for various halo parameter choices. For all panels, $v_h=121.858~\mathrm{km}/\mathrm{s}$, $r_h=12~\mathrm{kpc}$. Left to right, each column represents a new choice of parameters. If not specified, other parameters are fixed to $q_1=q_2=q_z=1$ and $\phi=0^\circ$ (far left panels).  }\label{fig:potential}
 \end{center}
 \end{figure}
 
@@ -197,7 +197,7 @@ Figure~\ref{fig:lpts_r} shows sections of particle orbits in this coordinate sys
 \begin{figure}[h]
 \begin{center}
 \includegraphics[width=\textwidth]{../../plots/paper2/Lpts_r.png}
-\caption{ Orbits of 2000 particles around $t=\tub$. The orbits were integrated backwards from their present-day positions (final time step of the N-body simulations) without the potential of the progenitor. TODO: coordinates...}\label{fig:lpts_r}
+\caption{ Orbits of 2000 particles around $t=\tub$. The orbits were integrated backwards from their present-day positions (final time step of the n-body simulations) without the potential of the progenitor. TODO: coordinates...}\label{fig:lpts_r}
 \end{center}
 \end{figure}
 
@@ -235,6 +235,12 @@ To model the true, 6D, present-day position of the star, $\W$, we first transfor
 \end{align}
 where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, $\sigma_v$ by Eq.~\ref{eq:velscale}. $\J$ is the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. This model could trivially allow for mass loss by incorporating the initial satellite mass, $m$ and, e.g., a constant mass-loss term, $\dot{m}$.
 
+This model works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars become preferentially unbound around the satellite's pericenter because of tidal shocking (cite?). We will explore properly modeling this process in future work. For this article, we modify the above to be a mixture model: we add a new parameter for each star, $P_{\rm shock}$, which is the probability that the star is drawn from a broader, ``shocked'' distribution instead of a tight Gaussian centered on an effective Lagrange point:
+\begin{align}
+	p_{\rm strip} &= \left [ \mathcal{N}(\bs{r} \given \bs{r}_\sat - cK\rtide \hat{x}_1, \sigma_r)\mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma_v) \left\vert\J\right\vert\right]_{t=\tub}\\
+	p_{\rm shock} &= \left [ \mathcal{N}(\bs{r} \given \bs{r}_\sat, 3\sigma_r)\mathcal{N}(\bs{v} \given \bs{v}_\sat, 3\sigma_v) \left\vert\J\right\vert\right]_{t=\tub}\\
+	p(\W \given \W_\sat, \tub, \Phi, K, c, P_{\rm shock}) &= P_{\rm shock}p_{\rm shock} + (1-P_{\rm shock})p_{\rm strip}
+\end{align}
 The full posterior probability for the position of a star, progenitor, and properties of the parent potential, given the data, is then
 \begin{equation}
 	p(\Phi, \W, \W_\sat, \tub, K, c \given \D, \D_\sat) = \frac{1}{\mathcal{Z}} p(\D \given \W) p(\D_\sat \given \W_\sat) 
@@ -243,14 +249,10 @@ The full posterior probability for the position of a star, progenitor, and prope
 \end{equation}
 where the factor $\mathcal{Z}$ only depends on the properties of the data (the \emph{evidence}), and is thus constant when varying the model parameters. 
 
-[Describe mixture to account for shocked stuff!]
-
-[...]
-
 % In general, $p(\tub)$ is likely conditional on the orbit of the progenitor --- stars are preferentially stripped at pericentric passages --- but this is neglected and is taken to be uniform over the entire interaction history between the progenitor and parent. 
 
 \section{Experiments}
-In what follows, we apply the model described above to ``observations'' of the N-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{eq:lm10}). When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:potential}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $v_h$, 100-200~kms$^{-1}$ corresponds to a range in solar circular velocities from $\sim$210-250 kms$^{-1}$ (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and generic triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$).
+In what follows, we apply the model described above to ``observations'' of the n-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{eq:lm10}). When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:potential}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $v_h$, 100-200~km/s corresponds to a range in solar circular velocities from $\sim$210-250 km/s (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and generic triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$).
 
 \begin{table}[h]
 \begin{center}
