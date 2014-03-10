@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" A script for making figures for our Streams Paper 1 """
+""" A script for making figures for our streams paper 2 """
 
 from __future__ import division, print_function
 
@@ -13,11 +13,11 @@ import inspect
 
 # Third-party
 import astropy.units as u
+from astropy.constants import G
 from astropy.io.misc import fnpickle, fnunpickle
 import numpy as np
 import matplotlib
 matplotlib.use("agg")
-import daft
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib import rc_context, rcParams, cm
@@ -25,63 +25,34 @@ from matplotlib.patches import Rectangle, Ellipse, Circle
 import scipy.optimize as so
 from scipy.stats import norm
 
+from streams import usys
 from streams.util import project_root
-from streams.io.sgr import SgrSimulation
+from streams.io.sgr import SgrSimulation, SgrSimulationDH
 from streams.integrate import LeapfrogIntegrator
 from streams.potential.lm10 import LawMajewski2010#, LawMajewski2010Py
 
 matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18)
-#matplotlib.rc('text', usetex=True)
 matplotlib.rc('axes', edgecolor='#444444', labelsize=24,
               labelweight=400, linewidth=2.0)
 matplotlib.rc('lines', markeredgewidth=0)
 matplotlib.rc('font', family='Source Sans Pro')
-#matplotlib.rc('savefig', bbox='standard')
+
+# SgrSimulation = SgrSimulationDH
+# expr = "(tub!=0)"
+# expr = "(tub!=0) & (tub<355) & (tub>94)"
 
 plot_path = "plots/paper2/"
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
 
-def graphical_model(**kwargs):
+def fig1(**kwargs):
 
-    filename = os.path.join(plot_path, "graphical_model.png")
-
-    # Instantiate the PGM.
-    pgm = daft.PGM([3.5, 2.5], origin=[0.3, 0.3])
-
-    # Hierarchical parameters.
-    pgm.add_node(daft.Node("sigma_x", r"$\Sigma_{\rm p}$,$x_{\rm p}$", 0.5, 2, fixed=True))
-    pgm.add_node(daft.Node("beta", r"$\beta$", 1.5, 2))
-
-    # Latent variable.
-    pgm.add_node(daft.Node("w", r"$w_n$", 1, 1))
-
-    # Data.
-    pgm.add_node(daft.Node("x", r"$x_n$", 2, 1, observed=True))
-
-    # Add in the edges.
-    pgm.add_edge("sigma_x", "beta")
-    pgm.add_edge("beta", "w")
-    pgm.add_edge("w", "x")
-    pgm.add_edge("beta", "x")
-
-    # And a plate.
-    pgm.add_plate(daft.Plate([0.5, 0.5, 2, 1], label=r"$n = 1, \cdots, N$",
-        shift=-0.1))
-
-    # Render and save.
-    pgm.render()
-    #pgm.figure.savefig("classic.pdf")
-    pgm.figure.savefig(filename, dpi=150)
-
-def simulated_streams(**kwargs):
-
-    filename = os.path.join(plot_path, "simulated_streams.pdf")
+    filename = os.path.join(plot_path, "fig1.pdf")
     fig,axes = plt.subplots(2,4,figsize=(14,7.5),
                             sharex=True, sharey=True)
 
-    ticks = [-100,-50,0,50]
+    ticks = [-100, -50,0,50]
     alpha = 0.25
     rcparams = {'lines.linestyle' : 'none',
                 'lines.linewidth' : 1.,
@@ -90,6 +61,7 @@ def simulated_streams(**kwargs):
 
     for ii,_m in enumerate(range(6,9+1)):
         mass = "2.5e{}".format(_m)
+        print(mass)
         m = float(mass)
 
         sgr = SgrSimulation(mass)
@@ -113,12 +85,11 @@ def simulated_streams(**kwargs):
 
     axes[0,0].set_yticks(ticks)
     axes[1,0].set_yticks(ticks)
-    axes[-1,-1].set_xlim(-100,75)
-    axes[-1,-1].set_ylim(-100,75)
+    axes[-1,-1].set_xlim(-110,75)
+    axes[-1,-1].set_ylim(-110,75)
 
     fig.tight_layout()
     fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
-    #fig.subplots_adjust(hspace=0., wspace=0.075)
     fig.savefig(filename)
 
 def potential_contours(**kwargs):
@@ -228,7 +199,7 @@ def Lpts(**kwargs):
         print(mass)
 
         sgr = SgrSimulation(mass)
-        p = sgr.particles(N=nparticles, expr="(tub!=0) & (tub<355) & (tub>94)")
+        p = sgr.particles(N=nparticles, expr=expr)
         s = sgr.satellite()
 
         X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
@@ -269,9 +240,15 @@ def Lpts(**kwargs):
         VZ = np.sum(rel_vel * z_hat, axis=-1)
         VV = np.sqrt(VX**2+VY**2+VZ**2)
 
+        _tcross = r_tide / np.sqrt(G.decompose(usys).value*m/r_tide)
         for ii,jj in enumerate(t_idx):
-            tcross = r_tide[jj,0] / VV[jj,ii]
-            bnd = int(tcross / 4)
+            #tcross = r_tide[jj,0] / _v[jj,ii]
+            tcross = _tcross[jj]
+            bnd = int(tcross / 2)
+
+            ix1,ix2 = jj-bnd, jj+bnd
+            if ix1 < 0: ix1 = 0
+            if ix2 > max(sgr.t1,sgr.t2): ix2 = -1
             axes[0,k].plot(X[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
                            Y[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
                            linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
@@ -298,9 +275,15 @@ def Lpts(**kwargs):
             axes[0,k].set_ylabel(r"$x_2$")
             axes[1,k].set_ylabel(r"$x_3$")
 
+        _tcross = r_tide / np.sqrt(G.decompose(usys).value*m/r_tide)
         for ii,jj in enumerate(t_idx):
-            tcross = r_tide[jj,0] / VV[jj,ii]
-            bnd = int(tcross / 4)
+            #tcross = r_tide[jj,0] / _v[jj,ii]
+            tcross = _tcross[jj]
+            bnd = int(tcross / 2)
+
+            ix1,ix2 = jj-bnd, jj+bnd
+            if ix1 < 0: ix1 = 0
+            if ix2 > max(sgr.t1,sgr.t2): ix2 = -1
             axes2[0,k].plot(VX[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
                             VY[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
                             linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
@@ -354,7 +337,7 @@ def phasespace(**kwargs):
         print(mass)
 
         sgr = SgrSimulation(mass)
-        p = sgr.particles(N=nparticles, expr="(tub!=0) & (tub<355) & (tub>94)")
+        p = sgr.particles(N=nparticles, expr=expr)
         s = sgr.satellite()
 
         X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
@@ -395,9 +378,15 @@ def phasespace(**kwargs):
         VZ = np.sum(rel_vel * z_hat, axis=-1)
         VV = np.sqrt(VX**2+VY**2+VZ**2)
 
+        _tcross = r_tide / np.sqrt(G.decompose(usys).value*m/r_tide)
         for ii,jj in enumerate(t_idx):
-            tcross = r_tide[jj,0] / VV[jj,ii]
-            bnd = int(tcross / 4)
+            #tcross = r_tide[jj,0] / _v[jj,ii]
+            tcross = _tcross[jj]
+            bnd = int(tcross / 2)
+
+            ix1,ix2 = jj-bnd, jj+bnd
+            if ix1 < 0: ix1 = 0
+            if ix2 > max(sgr.t1,sgr.t2): ix2 = -1
             axes[0,k].plot(X[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
                            VX[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
                            linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
@@ -424,6 +413,114 @@ def phasespace(**kwargs):
     fig.tight_layout()
     fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
     fig.savefig(filename)
+
+def total_rv(**kwargs):
+
+    potential = LawMajewski2010()
+    filenamer = os.path.join(plot_path, "rel_r.png")
+    filenamev = os.path.join(plot_path, "rel_v.png")
+
+    figr,axesr = plt.subplots(4,1,figsize=(10,14),
+                              sharex=True)
+    figv,axesv = plt.subplots(4,1,figsize=(10,14),
+                              sharex=True)
+
+    nparticles = 2000
+    for k,_m in enumerate(range(6,9+1)):
+        mass = "2.5e{}".format(_m)
+        m = float(mass)
+        print(mass)
+
+        sgr = SgrSimulation(mass)
+        p = sgr.particles(N=nparticles, expr=expr)
+        s = sgr.satellite()
+
+        X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
+        V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
+        integrator = LeapfrogIntegrator(potential._acceleration_at,
+                                        np.array(X), np.array(V),
+                                        args=(X.shape[0], np.zeros_like(X)))
+        ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
+
+        s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+        p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+        t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
+
+        m_t = (-s.mdot*ts + s.m0)[:,np.newaxis]
+        s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
+        s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
+        r_tide = sgr.true_potential._tidal_radius(m_t, s_orbit[...,:3])
+        v_disp = s_V * r_tide / s_R
+
+        # cartesian basis to project into
+        x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
+        _y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
+        z_hat = np.cross(x_hat, _y_hat)
+        y_hat = -np.cross(x_hat, z_hat)
+
+        # translate to satellite position
+        rel_orbits = p_orbits - s_orbit
+        rel_pos = rel_orbits[...,:3]
+        rel_vel = rel_orbits[...,3:]
+
+        # project onto each
+        X = np.sum(rel_pos * x_hat, axis=-1)
+        Y = np.sum(rel_pos * y_hat, axis=-1)
+        Z = np.sum(rel_pos * z_hat, axis=-1)
+        RR = np.sqrt(X**2 + Y**2 + Z**2)
+
+        VX = np.sum(rel_vel * x_hat, axis=-1)
+        VY = np.sum(rel_vel * y_hat, axis=-1)
+        VZ = np.sum(rel_vel * z_hat, axis=-1)
+        VV = (np.sqrt(VX**2 + VY**2 + VZ**2)*u.kpc/u.Myr).to(u.km/u.s).value
+        v_disp = (v_disp*u.kpc/u.Myr).to(u.km/u.s).value
+
+        _tcross = r_tide / np.sqrt(G.decompose(usys).value*m/r_tide)
+        for ii,jj in enumerate(t_idx):
+            #tcross = r_tide[jj,0] / _v[jj,ii]
+            tcross = _tcross[jj]
+            bnd = int(tcross / 2)
+
+            ix1,ix2 = jj-bnd, jj+bnd
+            if ix1 < 0: ix1 = 0
+            if ix2 > max(sgr.t1,sgr.t2): ix2 = -1
+            axesr[k].plot(ts[ix1:ix2],
+                          RR[ix1:ix2,ii],
+                          linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+
+            axesv[k].plot(ts[ix1:ix2],
+                          VV[ix1:ix2,ii],
+                          linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+
+        axesr[k].plot(ts, r_tide*2., marker=None)
+
+        axesr[k].set_xlim(ts.min(), ts.max())
+        axesv[k].set_xlim(ts.min(), ts.max())
+
+        axesr[k].set_ylim(0,max(r_tide)*7)
+        axesv[k].set_ylim(0,max(v_disp)*7)
+
+        # axes[1,k].set_xlabel(r"$x_1$")
+
+        # if k == 0:
+        #     axes[0,k].set_ylabel(r"$x_2$")
+        #     axes[1,k].set_ylabel(r"$x_3$")
+
+        axesr[k].text(3000, max(r_tide)*5, r"$2.5\times10^{}M_\odot$".format(_m))
+        axesv[k].text(3000, max(v_disp)*5, r"$2.5\times10^{}M_\odot$".format(_m))
+
+    axesr[-1].set_xlabel("time [Myr]")
+    axesv[-1].set_xlabel("time [Myr]")
+
+    figr.suptitle("Relative distance", fontsize=26)
+    figr.tight_layout()
+    figr.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
+    figr.savefig(filenamer)
+
+    figv.suptitle("Relative velocity", fontsize=26)
+    figv.tight_layout()
+    figv.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
+    figv.savefig(filenamev)
 
 def num_recombine(**kwargs):
     N_particles = kwargs.get('N', 1000)
