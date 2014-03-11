@@ -237,8 +237,8 @@ To model the true, 6D, present-day position of the star, $\W$, we first transfor
 where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale}. $\left\vert\J\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. This model could trivially allow for mass loss by incorporating the initial satellite mass, $m$ and, e.g., a constant mass-loss term, $\dot{m}$. For a single star, in detail, the model works as follows:
 \begin{enumerate}
 	\item sample from the observed distributions in heliocentric coordinates (Eq.~\ref{eq:obsstar} and Eq.~\ref{eq:obsprog}) to get present-day positions for both the star and progenitor;
-	\item transform to Galactocentric, cartesian coordinates, and integrate both orbits backwards (as test particles) to $t=t_{\rm ub}$;
-	\item evaluate the likelihood.
+	\item transform to Galactocentric, cartesian coordinates, and integrate both orbits backwards (as test particles) for the total interaction time, $\tint$;
+	\item evaluate the likelihood at $t=\tub$.
 \end{enumerate}
 
 This model works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars become preferentially unbound around the satellite's pericenter because of tidal shocking (cite?). We will explore properly modeling this process in future work. For this article, we modify the above to be a mixture model: we add a new parameter for each star, $P_{\rm shock}$, which is the probability that the star is drawn from a broader, ``shocked'' distribution instead of a tight Gaussian centered on an effective Lagrange point:
@@ -247,13 +247,13 @@ This model works well when all stars are lost due to tidal pruning. Even on a mi
 		\times \mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma^2_v) \left\vert\J\right\vert ]_{t=\tub}
 \end{multline}
 \begin{align}
-	p_{\rm shock} = \left [ \mathcal{N}(\bs{r} \given \bs{r}_\sat, 9\sigma^2_r)\mathcal{N}(\bs{v} \given \bs{v}_\sat, 9\sigma^2_v) \left\vert\J\right\vert\right]_{t=\tub}
+	p_{\rm shock} = \left [ \mathcal{N}(\bs{r} \given \bs{r}_\sat, 10\sigma^2_r)\mathcal{N}(\bs{v} \given \bs{v}_\sat, 10\sigma^2_v) \left\vert\J\right\vert\right]_{t=\tub}
 \end{align}
 \begin{multline}
 	p(\W \given \W_\sat, \tub, \Phi, \tailbit, c, P_{\rm shock}) = \\
-		P_{\rm shock}p_{\rm shock} + (1-P_{\rm shock})p_{\rm strip}
+		P_{\rm shock}p_{\rm shock} + (1-P_{\rm shock})p_{\rm strip}.
 \end{multline}
-The full posterior probability for the position of a star, progenitor, and properties of the parent potential, given the data, is then
+Here we assume that the ``shocked'' distribution has a much larger variance, and arbitrarily set this to 10 times the variance of the stripped debris. The full posterior probability for the position of a star, progenitor, and properties of the parent potential, given the data, is then
 \begin{multline}
 	p(\Phi, \W, \W_\sat, \tub, \tailbit, c, P_{\rm shock} \given \D, \D_\sat) = \\
 		\shoveleft{\hspace{3em}\frac{1}{\mathcal{Z}} \, p(\D \given \W) \, p(\D_\sat \given \W_\sat)}\\
@@ -315,6 +315,8 @@ In what follows, we apply the model described above to ``observations'' of the n
 \end{table}
 
 \subsection{Perfect data}
+
+We first 
 
 \subsection{\gaia + \spitzer}
 8 stars in Sgr-like stream
