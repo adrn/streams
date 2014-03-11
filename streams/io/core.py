@@ -97,8 +97,8 @@ def read_config(filename, default_filename=''):
 
     return config
 
-def read_table(filename, expr=None, N=None):
-    _table = np.genfromtxt(filename, names=True)
+def read_table(filename, expr=None, N=None, names=True, **kwargs):
+    _table = np.genfromtxt(filename, names=names, **kwargs)
 
     if expr is not None:
         idx = numexpr.evaluate(str(expr), _table)
