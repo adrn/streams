@@ -48,7 +48,8 @@ _label_map['d'] = "$d$ [kpc]"
 _label_map['mul'] = r"$\mu_l$ [mas/yr]"
 _label_map['mub'] = r"$\mu_b$ [mas/yr]"
 _label_map['vr'] = r"$v_r$ [km/s]"
-_label_map['logmass'] = r"$\log M$"
+_label_map['logmass'] = r"$\log m$ [$M_\odot$]"
+_label_map['logmdot'] = r"$\log \dot{m}$ [$M_\odot/$Myr]"
 
 _unit_transform = defaultdict(lambda: lambda x: x)
 _unit_transform['phi'] = lambda x: (x*u.rad).to(u.degree).value
