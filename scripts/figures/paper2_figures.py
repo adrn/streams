@@ -29,7 +29,7 @@ from streams import usys
 from streams.util import project_root
 from streams.io.sgr import SgrSimulation, SgrSimulationDH
 from streams.integrate import LeapfrogIntegrator
-from streams.potential.lm10 import LawMajewski2010#, LawMajewski2010Py
+from streams.potential.lm10 import LawMajewski2010
 
 matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18)
@@ -40,15 +40,17 @@ matplotlib.rc('font', family='Source Sans Pro')
 
 # SgrSimulation = SgrSimulationDH
 # expr = "(tub!=0)"
-# expr = "(tub!=0) & (tub<355) & (tub>94)"
+expr = "(tub!=0) & (tub<355) & (tub>94)"
 
 plot_path = "plots/paper2/"
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
 
-def fig1(**kwargs):
+ext = 'pdf'
 
-    filename = os.path.join(plot_path, "fig1.pdf")
+def simulated_streams(**kwargs):
+
+    filename = os.path.join(plot_path, "simulated_streams.{}".format(ext))
     fig,axes = plt.subplots(2,4,figsize=(14,7.5),
                             sharex=True, sharey=True)
 
@@ -68,7 +70,7 @@ def fig1(**kwargs):
         p = sgr.particles(N=5000)
 
         with rc_context(rc=rcparams):
-            axes[0,ii].text(0.5, 1.04, r"{}$M_\odot$".format(mass),
+            axes[0,ii].text(0.5, 1.04, r"$2.5\times10^{}M_\odot$".format(_m),
                    horizontalalignment='center',
                    fontsize=24,
                    transform=axes[0,ii].transAxes)
@@ -92,18 +94,18 @@ def fig1(**kwargs):
     fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
     fig.savefig(filename)
 
-def potential_contours(**kwargs):
+def potentials(**kwargs):
 
-    filename = os.path.join(plot_path, "potentials.pdf")
+    filename = os.path.join(plot_path, "potentials.{}".format(ext))
     fig,axes = plt.subplots(2,4,figsize=(14,7))
 
     base_params = dict(q1=1., qz=1., q2=1., phi=0.)
     potentials = []
-    potentials.append(LawMajewski2010Py(**base_params))
+    potentials.append(LawMajewski2010(**base_params))
 
     pp = base_params.copy()
     pp['q1'] = 1.5
-    potentials.append(LawMajewski2010Py(**pp))
+    potentials.append(LawMajewski2010(**pp))
     axes[0,1].text(0.5, 1.04, r"$q_1=1.5$",
                    horizontalalignment='center',
                    fontsize=20,
@@ -111,7 +113,7 @@ def potential_contours(**kwargs):
 
     pp = base_params.copy()
     pp['qz'] = 1.5
-    potentials.append(LawMajewski2010Py(**pp))
+    potentials.append(LawMajewski2010(**pp))
     axes[0,2].text(0.5, 1.04, r"$q_z=1.5$",
                    horizontalalignment='center',
                    fontsize=20,
@@ -120,7 +122,7 @@ def potential_contours(**kwargs):
     pp = base_params.copy()
     pp['phi'] = 45*u.degree
     pp['q1'] = 1.5
-    potentials.append(LawMajewski2010Py(**pp))
+    potentials.append(LawMajewski2010(**pp))
     axes[0,3].text(0.5, 1.04, r"$q_1=1.5$, $\phi=45^\circ$",
                    horizontalalignment='center',
                    fontsize=20,
@@ -172,10 +174,10 @@ def potential_contours(**kwargs):
         if ii > 0:
             axes[1,ii].set_yticklabels([])
         axes[1,ii].set_aspect('equal', 'box')
-        axes[1,ii].set_xlabel("X [kpc]")
+        axes[1,ii].set_xlabel("$X$ [kpc]")
 
-    axes[0,0].set_ylabel("Y [kpc]")
-    axes[1,0].set_ylabel("Z [kpc]")
+    axes[0,0].set_ylabel("$Y$ [kpc]")
+    axes[1,0].set_ylabel("$Z$ [kpc]")
 
     fig.tight_layout(pad=1.5, h_pad=0.)
     fig.savefig(filename)
@@ -183,8 +185,8 @@ def potential_contours(**kwargs):
 def Lpts(**kwargs):
 
     potential = LawMajewski2010()
-    filename = os.path.join(plot_path, "Lpts_r.png")
-    filename2 = os.path.join(plot_path, "Lpts_v.png")
+    filename = os.path.join(plot_path, "Lpts_r.{}".format(ext))
+    filename2 = os.path.join(plot_path, "Lpts_v.{}".format(ext))
 
     fig,axes = plt.subplots(2,4,figsize=(14,7.5),
                             sharex=True, sharey=True)
@@ -310,8 +312,15 @@ def Lpts(**kwargs):
             axes2[0,k].set_ylabel(r"$v_{x_2}$")
             axes2[1,k].set_ylabel(r"$v_{x_3}$")
 
-        axes[0,k].set_title(r"$2.5\times10^{}M_\odot$".format(_m))
-        axes2[0,k].set_title(r"$2.5\times10^{}M_\odot$".format(_m))
+        axes[0,k].text(0.5, 1.04, r"$2.5\times10^{}M_\odot$".format(_m),
+                       horizontalalignment='center',
+                       fontsize=24,
+                       transform=axes[0,k].transAxes)
+
+        axes2[0,k].text(0.5, 1.04, r"$2.5\times10^{}M_\odot$".format(_m),
+                        horizontalalignment='center',
+                        fontsize=24,
+                        transform=axes2[0,k].transAxes)
 
     fig.tight_layout()
     fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
