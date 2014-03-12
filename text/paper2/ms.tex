@@ -265,7 +265,7 @@ where the factor $\mathcal{Z}$ only depends on the properties of the data (the \
 % In general, $p(\tub)$ is likely conditional on the orbit of the progenitor --- stars are preferentially stripped at pericentric passages --- but this is neglected and is taken to be uniform over the entire interaction history between the progenitor and parent. 
 
 \section{Experiments}
-In what follows, we apply the model described above to ``observations'' of the n-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{eq:lm10}). When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:params}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $v_h$, 100-200~km/s corresponds to a range in solar circular velocities from $\sim$210-250 km/s (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and generic triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$).
+In what follows, we apply the model described above to ``observations'' of the n-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{eq:lm10}) --- we stress that the simulations are n-body simulations and not generated with the same generative model presented here. When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:params}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $v_h$, 100-200~km/s corresponds to a range in solar circular velocities from $\sim$210-250 km/s (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and generic triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$).
 
 \begin{table}[h]
 \begin{center}
@@ -316,9 +316,9 @@ In what follows, we apply the model described above to ``observations'' of the n
 
 \subsection{Perfect data}
 
-We first 
+We first test the model on small samples of stars sampled from the simulations above assuming perfect observational data. 
 
-\subsection{\gaia + \spitzer}
+\subsection{\gaia\,+ \spitzer}
 8 stars in Sgr-like stream
 
 We assume the present-day mass of the progenitor, $M_p$, and velocity dispersion, $\sigma_v$, have been measured perfectly and neglect mass-loss from the progenitor. 
