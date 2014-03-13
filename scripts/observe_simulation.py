@@ -74,13 +74,15 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     simulation = Simulation(**class_kwargs)
 
     # read particles from the simulation class
-    sim_time = simulation.particle_units[0]/simulation.particle_units[-1]
+    sim_time = simulation._units["time"]
+    sim_leng = simulation._units["length"]
 
     # HACK HACK HACK
-    selection_expr = "(tub!=0) & (tub>{}) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<60)"\
-                     .format((1400*u.Myr).to(sim_time).value,
-                             (5300*u.Myr).to(sim_time).value)
-    particles = simulation.particles(N=N, expr=selection_expr)
+    selection_expr = "(tub!=0) & (tub>{}) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<{})"\
+                     .format((1800*u.Myr).to(sim_time).value,
+                             (5500*u.Myr).to(sim_time).value,
+                             (50*u.kpc).to(sim_leng).value)
+    particles = simulation.particles(N=N, expr=selection_expr, tail_bit=True)
 
     logger.debug("Read in {} particles with expr='{}'"\
                  .format(particles.nparticles, selection_expr))
@@ -117,7 +119,7 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
                                  .to_frame(galactocentric)
 
     fig,axes = plt.subplots(1,2,figsize=(16,8))
-    markersize = 6.
+    markersize = 4.
     axes[0].plot(all_gc_particles["x"].value, all_gc_particles["z"].value,
                  markersize=markersize, marker='o', linestyle='none', alpha=0.25)
     axes[0].plot(true_gc_particles["x"].value, true_gc_particles["z"].value,
@@ -204,17 +206,21 @@ if __name__ == "__main__":
     """
         e.g.:
 
-python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---N=256 --file=/Users/adrian/Projects/streams/data/observed_particles/2.5e6_N1024.hdf5 \
+python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
+--N=1024 --file=/Users/adrian/Projects/streams/data/observed_particles/2.5e6_N1024_DH.hdf5 \
 --seed=42 --mass="2.5e6" --overwrite
 
-python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---N=256 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e7_N1024.hdf5 \
+python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
+--N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e7_N1024_DH.hdf5 \
 --seed=42 --mass="2.5e7" --overwrite
 
-python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024.hdf5 \
+python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
+--N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024_DH.hdf5 \
 --seed=42 --mass="2.5e8" --overwrite
+
+python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
+--N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e9_N1024_DH.hdf5 \
+--seed=42 --mass="2.5e9" --overwrite
     """
 
     # TODO: class kwargs
