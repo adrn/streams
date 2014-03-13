@@ -29,8 +29,9 @@
 \newcommand{\vv}{\widetilde{\bs{v}}}
 \newcommand{\tailbit}{\beta}
 \newcommand{\Loffset}{\alpha}
-
+\newcommand{\pshock}{P_{\rm shock}}
 \newcommand{\paperone}{Paper 1}
+\newcommand{\vhalo}{v_{\rm h}}
 
 \begin{document}
 
@@ -136,7 +137,7 @@ The potential is taken to be a three-component sum of a Miyamoto-Nagai disk \cit
 \begin{align}
 	&\Phi_{\rm disk}(R,z) = -\frac{GM_{\rm disk}}{\sqrt{R^2 + (a + \sqrt{z^2 + b^2})^2}}\\
 	&\Phi_{\rm spher}(r) = -\frac{GM_{\rm spher}}{r + c}\\
-	&\Phi_{\rm halo}(x,y,z) = v_{h}^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + r_h^2)
+	&\Phi_{\rm halo}(x,y,z) = \vhalo^2 \ln(C_1 x^2 + C_2 y^2 + C_3 xy + (z/q_z)^2 + r_h^2)
 \end{align}
 where $C_1$, $C_2$, and $C_3$ are combinations of the $x$ and $y$ axis
 ratios ($q_1$, $q_2$) and orientation of the halo with respect to the
@@ -155,7 +156,7 @@ Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane 
 \begin{figure}[h]
 \begin{center}
 \includegraphics[width=\textwidth]{../../plots/paper2/potentials.pdf}
-\caption{ Equipotential contours for the LM10 potential (Eq.~\ref{eq:lm10}) in Galactocentric, cartesian coordinates for various halo parameter choices. For all panels, $v_h=121.858~\mathrm{km}/\mathrm{s}$, $r_h=12~\mathrm{kpc}$. Left to right, each column represents a new choice of parameters. If not specified, other parameters are fixed to $q_1=q_2=q_z=1$ and $\phi=0^\circ$ (far left panels).  }\label{fig:potential}
+\caption{ Equipotential contours for the LM10 potential (Eq.~\ref{eq:lm10}) in Galactocentric, cartesian coordinates for various halo parameter choices. For all panels, $\vhalo=121.858~\mathrm{km}/\mathrm{s}$, $r_h=12~\mathrm{kpc}$. Left to right, each column represents a new choice of parameters. If not specified, other parameters are fixed to $q_1=q_2=q_z=1$ and $\phi=0^\circ$ (far left panels).  }\label{fig:potential}
 \end{center}
 \end{figure}
 
@@ -219,6 +220,8 @@ Figure~\ref{fig:lpts_r} shows sections of particle orbits in this coordinate sys
 %\end{figure}
 
 \subsection{Probabilistic model}
+The above scalings motivate a model for tidal debris in which stars were ``released'' at the instantaneous, effective Lagrange points with some dispersion in position and velocity, all of which depend only on the mass of the progenitor, the parent potential properties, and the orbit of the progenitor. We present this model in detail below.
+
 We observe the 6D position of a star, $\D$, in heliocentric coordinates --- e.g., the measured position on the sky, ($l$, $b$); distance, $d$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and have determined through some other means that this star was once part of a progenitor system (e.g., satellite galaxy) with mass $m(t)$ that is disrupting and forming a cold debris structure in the potential, $\Phi$, of the parent galaxy (e.g., the Milky Way). We assume that the mass of the parent system enclosed in the orbit of the satellite, $M_{\rm enc}$, is much larger than the initial mass of the satellite, $M_{\rm enc} \gg m(t=0)$. The present position of the progenitor is observed to be at heliocentric position $\D_\sat$ (where any subscript $\sat$ refers to the progenitor). In general, the data for the star and progenitor will have missing dimensions and significant uncertainties at distances typical to the Galactic halo, thus we define $\W$ and $\W_\sat$ as the true 6D, heliocentric positions of the star and progenitor and will include these in our model. By including these positions in the model, this model will work even when the star has missing dimensions or the progenitor location is unknown as in, e.g., the Orphan stream \citep{some orphan paper}.
 
 We assume that the observational uncertainties are Gaussian in heliocentric, spherical coordinates, such that
@@ -228,20 +231,20 @@ We assume that the observational uncertainties are Gaussian in heliocentric, sph
 \end{align}
 where $\mathcal{N}$ represents the normal distribution, and the covariance matrices $\bSigma$ and $\bSigma_\sat$ specify the observational uncertainties on the observed 6D position of the star and progenitor, respectively. 
 
-To model the true, 6D, present-day position of the star, $\W$, we first transform to cartesian, Galactocentric coordinates where ($\bs{r},\bs{v}$) and ($\bs{r}_\sat,\bs{v}_\sat$) are the position and velocity of the star and progenitor. In cartesian coordinates, the present-day position of the star is taken as having been sampled at $t=\tub$ from an isotropic Gaussian centered on one of the instantaneous, effective Lagrange points in position, and an isotropic Gaussian centered on the origin in velocity, and evolved to present day in the parent potential, $\Phi$. That is, we assume that once the star becomes ``unbound'' from the satellite the potential of the satellite can be ignored, and thus treat the star as a test particle.\footnote{This assumption breaks down for sufficiently large-mass progenitors, somewhere between $\sim10^8-10^9~$M$_\odot$.} We add two other parameters: a constant offset, $\Loffset$, that specifies the position of the effective Lagrange points relative to the classical tidal radius, and a binary parameter $\tailbit$, that is either $-1$ or $+1$ depending on whether the star is in the leading or trailing tail.
+To model the true, 6D, present-day position of the star, $\W$, we first transform to cartesian, Galactocentric coordinates where ($\bs{r},\bs{v}$) and ($\bs{r}_\sat,\bs{v}_\sat$) are the position and velocity of the star and progenitor. In cartesian coordinates, the present-day position of the star is taken as having been sampled at $t=\tub$ from an isotropic Gaussian centered on one of the instantaneous, effective Lagrange points in position, and an isotropic Gaussian centered on the origin in velocity, and evolved to present day in the parent potential, $\Phi$. That is, we assume that once the star becomes ``unbound'' from the satellite the potential of the satellite can be ignored, and thus treat the star as a test particle.\footnote{This assumption breaks down for sufficiently large-mass progenitors, somewhere between $\sim10^8-10^9~$M$_\odot$.} The satellite mass does enter the model through the tidal radius; a changing satellite mass will skew the position of the effective Lagrange points. We allow for mass-loss by incorporating the initial satellite mass, $m$, and a constant mass-loss term, $\dot{m}$ into the model. Finally, we add two additional parameters: a constant, global offset, $\Loffset$, that scales the position of the effective Lagrange points relative to the classical tidal radius, and a binary parameter $\tailbit$, that is either $-1$ or $+1$ depending on whether the star is in the leading or trailing tail.
 \begin{align}
-	p(\W \given \W_\sat, \tub, \Phi, \Loffset, \tailbit) &= p(\bs{r} \given \bs{r}_\sat, \tub, \Phi, \Loffset, \tailbit)\,p(\bs{v} \given \bs{v}_\sat, \tub, \Phi)\,\left\vert\J\right\vert_{t=\tub}\\
-	p(\bs{r} \given \bs{r}_\sat, \tub, \Phi, \Loffset, \tailbit) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \sigma^2_r)_{t=\tub}\\
-	p(\bs{v} \given \bs{v}_\sat, \tub, \Phi) &= \mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma^2_v)_{t=\tub}
+	p(\W \given m, \dot{m}, \W_\sat, \tub, \Phi, \Loffset, \tailbit) &= p(\bs{r} \given \bs{r}_\sat, m, \dot{m}, \tub, \Phi, \Loffset, \tailbit)\,p(\bs{v} \given \bs{v}_\sat, m, \dot{m}, \tub, \Phi)\,\left\vert\J\right\vert_{t=\tub}\\
+	p(\bs{r} \given \bs{r}_\sat, m, \dot{m}, \tub, \Phi, \Loffset, \tailbit) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \sigma^2_r)_{t=\tub}\\
+	p(\bs{v} \given \bs{v}_\sat, m, \dot{m}, \tub, \Phi) &= \mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma^2_v)_{t=\tub}
 \end{align}
-where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale}. $\left\vert\J\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. This model could trivially allow for mass loss by incorporating the initial satellite mass, $m$ and, e.g., a constant mass-loss term, $\dot{m}$. For a single star, in detail, the model works as follows:
+where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale}. $\left\vert\J\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. For a single star, in detail, the model works as follows:
 \begin{enumerate}
 	\item sample from the observed distributions in heliocentric coordinates (Eq.~\ref{eq:obsstar} and Eq.~\ref{eq:obsprog}) to get present-day positions for both the star and progenitor;
 	\item transform to Galactocentric, cartesian coordinates, and integrate both orbits backwards (as test particles) for the total interaction time, $\tint$;
 	\item evaluate the likelihood at $t=\tub$.
 \end{enumerate}
 
-This model works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars become preferentially unbound around the satellite's pericenter because of tidal shocking (cite?). We will explore properly modeling this process in future work. For this article, we modify the above to be a mixture model: we add a new parameter for each star, $P_{\rm shock}$, which is the probability that the star is drawn from a broader, ``shocked'' distribution instead of a tight Gaussian centered on an effective Lagrange point:
+This model works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars become preferentially unbound around the satellite's pericenter because of tidal shocking (cite?). We will explore properly modeling this process in future work. For this article, we modify the above to be a mixture model: we add a new parameter for each star, $\pshock$, which is the probability that the star is drawn from a broader, ``shocked'' distribution instead of a tight Gaussian centered on an effective Lagrange point:
 \begin{multline}
 	p_{\rm strip} = [ \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \sigma^2_r)\\
 		\times \mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma^2_v) \left\vert\J\right\vert ]_{t=\tub}
@@ -250,22 +253,26 @@ This model works well when all stars are lost due to tidal pruning. Even on a mi
 	p_{\rm shock} = \left [ \mathcal{N}(\bs{r} \given \bs{r}_\sat, 10\sigma^2_r)\mathcal{N}(\bs{v} \given \bs{v}_\sat, 10\sigma^2_v) \left\vert\J\right\vert\right]_{t=\tub}
 \end{align}
 \begin{multline}
-	p(\W \given \W_\sat, \tub, \Phi, \tailbit, c, P_{\rm shock}) = \\
-		P_{\rm shock}p_{\rm shock} + (1-P_{\rm shock})p_{\rm strip}.
+	p(\W \given \W_\sat, \tub, \Phi, \tailbit, c, \pshock) = \\
+		\pshock p_{\rm shock} + (1-\pshock)p_{\rm strip}.
 \end{multline}
-Here we assume that the ``shocked'' distribution has a much larger variance, and arbitrarily set this to 10 times the variance of the stripped debris. The full posterior probability for the position of a star, progenitor, and properties of the parent potential, given the data, is then
+Here we assume that the ``shocked'' distribution has a much larger variance, and arbitrarily set this to 10 times the variance of the stripped debris. The posterior probability for the position of a star, progenitor, and properties of the parent potential, given the data, is then
 \begin{multline}
-	p(\Phi, \W, \W_\sat, \tub, \tailbit, c, P_{\rm shock} \given \D, \D_\sat) = \\
+	p(\Phi, \W, \W_\sat, \tub, \tailbit, c, \pshock \given \D, \D_\sat) = \\
 		\shoveleft{\hspace{3em}\frac{1}{\mathcal{Z}} \, p(\D \given \W) \, p(\D_\sat \given \W_\sat)}\\
-			\times p(\W \given \W_\sat, \tub, \Phi, \Loffset, \tailbit) \, 
+			\times p(\W \given \W_\sat, \tub, \Phi, \Loffset, \tailbit, \pshock) \, 
 			p(\Phi) \, p(\tub) \, p(c)
 \end{multline}
-where the factor $\mathcal{Z}$ only depends on the properties of the data (the \emph{evidence}), and is thus constant when varying the model parameters. All model parameters are summarized in Table~\ref{tbl:params}.
-
-% In general, $p(\tub)$ is likely conditional on the orbit of the progenitor --- stars are preferentially stripped at pericentric passages --- but this is neglected and is taken to be uniform over the entire interaction history between the progenitor and parent. 
+where the factor $\mathcal{Z}$ only depends on the properties of the data (the \emph{evidence}), and is thus constant when varying the model parameters. All model parameters are summarized in Table~\ref{tbl:params}. Assuming each star is an independent tracer, the full posterior for many stars is then just the product of the individual likelihoods with the priors:
+\begin{multline}
+	p(\Phi, \W, \W_\sat, \tub, \tailbit, c, \pshock \given \D, \D_\sat) = \\
+		\shoveleft{\hspace{1em}\frac{1}{\mathcal{Z}} \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \, p(\D_\sat \given \W_\sat)}\\
+			\times p(\W^{(i)} \given \W_\sat, \tub^{(i)}, \Phi, \Loffset, \tailbit^{(i)}, \pshock^{(i)}) \, 
+			\, p(\tub^{(i)}) p(\Phi) \, p(c)
+\end{multline}
 
 \section{Experiments}
-In what follows, we apply the model described above to ``observations'' of the n-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{eq:lm10}) --- we stress that the simulations are n-body simulations and not generated with the same generative model presented here. When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:params}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $v_h$, 100-200~km/s corresponds to a range in solar circular velocities from $\sim$210-250 km/s (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and generic triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$).
+In what follows, we apply the model described above to ``observations'' of the n-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{eq:lm10}) --- we stress that the simulations are n-body simulations and not generated with the same generative model presented here. When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:params}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $\vhalo$, 100-200~km/s corresponds to a range in solar circular velocities from $\sim$210-250 km/s (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and generic triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the value measured by LM10 ($\phi = 97^\circ$).
 
 \begin{table}[h]
 \begin{center}
@@ -280,7 +287,7 @@ In what follows, we apply the model described above to ``observations'' of the n
 		spheroid & $M_{\rm spher}$ & $3.4\times10^{10}M_\odot$ (fixed)\\ 
 		& $c$ & 0.7 kpc (fixed)\\
 		\midrule
-		halo & $v_h$ & $\mathcal{U}(100,200)$ km/s \\
+		halo & $\vhalo$ & $\mathcal{U}(100,200)$ km/s \\
 		& $q_1$ & $\mathcal{U}(1,2)$\\
 		& $q_2$ & 1.0 (fixed)\\
 		& $q_z$ & $\mathcal{U}(1,2)$\\
@@ -289,24 +296,16 @@ In what follows, we apply the model described above to ``observations'' of the n
 		\toprule
 		\multicolumn{3}{l}{{\bf \emph{Progenitor parameters}}} \\
 		\toprule
-		position & $\cos l$ & $\mathcal{U}(-1,1)$ \\
-		& $\cos b$ & $\mathcal{U}(-1,1)$\\
-		& $d$ & $\mathcal{U}(10,100)$~kpc\\
-		velocity & $\mu_l$ & $\mathcal{U}(-100,100)$~mas/yr\\
-		& $\mu_b$ & $\mathcal{U}(-100,100)$~mas/yr\\
-		& $v_r$ & $\mathcal{U}(-1000,1000)$~km/s\\
-		Lagrange pt. offset & $\alpha$ & $\mathcal{N}(0.5,5)$\\
-		tail assignment & $\beta$ & $\{-1, 1\}$\\ % TODO: how to say equal weight to -1 or 1?
+		position & $\bs{r}_\sat$ & $\|\bs{r}_\sat\|\sim\mathcal{U}(0,200)$~kpc \\
+		velocity & $\bs{v}_\sat$ & $\|\bs{v}_\sat\|\sim\mathcal{N}(\mu=0,\sigma^2=4000)$~km/s\\
+		Lagrange pt. offset & $\alpha$ & $\mathcal{N}(\mu=2,\sigma^2=1)$\\
 		\toprule
 		\multicolumn{3}{l}{{\bf \emph{Parameters per star}}} \\
 		\toprule
-		position & $l$ & fixed at observed val.\\
-		& $b$ & fixed at observed val.\\
-		& $d$ & $\mathcal{U}(10,100)$~kpc\\
-		velocity & $\mu_l$ & $\mathcal{U}(-100,100)$~mas/yr\\
-		& $\mu_b$ & $\mathcal{U}(-100,100)$~mas/yr\\
-		& $v_r$ & $\mathcal{U}(-1000,1000)$~km/s\\
-		prob. shocked & $P_{\rm shocked}$ & $\mathcal{U}(0,1)$\\
+		position & $\bs{r}$ & $\|\bs{r}\|\sim\mathcal{U}(0,200)$~kpc \\
+		velocity & $\bs{v}$ & $\|\bs{v}\|\sim\mathcal{N}(\mu=0,\sigma^2=4000)$~km/s\\
+		tail assignment & $\beta$ & $\{-1, 1\}$\\ % TODO: how to say equal weight to -1 or 1?
+		prob. shocked & $\pshock$ & $\mathcal{U}(0,1)$\\
 		time unbound & $\tub$ & $\mathcal{U}(0,\tint)$\\ % TODO: talk about \tint (integration time) in text!
 		\bottomrule
 		\end{tabular}
@@ -316,12 +315,13 @@ In what follows, we apply the model described above to ``observations'' of the n
 
 \subsection{Perfect data}
 
-We first test the model on small samples of stars sampled from the simulations above assuming perfect observational data. 
+We first test the model using eight stars sampled from the $2.5\times10^8~M_\odot$ simulation (Section~\ref{sec:sims}) --- four from the leading trail, and four from the trailing tail --- assuming perfect observational data for both the stars and the progenitor. The stars are additionally required to be within $50~kpc$ of the Sun. Figure~\ref{fig:} (left panel) shows a sample of stream particles (black) and the eight randomly chosen stars (blue) in the Galactic X-Z plane. We leave the potential parameters --- $q_1$, $q_z$, $\phi$, and $\vhalo$ --- free to vary, along with the Lagrange point offset, $\Loffset$, the tail assignment for each star, $\tailbit^{(i)}$, and probability that each star was shocked, $\pshock^{(i)}$. Figure~\ref{fig:} shows the posterior distribution for the four potential parameters, marginalized over the other parameters. 
 
-\subsection{\gaia\,+ \spitzer}
-8 stars in Sgr-like stream
+\subsection{\spitzer + \gaia}
+We now take the same eight stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We take these stars to be RR Lyrae variables which are known to be excellent distance indicators using the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}; $\sim$100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
 
-We assume the present-day mass of the progenitor, $M_p$, and velocity dispersion, $\sigma_v$, have been measured perfectly and neglect mass-loss from the progenitor. 
+For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. % TODO: acknowledge Gaia science team, Anthony Brown, Gaia data challenge?
+The observed positions and velocities of these stars are shown in Figure~\ref{fig:} (red, compare to the unobserved black points).
 
 \subsection{\spitzer + current data}
 4 stars in Sgr-like stream
@@ -374,6 +374,8 @@ This is expected to be a generic feature in dynamical problems:
 
 [Nothing special about streams; will work on any structures, including
   shells and the like.]
+
+[Different streams will constraint different properties of the potential -- multiple streams are crucial. Here we use a stream roughly in the X-Z plane, thus we expect it to be more sensitive to flattening in Z direction]
 
 [Don't eschew low-dimensional constraints on the potential!]
 
