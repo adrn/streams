@@ -19,6 +19,7 @@ import astropy.units as u
 # Project
 from .back_integrate import back_integration_likelihood
 from ..coordinates.frame import heliocentric
+from ..coordinates import _hel_to_gc, _gc_to_hel
 from .parameter import ModelParameter
 from .prior import *
 from ..util import _parse_quantity
@@ -34,15 +35,16 @@ class LogCoordinatePrior(LogUniformPrior):
         """ Return 0 if value is outside of the range
             defined by a < value < b.
         """
-        if name == 'l':
-            self.a = (0.*u.deg).decompose(usys).value
-            self.b = (360.*u.deg).decompose(usys).value
-        elif name == 'b':
-            self.a = (-90.*u.deg).decompose(usys).value
-            self.b = (90.*u.deg).decompose(usys).value
+        self._transform = lambda x: x
+        if name == 'l' or name == 'b':
+            self._transform = lambda x: np.cos(x)
+            # self.a = (0.*u.deg).decompose(usys).value
+            # self.b = (360.*u.deg).decompose(usys).value
+            self.a = -1.
+            self.b = 1.
         elif name == 'd':
-            self.a = (5.*u.kpc).decompose(usys).value
-            self.b = (150.*u.kpc).decompose(usys).value
+            self.a = (1.*u.kpc).decompose(usys).value
+            self.b = (200.*u.kpc).decompose(usys).value
         elif name == 'mul':
             self.a = (-100.*u.mas/u.yr).decompose(usys).value
             self.b = (100.*u.mas/u.yr).decompose(usys).value
@@ -52,6 +54,12 @@ class LogCoordinatePrior(LogUniformPrior):
         elif name == 'vr':
             self.a = (-1000.*u.km/u.s).decompose(usys).value
             self.b = (1000.*u.km/u.s).decompose(usys).value
+
+    def __call__(self, value):
+        v = self._transform(value)
+        if np.any((v < self.a) | (v > self.b)):
+            return -np.inf
+        return 0.0
 
 class StreamModel(object):
 
@@ -375,6 +383,7 @@ class StreamModel(object):
             except KeyError:
                 p_hel.append(self.true_particles[k].decompose(usys).value)
         p_hel = np.vstack(p_hel).T
+        p_gc = _hel_to_gc(p_hel)
 
         W_ij = np.array(W_ij)
         D_ij = np.array(D_ij)
@@ -390,9 +399,9 @@ class StreamModel(object):
 
         # particle unbinding time
         try:
-            tail_bit = param_dict['particles']['tail_bit']
+            beta = param_dict['particles']['tail_bit']
         except KeyError:
-            tail_bit = self.particles.tail_bit.truth
+            beta = self.particles.tail_bit.truth
 
         # whether the particle was shocked or evaporated
         try:
@@ -416,6 +425,7 @@ class StreamModel(object):
             except KeyError:
                 s_hel.append(self.true_satellite[k].decompose(usys).value)
         s_hel = np.vstack(s_hel).T
+        s_gc = _hel_to_gc(s_hel)
 
         W_j = np.array(W_j)
         D_j = np.squeeze(D_j)
@@ -437,18 +447,18 @@ class StreamModel(object):
 
         # position of effective tidal radius
         try:
-            c = param_dict['satellite']['c']
+            alpha = param_dict['satellite']['alpha']
         except KeyError:
-            c = self.satellite.c.truth
+            alpha = self.satellite.alpha.truth
 
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
         ln_like = back_integration_likelihood(t1, t2, dt,
-                                              potential, p_hel, s_hel,
+                                              potential, p_gc, s_gc,
                                               logmass, logmdot,
-                                              tub, tail_bit, p_shocked,
-                                              c)
+                                              tub, beta, p_shocked,
+                                              alpha)
 
         return np.sum(ln_like + data_like) + sat_like
 
