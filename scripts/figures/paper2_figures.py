@@ -38,15 +38,16 @@ matplotlib.rc('axes', edgecolor='#444444', labelsize=24,
 matplotlib.rc('lines', markeredgewidth=0)
 matplotlib.rc('font', family='Source Sans Pro')
 
-# SgrSimulation = SgrSimulationDH
+SgrSimulation = SgrSimulationDH
 # expr = "(tub!=0)"
-expr = "(tub!=0) & (tub<355) & (tub>94)"
+# expr = "(tub!=0) & (tub<355) & (tub>94)" # for KVJ
+expr = "(tub!=0) & (tub>675.)" # for DH
 
 plot_path = "plots/paper2/"
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
 
-ext = 'pdf'
+ext = 'png'
 
 def simulated_streams(**kwargs):
 
@@ -54,33 +55,33 @@ def simulated_streams(**kwargs):
     fig,axes = plt.subplots(2,4,figsize=(14,7.5),
                             sharex=True, sharey=True)
 
-    ticks = [-100, -50,0,50]
-    alpha = 0.25
+    ticks = [-100,-50,0,50]
+    alpha = 0.3
     rcparams = {'lines.linestyle' : 'none',
-                'lines.linewidth' : 1.,
                 'lines.marker' : '.',
-                'axes.facecolor' : '#ffffff'}
+                'lines.markersize' : 3}
 
-    for ii,_m in enumerate(range(6,9+1)):
-        mass = "2.5e{}".format(_m)
-        print(mass)
-        m = float(mass)
+    with rc_context(rc=rcparams):
+        for ii,_m in enumerate(range(6,9+1)):
+            mass = "2.5e{}".format(_m)
+            print(mass)
+            m = float(mass)
 
-        sgr = SgrSimulation(mass)
-        p = sgr.particles(N=5000)
+            sgr = SgrSimulation(mass)
+            p = sgr.particles(N=10000)
 
-        with rc_context(rc=rcparams):
-            axes[0,ii].text(0.5, 1.04, r"$2.5\times10^{}M_\odot$".format(_m),
-                   horizontalalignment='center',
-                   fontsize=24,
-                   transform=axes[0,ii].transAxes)
+            with rc_context(rc=rcparams):
+                axes[0,ii].text(0.5, 1.04, r"$2.5\times10^{}M_\odot$".format(_m),
+                       horizontalalignment='center',
+                       fontsize=24,
+                       transform=axes[0,ii].transAxes)
 
-            axes[0,ii].plot(p["x"].value, p["y"].value,
-                            alpha=alpha)
-            axes[1,ii].plot(p["x"].value, p["z"].value,
-                            alpha=alpha)
-            axes[1,ii].set_xticks(ticks)
-            axes[1,ii].set_xlabel("$X$ [kpc]")
+                axes[0,ii].plot(p["x"].value, p["y"].value,
+                                alpha=alpha)
+                axes[1,ii].plot(p["x"].value, p["z"].value,
+                                alpha=alpha)
+                axes[1,ii].set_xticks(ticks)
+                axes[1,ii].set_xlabel("$X$ [kpc]")
 
     axes[0,0].set_ylabel("$Y$ [kpc]")
     axes[1,0].set_ylabel("$Z$ [kpc]")
