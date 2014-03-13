@@ -202,21 +202,14 @@ class SgrSimulation(object):
 
 class SgrSimulationDH(object):
 
-    def __init__(self, mass, L="1.0"):
+    def __init__(self, mass):
         self._path = os.path.join(project_root, "data", "simulation", "Sgr_DH")
 
         self._names = "m x y z vx vy vz s1 s2 tub".split()
 
         m = "M{}e+0{}".format(*mass.split('e'))
-        l = "L{}".format(L)
-
-        R = os.listdir(os.path.join(self._path,m))
-        if R[0].startswith('.'):
-            R = R[1]
-        else:
-            R = R[0]
-        self.root = os.path.join(self._path,m,R,"4.0Gyr",l)
-        self.particle_filename = os.path.join(self.root,"SNAP049")
+        self.root = os.path.join(self._path,m)
+        self.particle_filename = os.path.join(self.root,"SNAP113")
         self.particle_columns = ("x","y","z","vx","vy","vz")
 
         self._units = _units_from_file(os.path.join(self.root,"SCFPAR"))
@@ -226,7 +219,7 @@ class SgrSimulationDH(object):
         self.true_potential = LawMajewski2010()
 
         self.mass = mass
-        self.t1 = 4000. # Myr
+        self.t1 = 6020.01 # Myr
         self.t2 = 0.
 
     def raw_particle_table(self, N=None, expr=None):
