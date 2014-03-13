@@ -24,10 +24,12 @@ import triangle
 # Project
 from streams.coordinates.frame import galactocentric
 import streams.io as io
-from streams.io.sgr import SgrSimulation
+from streams.io.sgr import SgrSimulation, SgrSimulationDH
 import streams.inference as si
 import streams.potential as sp
 from streams.util import get_pool
+
+SgrSimulation = SgrSimulationDH
 
 global pool
 pool = None
