@@ -33,8 +33,8 @@ def xyz_sph_jac(hel):
     deet = np.log(np.abs(dtmnt))
     return deet
 
-def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logmdot,
-                                tub, tail_bit, p_shocked, c):
+def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdot,
+                                tub, beta, p_shocked, alpha):
 
     """ Compute the likelihood of 6D heliocentric star positions today given the
         potential and position of the satellite.
@@ -45,11 +45,11 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
             Integration parameters
         potential : streams.Potential
             The potential class.
-        p_hel : array_like
-            A (nparticles, 6) shaped array containing 6D heliocentric coordinates
+        p_gc : array_like
+            A (nparticles, 6) shaped array containing 6D galactocentric coordinates
             for all stars.
-        s_hel : array_like
-            A (1, 6) shaped array containing 6D heliocentric coordinates
+        s_gc : array_like
+            A (1, 6) shaped array containing 6D galactocentric coordinates
             for the satellite.
         logm0 : float
             Log of the initial mass of the satellite.
@@ -57,18 +57,16 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
             Log of the mass loss rate.
         tub : array_like
             Array of unbinding times for each star.
-        tail_bit : array_like
+        beta : array_like
             Array of tail bits (K) to specify leading/trailing tail for each star.
         p_shocked : array_like
             Probability the star was shocked.
-        c : float
+        alpha : float
             Position of effective tidal radius.
 
     """
 
-    p_gc = _hel_to_gc(p_hel)
-    s_gc = _hel_to_gc(s_hel)
-    K = np.sign(tail_bit)
+    K = np.sign(beta)
     p_shocked = np.array(p_shocked)
 
     gc = np.vstack((s_gc,p_gc)).copy()
@@ -137,7 +135,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     VZ = np.sum(rel_vel * z_hat, axis=-1) / v_disp
 
     # position likelihood is gaussian at lagrange points
-    r_term = -0.5*((np.log(r_tide) + (X-c*K)**2) + \
+    r_term = -0.5*((np.log(r_tide) + (X-alpha*K)**2) + \
                    (np.log(r_tide) + Y**2) + \
                    (np.log(r_tide) + Z**2))
 
@@ -148,10 +146,10 @@ def back_integration_likelihood(t1, t2, dt, potential, p_hel, s_hel, logm0, logm
     not_shocked = (r_term + v_term + jac1)
 
     # shocked
-    var_r = 3.0
+    var_r = 10.*r_tide**2
     r_term2 = -0.5*(3*np.log(var_r) + X/var_r + Y/var_r + Z/var_r)
 
-    var_v = 3.0
+    var_v = 10.*v_disp**2
     v_term2 = -0.5*(3*np.log(var_v) + VX/var_v + VY/var_v + VZ/var_v)
 
     shocked = (r_term2 + v_term2 + jac1)
