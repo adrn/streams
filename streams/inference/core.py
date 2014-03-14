@@ -448,9 +448,9 @@ class StreamModel(object):
 
         # particle tail assignment
         try:
-            beta = param_dict['particles']['tail_bit']
+            beta = param_dict['particles']['beta']
         except KeyError:
-            beta = self.particles.tail_bit.truth
+            beta = self.particles.beta.truth
 
         # probability the particle was shocked
         try:
