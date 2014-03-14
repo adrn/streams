@@ -137,9 +137,9 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
         tub = ModelParameter(name="tub",
                              truth=true_tub,
                              prior=LogUniformPrior([0.]*nparticles,[6266.]*nparticles))
-        tail_bit = ModelParameter(name="tail_bit",
-                                  truth=true_tail_bit,
-                                  prior=LogUniformPrior([-2.]*nparticles,[2.]*nparticles))
+        beta = ModelParameter(name="beta",
+                              truth=true_tail_bit,
+                              prior=LogUniformPrior([-2.]*nparticles,[2.]*nparticles))
 
         # truth=[0.]*nparticles,
         p_shocked = ModelParameter(name="p_shocked",
@@ -156,7 +156,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
                               frame=heliocentric,
                               units=[u.Unit(x) for x in ptcl["units"]])
             true_p.tub = true_tub
-            true_p.tail_bit = true_tail_bit
+            true_p.beta = true_tail_bit
             return_dict["true_particles"] = true_p
         else:
             p = Particle(ptcl["data"].value.T,
@@ -164,7 +164,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
                          units=[u.Unit(x) for x in ptcl["units"]])
 
         p.tub = tub
-        p.tail_bit = tail_bit
+        p.beta = beta
         p.p_shocked = p_shocked
         return_dict["particles"] = p
 
