@@ -103,11 +103,12 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
 
         # sample starting positions
-        p0 = model.sample_priors(size=nwalkers)
-        if config.get("start_truth", False):
-            p0 = np.random.normal(model.truths,
-                                  np.std(p0,axis=0)/10.,
-                                  size=p0.shape)
+        p0 = model.sample_priors(size=nwalkers,
+                                 start_truth=config.get("start_truth", False))
+        # if config.get("start_truth", False):
+        #     p0 = np.random.normal(model.truths,
+        #                           np.std(p0,axis=0)/10.,
+        #                           size=p0.shape)
 
         logger.debug("Priors sampled...")
 

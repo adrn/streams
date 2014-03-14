@@ -15,6 +15,7 @@ from collections import OrderedDict
 from emcee import EnsembleSampler, PTSampler
 import numpy as np
 import astropy.units as u
+from scipy.stats import truncnorm
 
 # Project
 from .back_integrate import back_integration_likelihood
@@ -35,13 +36,12 @@ class LogCoordinatePrior(LogUniformPrior):
         """ Return 0 if value is outside of the range
             defined by a < value < b.
         """
-        self._transform = lambda x: x
-        if name == 'l' or name == 'b':
-            self._transform = lambda x: np.cos(x)
-            # self.a = (0.*u.deg).decompose(usys).value
-            # self.b = (360.*u.deg).decompose(usys).value
-            self.a = -1.
-            self.b = 1.
+        if name == 'l':
+            self.a = (0.*u.deg).decompose(usys).value
+            self.b = (360.*u.deg).decompose(usys).value
+        elif name == 'b':
+            self.a = (-90.*u.deg).decompose(usys).value
+            self.b = (90.*u.deg).decompose(usys).value
         elif name == 'd':
             self.a = (1.*u.kpc).decompose(usys).value
             self.b = (200.*u.kpc).decompose(usys).value
@@ -56,39 +56,42 @@ class LogCoordinatePrior(LogUniformPrior):
             self.b = (1000.*u.km/u.s).decompose(usys).value
 
     def __call__(self, value):
-        v = self._transform(value)
+        v = value
         if np.any((v < self.a) | (v > self.b)):
             return -np.inf
         return 0.0
 
 class StreamModel(object):
 
-    def __init__(self, potential, lnpargs=(),
-                 satellite=None, particles=None,
-                 true_satellite=None, true_particles=None):
+    def __init__(self, potential, satellite, particles,
+                 true_satellite=None, true_particles=None, lnpargs=()):
         """ Model for tidal streams that uses backwards integration to Rewind
             the positions of stars.
 
             Parameters
             ----------
-            Potential : streams.potential.Potential
+            potential : streams.potential.Potential
                 The potential to fit.
-            lnpargs : iterable
+            satellite : streams.dynamics.ObservedParticle
+            particles : streams.dynamics.ObservedParticle
+            true_satellite : streams.dynamics.Particle (optional)
+            true_particles : streams.dynamics.Particle (optional)
+            lnpargs : iterable (optional)
                 Other arguments to the posterior function.
-            true_satellite : streams.dynamics.Particle
-            true_particles : streams.dynamics.Particle
         """
+
+        # store the potential class, and parameters originally specified
         self._potential_class = potential.__class__
         self._given_potential_params = potential._parameter_dict.copy()
-        self._potential = self._potential_class(**self._given_potential_params)
-        #dict([(k,v._value) for k,v in potential.parameters.items()])
 
+        # internal parameter dictionary
         self.parameters = OrderedDict()
         self.parameters['potential'] = OrderedDict()
         self.parameters['particles'] = OrderedDict()
         self.parameters['satellite'] = OrderedDict()
         self.nparameters = 0
 
+        # extra arguments passed to the posterior function
         self.lnpargs = lnpargs
 
         self.satellite = satellite
@@ -182,7 +185,7 @@ class StreamModel(object):
                     model.add_parameter('satellite', X)
                     logger.debug("\t\t{}".format(name))
 
-                elif name == 'c':
+                elif name == 'alpha':
                     p = getattr(satellite,name)
                     logger.debug("Prior on {}: ".format(name))
                     model.add_parameter('satellite', p)
@@ -203,13 +206,16 @@ class StreamModel(object):
             parameter_group : str
                 Name of the parameter group to add this parameter to.
             parameter : streams.inference.ModelParameter
-                The actual parameter.
+                The parameter instance.
         """
 
         # TODO: need a ModelParameter object -- needs to have a .size, .shape
         if not self.parameters.has_key(parameter_group):
             # currently only supports pre-specified parameter groups
             raise KeyError("Invalid parameter group '{}'".format(parameter_group))
+
+        if not isinstance(parameter, ModelParameter):
+            raise TypeError("Invalid parameter type '{}'".format(type(parameter)))
 
         self.parameters[parameter_group][parameter.name] = parameter.copy()
         self.nparameters += parameter.size
@@ -228,13 +234,15 @@ class StreamModel(object):
 
         return true_p
 
-    def sample_priors(self, size=None):
+    def sample_priors(self, size=None, start_truth=False):
         """ Draw samples from the priors over the model parameters.
 
             Parameters
             ----------
             size : int
                 Number of samples to draw.
+            start_truth : bool (optional)
+                Sample centered on true values.
         """
 
         sz = size if size is not None else 1
@@ -243,22 +251,47 @@ class StreamModel(object):
             ix1 = 0
             for group_name,group in self.parameters.items():
                 for param_name,param in group.items():
-                    if param.size > 1:
-                        p0[ii,ix1:ix1+param.size] = np.ravel(param.sample().T)
-                    else:
-                        p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
+                    if start_truth:
+                        prior = param._prior
+                        if hasattr(prior, 'a') and hasattr(prior, 'b'):
+                            mu = np.ravel(param.truth)
+                            sigma = (prior.b-prior.a)/10.
+                            a = (prior.a - mu) / sigma
+                            b = (prior.b - mu) / sigma
+                            if param.size > 1:
+                                rvs = []
+                                for aa,bb,mm,ss in zip(a,b,mu,sigma):
+                                    X = truncnorm(aa, bb,
+                                                  loc=mm, scale=ss)
+                                    rvs.append(X.rvs())
+                            else:
+                                X = truncnorm(a, b,
+                                              loc=mu, scale=sigma)
+                                rvs = X.rvs()
 
-                    if param_name in ['l','b','d','mul','mub','vr']:
-                        if group_name == 'particles':
-                            p = self.particles
-                        elif group_name == 'satellite':
-                            p = self.satellite
+                            p0[ii,ix1:ix1+param.size] = np.ravel(rvs)
+                        else:
+                            p0[ii,ix1:ix1+param.size] = np.ravel(param.truth)
+                    else:
+                        if param.size > 1:
+                            p0[ii,ix1:ix1+param.size] = np.ravel(param.sample().T)
+                        else:
+                            p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
+
+                    if param_name in heliocentric.coord_names:
+                        err = getattr(self, group_name).errors[param_name].decompose(usys).value
+                        if start_truth:
+                            val = getattr(self, "true_"+group_name)[param_name]\
+                                        .decompose(usys).value
+                            err /= 10.
+                        else:
+                            val = getattr(self, group_name)[param_name]\
+                                        .decompose(usys).value
 
                         try:
                             prior = self._prior_cache[(group_name,param_name)]
                         except KeyError:
-                            prior = LogNormalPrior(p[param_name].decompose(usys).value,
-                                                   p.errors[param_name].decompose(usys).value)
+                            prior = LogNormalPrior(val, err)
                             self._prior_cache[(group_name,param_name)] = prior
 
                         p0[ii,ix1:ix1+param.size] = np.ravel(prior.sample().T)
@@ -298,6 +331,24 @@ class StreamModel(object):
                 ix1 += param.size
 
         return d
+
+    def _compose_vector(self, param_dict):
+        """ Turn a parameter dictionary into a parameter vector
+
+            Parameters
+            ----------
+            param_dict : OrderedDict
+        """
+
+        vec = np.array([])
+        for group_name,group in self.parameters.items():
+            for param_name,param in group.items():
+                try:
+                    vec = np.append(vec, np.ravel(param_dict[group_name][param_name]))
+                except:
+                    vec = np.append(vec, np.ravel(param_dict[group_name][param_name].value))
+
+        return vec
 
     def label_flatchain(self, flatchain):
         """ Turns a flattened MCMC chain (e.g., sampler.flatchain from emcee) and
@@ -371,20 +422,18 @@ class StreamModel(object):
         W_ij = []
         D_ij = []
         sig_ij = []
-        #data_like = 0.
-        for k in ['l','b','d','mul','mub','vr']:
+        for k in heliocentric.coord_names:
             try:
                 p_hel.append(param_dict['particles'][k])
                 W_ij.append(param_dict['particles'][k])
                 D_ij.append(self.particles[k].decompose(usys).value)
                 sig_ij.append(self.particles.errors[k].decompose(usys).value)
-                # fn = self._prior_cache[('particles',k)]
-                # data_like += fn(param_dict['particles'][k])
             except KeyError:
                 p_hel.append(self.true_particles[k].decompose(usys).value)
         p_hel = np.vstack(p_hel).T
         p_gc = _hel_to_gc(p_hel)
 
+        # compute the likelihood of the true positions given the observed
         W_ij = np.array(W_ij)
         D_ij = np.array(D_ij)
         sig_ij = np.array(sig_ij)
@@ -397,13 +446,13 @@ class StreamModel(object):
         except KeyError:
             tub = self.particles.tub.truth
 
-        # particle unbinding time
+        # particle tail assignment
         try:
             beta = param_dict['particles']['tail_bit']
         except KeyError:
             beta = self.particles.tail_bit.truth
 
-        # whether the particle was shocked or evaporated
+        # probability the particle was shocked
         try:
             p_shocked = param_dict['particles']['p_shocked']
         except KeyError:
@@ -414,11 +463,9 @@ class StreamModel(object):
         W_j = []
         D_j = []
         sig_j = []
-        for k in ['l','b','d','mul','mub','vr']:
+        for k in heliocentric.coord_names:
             try:
                 s_hel.append(param_dict['satellite'][k])
-                # fn = self._prior_cache[('satellite',k)]
-                # data_like += fn(param_dict['satellite'][k])
                 W_j.append(param_dict['satellite'][k])
                 D_j.append(self.satellite[k].decompose(usys).value)
                 sig_j.append(self.satellite.errors[k].decompose(usys).value)
