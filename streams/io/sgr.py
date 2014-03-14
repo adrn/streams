@@ -177,9 +177,9 @@ class SgrSimulation(object):
         meta["m"] = float(self.mass)
 
         m0 = float(self.mass)
-        alpha = 3.3*10**(np.floor(np.log10(m0))-4)
+        mdot = 3.3*10**(np.floor(np.log10(m0))-4)
         meta['m0'] = m0
-        meta['mdot'] = alpha
+        meta['mdot'] = mdot
 
         q = np.median(q, axis=1)
         p = Particle(q, frame=galactocentric,
@@ -332,9 +332,9 @@ class SgrSimulationDH(object):
         meta["m"] = float(self.mass)
 
         m0 = float(self.mass)
-        alpha = 3.3*10**(np.floor(np.log10(m0))-4)
+        mdot = 3.3*10**(np.floor(np.log10(m0))-4)
         meta['m0'] = m0
-        meta['mdot'] = alpha
+        meta['mdot'] = mdot
 
         q = np.median(q, axis=1)
         p = Particle(q, frame=galactocentric,

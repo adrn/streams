@@ -131,6 +131,9 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
         true_tub = ptcl["tub"].value[particle_idx]
         true_tail_bit = ptcl["tail_bit"].value[particle_idx]
 
+        t1 = float(f["simulation"]["t1"].value)
+        t2 = float(f["simulation"]["t2"].value)
+
         tub = ModelParameter(name="tub",
                              truth=true_tub,
                              prior=LogUniformPrior([0.]*nparticles,[6266.]*nparticles))
@@ -140,7 +143,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
 
         # truth=[0.]*nparticles,
         p_shocked = ModelParameter(name="p_shocked",
-                                   truth=[0,0,0,0,0,1,0,0.],
+                                   truth=[0.]*nparticles,
                                    prior=LogUniformPrior([0.]*nparticles,[1.]*nparticles))
 
         if "error" in ptcl.keys():
@@ -190,14 +193,14 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
                                    prior=LogUniformPrior(3.,15.))
 
         # TODO HACK? Check tidal radius offset -- will vary?
-        s.c = ModelParameter(name="c",
-                             truth=2.,
-                             prior=LogNormalPrior(2.,0.5))
+        s.alpha = ModelParameter(name="alpha",
+                                 truth=2.,
+                                 prior=LogUniformPrior(0.1,5.))
 
         return_dict["satellite"] = s
 
         if "simulation" in f.keys():
-            return_dict["t1"] = float(f["simulation"]["t1"].value)
-            return_dict["t2"] = float(f["simulation"]["t2"].value)
+            return_dict["t1"] = t1
+            return_dict["t2"] = t2
 
     return return_dict
