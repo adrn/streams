@@ -195,7 +195,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
         # TODO HACK? Check tidal radius offset -- will vary?
         s.alpha = ModelParameter(name="alpha",
                                  truth=1.7,
-                                 prior=LogUniformPrior(0.1,5.))
+                                 prior=LogNormalPrior(1.7,0.5))
 
         return_dict["satellite"] = s
 
