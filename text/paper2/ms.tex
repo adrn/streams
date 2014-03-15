@@ -327,13 +327,15 @@ We first test the model using eight particles (stars) --- four from the leading 
 
 We leave the potential parameters --- $q_1$, $q_z$, $\phi$, and $\vhalo$ --- free to vary, along with the Lagrange point offset, $\Loffset$, and use Markov Chain Monte Carlo (MCMC) to sample from the posterior probability distribution over these five parameters. In detail, we use an affine-invariant, ensemble sampler \citep{goodman10} implemented in the Python programming language \citep{foremanmackey13} with an ensemble of 64 walkers initialized by sampling from the priors summarized in Table~\ref{tbl:params}. We run the walkers in parallel (using MPI todo) for 5000 steps to burn-in, then restart the sampling starting from the final position of the burn-in phase and run for another 10000 steps. We compute the autocorrelation time for each parameter [todo: reference] and thin the chains by taking every XXX$\times \mathrm{median}(t_{\rm acor})$ sample to ensure they are close to independent. Figure~\ref{fig:} shows the walker positions over the 10000 post-burn-in steps for each parameter for the $2.5\times10^8~M_\odot$ simulation; the autocorrelation time for each parameter is displayed on each corresponding panel. 
 
-Figures~\ref{fig:}-\ref{fig:} show the posterior distributions for these five parameters for each of the the four mass progenitors.
+Figures~\ref{fig:}-\ref{fig:} show the posterior distributions for these five parameters for each of the the four mass progenitors...
 
 \subsection{\spitzer + \gaia}
-We now take the same eight stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We take these stars to be RR Lyrae variables which are known to be excellent distance indicators using the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}; $\sim$100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
+For this and subsequent experiments, we use only the $m=2.5\times10^8~M_\odot$ simulation. We take the same eight stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We take these stars to be RR Lyrae variables which are known to be excellent distance indicators via the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}. $\sim$100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
 
-For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. % TODO: acknowledge Gaia science team, Anthony Brown, Gaia data challenge?
-The observed positions and velocities of these stars are shown in Figure~\ref{fig:} (red, compare to the unobserved black points).
+For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. % TODO: acknowledge Gaia science team, Anthony Brown, Gaia data challenge?
+The observed positions and velocities of these stars are shown in Figure~\ref{fig:} (red, compare to the unobserved black points). We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties, though in reality some coordinates will have higher or lower uncertainties.
+
+This experiment has the four potential parameters, the Lagrange point offset, four phase-space coordinate parameters for each star (32 total), and four phase-space coordinate parameters for the progenitor --- 41 parameters in total. 
 
 \subsection{\spitzer + current data}
 4 stars in Sgr-like stream
@@ -401,6 +403,7 @@ This is expected to be a generic feature in dynamical problems:
 
 \acknowledgements
 Aspen?\\
+Gaia data challenge / Surrey\\
 APW: NSF GRFP, Sigma Xi\\
 Columbia HPC\\
 
