@@ -34,7 +34,7 @@ job_sh = """#!/bin/sh
 date
 
 #Command to execute Python program
-mpiexec -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v --mpi {overwrite}
+/usr/local/bin/mpiexec -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v --mpi {overwrite}
 
 date
 
