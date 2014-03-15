@@ -171,21 +171,21 @@ Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane 
 
 \subsection{Tidal debris}\label{sec:debris}
 
-For a satellite galaxy on a mildly eccentric orbit, mass-loss is driven by a combination of tidal stripping due to the tidal field of the parent system and tidal shocking due to the rapidly changing tidal field as the progenitor system moves through pericenter. The interplay between these two processes as a function of orbital properties will be studied in forthcoming work; we focus below on the slow disruption of stars due to steady tidal forcing. 
+For a satellite galaxy on a mildly eccentric orbit, mass-loss is driven by a combination of tidal stripping due to the steady tidal field of the parent system and tidal shocking due to the rapidly changing tidal field as the progenitor system moves through pericenter. The interplay between these two processes as a function of orbital properties will be studied in forthcoming work; we focus below on the slow disruption of stars due to steady tidal forcing. 
 
-Consider a point-mass satellite of mass $m$ on a circular orbit with frequency $\Omega$ around a point-mass of mass $M\gg m$ \citep[the restricted three-body problem; e.g., \S 8.3][]{binneytremaine}. In a frame rotating with the orbital frequency of the satellite, the effective potential around the satellite has (amongst others) two stationary, unstable points located around $\sim R \pm r_J$, where $R$ is the distance to the satellite and $r_J$ is the Jacobi or tidal radius,
+Consider a point-mass satellite of mass $m$ on a circular orbit with frequency $\Omega$ around a more massive point-mass, $M\gg m$ \citep[the restricted three-body problem; e.g., \S 8.3][]{binneytremaine}. In a frame rotating with the orbital frequency of the satellite, the effective potential around the satellite has (amongst others) two stationary, unstable points located around $\sim R \pm r_J$, where $R$ is the distance to the satellite and $r_J$ is the Jacobi or tidal radius,
 \begin{equation}
 	r_J \sim R\left(\frac{m}{3M}\right)^{1/3}.\label{eq:ptmass}
 \end{equation}
-Particles that would be bound to the satellite system in isolation may have enough (Jacobi) energy to overcome the effective potential barrier at these Lagrange points and thus will be preferentially stripped from the satellite at these points (Fig.~8.6 of BT). For a spherical, extended parent mass distribution the tidal radius instead scales with the enclosed mass of the parent system at a given orbital position, $R$, with additional terms that account for the local slope of the density profile. Thus, in a more general parent potential the effective Lagrange points may not be symmetric about the center of the satellite and may deviate from the point-mass tidal radius (Eq.~\ref{eq:ptmass}) by factors of order unity. We thus simply adopt 
+Particles that would be bound to the satellite system in isolation may have enough (Jacobi) energy to overcome the effective potential barrier at these Lagrange points (Fig.~8.6 of BT) and thus will be preferentially stripped from the satellite at these points. For a spherical, extended parent mass distribution the tidal radius instead scales with the enclosed mass at a given orbital position, $R$, with additional terms that account for the local slope of the density profile. In general, the effective Lagrange points may not be symmetric about the center of the satellite and may deviate from the point-mass tidal radius (Eq.~\ref{eq:ptmass}) by factors of order unity. We thus adopt 
 \begin{equation}
 	r_{\rm tide} = R\left(\frac{m}{3M_{\rm enc}}\right)^{1/3}\label{eq:tidalradius}
 \end{equation}
-as a normalizing distance scale, where $M_{\rm enc}$ is the instantaneous enclosed mass of the parent system within orbital radius $R$. At pericenter, the velocity of the satellite will be of order $V\sim \sqrt{GM_{\rm enc}/R}$. If the velocity dispersion of the satellite is $\sigma_v \sim \sqrt{Gm/r_J}$, then
+as a distance scale for the debris, where $M_{\rm enc}$ is the instantaneous enclosed mass of the parent system within orbital radius $R$. At pericenter, the velocity of the satellite will be of order $V\sim \sqrt{GM_{\rm enc}/R}$. If the velocity dispersion of the satellite is $\sigma_v \sim \sqrt{Gm/r_J}$, then
 \begin{equation}
 	\sigma_v \sim V\left(\frac{m}{M_{\rm enc}}\right)^{1/3}\label{eq:velscale}.
 \end{equation}
-Thus, we expect the particle velocities to scale with $(m/M_{\rm enc})^{1/3}$. 
+We expect the debris star velocities to also scale with $(m/M_{\rm enc})^{1/3}$. 
 
 In a triaxial potential, the orbital plane of the satellite is not fixed but we still expect there to be effective Lagrange points along the line of centers connecting the origin of the parent potential to the satellite. We thus proceed by defining a coordinate system relative to the position and velocity of the progenitor, ($\bs{r}_p$,$\bs{v}_p$), rotated into the instantaneous orbital plane defined by $\bs{r}_p \times \bs{v}_p$, and normalized by the instantaneous tidal radius for positions (Eq.~\ref{eq:tidalradius}) and instantaneous velocity scale for velocity (Eq.~\ref{eq:velscale}). 
 % where $\hat{\bs r}_p = {\bs r}_p / |{\bs r}_p|$ and $\hat{\bs v}_p = {\bs v}_p / |{\bs v}_p|$
@@ -196,7 +196,9 @@ The (time-dependent) basis vectors are given by
 	\hat{x}_3 &= \frac{\bs{r}_p \times \bs{v}_p}{\|\bs{r}_p \times \bs{v}_p\|}.
 \end{align}
 %(Section~\ref{sec:sims})
-Figure~\ref{fig:lpts_r} shows sections of particle orbits in this coordinate system, symmetric around the unbinding time, $\tub$, as a function of progenitor mass. In these coordinates, the classical Lagrange points would be located around $x_1=\pm1,x_2=0,x_3=0$ (illustrated by the unit circle in top panels of Figure~\ref{fig:lpts_r}). Figure~\ref{fig:lpts_v} shows the same for the velocity of each star. Though not centered on the point-mass Lagrange points, the location of and dispersion about the effective Lagrange points in these scaled coordinates remain remarkably consistent across the range of progenitor masses explored. Furthermore, the dispersion in velocity is well-normalized by the velocity scale of Eq.~\ref{eq:velscale}, though it is clear that the velocity dispersion along $\hat{x}_1$, the radial vector to the satellite position, is larger than that in other dimensions, possibly due to mild tidal shocking. Even in a triaxial potential, the phase-space dispersion of tidally stripped debris scales with the mass ratio $(m / M_{\rm enc})^{1/3}$. %, the orbital radius, and the orbital velocity of the progenitor system.
+Figure~\ref{fig:lpts_r} shows sections of particle orbits from the n-body simulations described above projected into this coordinate system, symmetric around their unbinding times, $\tub$, for the four progenitor masses. In these coordinates, the classical Lagrange points would be located around $x_1=\pm1,x_2=0,x_3=0$ (illustrated by the unit circle in top panels of Figure~\ref{fig:lpts_r}). Figure~\ref{fig:lpts_v} shows the velocity of each star also projected into these coordinates and normalized. Though not centered on the point-mass Lagrange points, the location of and dispersion about the effective Lagrange points in these scaled coordinates remain remarkably consistent across the range of progenitor masses explored. Furthermore, the dispersion in velocity is well-normalized by the velocity scale of Eq.~\ref{eq:velscale}, though it is clear that the velocity dispersion along $\hat{x}_1$, the radial vector to the satellite position, is larger than that in other dimensions, possibly due to tidal shocking. 
+
+Even in a triaxial potential, the phase-space dispersion of tidally stripped debris scales with the mass ratio $(m / M_{\rm enc})^{1/3}$. This  motivates a model for tidal debris in which stars were ``released'' at the instantaneous, effective Lagrange points with some dispersion in position and velocity, all of which depend only on the mass and orbit of the progenitor, and the parent potential. We present this model in detail below.
 
 \begin{figure}[h]
 \begin{center}
@@ -220,8 +222,6 @@ Figure~\ref{fig:lpts_r} shows sections of particle orbits in this coordinate sys
 %\end{figure}
 
 \subsection{Probabilistic model}
-The above scalings motivate a model for tidal debris in which stars were ``released'' at the instantaneous, effective Lagrange points with some dispersion in position and velocity, all of which depend only on the mass of the progenitor, the parent potential properties, and the orbit of the progenitor. We present this model in detail below.
-
 We observe the 6D position of a star, $\D$, in heliocentric coordinates --- e.g., the measured position on the sky, ($l$, $b$); distance, $d$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and have determined through some other means that this star was once part of a progenitor system (e.g., satellite galaxy) with mass $m(t)$ that is disrupting and forming a cold debris structure in the potential, $\Phi$, of the parent galaxy (e.g., the Milky Way). We assume that the mass of the parent system enclosed in the orbit of the satellite, $M_{\rm enc}$, is much larger than the initial mass of the satellite, $M_{\rm enc} \gg m(t=0)$. The present position of the progenitor is observed to be at heliocentric position $\D_\sat$ (where any subscript $\sat$ refers to the progenitor). In general, the data for the star and progenitor will have missing dimensions and significant uncertainties at distances typical to the Galactic halo, thus we define $\W$ and $\W_\sat$ as the true 6D, heliocentric positions of the star and progenitor and will include these in our model. By including these positions in the model, this model will work even when the star has missing dimensions or the progenitor location is unknown as in, e.g., the Orphan stream \citep{some orphan paper}.
 
 We assume that the observational uncertainties are Gaussian in heliocentric, spherical coordinates, such that
@@ -231,7 +231,7 @@ We assume that the observational uncertainties are Gaussian in heliocentric, sph
 \end{align}
 where $\mathcal{N}$ represents the normal distribution, and the covariance matrices $\bSigma$ and $\bSigma_\sat$ specify the observational uncertainties on the observed 6D position of the star and progenitor, respectively. 
 
-To model the true, 6D, present-day position of the star, $\W$, we first transform to cartesian, Galactocentric coordinates where ($\bs{r},\bs{v}$) and ($\bs{r}_\sat,\bs{v}_\sat$) are the position and velocity of the star and progenitor. In cartesian coordinates, the present-day position of the star is taken as having been sampled at $t=\tub$ from an isotropic Gaussian centered on one of the instantaneous, effective Lagrange points in position, and an isotropic Gaussian centered on the origin in velocity, and evolved to present day in the parent potential, $\Phi$. That is, we assume that once the star becomes ``unbound'' from the satellite the potential of the satellite can be ignored, and thus treat the star as a test particle.\footnote{This assumption breaks down for sufficiently large-mass progenitors, somewhere between $\sim10^8-10^9~$M$_\odot$.} The satellite mass does enter the model through the tidal radius; a changing satellite mass will skew the position of the effective Lagrange points. We allow for mass-loss by incorporating the initial satellite mass, $m$, and a constant mass-loss term, $\dot{m}$ into the model. Finally, we add two additional parameters: a constant, global offset, $\Loffset$, that scales the position of the effective Lagrange points relative to the classical tidal radius, and a binary parameter $\tailbit$, that is either $-1$ or $+1$ depending on whether the star is in the leading or trailing tail.
+To model the true, 6D, present-day position of the star, $\W$, we first transform to cartesian, Galactocentric coordinates where ($\bs{r},\bs{v}$) and ($\bs{r}_\sat,\bs{v}_\sat$) are the position and velocity of the star and progenitor. In cartesian coordinates, the present-day position of the star is taken as having been sampled at $t=\tub$ from an isotropic Gaussian centered on one of the instantaneous, effective Lagrange points in position, and an isotropic Gaussian centered on the origin in velocity, and evolved to present day in the parent potential, $\Phi$. We assume that once the star becomes ``unbound'' from the satellite the potential of the satellite can be ignored, and thus treat the star as a test particle.\footnote{This assumption breaks down for sufficiently large-mass progenitors, somewhere between $\sim10^8-10^9~$M$_\odot$.} The satellite mass enters the model through the tidal radius; a changing satellite mass will skew the positions of the effective Lagrange points and velocity scale. We allow for mass-loss by incorporating the initial satellite mass, $m$, and a constant mass-loss term, $\dot{m}$ into the model. Finally, we add two additional parameters: a constant, global offset, $\Loffset$, that scales the position of the effective Lagrange points relative to the classical tidal radius, and a binary parameter $\tailbit$, that is either $-1$ or $+1$ depending on whether the star is in the leading or trailing tail.
 \begin{align}
 	p(\W \given m, \dot{m}, \W_\sat, \tub, \Phi, \Loffset, \tailbit) &= p(\bs{r} \given \bs{r}_\sat, m, \dot{m}, \tub, \Phi, \Loffset, \tailbit)\,p(\bs{v} \given \bs{v}_\sat, m, \dot{m}, \tub, \Phi)\,\left\vert\J\right\vert_{t=\tub}\\
 	p(\bs{r} \given \bs{r}_\sat, m, \dot{m}, \tub, \Phi, \Loffset, \tailbit) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \sigma^2_r)_{t=\tub}\\
@@ -253,22 +253,22 @@ This model works well when all stars are lost due to tidal pruning. Even on a mi
 	p_{\rm shock} = \left [ \mathcal{N}(\bs{r} \given \bs{r}_\sat, 10\sigma^2_r)\mathcal{N}(\bs{v} \given \bs{v}_\sat, 10\sigma^2_v) \left\vert\J\right\vert\right]_{t=\tub}
 \end{align}
 \begin{multline}
-	p(\W \given \W_\sat, \tub, \Phi, \tailbit, c, \pshock) = \\
+	p(\W \given \W_\sat, \tub, \Phi, \Loffset, \tailbit, \pshock) = \\
 		\pshock p_{\rm shock} + (1-\pshock)p_{\rm strip}.
 \end{multline}
 Here we assume that the ``shocked'' distribution has a much larger variance, and arbitrarily set this to 10 times the variance of the stripped debris. The posterior probability for the position of a star, progenitor, and properties of the parent potential, given the data, is then
 \begin{multline}
-	p(\Phi, \W, \W_\sat, \tub, \tailbit, c, \pshock \given \D, \D_\sat) = \\
+	p(\Phi, \W, \W_\sat, \tub, \Loffset, \tailbit, \pshock \given \D, \D_\sat) = \\
 		\shoveleft{\hspace{3em}\frac{1}{\mathcal{Z}} \, p(\D \given \W) \, p(\D_\sat \given \W_\sat)}\\
 			\times p(\W \given \W_\sat, \tub, \Phi, \Loffset, \tailbit, \pshock) \, 
-			p(\Phi) \, p(\tub) \, p(c)
+			p(\Phi) \, p(\tub) \, p(\Loffset)
 \end{multline}
 where the factor $\mathcal{Z}$ only depends on the properties of the data (the \emph{evidence}), and is thus constant when varying the model parameters. All model parameters are summarized in Table~\ref{tbl:params}. Assuming each star is an independent tracer, the full posterior for many stars is then just the product of the individual likelihoods with the priors:
 \begin{multline}
-	p(\Phi, \W, \W_\sat, \tub, \tailbit, c, \pshock \given \D, \D_\sat) = \\
+	p(\Phi, \W, \W_\sat, \tub, \Loffset, \tailbit, \pshock \given \D, \D_\sat) = \\
 		\shoveleft{\hspace{1em}\frac{1}{\mathcal{Z}} \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \, p(\D_\sat \given \W_\sat)}\\
 			\times p(\W^{(i)} \given \W_\sat, \tub^{(i)}, \Phi, \Loffset, \tailbit^{(i)}, \pshock^{(i)}) \, 
-			\, p(\tub^{(i)}) p(\Phi) \, p(c)
+			\, p(\tub^{(i)}) p(\Phi) \, p(\Loffset)
 \end{multline}
 
 \section{Experiments}
