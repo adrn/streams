@@ -270,6 +270,9 @@ class StreamModel(object):
                                 rvs = X.rvs()
 
                             p0[ii,ix1:ix1+param.size] = np.ravel(rvs)
+                        elif hasattr(prior, 'mu'):
+                            p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
+
                         else:
                             p0[ii,ix1:ix1+param.size] = np.ravel(param.truth)
                     else:
