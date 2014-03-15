@@ -126,3 +126,35 @@ def gaia_spitzer_errors(particles):
     vr = 5.*u.km/u.s * np.ones_like(particles["vr"].value)
 
     return dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
+
+def current_data_errors(particles):
+    """ Given particles in heliocentric frame, return an array of
+        Gaia + Spitzer errors (same shape as particles._X).
+    """
+
+    # assuming [Fe/H] = -0.5 for Sgr
+    M_V, dM_V = rrl_M_V(-0.5)
+
+    try:
+        V = apparent_magnitude(M_V, particles["d"])
+    except AttributeError:
+        raise ValueError("Particles in wrong reference frame? Has "
+                         "coordinates: {}".format(particles.names))
+    dlb = parallax_error(V, rrl_V_minus_I)
+    dmu = 25*u.mas/u.yr
+
+    # angular position error is negligible
+    l = dlb.to(particles["l"].unit)
+    b = dlb.to(particles["b"].unit)
+
+    # proper motion
+    mul = dmu.to(particles["mul"].unit)
+    mub = dmu.to(particles["mub"].unit)
+
+    # distance
+    d = 0.02*particles["d"]
+
+    # radial velocity
+    vr = 10.*u.km/u.s * np.ones_like(particles["vr"].value)
+
+    return dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
