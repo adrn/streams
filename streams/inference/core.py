@@ -271,8 +271,8 @@ class StreamModel(object):
 
                             p0[ii,ix1:ix1+param.size] = np.ravel(rvs)
                         elif hasattr(prior, 'mu'):
-                            p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
-
+                            v = np.random.normal(param.truth, prior.sigma/10.)
+                            p0[ii,ix1:ix1+param.size] = np.ravel(v)
                         else:
                             p0[ii,ix1:ix1+param.size] = np.ravel(param.truth)
                     else:
