@@ -135,13 +135,23 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     VZ = np.sum(rel_vel * z_hat, axis=-1) / v_disp
 
     # position likelihood is gaussian at lagrange points
-    r_term = -0.5*((np.log(r_tide) + (X-alpha*K)**2) + \
-                   (np.log(r_tide) + Y**2) + \
-                   (np.log(r_tide) + Z**2))
+    # r_term = -0.5*((np.log(r_tide) + (X-alpha*K)**2) + \
+    #                (np.log(r_tide) + Y**2) + \
+    #                (np.log(r_tide) + Z**2))
 
-    v_term = -0.5*((np.log(v_disp) + VX**2) + \
-                   (np.log(v_disp) + VY**2) + \
-                   (np.log(v_disp) + VZ**2))
+    # v_term = -0.5*((np.log(v_disp) + VX**2) + \
+    #                (np.log(v_disp) + VY**2) + \
+    #                (np.log(v_disp) + VZ**2))
+
+    sigma_r = 0.5
+    r_term = -0.5*((np.log(sigma_r) + (X-alpha*K)**2/sigma_r**2) + \
+                   (np.log(sigma_r) + Y**2/sigma_r**2) + \
+                   (np.log(sigma_r) + Z**2/sigma_r**2))
+
+    sigma_v = 0.5
+    v_term = -0.5*((np.log(sigma_v) + VX**2/sigma_v**2) + \
+                   (np.log(sigma_v) + VY**2/sigma_v**2) + \
+                   (np.log(sigma_v) + VZ**2/sigma_v**2))
 
     not_shocked = (r_term + v_term + jac1)
 

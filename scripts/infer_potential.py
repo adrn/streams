@@ -121,6 +121,14 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
 
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
 
+            if np.any(sampler.acceptance_fraction < 0.01):
+                ix = sampler.acceptance_fraction < 0.01
+
+                # resample positions for bad walkers
+                pos[ix] = np.random.normal(np.median(pos[~ix], axis=0),
+                                           np.std(pos[~ix], axis=0)/10.,
+                                           size=(sum(ix),pos.shape[1]))
+
             if burn_beta != 1 and ncool_down > 0:
                 best_idx = sampler.flatlnprobability.argmax()
                 best_pos = sampler.flatchain[best_idx]
