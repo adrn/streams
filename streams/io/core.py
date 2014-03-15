@@ -189,7 +189,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
 
         # TODO HACK? Check mass-loss rates...these only valid for Sgr sims
         s.logmdot = ModelParameter(name="logmdot",
-                                   truth=np.log(3.2*10**(np.floor(np.log10(2.5e8))-4)),
+                                   truth=np.log(3.2*10**(np.floor(np.log10(satl["m0"].value))-4)),
                                    prior=LogUniformPrior(3.,15.))
 
         # TODO HACK? Check tidal radius offset -- will vary?
