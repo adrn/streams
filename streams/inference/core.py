@@ -30,37 +30,6 @@ __all__ = ["StreamModel", "StreamModelSampler"]
 
 logger = logging.getLogger(__name__)
 
-class LogCoordinatePrior(LogUniformPrior):
-
-    def __init__(self, name):
-        """ Return 0 if value is outside of the range
-            defined by a < value < b.
-        """
-        if name == 'l':
-            self.a = (0.*u.deg).decompose(usys).value
-            self.b = (360.*u.deg).decompose(usys).value
-        elif name == 'b':
-            self.a = (-90.*u.deg).decompose(usys).value
-            self.b = (90.*u.deg).decompose(usys).value
-        elif name == 'd':
-            self.a = (1.*u.kpc).decompose(usys).value
-            self.b = (200.*u.kpc).decompose(usys).value
-        elif name == 'mul':
-            self.a = (-100.*u.mas/u.yr).decompose(usys).value
-            self.b = (100.*u.mas/u.yr).decompose(usys).value
-        elif name == 'mub':
-            self.a = (-100.*u.mas/u.yr).decompose(usys).value
-            self.b = (100.*u.mas/u.yr).decompose(usys).value
-        elif name == 'vr':
-            self.a = (-1000.*u.km/u.s).decompose(usys).value
-            self.b = (1000.*u.km/u.s).decompose(usys).value
-
-    def __call__(self, value):
-        v = value
-        if np.any((v < self.a) | (v > self.b)):
-            return -np.inf
-        return 0.0
-
 class StreamModel(object):
 
     def __init__(self, potential, satellite, particles,
@@ -156,9 +125,7 @@ class StreamModel(object):
 
             for ii,name in enumerate(config["particles"]["parameters"]):
                 if name in heliocentric.coord_names:
-                    # prior = LogNormalPrior(particles[name].decompose(usys).value,
-                    #                        particles.errors[name].decompose(usys).value)
-                    priors = [LogCoordinatePrior(name) for ii in range(nparticles)]
+                    priors = [LogPrior() for ii in range(nparticles)]
                     X = ModelParameter(name,
                                        value=particles[name].decompose(usys).value,
                                        prior=priors,
@@ -175,12 +142,11 @@ class StreamModel(object):
         if config['satellite']['parameters']:
             logger.debug("Satellite properties added as parameters:")
             for ii,name in enumerate(config["satellite"]["parameters"]):
+
                 if name in heliocentric.coord_names:
-                    # prior = LogNormalPrior(satellite[name].decompose(usys).value,
-                    #                        satellite.errors[name].decompose(usys).value)
                     X = ModelParameter(name,
                                        value=satellite[name].decompose(usys).value,
-                                       prior=LogCoordinatePrior(name),
+                                       prior=LogPrior(),
                                        truth=true_satellite[name].decompose(usys).value)
                     model.add_parameter('satellite', X)
                     logger.debug("\t\t{}".format(name))
@@ -298,9 +264,6 @@ class StreamModel(object):
                             self._prior_cache[(group_name,param_name)] = prior
 
                         p0[ii,ix1:ix1+param.size] = np.ravel(prior.sample().T)
-
-                    #else:
-                    #    self._prior_cache[(group_name,param_name)] = prior
 
                     ix1 += param.size
 
@@ -436,6 +399,10 @@ class StreamModel(object):
         p_hel = np.vstack(p_hel).T
         p_gc = _hel_to_gc(p_hel)
 
+        # if any distance is > 150 kpc
+        if np.any(p_hel[...,2] > 150.):
+            return -np.inf
+
         # compute the likelihood of the true positions given the observed
         W_ij = np.array(W_ij)
         D_ij = np.array(D_ij)
@@ -476,6 +443,11 @@ class StreamModel(object):
                 s_hel.append(self.true_satellite[k].decompose(usys).value)
         s_hel = np.vstack(s_hel).T
         s_gc = _hel_to_gc(s_hel)
+
+        # if the satellite distance is > 150 kpc
+        V = np.squeeze(np.sqrt(np.sum(s_gc[...,3:]**2, axis=-1)))
+        if np.any(s_hel[...,2] > 150.) or V > 0.511: # 500 km/s
+            return -np.inf
 
         W_j = np.array(W_j)
         D_j = np.squeeze(D_j)
