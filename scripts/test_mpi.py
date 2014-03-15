@@ -15,6 +15,7 @@ import numpy as np
 from emcee.utils import MPIPool
 
 def f(x):
+    time.sleep(0.1)
     return np.sqrt(x)
 
 # Initialize the MPI pool
@@ -25,7 +26,7 @@ if not pool.is_master():
     pool.wait()
     sys.exit(0)
 
-v = np.random.random(size=100000)
+v = np.random.random(size=1000)
 
 a = time.time()
 results = pool.map(f, v)
