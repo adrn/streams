@@ -29,7 +29,7 @@ from streams import usys
 from streams.coordinates.frame import heliocentric, galactocentric
 from streams.dynamics import ObservedParticle
 import streams.io as s_io
-from streams.observation.gaia import gaia_spitzer_errors
+from streams.observation.gaia import gaia_spitzer_errors, current_data_errors
 from streams.potential.lm10 import LawMajewski2010
 from streams.util import _parse_quantity
 from streams.integrate import LeapfrogIntegrator
@@ -221,11 +221,17 @@ python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub
 python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
 --N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e9_N1024_DH.hdf5 \
 --seed=42 --mass="2.5e9" --overwrite
+
+OR
+
+python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
+--N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024_DH_exp3.hdf5 \
+--seed=42 --mass="2.5e8" --overwrite
     """
 
     # TODO: class kwargs
+    # particle_error_model=current_data_errors, satellite_error_model=current_data_errors,
     # particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
-    # particle_error_model=gaia_spitzer_errors, satellite_error_model=None,
     observe_simulation(args.class_name,
         particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
         selection_expr=args.expr, N=args.N, output_file=args.output_file,
