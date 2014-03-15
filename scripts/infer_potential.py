@@ -314,7 +314,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             flatchains['potential'] = this_flatchain
 
         nparticles = model.true_particles.nparticles
-        if particles_group:
+        if particles_group and len(particles_group) > 1:
             for jj in range(nparticles):
                 this_flatchain = np.zeros((len(thin_flatchain),len(particles_group)))
                 this_p0 = np.zeros((len(p0),len(particles_group)))
@@ -344,7 +344,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                 fig.savefig(os.path.join(output_path, "particle{}.{}".format(jj,plot_ext)))
 
         # plot the posterior for the satellite parameters
-        if satellite_group:
+        if satellite_group and len(satellite_group) > 1:
             jj = 0
             this_flatchain = np.zeros((len(thin_flatchain),len(satellite_group)))
             this_p0 = np.zeros((len(p0),len(satellite_group)))
