@@ -81,7 +81,7 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     selection_expr = "(tub!=0) & (tub>{}) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<{})"\
                      .format((1800*u.Myr).to(sim_time).value,
                              (5500*u.Myr).to(sim_time).value,
-                             (50*u.kpc).to(sim_leng).value)
+                             (35*u.kpc).to(sim_leng).value)
     particles = simulation.particles(N=N, expr=selection_expr, tail_bit=True)
 
     logger.debug("Read in {} particles with expr='{}'"\
