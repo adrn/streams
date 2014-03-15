@@ -12,9 +12,8 @@ plot:
 #output_path: /tmp
 
 # data
-data_file: data/observed_particles/2.5e8_N1024.hdf5
-nparticles: 8
-particle_idx: [1019, 606, 740, 301, 261, 39, 735, 448]
+data_file: data/observed_particles/2.5e8_N1024_DH.hdf5
+nparticles: 2
 
 # integration
 dt: -1.
@@ -27,7 +26,7 @@ potential:
 #    parameters: [q1, qz, phi, v_halo]
 
 particles:
-    parameters: [d, shocked_bit]
+    parameters: [d, p_shocked]
 #    parameters: [l, b, d, mul, mub, vr]
 
 satellite:
@@ -42,12 +41,12 @@ satellite:
 #    vr - uniform
 
 # emcee
-start_truth: False
-walkers: 32
-burn_in: 10
-burn_beta: 0.0001
+start_truth: True
+walkers: 42
+burn_in: 3
+burn_beta: 1.
 cool_down: 0
-steps: 5
+steps: 0
 thin_chain: False
 
 # satellite:
