@@ -37,13 +37,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 minimum_config = """
 name: test
-data_file: data/observed_particles/2.5e8_N1024.hdf5
+data_file: data/observed_particles/2.5e8_N1024_DH.hdf5
 nparticles: 8
-particle_idx: [1019, 606, 740, 301, 261, 39, 735, 448]
-# nparticles: 4
-# particle_idx: [1019, 606, 740, 301]
-# nparticles: 16
-# nparticles: 128
+particle_idx: [255, 241, 447, 339, 213, 183, 643, 530]
 
 potential:
     class_name: LawMajewski2010
@@ -61,12 +57,12 @@ pot_params = """
 """
 
 ptc_params = """
-    parameters: [p_shocked]
+    parameters: [p_shocked, beta, d]
 """
 #    parameters: [d, mul, mub, vr]
 
 sat_params = """
-    parameters: [c, d, mul, mub, vr]
+    parameters: [d, mul, mub, vr]
 """
 #    parameters: [logmass, logmdot, d, mul, mub, vr]
 
@@ -79,7 +75,7 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params=pot_params,
                                 particles_params="",
-                                satellite_params=sat_params)
+                                satellite_params="")
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
@@ -208,6 +204,21 @@ class TestStreamModel(object):
                             plt.close('all')
                             idx += 1
 
+                    elif param_name == 'beta':
+                        for jj in range(param.value.shape[0]):
+                            vals1 = np.linspace(param._prior.a[jj],
+                                                param._prior.b[jj],
+                                                Ncoarse)
+                            vals2 = np.linspace(param._prior.a[jj],
+                                                param._prior.b[jj],
+                                                Nfine)
+
+                            fig = make_plot(model, idx, vals1, vals2)
+                            fig.savefig(os.path.join(test_path,
+                                    "ptcl{}_{}.png".format(idx,param_name)))
+                            plt.close('all')
+                            idx += 1
+
                     elif param_name == 'tub':
                         for jj in range(param.value.shape[0]):
                             vals1 = np.linspace(param._prior.a[jj],
@@ -241,26 +252,6 @@ class TestStreamModel(object):
                             plt.close('all')
                             idx += 1
 
-                    elif param_name == "fac_R":
-                        vals1 = np.linspace(0., 100., Ncoarse)
-                        vals2 = np.linspace(0.75, 1.25, Nfine)*truths
-
-                        fig = make_plot(model, idx, vals1, vals2)
-                        fig.savefig(os.path.join(test_path,
-                                "ptcl{}_{}.png".format(idx,param_name)))
-                        plt.close('all')
-                        idx += 1
-
-                    elif param_name == "fac_V":
-                        vals1 = np.linspace(0., 100., Ncoarse)
-                        vals2 = np.linspace(0.75, 1.25, Nfine)*truths
-
-                        fig = make_plot(model, idx, vals1, vals2)
-                        fig.savefig(os.path.join(test_path,
-                                "ptcl{}_{}.png".format(idx,param_name)))
-                        plt.close('all')
-                        idx += 1
-
                     elif param_name == "logmass":
                         vals1 = np.linspace(param._prior.a,
                                             param._prior.b,
@@ -281,7 +272,7 @@ class TestStreamModel(object):
                         plt.close('all')
                         idx += 1
 
-                    elif param_name == "c":
+                    elif param_name == "alpha":
                         vals1 = np.linspace(0.5, 3.5, Ncoarse)
                         vals2 = np.linspace(0.9, 1.1, Nfine)*truths
                         fig = make_plot(model, idx, vals1, vals2)
