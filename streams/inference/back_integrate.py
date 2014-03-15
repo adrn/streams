@@ -155,23 +155,32 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
 
     not_shocked = (r_term + v_term + jac1)
 
-    # shocked
-    var_r = 10.*r_tide**2
-    r_term2 = -0.5*(3*np.log(var_r) + X/var_r + Y/var_r + Z/var_r)
+    return not_shocked
 
-    var_v = 10.*v_disp**2
-    v_term2 = -0.5*(3*np.log(var_v) + VX/var_v + VY/var_v + VZ/var_v)
+    # # shocked
+    # var_r = 10.*r_tide**2
+    # r_term2 = -0.5*(3*np.log(var_r) + X/var_r + Y/var_r + Z/var_r)
 
-    shocked = (r_term2 + v_term2 + jac1)
-    arg = np.vstack((shocked, not_shocked))
+    # var_v = 10.*v_disp**2
+    # v_term2 = -0.5*(3*np.log(var_v) + VX/var_v + VY/var_v + VZ/var_v)
 
-    scale = np.ones_like(arg)
-    scale[0,:] = p_shocked
-    scale[1,:] = 1-p_shocked
+    # shocked = (r_term2 + v_term2 + jac1)
+    # arg = np.vstack((shocked, not_shocked))
 
-    lnlike = logsumexp(arg, b=scale, axis=0)
+    # scale = np.ones_like(arg)
+    # scale[0,:] = p_shocked
+    # scale[1,:] = 1-p_shocked
 
-    return lnlike
+    # lnlike = logsumexp(arg, b=scale, axis=0)
+
+    # return lnlike
+
+
+
+
+
+
+
 
     # import matplotlib.pyplot as plt
     # fig,axes = plt.subplots(1,3,figsize=(16,5),sharex=True)
