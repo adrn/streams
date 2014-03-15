@@ -7,4 +7,5 @@ astropy>=0.3
 triangle_plot
 cython>=0.20
 numexpr>=2.0.1
-h5py>=2.2
+h5py>=2.1
+emcee

@@ -358,7 +358,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
                 this_p0[:,ii] = f(np.squeeze(p0_dict['satellite'][pname][:,jj]))
                 try:
                     this_truths.append(f(p.truth[jj]))
-                except IndexError:
+                except: # IndexError:
                     this_truths.append(f(p.truth))
                 #this_extents.append((f(p._prior.a), f(p._prior.b)))
 
