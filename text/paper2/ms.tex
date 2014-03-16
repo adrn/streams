@@ -234,7 +234,7 @@ where $\mathcal{N}$ represents the normal distribution, and the covariance matri
 To model the true, 6D, present-day position of the star, $\W$, we first transform to cartesian, Galactocentric coordinates where ($\bs{r},\bs{v}$) and ($\bs{r}_\sat,\bs{v}_\sat$) are the position and velocity of the star and progenitor. In cartesian coordinates, the present-day position of the star is taken as having been sampled at $t=\tub$ from an isotropic Gaussian centered on one of the instantaneous, effective Lagrange points in position, and an isotropic Gaussian centered on the origin in velocity, and evolved to present day in the parent potential, $\Phi$. We assume that once the star becomes ``unbound'' from the satellite the potential of the satellite can be ignored, and thus treat the star as a test particle.\footnote{This assumption breaks down for sufficiently large-mass progenitors, somewhere between $\sim10^8-10^9~$M$_\odot$.} The satellite mass enters the model through the tidal radius; a changing satellite mass will skew the positions of the effective Lagrange points and velocity scale. We allow for mass-loss by incorporating the initial satellite mass, $m$, and a constant mass-loss term, $\dot{m}$ into the model. Finally, we add two additional parameters: a constant, global offset, $\Loffset$, that scales the position of the effective Lagrange points relative to the classical tidal radius, and a binary parameter $\tailbit$, that is either $-1$ or $+1$ depending on whether the star is in the leading or trailing tail. The likelihood is then:
 \begin{align}
 	p(\W \given m, \dot{m}, \W_\sat, \tub, \Phi, \Loffset, \tailbit) &= p(\bs{r} \given \bs{r}_\sat, m, \dot{m}, \tub, \Phi, \Loffset, \tailbit)\,p(\bs{v} \given \bs{v}_\sat, m, \dot{m}, \tub, \Phi)\,\left\vert\J\right\vert_{t=\tub}\\
-	p(\bs{r} \given \bs{r}_\sat, m, \dot{m}, \tub, \Phi, \Loffset, \tailbit) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \sigma^2_r)_{t=\tub}\\
+	p(\bs{r} \given \bs{r}_\sat, m, \dot{m}, \tub, \Phi, \Loffset, \tailbit) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \rtide^2)_{t=\tub}\\
 	p(\bs{v} \given \bs{v}_\sat, m, \dot{m}, \tub, \Phi) &= \mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma^2_v)_{t=\tub}
 \end{align}
 where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale}. $\left\vert\J\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. For a single star, in detail, the model works as follows:
@@ -245,12 +245,12 @@ where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{
 \end{enumerate}
 All model parameters are summarized in Table~\ref{tbl:params}. Assuming each star is an independent tracer, the full posterior for many stars is then just the product of the individual likelihoods with the priors:
 \begin{multline}
-	p(\Phi, \W, \W_\sat, \tub, \Loffset, \tailbit, \given \D, \D_\sat) = \\
+	p(\Phi, \{\W^{(i)}\}, \W_\sat, \tub, \Loffset, \tailbit, \given \{\D^{(i)}\}, \D_\sat) = \\
 		\shoveleft{\hspace{1em}\frac{1}{\mathcal{Z}} \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \, p(\D_\sat \given \W_\sat)}\\
 			\times p(\W^{(i)} \given \W_\sat, \tub^{(i)}, \Phi, \Loffset, \tailbit^{(i)}) \, 
 			\, p(\tub^{(i)}) p(\Phi) \, p(\Loffset)
 \end{multline}
-This model works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars become preferentially unbound around the satellite's pericenter because of tidal shocking (cite?). We will explore properly modeling this process in future work. 
+This model works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars become preferentially unbound around the satellite's pericenter because of tidal shocking \citep[e.g.,][]{choi09}. We will explore properly modeling this process in future work. 
 
 %For this article, we modify the above to be a mixture model: we add a new parameter for each star, $\pshock$, which is the probability that the star is drawn from a broader, ``shocked'' distribution instead of a tight Gaussian centered on an effective Lagrange point:
 %\begin{multline}
