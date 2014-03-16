@@ -156,15 +156,15 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
             except:
                 pass
 
-            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
-
-            logger.info("Running {} walkers for {} steps..."\
-                    .format(nwalkers, nsteps))
-
             try:
                 pos = fix_whack_walkers(sampler.acceptance_fraction, pos, threshold=0.02)
             except:
                 pass
+
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
+            logger.info("Running {} walkers for {} steps..."\
+                    .format(nwalkers, nsteps))
 
             time0 = time.time()
             pos, prob, state = sampler.run_mcmc(pos, nsteps)
