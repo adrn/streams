@@ -70,7 +70,7 @@ def fix_whack_walkers(acc_frac, pos, threshold=0.01):
 
         # resample positions for bad walkers
         pos[ix] = np.random.normal(np.median(pos[~ix], axis=0),
-                                   np.median(pos[~ix], axis=0)/10.,
+                                   np.fabs(np.median(pos[~ix], axis=0)/10.),
                                    size=(sum(ix),pos.shape[1]))
 
     return pos

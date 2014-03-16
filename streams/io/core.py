@@ -136,7 +136,7 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
 
         tub = ModelParameter(name="tub",
                              truth=true_tub,
-                             prior=LogUniformPrior([t1]*nparticles,[t2]*nparticles))
+                             prior=LogUniformPrior([t2]*nparticles,[t1]*nparticles))
         beta = ModelParameter(name="beta",
                               truth=true_tail_bit,
                               prior=LogUniformPrior([-2.]*nparticles,[2.]*nparticles))

@@ -23,6 +23,9 @@ class LogPrior(object):
     def __call__(self, value):
         return 0.
 
+    def sample(self, size=None):
+        return np.nan
+
 class LogUniformPrior(LogPrior):
 
     def __call__(self, value):
