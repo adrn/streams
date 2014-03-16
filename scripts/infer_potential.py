@@ -64,7 +64,18 @@ _unit_transform["mul"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
 _unit_transform["mub"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
 _unit_transform["vr"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
 
-def main(config_file, mpi=False, threads=None, overwrite=False):
+def fix_whack_walkers(acc_frac, pos, threshold=0.01):
+    if np.any(acc_frac < 0.02):
+        ix = acc_frac < 0.02
+
+        # resample positions for bad walkers
+        pos[ix] = np.random.normal(np.median(pos[~ix], axis=0),
+                                   np.median(pos[~ix], axis=0)/10.,
+                                   size=(sum(ix),pos.shape[1]))
+
+    return pos
+
+def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler=False):
     """ TODO: """
 
     # get a pool object given the configuration parameters
@@ -99,17 +110,12 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
     ncool_down = config.get("cool_down", 100)
     burn_beta = config.get("burn_beta", 1.)
 
-    if not os.path.exists(output_file):
+    if not os.path.exists(output_file) and not continue_sampler:
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
 
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers,
                                  start_truth=config.get("start_truth", False))
-        # if config.get("start_truth", False):
-        #     p0 = np.random.normal(model.truths,
-        #                           np.std(p0,axis=0)/10.,
-        #                           size=p0.shape)
-
         logger.debug("Priors sampled...")
 
         if nburn > 0:
@@ -120,14 +126,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             logger.info("Burning in sampler for {} steps...".format(nburn))
 
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
-
-            if np.any(sampler.acceptance_fraction < 0.01):
-                ix = sampler.acceptance_fraction < 0.01
-
-                # resample positions for bad walkers
-                pos[ix] = np.random.normal(np.median(pos[~ix], axis=0),
-                                           np.std(pos[~ix], axis=0)/10.,
-                                           size=(sum(ix),pos.shape[1]))
+            pos = fix_whack_walkers(sampler.acceptance_fraction, pos, threshold=0.02)
 
             if burn_beta != 1 and ncool_down > 0:
                 best_idx = sampler.flatlnprobability.argmax()
@@ -162,6 +161,11 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             logger.info("Running {} walkers for {} steps..."\
                     .format(nwalkers, nsteps))
 
+            try:
+                pos = fix_whack_walkers(sampler.acceptance_fraction, pos, threshold=0.02)
+            except:
+                pass
+
             time0 = time.time()
             pos, prob, state = sampler.run_mcmc(pos, nsteps)
 
@@ -181,8 +185,50 @@ def main(config_file, mpi=False, threads=None, overwrite=False):
             except:
                 logger.warn("Failed to compute autocorrelation time.")
                 f["acor"] = []
-    else:
+
+    elif os.path.exists(output_file) and not continue_sampler:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
+
+    elif os.path.exists(output_file) and continue_sampler:
+        # TODO: right now, trusts that you use the right config file to restart...
+        logger.info("Output file '{}' already exists, continuing sampler...".format(output_file))
+
+        with h5py.File(output_file, "r") as f:
+            old_chain = f["chain"].value
+            old_flatchain = f["flatchain"].value
+            old_lnprobability = f["lnprobability"].value
+            old_p0 = f["p0"].value
+            old_acc_frac = f["acceptance_fraction"].value
+
+        pos = old_chain[:,-1]
+        pos = fix_whack_walkers(old_acc_frac, pos, threshold=0.02)
+
+        sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+
+        logger.info("Continuing sampler...running {} walkers for {} steps..."\
+                .format(nwalkers, nsteps))
+
+        time0 = time.time()
+        pos, prob, state = sampler.run_mcmc(pos, nsteps)
+
+        t = time.time() - time0
+        logger.debug("Spent {} seconds on sampling...".format(t))
+
+        with h5py.File(output_file, "w") as f:
+            f["chain"] = np.hstack((old_chain,sampler.chain))
+            f["flatchain"] = np.vstack((old_flatchain,sampler.flatchain))
+            f["lnprobability"] = np.hstack((old_lnprobability,sampler.lnprobability))
+            f["p0"] = old_p0
+            f["acceptance_fraction"] = sampler.acceptance_fraction
+            try:
+                f["acor"] = sampler.acor
+            except:
+                logger.warn("Failed to compute autocorrelation time.")
+                f["acor"] = []
+
+    else:
+        print("Unknown state.")
+        sys.exit(1)
 
     pool.close() if hasattr(pool, 'close') else None
 
@@ -402,6 +448,8 @@ if __name__ == "__main__":
                         help="Path to the configuration file to run with.")
     parser.add_argument("-o", "--overwrite", dest="overwrite", default=False, action="store_true",
                         help="Overwrite any existing data.")
+    parser.add_argument("--continue", dest="continue_sampler", default=False, action="store_true",
+                        help="Continue the sampler for nsteps from endpoint of previous run.")
 
     # threading
     parser.add_argument("--mpi", dest="mpi", default=False, action="store_true",
@@ -420,7 +468,8 @@ if __name__ == "__main__":
 
     try:
         main(args.file, mpi=args.mpi, threads=args.threads,
-             overwrite=args.overwrite)
+             overwrite=args.overwrite,
+             continue_sampler=args.continue_sampler)
     except:
         pool.close() if hasattr(pool, 'close') else None
         raise
