@@ -4,6 +4,7 @@
 % packages
 \usepackage{amssymb,amsmath, amsbsy}
 \usepackage{booktabs}
+\usepackage[caption=false]{subfig}
 
 % commands
 \newcommand{\project}[1]{\textsl{#1}}
@@ -323,16 +324,79 @@ In what follows, we apply the model described above to ``observations'' of the n
 
 \subsection{Perfect data}
 
-We first test the model using eight particles (stars) --- four from the leading tail, and four from the trailing tail --- randomly sampled from the $2.5\times10^8~M_\odot$ simulation (Section~\ref{sec:sims}), assuming perfect observational data for both the stars and the progenitor. The stars were required to have been stripped after the first pericentric passage and have a present-day distance within $50$ kpc of the Sun. Figure~\ref{fig:} (left panel) shows a sample of stream particles (black) and the eight randomly chosen stars (blue) in the Galactic X-Z plane. 
+We first test the model using eight particles (stars) --- four from the leading tail, and four from the trailing tail --- randomly sampled from the $2.5\times10^8~M_\odot$ simulation (Section~\ref{sec:sims}), assuming perfect observational data for both the stars and the progenitor. The stars were required to have been stripped after the first pericentric passage and have a present-day distance within $50$ kpc of the Sun. Figure~\ref{fig:2.5e8_xz} (left panel) shows a sample of stream particles (grey) and the eight randomly chosen stars (blue) in the Galactic X-Z plane. 
 
-We leave the potential parameters --- $q_1$, $q_z$, $\phi$, and $\vhalo$ --- free to vary, along with the Lagrange point offset, $\Loffset$, and use Markov Chain Monte Carlo (MCMC) to sample from the posterior probability distribution over these five parameters. We use an affine-invariant ensemble sampler \citep{goodman10} implemented in the Python programming language \citep{foremanmackey13} with an ensemble of 64 walkers initialized by sampling from the priors summarized in Table~\ref{tbl:params}. We run the walkers in parallel (using MPI todo) for 5000 steps to burn-in, then restart the sampler starting from the final position of the burn-in phase and run for another 10000 steps. We compute the autocorrelation time for each parameter [todo: reference] and thin the chains by taking every XXX$\times \mathrm{median}(t_{\rm acor})$ sample to ensure they are close to independent. Figure~\ref{fig:} shows the walker positions over the 10000 post-burn-in steps for each parameter for the $2.5\times10^8~M_\odot$ simulation; the autocorrelation time for each parameter is displayed on each corresponding panel. Figure~\ref{fig:} shows projections of the posterior probability distribution for the parameters.
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/e8_xz.png}
+\caption{ TODO  }\label{fig:2.5e8_xz}
+\end{center}
+\end{figure}
+
+We leave the potential parameters --- $q_1$, $q_z$, $\phi$, and $\vhalo$ --- free to vary, along with the Lagrange point offset, $\Loffset$, and use Markov Chain Monte Carlo (MCMC) to sample from the posterior probability distribution over these five parameters. We use an affine-invariant ensemble sampler \citep{goodman10} implemented in the Python programming language \citep{foremanmackey13} with an ensemble of 64 walkers initialized by sampling from the priors summarized in Table~\ref{tbl:params}. We run the walkers in parallel (using MPI todo) for 5000 steps to burn-in, then restart the sampler starting from the final position of the burn-in phase and run for another 10000 steps. We compute the autocorrelation time for each parameter [todo: reference] and thin the chains by taking every XXX$\times \mathrm{median}(t_{\rm acor})$ sample to ensure they are close to independent. Figure~\ref{fig:trace} shows the walker positions over the 10000 post-burn-in steps for each parameter for the $2.5\times10^8~M_\odot$ simulation; the autocorrelation time for each parameter is displayed on each corresponding panel. Figure~\ref{fig:exp1_posterior} shows projections of the posterior probability distribution for the parameters.
+
+\begin{figure*}[!ht]
+	\captionsetup[subfigure]{labelformat=empty}
+        \centering
+        \subfloat[]{
+                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_0.png}
+                \label{fig:trace0}
+	}
+        \subfloat[]{
+                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_1.png}
+                \label{fig:trace0}
+	}
+        
+        \subfloat[]{
+                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_2.png}
+                \label{fig:trace0}
+	}
+        \subfloat[]{
+                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_3.png}
+                \label{fig:trace0}
+	}
+        
+        \subfloat[]{
+                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_4.png}
+                \label{fig:trace0}
+	}
+        \caption{TODO: mcmc trace plots}\label{fig:trace}
+\end{figure*}
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/exp1_posterior.png}
+\caption{ TODO  }\label{fig:exp1_posterior}
+\end{center}
+\end{figure}
 
 \subsection{\spitzer + \gaia}
 We take the same eight stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We take these stars to be RR Lyrae variables which are known to be excellent distance indicators via the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}. $\sim$100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
 
-For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. The observed positions and velocities of these stars are shown in Figure~\ref{fig:} (red, compare to the unobserved black points). We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties, though in reality some coordinates will have higher or lower uncertainties.
+For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. The observed positions and velocities of these stars are shown in Figure~\ref{fig:2.5e8_xz} (red, compare to the unobserved black points). We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties, though in reality some coordinates will have higher or lower uncertainties.
 
-This experiment samples over the four potential parameters, the Lagrange point offset, four phase-space coordinate parameters for each star (32 total), and four phase-space coordinate parameters for the progenitor --- 41 parameters in total. We use an ensemble of 256 walkers and draw initial conditions for the coordinate parameters by sampling from Gaussian's centered on the ``observed'' value with variances specified by the observational uncertainties. Other parameters --- potential parameters, $\Loffset$, and $\tub$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We again burn in the walkers for 5000 steps and run for 10000 steps post-burn-in. The chains are also thinned by taking every XXX$\times \mathrm{median}(t_{\rm acor})$ sample. Figures~\ref{fig:}-\ref{fig:} show the marginalized posterior for the potential parameters, satellite, and a single particle. [....]
+This experiment samples over the four potential parameters, the Lagrange point offset, four phase-space coordinate parameters for each star (32 total), and four phase-space coordinate parameters for the progenitor --- 41 parameters in total. We use an ensemble of 256 walkers and draw initial conditions for the coordinate parameters by sampling from Gaussian's centered on the ``observed'' value with variances specified by the observational uncertainties. Other parameters --- potential parameters, $\Loffset$, and $\tub$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We again burn in the walkers for 5000 steps and run for 10000 steps post-burn-in. The chains are also thinned by taking every XXX$\times \mathrm{median}(t_{\rm acor})$ sample. Figures~\ref{fig:exp2_potential}, \ref{fig:exp2_satellite}, \ref{fig:exp2_particle0} show the marginalized posteriors for the potential, satellite, and a single particle parameters. [....]
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/exp2_potential.png}
+\caption{ TODO  }\label{fig:exp2_potential}
+\end{center}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/exp2_satellite.png}
+\caption{ TODO  }\label{fig:exp2_satellite}
+\end{center}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/exp2_particle0.png}
+\caption{ TODO  }\label{fig:exp2_particle0}
+\end{center}
+\end{figure}
 
 \subsection{\spitzer + current data}
 The SMASH survey \citep{smashprop} will be completed by XXX, long before the final \gaia\, data release. Thus, we will soon have very precise distance measurements for stars in Sgr and Orphan but poor proper motion constraints. [some comments on state of data for Sgr core, proper motions of] Here we study how well we can constrain the potential with this model given stars with missing data. We assume the same observational uncertainties for the stars as mentioned above, but assume the proper motion's have not been measured.
