@@ -34,7 +34,7 @@ job_sh = """#!/bin/sh
 date
 
 #Command to execute Python program
-/usr/local/bin/mpiexec -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v --mpi {overwrite}
+/usr/local/bin/mpiexec -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v --mpi {overwrite} {contin}
 
 date
 
@@ -42,7 +42,8 @@ date
 """
 
 def main(config_file, mpi_threads=None, walltime=None, memory=None,
-         job_name=None, astro=None, overwrite=False, infiniband=False):
+         job_name=None, astro=None, overwrite=False, infiniband=False,
+         continue_sampler=False):
 
     # Read in simulation parameters from config file
     with open(config_file) as f:
@@ -72,6 +73,11 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
     else:
         ovr = ""
 
+    if continue_sampler:
+        cnt = "--continue"
+    else:
+        cnt = ""
+
     if infiniband:
         ib = ":ib"
     else:
@@ -88,7 +94,8 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
                        group=group,
                        overwrite=ovr,
                        ppn=nproc_per_node,
-                       ib=ib)
+                       ib=ib,
+                       contin=cnt)
 
     yn = raw_input("About to submit the following job: \n\n{0}\n\n Is "
                    "this right? [y]/n: ".format(sh))
@@ -119,6 +126,8 @@ if __name__ == "__main__":
                         action="store_true", help="")
     parser.add_argument("--ib", dest="infiniband", default=False,
                         action="store_true", help="")
+    parser.add_argument("--continue", dest="continue_sampler", default=False,
+                        action="store_true", help="")
 
     args = parser.parse_args()
 
@@ -127,6 +136,7 @@ if __name__ == "__main__":
     filename = os.path.join(os.environ['STREAMSPATH'], args.file)
     main(filename, mpi_threads=args.mpi_threads, walltime=args.time,
          memory=args.memory, job_name=args.job_name, astro=os.environ['ASTRO'],
-         overwrite=args.overwrite, infiniband=args.infiniband)
+         overwrite=args.overwrite, infiniband=args.infiniband,
+         continue_sampler=args.continue_sampler)
     sys.exit(0)
 
