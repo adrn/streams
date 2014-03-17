@@ -221,7 +221,7 @@ class StreamModel(object):
                         prior = param._prior
                         if hasattr(prior, 'a') and hasattr(prior, 'b'):
                             mu = np.ravel(param.truth)
-                            sigma = (prior.b-prior.a)/10.
+                            sigma = (prior.b-prior.a)/2.
                             a = (prior.a - mu) / sigma
                             b = (prior.b - mu) / sigma
                             if param.size > 1:
@@ -237,7 +237,7 @@ class StreamModel(object):
 
                             p0[ii,ix1:ix1+param.size] = np.ravel(rvs)
                         elif hasattr(prior, 'mu'):
-                            v = np.random.normal(param.truth, prior.sigma/10.)
+                            v = np.random.normal(param.truth, prior.sigma/2.)
                             p0[ii,ix1:ix1+param.size] = np.ravel(v)
                         else:
                             p0[ii,ix1:ix1+param.size] = np.ravel(param.truth)
