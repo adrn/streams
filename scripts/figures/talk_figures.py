@@ -43,6 +43,9 @@ matplotlib.rc('axes', edgecolor='#333333', labelsize=24, labelweight=400, linewi
 matplotlib.rc('lines', markeredgewidth=0)
 matplotlib.rc('font', family='Roboto', weight='light')
 
+sgr_path = 'sgr_nfw/M2.5e+0{}'
+snapfile = 'SNAP113'
+
 plot_path = "plots/talks/"
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
@@ -143,8 +146,8 @@ def q_p(**kwargs):
         m = float(mass)
         print(mass)
 
-        sgr = SgrSimulation(mass)
-        p = sgr.particles(N=nparticles, expr="(tub!=0)")#" & (tub<400)")
+        sgr = SgrSimulation(sgr_path.format(_m), snapfile)
+        p = sgr.particles(n=nparticles, expr="(tub!=0)")#" & (tub<400)")
         tub = p.tub
         s = sgr.satellite()
 

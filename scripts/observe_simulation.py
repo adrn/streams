@@ -208,25 +208,25 @@ if __name__ == "__main__":
 
 python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
 --N=1024 --file=/Users/adrian/Projects/streams/data/observed_particles/2.5e6_N1024_DH.hdf5 \
---seed=42 --mass="2.5e6" --overwrite
+--seed=42 --path="sgr_nfw/M2.5e+06" --snapfile="SNAP113" --overwrite
 
 python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
 --N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e7_N1024_DH.hdf5 \
---seed=42 --mass="2.5e7" --overwrite
+--seed=42 --path="sgr_nfw/M2.5e+07" --snapfile="SNAP113" --overwrite
 
 python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
 --N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024_DH.hdf5 \
---seed=42 --mass="2.5e8" --overwrite
+--seed=42 --path="sgr_nfw/M2.5e+08" --snapfile="SNAP113" --overwrite
 
 python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
 --N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e9_N1024_DH.hdf5 \
---seed=42 --mass="2.5e9" --overwrite
+--seed=42 --path="sgr_nfw/M2.5e+09" --snapfile="SNAP113" --overwrite
 
 OR
 
 python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
 --N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024_DH_exp3.hdf5 \
---seed=42 --mass="2.5e8" --overwrite
+--seed=42 --path="sgr_nfw/M2.5e+08" --snapfile="SNAP113" --overwrite
     """
 
     # TODO: class kwargs
@@ -235,4 +235,5 @@ python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub
     observe_simulation(args.class_name,
         particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
         selection_expr=args.expr, N=args.N, output_file=args.output_file,
-        overwrite=args.overwrite, seed=args.seed, class_kwargs=dict(mass=args.mass))
+        overwrite=args.overwrite, seed=args.seed,
+        class_kwargs=dict(path=args.path,snapfile=args.snapfile))

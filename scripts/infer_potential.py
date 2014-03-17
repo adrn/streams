@@ -24,12 +24,10 @@ import triangle
 # Project
 from streams.coordinates.frame import galactocentric
 import streams.io as io
-from streams.io.sgr import SgrSimulation, SgrSimulationDH
+from streams.io.sgr import SgrSimulation
 import streams.inference as si
 import streams.potential as sp
 from streams.util import get_pool
-
-SgrSimulation = SgrSimulationDH
 
 global pool
 pool = None
@@ -265,9 +263,10 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
 
     # plot true_particles, true_satellite over the rest of the stream
     gc_particles = model.true_particles.to_frame(galactocentric)
-    m = "{:.1e}".format(model.true_satellite.mass).replace("0","").replace("+","")
-    sgr = SgrSimulation(m)
-    all_gc_particles = sgr.particles(N=1000, expr="tub!=0").to_frame(galactocentric)
+    m = model.true_satellite.mass
+    # HACK
+    sgr = SgrSimulation("sgr_nfw/M2.5e+0{}".format(np.floor(np.log10(m))), "SNAP113")
+    all_gc_particles = sgr.particles(n=1000, expr="tub!=0").to_frame(galactocentric)
 
     fig,axes = plt.subplots(1,2,figsize=(16,8))
     axes[0].plot(all_gc_particles["x"].value, all_gc_particles["z"].value,

@@ -24,7 +24,6 @@ import triangle
 # Project
 from streams.coordinates.frame import galactocentric, heliocentric
 import streams.io as io
-from streams.io.sgr import SgrSimulation
 import streams.inference as si
 import streams.potential as sp
 from streams.util import project_root

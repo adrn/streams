@@ -24,7 +24,7 @@ from streams.inference.back_integrate import back_integration_likelihood
 
 nparticles = 16
 potential = LawMajewski2010()
-simulation = io.SgrSimulation(mass="2.5e8")
+simulation = io.SgrSimulation("sgr_nfw/M2.5e+08", "SNAP113")
 particles = simulation.particles(N=nparticles, expr="tub!=0")\
                       .to_frame(heliocentric)
 satellite = simulation.satellite()\
