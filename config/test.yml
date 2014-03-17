@@ -45,7 +45,7 @@ walkers: 16
 burn_in: 10
 burn_beta: 1.
 cool_down: 0
-steps: 0
+steps: 10
 thin_chain: False
 
 # satellite:
