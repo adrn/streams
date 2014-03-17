@@ -265,7 +265,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
     gc_particles = model.true_particles.to_frame(galactocentric)
     m = model.true_satellite.mass
     # HACK
-    sgr = SgrSimulation("sgr_nfw/M2.5e+0{}".format(np.floor(np.log10(m))), "SNAP113")
+    sgr = SgrSimulation("sgr_nfw/M2.5e+0{}".format(int(np.floor(np.log10(m)))), "SNAP113")
     all_gc_particles = sgr.particles(n=1000, expr="tub!=0").to_frame(galactocentric)
 
     fig,axes = plt.subplots(1,2,figsize=(16,8))
