@@ -23,27 +23,19 @@ import numpy as np
 import yaml
 import yaml.constructor
 
-__all__ = ["_validate_coord", "project_root", "u_galactic", "make_path"]
+__all__ = ["_validate_coord", "project_root", "streamspath", "make_path"]
 
 # Create logger
 logger = logging.getLogger(__name__)
 
-# This code will find the root directory of the project
-_pattr = re.compile("(.*)\/streams")
-try:
-    matched_path = _pattr.search(os.getcwd()).groups()[0]
-except AttributeError: # match not found, try __file__ instead
-    matched_path = _pattr.search(__file__).groups()[0]
+streamspath = project_root = os.environ["STREAMSPATH"]
 
-project_root = os.environ["STREAMSPATH"]
 #
 def _validate_coord(x):
     if isiterable(x):
         return np.array(x, copy=True)
     else:
         return np.array([x])
-
-u_galactic = [u.kpc, u.Myr, u.M_sun, u.radian]
 
 def get_memory_usage():
     """
