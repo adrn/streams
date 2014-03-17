@@ -1,0 +1,62 @@
+# general
+seed: 42
+script: infer_potential.py
+name: exper1_7
+# streams_path: /path/to/streams
+
+# plots / output
+plot:
+    mcmc_diagnostics: True
+    posterior: True
+    ext: png
+#output_path: /tmp
+
+# data
+data_file: data/observed_particles/2.5e7_N1024_DH.hdf5
+nparticles: 8
+particle_idx: [657, 380, 638, 785, 578, 902, 678, 155]
+
+# integration
+dt: -1.
+# t1: 0
+# t2: -6200.
+
+potential:
+    class_name: LawMajewski2010
+    parameters: [q1, qz, phi, v_halo]
+
+particles:
+#    parameters: [d, vr]
+#    parameters: [l, b, d, mul, mub, vr, p_shocked, beta]
+
+satellite:
+    parameters: [alpha]
+#    parameters: [d, mul, mub, vr, logmass]
+
+# priors should be
+#    l - uniform in cos(l)
+#    b - uniform in cos(b)
+#    d - uniform
+#    mul - uniform
+#    mub - uniform
+#    vr - uniform
+
+# emcee
+start_truth: True
+walkers: 64
+burn_in: 2000
+burn_beta: 1.
+cool_down: 0
+steps: 5000
+thin_chain: False
+
+# satellite:
+#     _X:
+#         errors:
+#             factor: 1. # multiplies all errors
+#             l: 1 milliarcsecond
+#             b: 1 milliarcsecond
+#             D: 0.05
+#             mul: 1.2 mas/yr
+#             mub: 1.2 mas/yr
+#             vr: 5 km/s
