@@ -34,7 +34,7 @@ l_kwargs = dict(marker='^', linestyle='none', color='g', alpha=0.75,
 class Test10E8(object):
 
     def setup_class(self):
-        self.sgr = SgrSimulation("2.5e8")
+        self.sgr = SgrSimulation("sgr_plummer/2.5e8", "SNAP")
 
         particles = self.sgr.particles(expr="tub==0")
         self.particles = particles.decompose(usys)
@@ -42,8 +42,8 @@ class Test10E8(object):
         self.satellite = satellite.decompose(usys)
 
         # Here are the true parameters from the SCFCEN file
-        r0 = np.array([36.82173, 2.926886, -4.172226])*self.sgr._units['length']
-        v0 = np.array([4.654394, -0.9905948, 5.080418])*self.sgr._units['length']/self.sgr._units['time']
+        r0 = np.array([36.82173, 2.926886, -4.172226])*self.sgr.units['length']
+        v0 = np.array([4.654394, -0.9905948, 5.080418])*self.sgr.units['speed']
 
         self.true_r = np.squeeze(r0.decompose(usys).value)
         self.true_v = np.squeeze(v0.decompose(usys).value)
@@ -134,7 +134,7 @@ class Test10E8(object):
         fig.savefig(os.path.join(plot_path, "sat_ptcl_velocities_2.5e8.png"))
 
     def test_pickle(self):
-        particles = self.sgr.particles(N=25, expr="tub==0")
+        particles = self.sgr.particles(n=25, expr="tub==0")
         fnpickle(particles, os.path.join(plot_path, "test.pickle"))
         p = particles.to_frame(heliocentric)
         fnpickle(p, os.path.join(plot_path, "test2.pickle"))

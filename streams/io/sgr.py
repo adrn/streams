@@ -51,6 +51,7 @@ class SgrSimulation(object):
 
         self.reader = SCFReader(self.path)
         self.particle_table = self.reader.read_snap(snapfile, units=_usys)
+        self.units = _usys
 
         # get mass column from table
         m = np.array(self.particle_table['m'])*self.particle_table['m'].unit
