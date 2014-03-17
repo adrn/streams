@@ -10,6 +10,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+from random import sample
 
 # Third-party
 import numpy as np
@@ -18,296 +19,89 @@ import astropy.io.ascii as ascii
 from astropy.table import Column
 import astropy.units as u
 from astropy.constants import G
+from streamteam.io import SCFReader
+from streamteam.units import usys as _usys
 
 # Project
 from .. import usys
 from ..dynamics import Particle, Orbit
-from .core import read_table
-from ..util import project_root
+from ..util import streamspath
 from ..coordinates.frame import galactocentric
-from ..integrate import LeapfrogIntegrator
 from ..potential.lm10 import LawMajewski2010
+from ..inference.util import guess_tail_bit
 
-__all__ = ["SgrSimulation", "SgrSimulationDH"]
-
-def _units_from_file(scfpar):
-    """ Generate a unit system from an SCFPAR file. """
-
-    with open(scfpar) as f:
-        lines = f.readlines()
-        length = float(lines[16].split()[0])
-        mass = float(lines[17].split()[0])
-
-    GG = G.decompose(bases=[u.kpc,u.M_sun,u.Myr]).value
-    X = (GG / length**3 * mass)**-0.5
-
-    length_unit = u.Unit("{0} kpc".format(length))
-    mass_unit = u.Unit("{0} M_sun".format(mass))
-    time_unit = u.Unit("{:08f} Myr".format(X))
-
-    return dict(length=length_unit,
-                mass=mass_unit,
-                time=time_unit)
+__all__ = ["SgrSimulation"]
 
 class SgrSimulation(object):
 
-    def __init__(self, mass):
-        self._path = os.path.join(project_root, "data", "simulation", "Sgr")
+    def __init__(self, path, snapfile):
+        """ """
 
-        self.particle_filename = os.path.join(self._path,mass,"SNAP")
-        self.particle_columns = ("x","y","z","vx","vy","vz")
+        # potential used for the simulation
+        self.potential = LawMajewski2010()
 
-        self._units = _units_from_file(os.path.join(self._path,mass,"SCFPAR"))
-        self.particle_units = [self._units["length"]]*3 + \
-                              [self._units["length"]/self._units["time"]]*3
+        # some smart pathness
+        if not os.path.exists(path):
+            _path = os.path.join(streamspath, "data", "simulation", path)
+            if os.path.exists(_path):
+                path = _path
+            else:
+                raise IOError("Path '{}' doesn't exist".format(path))
+        self.path = path
 
-        self.true_potential = LawMajewski2010()
+        self.reader = SCFReader(self.path)
+        self.particle_table = self.reader.read_snap(snapfile, units=_usys)
 
-        self.mass = mass
-        self.t1 = (4.189546E+02 * self._units["time"]).decompose(usys).value
-        self.t2 = 0
-
-    def raw_particle_table(self, N=None, expr=None):
-        tbl = read_table(self.particle_filename, N=N, expr=expr)
-        return tbl
-
-    def particles(self, N=None, expr=None, meta_cols=[], tail_bit=False):
-        """ Return a Particle object with N particles selected from the
-            simulation with expression expr.
-
-            Parameters
-            ----------
-            N : int or None (optional)
-                Number of particles to return. None or 0 means 'all'
-            expr : str (optional)
-                Use numexpr to select out only rows that match criteria.
-            meta_cols : iterable (optional)
-                List of columns to add to meta data.
-            tail_bit : bool (optional)
-                Compute tail bit or not.
-        """
-        tbl = self.raw_particle_table(N=N, expr=expr)
-
-        q = []
-        for colname,unit in zip(self.particle_columns, self.particle_units):
-            q.append(np.array(tbl[colname])*unit)
-
-        meta = dict(expr=expr)
-        meta["tub"] = (np.array(tbl["tub"])*self._units["time"]).decompose(usys).value
-        for col in meta_cols:
-            meta[col] = np.array(tbl[col])
-
-        p = Particle(q, frame=galactocentric, meta=meta)
-        p = p.decompose(usys)
-
-        ################################################################
-        # HACK: Figure out if in leading or trailing tail
-        # separate out the orbit of the satellite from the orbit of the stars
-        if tail_bit:
-            s = self.satellite()
-            X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
-            V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
-            integrator = LeapfrogIntegrator(self.true_potential._acceleration_at,
-                                            np.array(X), np.array(V),
-                                            args=(X.shape[0], np.zeros_like(X)))
-            ts, rs, vs = integrator.run(t1=self.t1, t2=self.t2, dt=-1.)
-            s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
-            p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
-
-            # m_t = -s.mdot*ts + s.m0
-            # s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
-            # s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
-            # r_tide = self.true_potential._tidal_radius(m_t, s_orbit[...,:3])
-            # v_disp = s_V * r_tide / s_R
-
-            t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
-            s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
-            p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-            # r_tide = np.array([r_tide[jj,0] for jj in t_idx])
-            # v_disp = np.array([v_disp[jj,0] for jj in t_idx])
-
-            # instantaneous cartesian basis to project into
-            x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
-            y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
-            z_hat = np.cross(x_hat, y_hat)
-
-            # translate to satellite position
-            rel_orbits = p_orbits - s_orbit
-            rel_pos = rel_orbits[...,:3]
-            rel_vel = rel_orbits[...,3:]
-
-            # project onto X
-            X = np.sum(rel_pos * x_hat, axis=-1)
-            Y = np.sum(rel_pos * y_hat, axis=-1)
-            Z = np.sum(rel_pos * z_hat, axis=-1)
-
-            VX = np.sum(rel_vel * x_hat, axis=-1)
-            VY = np.sum(rel_vel * y_hat, axis=-1)
-            VZ = np.sum(rel_vel * z_hat, axis=-1)
-
-            Phi = np.arctan2(Y, X)
-            tail_bit = np.ones(p.nparticles)
-            tail_bit[:] = np.nan
-            tail_bit[np.cos(Phi) < -0.5] = -1.
-            tail_bit[np.cos(Phi) > 0.5] = 1.
-
-            p.meta["tail_bit"] = p.tail_bit = tail_bit
-        ################################################################
-        else:
-            tail_bit = np.ones(p.nparticles)*np.nan
-
-        return p
-
-    def satellite(self):
-        """ Return a Particle object with the present-day position of the
-            satellite, computed from the still-bound particles.
-        """
-        expr = "tub==0"
-        tbl = self.raw_particle_table(expr=expr)
-
-        q = []
-        for colname in self.particle_columns:
-            q.append(tbl[colname].tolist())
-
-        q = np.array(q)
-
-        meta = dict(expr=expr)
-        v_disp = np.sqrt(np.sum(np.var(q[3:],axis=1)))
-        meta["v_disp"] = (v_disp*self.particle_units[-1]).decompose(usys).value
-        meta["m"] = float(self.mass)
-
-        m0 = float(self.mass)
-        mdot = 3.3*10**(np.floor(np.log10(m0))-4)
-        meta['m0'] = m0
-        meta['mdot'] = mdot
-
-        q = np.median(q, axis=1)
-        p = Particle(q, frame=galactocentric,
-                     units=self.particle_units,
-                     meta=meta)
-        return p.decompose(usys)
-
-    @property
-    def satellite_orbit(self):
-        """ TODO: """
-
-        orbit_table = np.genfromtxt(os.path.join(self._path,self.mass,"SCFCEN"), names=True)
-
-        q = []
-        for colname,unit in zip(self.particle_columns, self.particle_units):
-            q.append(np.array(orbit_table[colname])[:,np.newaxis]*unit)
-
-        return Orbit(orbit_table["t"]*self._units["time"], q,
-                     frame=galactocentric)
-
-class SgrSimulationDH(object):
-
-    def __init__(self, mass):
-        self._path = os.path.join(project_root, "data", "simulation", "Sgr_DH")
-
-        self._names = "m x y z vx vy vz s1 s2 tub".split()
-
-        m = "M{}e+0{}".format(*mass.split('e'))
-        self.root = os.path.join(self._path,m)
-        self.particle_filename = os.path.join(self.root,"SNAP113")
-        self.particle_columns = ("x","y","z","vx","vy","vz")
-
-        self._units = _units_from_file(os.path.join(self.root,"SCFPAR"))
-        self.particle_units = [self._units["length"]]*3 + \
-                              [self._units["length"]/self._units["time"]]*3
-
-        self.true_potential = LawMajewski2010()
-
-        self.mass = mass
-        self.t1 = 6020.01 # Myr
+        # get mass column from table
+        m = np.array(self.particle_table['m'])*self.particle_table['m'].unit
+        self.mass = np.sum(m)
+        self.t1 = self.particle_table.meta["timestep"]
         self.t2 = 0.
 
-    def raw_particle_table(self, N=None, expr=None):
-        tbl = read_table(self.particle_filename, N=N, expr=expr, names=self._names, skip_header=1)
-        return tbl
-
-    def particles(self, N=None, expr=None, meta_cols=[], tail_bit=False):
+    def particles(self, n=None, expr=None, tail_bit=False):
         """ Return a Particle object with N particles selected from the
             simulation with expression expr.
 
             Parameters
             ----------
-            N : int or None (optional)
+            n : int or None (optional)
                 Number of particles to return. None or 0 means 'all'
             expr : str (optional)
                 Use numexpr to select out only rows that match criteria.
-            meta_cols : iterable (optional)
-                List of columns to add to meta data.
             tail_bit : bool (optional)
                 Compute tail bit or not.
         """
-        tbl = self.raw_particle_table(N=N, expr=expr)
 
-        q = []
-        for colname,unit in zip(self.particle_columns, self.particle_units):
-            q.append(np.array(tbl[colname])*unit)
+        if expr is not None:
+            expr_idx = numexpr.evaluate(str(expr), self.particle_table)
+        else:
+            expr_idx = np.ones(len(self.particle_table)).astype(bool)
+
+        table = self.particle_table[expr_idx]
+        n_idx = np.array(sample(xrange(len(table)), len(table)))
+        if n is not None and n > 0:
+            idx = n_idx[:n]
+        else:
+            idx = n_idx
+        table = table[idx]
+
+        # get a list of quantities for each column
+        coords = []
+        for colname in galactocentric.coord_names:
+            coords.append(np.array(table[colname])*table[colname].unit)
 
         meta = dict(expr=expr)
-        meta["tub"] = (np.array(tbl["tub"])*self._units["time"]).decompose(usys).value
-        for col in meta_cols:
-            meta[col] = np.array(tbl[col])
+        meta["tub"] = (np.array(table["tub"])*table["tub"].unit).to(_usys["time"]).value
 
-        p = Particle(q, frame=galactocentric, meta=meta)
+        # create the particle object
+        p = Particle(coords, frame=galactocentric, meta=meta)
         p = p.decompose(usys)
 
-        ################################################################
-        # HACK: Figure out if in leading or trailing tail
-        # separate out the orbit of the satellite from the orbit of the stars
+        # guess whether in leading or trailing tail
         if tail_bit:
-            s = self.satellite()
-            X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
-            V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
-            integrator = LeapfrogIntegrator(self.true_potential._acceleration_at,
-                                            np.array(X), np.array(V),
-                                            args=(X.shape[0], np.zeros_like(X)))
-            ts, rs, vs = integrator.run(t1=self.t1, t2=self.t2, dt=-1.)
-            s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
-            p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
-
-            # m_t = -s.mdot*ts + s.m0
-            # s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
-            # s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
-            # r_tide = self.true_potential._tidal_radius(m_t, s_orbit[...,:3])
-            # v_disp = s_V * r_tide / s_R
-
-            t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
-            s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
-            p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-            # r_tide = np.array([r_tide[jj,0] for jj in t_idx])
-            # v_disp = np.array([v_disp[jj,0] for jj in t_idx])
-
-            # instantaneous cartesian basis to project into
-            x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
-            y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
-            z_hat = np.cross(x_hat, y_hat)
-
-            # translate to satellite position
-            rel_orbits = p_orbits - s_orbit
-            rel_pos = rel_orbits[...,:3]
-            rel_vel = rel_orbits[...,3:]
-
-            # project onto X
-            X = np.sum(rel_pos * x_hat, axis=-1)
-            Y = np.sum(rel_pos * y_hat, axis=-1)
-            Z = np.sum(rel_pos * z_hat, axis=-1)
-
-            VX = np.sum(rel_vel * x_hat, axis=-1)
-            VY = np.sum(rel_vel * y_hat, axis=-1)
-            VZ = np.sum(rel_vel * z_hat, axis=-1)
-
-            Phi = np.arctan2(Y, X)
-            tail_bit = np.ones(p.nparticles)
-            tail_bit[:] = np.nan
-            tail_bit[np.cos(Phi) < -0.5] = -1.
-            tail_bit[np.cos(Phi) > 0.5] = 1.
-
-            p.meta["tail_bit"] = p.tail_bit = tail_bit
-        ################################################################
+            p.meta["tail_bit"] = p.tail_bit = guess_tail_bit(p, self.satellite(),
+                                                             self.potential,
+                                                             self.t1, self.t2, -1.)
         else:
             tail_bit = np.ones(p.nparticles)*np.nan
 
@@ -317,27 +111,17 @@ class SgrSimulationDH(object):
         """ Return a Particle object with the present-day position of the
             satellite, computed from the still-bound particles.
         """
-        expr = "tub==0"
-        tbl = self.raw_particle_table(expr=expr)
+        expr_idx = numexpr.evaluate("tub==0", self.particle_table)
+        bound = self.particle_table[expr_idx]
 
         q = []
-        for colname in self.particle_columns:
-            q.append(tbl[colname].tolist())
+        for colname in galactocentric.coord_names:
+            q.append(np.median(np.array(bound[colname]))*bound[colname].unit)
 
-        q = np.array(q)
-
-        meta = dict(expr=expr)
-        v_disp = np.sqrt(np.sum(np.var(q[3:],axis=1)))
-        meta["v_disp"] = (v_disp*self.particle_units[-1]).decompose(usys).value
-        meta["m"] = float(self.mass)
-
-        m0 = float(self.mass)
-        mdot = 3.3*10**(np.floor(np.log10(m0))-4)
-        meta['m0'] = m0
+        meta = dict()
+        meta["m0"] = self.mass.to(_usys['mass']).value
+        mdot = 3.3*10**(np.floor(np.log10(meta["m0"]))-4)
         meta['mdot'] = mdot
 
-        q = np.median(q, axis=1)
-        p = Particle(q, frame=galactocentric,
-                     units=self.particle_units,
-                     meta=meta)
+        p = Particle(q, frame=galactocentric, meta=meta)
         return p.decompose(usys)
