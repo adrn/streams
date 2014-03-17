@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" Description... """
+""" Utilities.. """
 
 from __future__ import division, print_function
 
@@ -12,96 +12,53 @@ import os, sys
 # Third-party
 import numpy as np
 import astropy.units as u
-from astropy.constants import G
 
-__all__ = ["minimum_distance_matrix",
-           "phase_space_distance",
-           "relative_normalized_coordinates",
-           "generalized_variance"]
+# Project
+from ..integrate import LeapfrogIntegrator
 
-def relative_normalized_coordinates(potential,
-                                    satellite_orbit,
-                                    particle_orbits):
-    """ Compute the coordinates of particles relative to the satellite,
-        with positions normalized by the tidal radius and velocities
-        normalized by the escape velocity.
+__all__ = ["guess_tail_bit"]
 
-        Note::
-            Assumes the particle and satellite position/velocity
-            units are the same!
+def guess_tail_bit(particles, satellite, potential, t1, t2, dt):
+    """ Guess the tail assigment for each particle. """
+    s = satellite
+    p = particles
 
-        Parameters
-        ----------
-        potential : streams.CartesianPotential
-        satellite_orbit : Orbit
-        particle_orbits : Orbit
-    """
+    X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
+    V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
+    integrator = LeapfrogIntegrator(potential._acceleration_at,
+                                    np.array(X), np.array(V),
+                                    args=(X.shape[0], np.zeros_like(X)))
+    ts, rs, vs = integrator.run(t1=t1, t2=t2, dt=-1.)
+    s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
+    p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
-    # need to add a new axis to normalize each coordinate component
-    r_tide = potential._tidal_radius(m=satellite_orbit._m,
-                                     r=satellite_orbit._r)[:,:,np.newaxis]
+    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
+    s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
+    p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
 
-    v_esc = potential._escape_velocity(m=satellite_orbit._m,
-                                       r_tide=r_tide)
+    # instantaneous cartesian basis to project into
+    x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
+    y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
+    z_hat = np.cross(x_hat, y_hat)
 
-    return (particle_orbits._r - satellite_orbit._r) / r_tide, \
-           (particle_orbits._v - satellite_orbit._v) / v_esc
+    # translate to satellite position
+    rel_orbits = p_orbits - s_orbit
+    rel_pos = rel_orbits[...,:3]
+    rel_vel = rel_orbits[...,3:]
 
-def phase_space_distance(potential, satellite_orbit, particle_orbits):
-    """ Compute the phase-space distance for a set of particles relative
-        to a satellite in a given potential.
+    # project onto X
+    X = np.sum(rel_pos * x_hat, axis=-1)
+    Y = np.sum(rel_pos * y_hat, axis=-1)
+    Z = np.sum(rel_pos * z_hat, axis=-1)
 
-        Parameters
-        ----------
-        potential : streams.CartesianPotential
-        satellite_orbit : Orbit
-        particle_orbits : Orbit
-    """
-    return np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
+    VX = np.sum(rel_vel * x_hat, axis=-1)
+    VY = np.sum(rel_vel * y_hat, axis=-1)
+    VZ = np.sum(rel_vel * z_hat, axis=-1)
 
-def minimum_distance_matrix(potential, satellite_orbit, particle_orbits):
-    """ Compute the Nx6 matrix of minimum phase-space distance vectors.
+    Phi = np.arctan2(Y, X)
+    tail_bit = np.ones(p.nparticles)
+    tail_bit[:] = np.nan
+    tail_bit[np.cos(Phi) < -0.5] = -1.
+    tail_bit[np.cos(Phi) > 0.5] = 1.
 
-        Parameters
-        ----------
-        potential : Potential
-        satellite_orbit : Orbit
-        particle_orbits : Orbit
-    """
-
-    R,V = relative_normalized_coordinates(potential,
-                                          satellite_orbit, particle_orbits)
-    D_ps = np.sqrt(np.sum(R**2, axis=-1) + np.sum(V**2, axis=-1))
-
-    # Find the index of the time of the minimum D_ps for each particle
-    min_time_idx = D_ps.argmin(axis=0)
-    min_ps = np.zeros((particle_orbits.nparticles,6))
-
-    xx = zip(min_time_idx, range(particle_orbits.nparticles))
-    for kk in range(particle_orbits.nparticles):
-        jj,ii = xx[kk]
-        min_ps[ii] = np.append(R[jj,ii], V[jj,ii])
-
-    return min_ps
-
-def generalized_variance(potential, satellite_orbit, particle_orbits):
-    """ Compute the variance scalar -- variance of the minimum phase-
-        space distance matrix.
-
-        Parameters
-        ----------
-        potential : Potential
-            The full Milky Way potential object.
-        particle_orbits : Orbit
-            An object containing orbit information for a collection of
-            particles.
-        satellite_orbit : Orbit
-            Data for the Sgr satellite center, interpolated onto the
-            time grid for our particles.
-    """
-
-    min_ps = minimum_distance_matrix(potential, satellite_orbit, particle_orbits)
-    cov_matrix = np.cov(np.fabs(min_ps.T))
-
-    sign,logdet = np.linalg.slogdet(cov_matrix)
-    return logdet
+    return tail_bit
