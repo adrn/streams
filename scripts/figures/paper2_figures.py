@@ -27,7 +27,7 @@ from scipy.stats import norm
 
 from streams import usys
 from streams.util import project_root
-from streams.io.sgr import SgrSimulation, SgrSimulationDH
+from streams.io.sgr import SgrSimulation
 from streams.integrate import LeapfrogIntegrator
 from streams.potential.lm10 import LawMajewski2010
 
@@ -38,10 +38,12 @@ matplotlib.rc('axes', edgecolor='#444444', labelsize=24,
 matplotlib.rc('lines', markeredgewidth=0)
 matplotlib.rc('font', family='Source Sans Pro')
 
-SgrSimulation = SgrSimulationDH
 # expr = "(tub!=0)"
-# expr = "(tub!=0) & (tub<355) & (tub>94)" # for KVJ
-expr = "(tub!=0) & (tub>675.)" # for DH
+expr = "(tub!=0) & (tub>1800) & (tub<5500)"
+sgr_path = 'sgr_nfw/M2.5e+0{}'
+snapfile = 'SNAP113'
+# sgr_path = 'sgr_plummer/2.5e{}'
+# snapfile = 'SNAP'
 
 plot_path = "plots/paper2/"
 if not os.path.exists(plot_path):
@@ -67,8 +69,8 @@ def simulated_streams(**kwargs):
             print(mass)
             m = float(mass)
 
-            sgr = SgrSimulation(mass)
-            p = sgr.particles(N=10000)
+            sgr = SgrSimulation(sgr_path.format(_m),snapfile)
+            p = sgr.particles(n=10000)
 
             with rc_context(rc=rcparams):
                 axes[0,ii].text(0.5, 1.04, r"$2.5\times10^{}M_\odot$".format(_m),
@@ -201,8 +203,8 @@ def Lpts(**kwargs):
         m = float(mass)
         print(mass)
 
-        sgr = SgrSimulation(mass)
-        p = sgr.particles(N=nparticles, expr=expr)
+        sgr = SgrSimulation(sgr_path.format(_m),snapfile)
+        p = sgr.particles(n=nparticles, expr=expr)
         s = sgr.satellite()
 
         X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
@@ -346,8 +348,8 @@ def phasespace(**kwargs):
         m = float(mass)
         print(mass)
 
-        sgr = SgrSimulation(mass)
-        p = sgr.particles(N=nparticles, expr=expr)
+        sgr = SgrSimulation(sgr_path.format(_m),snapfile)
+        p = sgr.particles(n=nparticles, expr=expr)
         s = sgr.satellite()
 
         X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
@@ -441,8 +443,8 @@ def total_rv(**kwargs):
         m = float(mass)
         print(mass)
 
-        sgr = SgrSimulation(mass)
-        p = sgr.particles(N=nparticles, expr=expr)
+        sgr = SgrSimulation(sgr_path.format(_m),snapfile)
+        p = sgr.particles(n=nparticles, expr=expr)
         s = sgr.satellite()
 
         X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
@@ -531,95 +533,6 @@ def total_rv(**kwargs):
     figv.tight_layout()
     figv.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
     figv.savefig(filenamev)
-
-def num_recombine(**kwargs):
-    N_particles = kwargs.get('N', 1000)
-    Dps_lim = 2.
-
-    sgr_path = os.path.join(project_root, "data", "simulation", "Sgr")
-    plot_path = os.path.join(project_root, "plots", "tests", "num_combine")
-    if not os.path.exists(plot_path):
-        os.mkdir(plot_path)
-
-    data_file = os.path.join(plot_path, "frac_Dps{0}_N{1}.pickle".format(Dps_lim, N_particles))
-    if args.overwrite and os.path.exists(data_file):
-        os.remove(data_file)
-
-    masses = ['2.5e{0}'.format(xx) for xx in range(6, 10)]
-    canonical_errors = {"proper_motion_error_frac" : 1.,
-                        "distance_error_percent" : 2.,
-                        "radial_velocity_error" : 10.*u.km/u.s}
-    error_fracs = [0.0001, 0.01, 0.1, 0.5, 1., 2.]
-
-    if not os.path.exists(data_file):
-        lm10 = LawMajewski2010()
-
-        frac_recombined = np.zeros((len(masses), len(error_fracs), args.iter))
-        for mm,mass in enumerate(masses):
-
-            logger.info("Starting mass {0}...".format(mass))
-            particles_today, satellite_today, time = mass_selector(mass)
-
-            np.random.seed(args.seed)
-            all_particles = particles_today(N=0)
-            satellite = satellite_today()
-            t1, t2 = time()
-            for ii in range(args.iter):
-                logger.debug("\t iteration {0}...".format(ii))
-                true_particles = all_particles[np.random.randint(len(all_particles),
-                                                                 size=N_particles)]
-
-                for ee,error_frac in enumerate(error_fracs):
-                    errors = canonical_errors.copy()
-                    errors = dict([(k,v*error_frac) for k,v in errors.items()])
-                    particles = add_uncertainties_to_particles(true_particles, **errors)
-
-                    logger.debug("\t error frac.: {0}...".format(error_frac))
-
-                    # integrate the orbits backwards, compute the minimum phase-space distance
-                    integrator = SatelliteParticleIntegrator(lm10, satellite, particles)
-
-                    import time
-                    a = time.time()
-                    s_orbit,p_orbits = integrator.run(t1=t1, t2=t2, dt=-1.)
-                    #s_orbit,p_orbits = integrator.run(timestep_func=timestep,
-                    #                                  timestep_args=(lm10,),
-                    #                                  resolution=5.,
-                    #                                  t1=t1, t2=t2)
-                    print(time.time()-a)
-                    min_ps = minimum_distance_matrix(lm10, s_orbit, p_orbits)
-
-                    D_ps = np.sqrt(np.sum(min_ps**2, axis=-1))
-                    frac = np.sum(D_ps < Dps_lim) / N_particles
-                    frac_recombined[mm,ee,ii] = frac
-
-        fnpickle(frac_recombined, data_file)
-
-    frac_recombined = fnunpickle(data_file)
-    kwargs = dict(marker="o", linestyle="-", lw=1., alpha=0.5)
-    colors = ["#D73027","#FC8D59","#E6F598","#99D594","#000000","#3288BD"][:frac_recombined.shape[1]]
-
-    plt.figure(figsize=(12,8))
-    for ee in range(frac_recombined.shape[1]):
-        pp = kwargs.copy()
-        pp['c'] = colors[ee]
-        if error_fracs[ee] == 1.:
-            pp['lw'] = 2.
-            pp['c'] = 'k'
-
-        for ii in range(frac_recombined.shape[2]):
-            if ii == 0:
-                plt.semilogx([float(m) for m in masses], frac_recombined[:,ee,ii],
-                             label="{0:0.2f}".format(error_fracs[ee]), **pp)
-            else:
-                plt.semilogx([float(m) for m in masses], frac_recombined[:,ee,ii], **pp)
-
-    plt.legend(title=r'$\times$ canonical', loc='lower right')
-    plt.xticks([float(m) for m in masses], masses)
-    plt.xlabel("Satellite mass [$M_\odot$]", fontsize=26)
-    plt.ylabel("Fraction that recombine", fontsize=26)
-    plt.tight_layout()
-    plt.show()
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
