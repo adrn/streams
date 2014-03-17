@@ -9,3 +9,4 @@ cython>=0.20
 numexpr>=2.0.1
 h5py>=2.1
 emcee
+acor
