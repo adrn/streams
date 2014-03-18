@@ -26,8 +26,10 @@ import scipy.optimize as so
 from scipy.stats import norm
 
 from streams import usys
-from streams.util import project_root
+from streams.util import streamspath
+from streams.coordinates.frame import galactocentric
 from streams.io.sgr import SgrSimulation
+from streams.io import read_hdf5, read_config
 from streams.integrate import LeapfrogIntegrator
 from streams.potential.lm10 import LawMajewski2010
 
@@ -45,45 +47,66 @@ snapfile = 'SNAP113'
 # sgr_path = 'sgr_plummer/2.5e{}'
 # snapfile = 'SNAP'
 
-plot_path = "plots/paper2/"
+plot_path = os.path.join(streamspath, "plots/paper2/")
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
 
-ext = 'png'
+ext = 'pdf'
+grid_figsize = (14,7.5)
 
 def simulated_streams(**kwargs):
 
     filename = os.path.join(plot_path, "simulated_streams.{}".format(ext))
-    fig,axes = plt.subplots(2,4,figsize=(14,7.5),
+    fig,axes = plt.subplots(2,4,figsize=grid_figsize,
                             sharex=True, sharey=True)
 
     ticks = [-100,-50,0,50]
-    alpha = 0.3
+    alphas = [0.2, 0.27, 0.34, 0.4]
     rcparams = {'lines.linestyle' : 'none',
-                'lines.marker' : '.',
-                'lines.markersize' : 3}
+                'lines.marker' : ','}
 
     with rc_context(rc=rcparams):
         for ii,_m in enumerate(range(6,9+1)):
+            alpha = alphas[ii]
             mass = "2.5e{}".format(_m)
             print(mass)
             m = float(mass)
 
+            data_filename = os.path.join(streamspath, "data", "observed_particles",
+                                         "2.5e{}_N1024_DH.hdf5".format(_m))
+            cfg_filename = os.path.join(streamspath, "config", "exp1_{}.yml".format(_m))
+            data = read_hdf5(data_filename)
+            true_particles = data["true_particles"].to_frame(galactocentric)
+            config = read_config(cfg_filename)
+            idx = config['particle_idx']
+
             sgr = SgrSimulation(sgr_path.format(_m),snapfile)
-            p = sgr.particles(n=10000)
+            p = sgr.particles()
+            p_bound = sgr.particles(expr="tub==0")
 
-            with rc_context(rc=rcparams):
-                axes[0,ii].text(0.5, 1.04, r"$2.5\times10^{}M_\odot$".format(_m),
-                       horizontalalignment='center',
-                       fontsize=24,
-                       transform=axes[0,ii].transAxes)
+            axes[0,ii].text(0.5, 1.05, r"$2.5\times10^{}M_\odot$".format(_m),
+                   horizontalalignment='center',
+                   fontsize=24,
+                   transform=axes[0,ii].transAxes)
 
-                axes[0,ii].plot(p["x"].value, p["y"].value,
-                                alpha=alpha)
-                axes[1,ii].plot(p["x"].value, p["z"].value,
-                                alpha=alpha)
-                axes[1,ii].set_xticks(ticks)
-                axes[1,ii].set_xlabel("$X$ [kpc]")
+            axes[0,ii].plot(p["x"].value, p["y"].value,
+                            alpha=alpha, rasterized=True, color='#555555')
+            # axes[0,ii].plot(p_bound["x"].value, p_bound["y"].value,
+            #                 alpha=0.25, rasterized=True, color='#2b8cbe')
+            axes[0,ii].plot(true_particles["x"].value[idx],
+                         true_particles["y"].value[idx],
+                         marker='+', markeredgewidth=1.5,
+                         markersize=8, alpha=0.9, color='k')
+            axes[1,ii].plot(p["x"].value, p["z"].value,
+                            alpha=alpha, rasterized=True, color='#555555')
+            # axes[1,ii].plot(p_bound["x"].value, p_bound["z"].value,
+            #                 alpha=0.25, rasterized=True, color='#2b8cbe')
+            axes[1,ii].plot(true_particles["x"].value[idx],
+                         true_particles["z"].value[idx],
+                         marker='+', markeredgewidth=1.5,
+                         markersize=8, alpha=0.9, color='k')
+            axes[1,ii].set_xticks(ticks)
+            axes[1,ii].set_xlabel("$X$ [kpc]")
 
     axes[0,0].set_ylabel("$Y$ [kpc]")
     axes[1,0].set_ylabel("$Z$ [kpc]")
@@ -95,12 +118,12 @@ def simulated_streams(**kwargs):
 
     fig.tight_layout()
     fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
-    fig.savefig(filename)
+    fig.savefig(filename, dpi=200)
 
 def potentials(**kwargs):
 
     filename = os.path.join(plot_path, "potentials.{}".format(ext))
-    fig,axes = plt.subplots(2,4,figsize=(14,7))
+    fig,axes = plt.subplots(2,4,figsize=grid_figsize)
 
     base_params = dict(q1=1., qz=1., q2=1., phi=0.)
     potentials = []
@@ -109,7 +132,7 @@ def potentials(**kwargs):
     pp = base_params.copy()
     pp['q1'] = 1.5
     potentials.append(LawMajewski2010(**pp))
-    axes[0,1].text(0.5, 1.04, r"$q_1=1.5$",
+    axes[0,1].text(0.5, 1.05, r"$q_1=1.5$",
                    horizontalalignment='center',
                    fontsize=20,
                    transform=axes[0,1].transAxes)
@@ -117,7 +140,7 @@ def potentials(**kwargs):
     pp = base_params.copy()
     pp['qz'] = 1.5
     potentials.append(LawMajewski2010(**pp))
-    axes[0,2].text(0.5, 1.04, r"$q_z=1.5$",
+    axes[0,2].text(0.5, 1.05, r"$q_z=1.5$",
                    horizontalalignment='center',
                    fontsize=20,
                    transform=axes[0,2].transAxes)
@@ -126,7 +149,7 @@ def potentials(**kwargs):
     pp['phi'] = 45*u.degree
     pp['q1'] = 1.5
     potentials.append(LawMajewski2010(**pp))
-    axes[0,3].text(0.5, 1.04, r"$q_1=1.5$, $\phi=45^\circ$",
+    axes[0,3].text(0.5, 1.05, r"$q_1=1.5$, $\phi=45^\circ$",
                    horizontalalignment='center',
                    fontsize=20,
                    transform=axes[0,3].transAxes)
@@ -191,9 +214,9 @@ def Lpts(**kwargs):
     filename = os.path.join(plot_path, "Lpts_r.{}".format(ext))
     filename2 = os.path.join(plot_path, "Lpts_v.{}".format(ext))
 
-    fig,axes = plt.subplots(2,4,figsize=(14,7.5),
+    fig,axes = plt.subplots(2,4,figsize=grid_figsize,
                             sharex=True, sharey=True)
-    fig2,axes2 = plt.subplots(2,4,figsize=(14,7.5),
+    fig2,axes2 = plt.subplots(2,4,figsize=grid_figsize,
                               sharex=True, sharey=True)
 
     bins = np.linspace(-3,3,50)
@@ -209,7 +232,7 @@ def Lpts(**kwargs):
 
         X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
         V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
-        integrator = LeapfrogIntegrator(potential._acceleration_at,
+        integrator = LeapfrogIntegrator(sgr.potential._acceleration_at,
                                         np.array(X), np.array(V),
                                         args=(X.shape[0], np.zeros_like(X)))
         ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
@@ -221,7 +244,7 @@ def Lpts(**kwargs):
         m_t = (-s.mdot*ts + s.m0)[:,np.newaxis]
         s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
         s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
-        r_tide = sgr.true_potential._tidal_radius(m_t, s_orbit[...,:3])
+        r_tide = sgr.potential._tidal_radius(m_t, s_orbit[...,:3])
         v_disp = s_V * r_tide / s_R
 
         # cartesian basis to project into
@@ -315,12 +338,12 @@ def Lpts(**kwargs):
             axes2[0,k].set_ylabel(r"$v_{x_2}$")
             axes2[1,k].set_ylabel(r"$v_{x_3}$")
 
-        axes[0,k].text(0.5, 1.04, r"$2.5\times10^{}M_\odot$".format(_m),
+        axes[0,k].text(0.5, 1.05, r"$2.5\times10^{}M_\odot$".format(_m),
                        horizontalalignment='center',
                        fontsize=24,
                        transform=axes[0,k].transAxes)
 
-        axes2[0,k].text(0.5, 1.04, r"$2.5\times10^{}M_\odot$".format(_m),
+        axes2[0,k].text(0.5, 1.05, r"$2.5\times10^{}M_\odot$".format(_m),
                         horizontalalignment='center',
                         fontsize=24,
                         transform=axes2[0,k].transAxes)
@@ -335,9 +358,7 @@ def Lpts(**kwargs):
 
 def phasespace(**kwargs):
 
-    potential = LawMajewski2010()
     filename = os.path.join(plot_path, "Lpts_rv.png")
-
     fig,axes = plt.subplots(3,4,figsize=(14,12),
                             sharex=True, sharey=True)
 
@@ -354,7 +375,7 @@ def phasespace(**kwargs):
 
         X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
         V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
-        integrator = LeapfrogIntegrator(potential._acceleration_at,
+        integrator = LeapfrogIntegrator(sgr.potential._acceleration_at,
                                         np.array(X), np.array(V),
                                         args=(X.shape[0], np.zeros_like(X)))
         ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
@@ -366,7 +387,7 @@ def phasespace(**kwargs):
         m_t = (-s.mdot*ts + s.m0)[:,np.newaxis]
         s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
         s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
-        r_tide = sgr.true_potential._tidal_radius(m_t, s_orbit[...,:3])
+        r_tide = sgr.potential._tidal_radius(m_t, s_orbit[...,:3])
         v_disp = s_V * r_tide / s_R
 
         # cartesian basis to project into
@@ -428,7 +449,6 @@ def phasespace(**kwargs):
 
 def total_rv(**kwargs):
 
-    potential = LawMajewski2010()
     filenamer = os.path.join(plot_path, "rel_r.png")
     filenamev = os.path.join(plot_path, "rel_v.png")
 
@@ -449,7 +469,7 @@ def total_rv(**kwargs):
 
         X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
         V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
-        integrator = LeapfrogIntegrator(potential._acceleration_at,
+        integrator = LeapfrogIntegrator(sgr.potential._acceleration_at,
                                         np.array(X), np.array(V),
                                         args=(X.shape[0], np.zeros_like(X)))
         ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
@@ -461,7 +481,7 @@ def total_rv(**kwargs):
         m_t = (-s.mdot*ts + s.m0)[:,np.newaxis]
         s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
         s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
-        r_tide = sgr.true_potential._tidal_radius(m_t, s_orbit[...,:3])
+        r_tide = sgr.potential._tidal_radius(m_t, s_orbit[...,:3])
         v_disp = s_V * r_tide / s_R
 
         # cartesian basis to project into
@@ -533,6 +553,8 @@ def total_rv(**kwargs):
     figv.tight_layout()
     figv.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
     figv.savefig(filenamev)
+
+
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
