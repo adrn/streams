@@ -36,9 +36,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 minimum_config = """
 name: test
-data_file: data/observed_particles/2.5e8_N1024_DH.hdf5
+data_file: data/observed_particles/2.5e8.hdf5
 nparticles: 8
-particle_idx: [255, 241, 447, 339, 213, 183, 643, 530]
+particle_idx: [611, 352, 67, 177, 681, 1762, 986, 721]
 
 potential:
     class_name: LawMajewski2010
@@ -61,7 +61,7 @@ ptc_params = """
 #    parameters: [d, mul, mub, vr]
 
 sat_params = """
-    parameters: [d, mul, mub, vr]
+    parameters: [alpha]
 """
 #    parameters: [logmass, logmdot, d, mul, mub, vr]
 
@@ -74,7 +74,7 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params=pot_params,
                                 particles_params="",
-                                satellite_params="")
+                                satellite_params=sat_params)
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
@@ -95,6 +95,7 @@ def make_plot(model, idx, vals1, vals2):
     for val in vals1:
         p[idx] = val
         Ls.append(model(p))
+
     axes[0,0].plot(vals1, Ls)
     axes[0,0].set_ylabel("$\ln\mathcal{L}$")
     axes[1,0].plot(vals1, np.exp(Ls-np.max(Ls)))
