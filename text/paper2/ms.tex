@@ -41,6 +41,7 @@
 	    David W. Hogg\altaffilmark{\nyu,\mpia}, 
 	    Kathryn V. Johnston\altaffilmark{\colum}, 
 	    David Hendel\altaffilmark{\colum}}
+% TODO: check in with DH about middle initial
 
 % Affiliations
 \newcommand{\colum}{1}
@@ -249,7 +250,7 @@ All model parameters are summarized in Table~\ref{tbl:params}. Assuming each sta
 	p(\Phi, \{\W^{(i)}\}, \W_\sat, m_0, \dot{m}, \tub, \Loffset, \tailbit, \given \{\D^{(i)}\}, \D_\sat) = \\
 		\shoveleft{\hspace{1em}\frac{1}{\mathcal{Z}} \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \, p(\D_\sat \given \W_\sat)}\\
 			\times p(\W^{(i)} \given \W_\sat, m_0, \dot{m}, \tub^{(i)}, \Phi, \Loffset, \tailbit^{(i)}) \, 
-			\, p(\tub^{(i)}) p(\Phi) \, p(\Loffset)
+			\, p(\tub^{(i)}) \, p(\Phi) \, p(\Loffset)
 \end{multline}
 This model works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars become preferentially unbound around the satellite's pericenter because of tidal shocking. We will explore properly modeling this process in future work. 
 
@@ -281,14 +282,16 @@ This model works well when all stars are lost due to tidal pruning. Even on a mi
 %\end{multline}
 
 \section{Experiments} \label{sec:experiments}
-In what follows, we apply the model described above to ``observations'' of the n-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{eq:lm10}) --- we stress that the data are generated with n-body simulations and are not generated with the same model presented here. When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:params}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $\vhalo$, 100-200~km/s corresponds to a range in solar circular velocities from $\sim$210-250 km/s (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and generic triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the true simulation value, $\phi = 97^\circ$.
+In what follows, we apply the model described above to ``observations'' of the n-body simulations described in Section~\ref{sec:sims}. For all tests in this article, we model the potential of the parent galaxy with the same functional form used in the simulations (Equation~\ref{eq:lm10}) --- we stress that the data are generated with n-body simulations and are not generated with anything resembling the likelihood function presented above. When recovering the potential, we hold fixed the disk and spheroid parameters (see Table~\ref{tbl:params}), along with two halo parameters: the scale radius, $r_h$, and one of the flattening components in the x-y plane, $q_2$. These halo parameters are degenerate with combinations of the other parameters --- e.g., setting $q_1=2.0$, $q_2=1.0$, $\phi=0^\circ$ is equivalent to setting $q_1=1.0$, $q_2=2.0$, $\phi=90^\circ$. The priors on the remaining halo parameters are taken to be uniform over a conservative domain of realistic values: for $\vhalo$, 100-200~km/s corresponds to a range in solar circular velocities from $\sim$210-250 km/s (holding other parameters fixed); the range in axis ratios allow for prolate, oblate, and generic triaxiality; and $\phi$ is restricted to $\pm45^\circ$ around the true simulation value, $\phi = 97^\circ$.
 
 For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to sample from the posterior probability distribution given by our model. We use an affine-invariant ensemble sampler \citep{goodman10} implemented in the Python programming language \citep{foremanmackey13} and run the walkers in parallel using the message passing interface (MPI). We compute the autocorrelation time for each sampled parameter (using \texttt{ACOR}\footnote{www.math.nyu.edu/faculty/goodman/software/acor/}$^{,}$\footnote{https://github.com/dfm/acor}) and thin the chains by taking every $\mathrm{median}(t_{\rm acor})$ sample to ensure the samples are close to independent.
+
+% TODO: define walkers and burn-in
 
 \begin{table}[h]
 \begin{center}
 	\begin{tabular}{l c l} \toprule
-		\multicolumn{3}{l}{{\bf \emph{Global parameters}}} \\
+		\multicolumn{3}{l}{{\bf \emph{Milky Way parameters}}} \\
 		\toprule
 		Component & Parameter & Prior \\\toprule
 		disk & $M_{\rm disk}$ & $1.0\times10^{11}M_\odot$ (fixed) \\ 
@@ -311,11 +314,11 @@ For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to
 		velocity & $\bs{v}_\sat$ & $\|\bs{v}_\sat\|\sim\mathcal{N}(\mu=0,\sigma^2=4000)$~km/s\\
 		Lagrange pt. offset & $\alpha$ & $\mathcal{N}(\mu=2,\sigma^2=1)$\\
 		\toprule
-		\multicolumn{3}{l}{{\bf \emph{Parameters per star}}} \\
+		\multicolumn{3}{l}{{\bf \emph{Star parameters}}} \\
 		\toprule
 		position & $\bs{r}$ & $\|\bs{r}\|\sim\mathcal{U}(0,200)$~kpc \\
 		velocity & $\bs{v}$ & $\|\bs{v}\|\sim\mathcal{N}(\mu=0,\sigma^2=4000)$~km/s\\
-		tail assignment & $\beta$ & $\{-1, 1\}$\\ % TODO: how to say equal weight to -1 or 1?
+		tail assignment (binary) & $\beta$ & $\pm1$~equally likely\\ % TODO: how to say equal weight to -1 or 1?
 %		prob. shocked & $\pshock$ & $\mathcal{U}(0,1)$\\
 		time unbound & $\tub$ & $\mathcal{U}(0,\tint)$\\ % TODO: talk about \tint (integration time) in text!
 		\bottomrule
@@ -323,12 +326,13 @@ For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to
 	\caption{Parameter values used ...\label{tbl:params}}
 \end{center}
 \end{table}
+% TODO: in caption, redefine N is normal U is uniform. Star parameters are repeated for each star. summarize number of parameters for milky way, progenitor, etc. -- how to read the parameter
 
-\subsection{Perfect data}
+\subsection{Data with negligible uncertainties}
 
 We first test the model using eight particles (stars) --- four from the leading tail, and four from the trailing tail --- randomly sampled from the $2.5\times10^8~M_\odot$ simulation (Section~\ref{sec:sims}), assuming perfect observational data for both the stars and the progenitor. The stars were required to have been stripped after the first pericentric passage and have a present-day distance within $50$ kpc of the Sun. Figure~\ref{fig:sims} (second column from right) shows the eight randomly chosen stars (black crosses) in Galactic coordinates, over-plotted on all other simulated particles (grey points). 
 
-We leave the potential parameters --- $q_1$, $q_z$, $\phi$, and $\vhalo$ --- free to vary, along with the Lagrange point offset, $\Loffset$, and initialize an ensemble of 64 walkers by sampling from the priors summarized in Table~\ref{tbl:params}. We run the walkers for 10000 steps to burn-in, then restart the sampler starting from the final position of the burn-in phase and run for another 10000 steps. Figure~\ref{fig:trace} shows the walker positions over the 10000 post-burn-in steps for each of the five parameters. The autocorrelation time for each parameter is displayed on its corresponding panel and the horizontal lines indicate the true simulation values for the potential parameters. Figure~\ref{fig:exp1_posterior} shows projections of the posterior probability distribution for the parameters; with perfect data, the uncertainties on the potential parameters are all $<1\%$.
+We leave the potential parameters ($q_1$, $q_z$, $\phi$, $\vhalo$) free to vary, along with the Lagrange point offset, $\Loffset$, and initialize an ensemble of 64 MCMC walkers by sampling from the priors summarized in Table~\ref{tbl:params}. We run the walkers for 10000 steps to burn-in, then restart the sampler starting from the final position of the burn-in phase and run for another 10000 steps. Figure~\ref{fig:trace} shows the walker positions over the 10000 inference steps for each of the five parameters. The autocorrelation time for each parameter is displayed on its corresponding panel and the horizontal lines indicate the true simulation values for the potential parameters. Figure~\ref{fig:exp1_posterior} shows projections of the posterior probability distribution for the parameters; with perfect data, the uncertainties on the potential parameters are all $<1\%$.
 
 \begin{figure*}[!ht]
 	\captionsetup[subfigure]{labelformat=empty}
@@ -455,14 +459,16 @@ This is expected to be a generic feature in dynamical problems:
 
 [Another prediction of hierarchical structure formation in $\Lambda$CDM is the presence of substructure. In principle, this method would work on any potential that we can integrate orbits in.]
 
-\bibliographystyle{apj}
-\bibliography{refs}
-
 \acknowledgements
+Rix, Bovy\\
 Aspen?\\
-Gaia data challenge / Surrey / Gaia data team / Anthony Brown \\
+Gaia data challenge / Surrey / Gaia data team / Anthony Brown \\ % check with AB about citations
 APW: NSF GRFP, Sigma Xi\\
 Astropy\\
 Columbia HPC\\
+DWH was partially supported by NASA (Grant NNX12AI50G) and the NSF (Grant IIS-1124794).
+
+\bibliographystyle{apj}
+\bibliography{refs}
 
 \end{document}
