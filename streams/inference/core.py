@@ -423,10 +423,11 @@ class StreamModel(object):
             beta = self.particles.beta.truth
 
         # probability the particle was shocked
-        try:
-            p_shocked = param_dict['particles']['p_shocked']
-        except KeyError:
-            p_shocked = self.particles.p_shocked.truth
+        # try:
+        #     p_shocked = param_dict['particles']['p_shocked']
+        # except KeyError:
+        #     p_shocked = self.particles.p_shocked.truth
+        p_shocked = 0.
 
         # heliocentric satellite positions
         s_hel = []

@@ -147,6 +147,36 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     r_term = -0.5*((np.log(sigma_r) + (X-alpha*K)**2/sigma_r**2) + \
                    (np.log(sigma_r) + Y**2/sigma_r**2) + \
                    (np.log(sigma_r) + Z**2/sigma_r**2))
+    # r_term_trai = -0.5*((np.log(sigma_r) + (X-2*alpha)**2/sigma_r**2) + \
+    #                     (np.log(sigma_r) + Y**2/sigma_r**2) + \
+    #                     (np.log(sigma_r) + Z**2/sigma_r**2))
+    # r_term = np.zeros_like(r_term_lead)
+    # r_term[K<1] = r_term_lead[K<1]
+    # r_term[K>1] = r_term_trai[K>1]
+
+    # import matplotlib.pyplot as plt
+    # fig,axes = plt.subplots(2,2,figsize=(12,12),sharex=True,sharey=True)
+
+    # XX = np.concatenate((np.random.normal(-alpha,0.5,size=len(X)//2),
+    #                      np.random.normal(alpha,0.5,size=len(X)//2)))
+    # YY = np.random.normal(0.,0.5,size=len(X))
+    # ZZ = np.random.normal(0.,0.5,size=len(X))
+    # alpha = 0.1
+    # axes[0,0].plot(XX, YY, linestyle='none', marker='.', alpha=alpha)
+    # axes[0,1].plot(YY, YY, linestyle='none', marker='.', alpha=alpha)
+    # axes[1,0].plot(XX, ZZ, linestyle='none', marker='.', alpha=alpha)
+    # axes[1,1].plot(YY, ZZ, linestyle='none', marker='.', alpha=alpha)
+
+    # alpha = 0.4
+    # axes[0,0].plot(X, Y, linestyle='none', marker='.', alpha=alpha)
+    # axes[0,1].plot(Y, Y, linestyle='none', marker='.', alpha=alpha)
+    # axes[1,0].plot(X, Z, linestyle='none', marker='.', alpha=alpha)
+    # axes[1,1].plot(Y, Z, linestyle='none', marker='.', alpha=alpha)
+
+    # axes[1,1].set_xlim(-5,5)
+    # axes[1,1].set_ylim(-5,5)
+    # fig.savefig("/Users/adrian/Desktop/derp.png")
+    # sys.exit(0)
 
     sigma_v = 0.5
     v_term = -0.5*((np.log(sigma_v) + VX**2/sigma_v**2) + \
@@ -157,7 +187,12 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
 
     return not_shocked
 
-    # # shocked
+    # return logsumexp(r_term + v_term + jac1, axis=0)
+
+
+
+
+    # # shocked stuff
     # var_r = 10.*r_tide**2
     # r_term2 = -0.5*(3*np.log(var_r) + X/var_r + Y/var_r + Z/var_r)
 
@@ -172,60 +207,4 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     # scale[1,:] = 1-p_shocked
 
     # lnlike = logsumexp(arg, b=scale, axis=0)
-
     # return lnlike
-
-
-
-
-
-
-
-
-    # import matplotlib.pyplot as plt
-    # fig,axes = plt.subplots(1,3,figsize=(16,5),sharex=True)
-    # bins = np.linspace(-3.,3.,50)
-    # axes[0].hist(X - tail_bit, bins=bins, normed=True)
-    # axes[1].hist(Y, bins=bins, normed=True)
-    # axes[2].hist(Z, bins=bins, normed=True)
-    # axes[0].hist(np.random.normal(0., np.sqrt(var_x),size=10000),
-    #              bins=bins, alpha=0.3, normed=True)
-    # axes[1].hist(np.random.normal(0., np.sqrt(var_y),size=10000),
-    #              bins=bins, alpha=0.3, normed=True)
-    # axes[2].hist(np.random.normal(0., np.sqrt(var_z),size=10000),
-    #              bins=bins, alpha=0.3, normed=True)
-
-    # for ii in range(nparticles):
-    #     if shocked_bit[ii] == 0:
-    #         c = 'k'
-    #     else:
-    #         c = 'r'
-    #     axes[0].axvline(X[ii]-tail_bit[ii], c=c)
-    #     axes[1].axvline(Y[ii], c=c)
-    #     axes[2].axvline(Z[ii], c=c)
-    # fig.savefig("/Users/adrian/Desktop/derp.png")
-
-    # fig,axes = plt.subplots(1,3,figsize=(16,5),sharex=True)
-    # bins = np.linspace(-3.,3.,50)
-    # axes[0].hist(VX, bins=bins, normed=True)
-    # axes[1].hist(VY, bins=bins, normed=True)
-    # axes[2].hist(VZ, bins=bins, normed=True)
-    # axes[0].hist(np.random.normal(0., np.sqrt(var_vx),size=10000),
-    #              bins=bins, alpha=0.3, normed=True)
-    # axes[1].hist(np.random.normal(0., np.sqrt(var_vy),size=10000),
-    #              bins=bins, alpha=0.3, normed=True)
-    # axes[2].hist(np.random.normal(0., np.sqrt(var_vz),size=10000),
-    #              bins=bins, alpha=0.3, normed=True)
-
-    # for ii in range(nparticles):
-    #     if shocked_bit[ii] == 0:
-    #         c = 'k'
-    #     else:
-    #         c = 'r'
-    #     axes[0].axvline(VX[ii], c=c)
-    #     axes[1].axvline(VY[ii], c=c)
-    #     axes[2].axvline(VZ[ii], c=c)
-    # fig.savefig("/Users/adrian/Desktop/derp2.png")
-    # sys.exit(0)
-
-    # return logsumexp(r_term + v_term + jac1, axis=0)

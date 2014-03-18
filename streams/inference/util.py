@@ -16,10 +16,9 @@ import astropy.units as u
 # Project
 from ..integrate import LeapfrogIntegrator
 
-__all__ = ["guess_tail_bit"]
+__all__ = ["particles_x1x2x3", "guess_tail_bit"]
 
-def guess_tail_bit(particles, satellite, potential, t1, t2, dt):
-    """ Guess the tail assigment for each particle. """
+def particles_x1x2x3(particles, satellite, potential, t1, t2, dt, at_tub=True):
     s = satellite
     p = particles
 
@@ -32,9 +31,10 @@ def guess_tail_bit(particles, satellite, potential, t1, t2, dt):
     s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
     p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
-    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
-    s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
-    p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    if at_tub:
+        t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
+        s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
+        p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
 
     # instantaneous cartesian basis to project into
     x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
@@ -55,8 +55,13 @@ def guess_tail_bit(particles, satellite, potential, t1, t2, dt):
     VY = np.sum(rel_vel * y_hat, axis=-1)
     VZ = np.sum(rel_vel * z_hat, axis=-1)
 
-    Phi = np.arctan2(Y, X)
-    tail_bit = np.ones(p.nparticles)
+    return (X,Y,Z,VX,VY,VZ)
+
+def guess_tail_bit(x1,x2):
+    """ Guess the tail assigment for each particle. """
+
+    Phi = np.arctan2(x2, x1)
+    tail_bit = np.ones(len(x1))
     tail_bit[:] = np.nan
     tail_bit[np.cos(Phi) < -0.5] = -1.
     tail_bit[np.cos(Phi) > 0.5] = 1.
