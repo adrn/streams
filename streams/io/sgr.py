@@ -28,7 +28,7 @@ from ..dynamics import Particle, Orbit
 from ..util import streamspath
 from ..coordinates.frame import galactocentric
 from ..potential.lm10 import LawMajewski2010
-from ..inference.util import guess_tail_bit
+from ..inference.util import guess_tail_bit, particles_x1x2x3
 
 __all__ = ["SgrSimulation"]
 
@@ -59,7 +59,7 @@ class SgrSimulation(object):
         self.t1 = self.particle_table.meta["timestep"]
         self.t2 = 0.
 
-    def particles(self, n=None, expr=None, tail_bit=False):
+    def particles(self, n=None, expr=None, tail_bit=False, clean=False):
         """ Return a Particle object with N particles selected from the
             simulation with expression expr.
 
@@ -100,11 +100,33 @@ class SgrSimulation(object):
 
         # guess whether in leading or trailing tail
         if tail_bit:
-            p.meta["tail_bit"] = p.tail_bit = guess_tail_bit(p, self.satellite(),
-                                                             self.potential,
-                                                             self.t1, self.t2, -1.)
+            x1,x2,x3,vx1,vx2,vx3 = particles_x1x2x3(p, self.satellite(),
+                                                    self.potential,
+                                                    self.t1, self.t2, -1)
+            p.meta["tail_bit"] = p.tail_bit = guess_tail_bit(x1,x2)
         else:
             tail_bit = np.ones(p.nparticles)*np.nan
+
+        if clean:
+            if not tail_bit:
+                x1,x2,x3,vx1,vx2,vx3 = particles_x1x2x3(p, self.satellite(),
+                                                        self.potential,
+                                                        self.t1, self.t2, -1)
+                tail_bit = guess_tail_bit(x1,x2)
+            else:
+                tail_bit = p.tail_bit
+
+            # reject any with nan tail_bit
+            idx = ~np.isnan(tail_bit)
+
+            # reject any with |x1| > 3  or |x2| > 2
+            idx &= np.fabs(x1) < 3
+            idx &= np.fabs(x2) < 2
+
+            _X = p._X[idx]
+            meta["tub"] = p.tub[idx]
+            meta["tail_bit"] = tail_bit[idx]
+            p = Particle(_X.T.copy(), frame=p.frame, units=p._internal_units, meta=meta)
 
         return p
 

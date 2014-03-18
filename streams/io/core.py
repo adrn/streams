@@ -141,7 +141,6 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
                               truth=true_tail_bit,
                               prior=LogUniformPrior([-2.]*nparticles,[2.]*nparticles))
 
-        # truth=[0.]*nparticles,
         p_shocked = ModelParameter(name="p_shocked",
                                    truth=[0.]*nparticles,
                                    prior=LogUniformPrior([0.]*nparticles,[1.]*nparticles))
@@ -194,8 +193,8 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
 
         # TODO HACK? Check tidal radius offset -- will vary?
         s.alpha = ModelParameter(name="alpha",
-                                 truth=1.7,
-                                 prior=LogNormalPrior(1.7,0.5))
+                                 truth=1.5,
+                                 prior=LogNormalPrior(1.5,0.5))
 
         return_dict["satellite"] = s
 
