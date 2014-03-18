@@ -38,7 +38,7 @@ from streams.integrate import LeapfrogIntegrator
 logger = logging.getLogger(__name__)
 
 def observe_simulation(class_name, particle_error_model=None, satellite_error_model=None,
-                       selection_expr=None, N=None, output_file=None, overwrite=False,
+                       selection_expr=None, output_file=None, overwrite=False,
                        seed=None, class_kwargs=dict()):
     """ Observe simulation data and write the output to a standard HDF5 format.
 
@@ -74,15 +74,15 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     simulation = Simulation(**class_kwargs)
 
     # read particles from the simulation class
-    sim_time = simulation._units["time"]
-    sim_leng = simulation._units["length"]
+    sim_time = simulation.units["time"]
+    sim_leng = simulation.units["length"]
 
     # HACK HACK HACK
     selection_expr = "(tub!=0) & (tub>{}) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<{})"\
                      .format((1800*u.Myr).to(sim_time).value,
                              (5500*u.Myr).to(sim_time).value,
                              (35*u.kpc).to(sim_leng).value)
-    particles = simulation.particles(N=N, expr=selection_expr, tail_bit=True)
+    particles = simulation.particles(n=5000, expr=selection_expr, tail_bit=True, clean=True)
 
     logger.debug("Read in {} particles with expr='{}'"\
                  .format(particles.nparticles, selection_expr))
@@ -115,7 +115,7 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     # make a plot of true and observed positions
     true_gc_particles = particles.to_frame(galactocentric)
     gc_particles = o_particles.to_frame(galactocentric)
-    all_gc_particles = simulation.particles(N=1000, expr="tub!=0")\
+    all_gc_particles = simulation.particles(n=1000, expr="tub!=0")\
                                  .to_frame(galactocentric)
 
     fig,axes = plt.subplots(1,2,figsize=(16,8))
@@ -161,7 +161,7 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
             grp["true_data"] = satellite._repr_X
         grp["coordinate_names"] = o_satellite.frame.coord_names
         grp["units"] = [str(x) for x in o_satellite._repr_units]
-        grp["m0"] = o_satellite.m
+        grp["m0"] = o_satellite.m0
         grp["mdot"] = o_satellite.mdot
 
         grp = f.create_group("simulation")
@@ -191,8 +191,10 @@ if __name__ == "__main__":
     parser.add_argument("--seed", dest="seed", default=None, type=int,
                         help="Seed for random number generator.")
 
-    parser.add_argument("--mass", dest="mass", required=True, type=str,
-                        help="Satellite mass.")
+    parser.add_argument("--path", dest="path", required=True, type=str,
+                        help="Satellite path.")
+    parser.add_argument("--snapfile", dest="snapfile", required=True, type=str,
+                        help="Satellite snapfile.")
 
     args = parser.parse_args()
 
@@ -206,26 +208,26 @@ if __name__ == "__main__":
     """
         e.g.:
 
-python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
---N=1024 --file=/Users/adrian/Projects/streams/data/observed_particles/2.5e6_N1024_DH.hdf5 \
+python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
+--file=/Users/adrian/Projects/streams/data/observed_particles/2.5e6.hdf5 \
 --seed=42 --path="sgr_nfw/M2.5e+06" --snapfile="SNAP113" --overwrite
 
-python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
---N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e7_N1024_DH.hdf5 \
+python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
+--file=/Users/adrian/projects/streams/data/observed_particles/2.5e7.hdf5 \
 --seed=42 --path="sgr_nfw/M2.5e+07" --snapfile="SNAP113" --overwrite
 
-python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
---N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024_DH.hdf5 \
+python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
+--file=/Users/adrian/projects/streams/data/observed_particles/2.5e8.hdf5 \
 --seed=42 --path="sgr_nfw/M2.5e+08" --snapfile="SNAP113" --overwrite
 
-python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
---N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e9_N1024_DH.hdf5 \
+python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
+--file=/Users/adrian/projects/streams/data/observed_particles/2.5e9.hdf5 \
 --seed=42 --path="sgr_nfw/M2.5e+09" --snapfile="SNAP113" --overwrite
 
 OR
 
-python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub!=0' \
---N=1024 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_N1024_DH_exp3.hdf5 \
+python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
+--file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_exp3.hdf5 \
 --seed=42 --path="sgr_nfw/M2.5e+08" --snapfile="SNAP113" --overwrite
     """
 
@@ -234,6 +236,6 @@ python scripts/observe_simulation.py -v --class_name=SgrSimulationDH --expr='tub
     # particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
     observe_simulation(args.class_name,
         particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
-        selection_expr=args.expr, N=args.N, output_file=args.output_file,
+        selection_expr=args.expr, output_file=args.output_file,
         overwrite=args.overwrite, seed=args.seed,
         class_kwargs=dict(path=args.path,snapfile=args.snapfile))
