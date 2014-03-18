@@ -15,6 +15,7 @@ import inspect
 import astropy.units as u
 from astropy.constants import G
 from astropy.io.misc import fnpickle, fnunpickle
+import h5py
 import numpy as np
 import matplotlib
 matplotlib.use("agg")
@@ -30,6 +31,7 @@ from streams.util import streamspath
 from streams.coordinates.frame import galactocentric
 from streams.io.sgr import SgrSimulation
 from streams.io import read_hdf5, read_config
+from streams.inference import StreamModel
 from streams.integrate import LeapfrogIntegrator
 from streams.potential.lm10 import LawMajewski2010
 
@@ -51,10 +53,10 @@ plot_path = os.path.join(streamspath, "plots/paper2/")
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
 
-ext = 'pdf'
+ext = 'png'
 grid_figsize = (14,7.5)
 
-def simulated_streams(**kwargs):
+def simulated_streams():
 
     filename = os.path.join(plot_path, "simulated_streams.{}".format(ext))
     fig,axes = plt.subplots(2,4,figsize=grid_figsize,
@@ -120,7 +122,7 @@ def simulated_streams(**kwargs):
     fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
     fig.savefig(filename, dpi=200)
 
-def potentials(**kwargs):
+def potentials():
 
     filename = os.path.join(plot_path, "potentials.{}".format(ext))
     fig,axes = plt.subplots(2,4,figsize=grid_figsize)
@@ -208,7 +210,7 @@ def potentials(**kwargs):
     fig.tight_layout(pad=1.5, h_pad=0.)
     fig.savefig(filename)
 
-def Lpts(**kwargs):
+def Lpts():
 
     potential = LawMajewski2010()
     filename = os.path.join(plot_path, "Lpts_r.{}".format(ext))
@@ -356,7 +358,7 @@ def Lpts(**kwargs):
     fig2.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
     fig2.savefig(filename2)
 
-def phasespace(**kwargs):
+def phasespace():
 
     filename = os.path.join(plot_path, "Lpts_rv.png")
     fig,axes = plt.subplots(3,4,figsize=(14,12),
@@ -447,7 +449,7 @@ def phasespace(**kwargs):
     fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
     fig.savefig(filename)
 
-def total_rv(**kwargs):
+def total_rv():
 
     filenamer = os.path.join(plot_path, "rel_r.png")
     filenamev = os.path.join(plot_path, "rel_v.png")
@@ -554,7 +556,37 @@ def total_rv(**kwargs):
     figv.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
     figv.savefig(filenamev)
 
+def trace_plots():
+    cfg_filename = os.path.join(streamspath, "config", "exp1_8.yml")
+    config = read_config(cfg_filename)
+    model = StreamModel.from_config(config)
 
+    hdf5_filename = os.path.join(streamspath, "plots", "hotfoot", "exper1_8", "inference.hdf5")
+    with h5py.File(hdf5_filename, "r") as f:
+        chain = f["chain"].value
+        flatchain = f["flatchain"].value
+        acceptance_fraction = f["acceptance_fraction"].value
+        p0 = f["p0"].value
+        acor = f["acor"].value
+
+    # plot individual walkers
+    fig,axes = plt.subplots(5,1,figsize=(8.5,11))
+    for k in range(model.nparameters):
+        for ii in range(config['walkers']):
+            axes.flat[k].plot(chain[ii,:,k], alpha=0.1, marker=None,
+                         drawstyle='steps', color='k')
+
+        if k == 4:
+            p = model.parameters['satellite']['alpha']
+            axes.flat[k].set_ylim(0.5, 2.5)
+        else:
+            key = model.parameters['potential'].keys()[k]
+            prior = model.parameters['potential'][key]._prior
+            axes.flat[k].set_ylim((prior.a,prior.b))
+            axes.flat[k].axhline(model.truths[k], color='#31a354',
+                            lw=3., linestyle='-', alpha=0.75)
+
+    fig.savefig(os.path.join(plot_path, "mcmc_trace.{}".format(ext)))
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -581,16 +613,8 @@ if __name__ == '__main__':
                         help="Overwrite existing files.")
     parser.add_argument("-f", "--function", dest="function", type=str,
                         help="The name of the function to execute.")
-    parser.add_argument("--kwargs", dest="kwargs", nargs="+", type=str,
-                       help="kwargs passed in to whatever function you call.")
 
     args = parser.parse_args()
-    try:
-        kwargs = dict([tuple(k.split("=")) for k in args.kwargs])
-    except TypeError:
-        kwargs = dict()
-
-    kwargs["overwrite"] = args.overwrite
 
     # Set logger level based on verbose flags
     if args.verbose:
@@ -617,5 +641,5 @@ if __name__ == '__main__':
         sys.exit(1)
 
     func = getattr(sys.modules[__name__], args.__dict__.get("function"))
-    func(**kwargs)
+    func()
 
