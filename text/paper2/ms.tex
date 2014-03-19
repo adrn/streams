@@ -228,6 +228,7 @@ We find that even in a triaxial potential, the phase-space dispersion of tidally
 %\end{figure}
 
 \subsection{Probabilistic model}
+% TODO: define what we mean by "Model"
 We observe the 6D position of a star, $\D$, in heliocentric coordinates --- e.g., the measured position on the sky, ($l$, $b$); distance, $d$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and have determined through some other means that this star was once part of a progenitor system (e.g., satellite galaxy) with mass $m(t)$ that is disrupting and forming a cold debris structure in the potential, $\Phi$, of the parent galaxy (e.g., the Milky Way). We assume that the mass of the parent system enclosed within the pericenter of the orbit of the satellite, $M_{\rm enc}(R_{\rm peri})$, is much larger than the initial mass of the satellite, $M_{\rm enc}(R_{\rm peri})\gg m(t=0)$. The present position of the progenitor is observed to be at heliocentric position $\D_\sat$ (where any subscript $\sat$ refers to the progenitor). In general, the data for the star and progenitor will have missing dimensions and significant uncertainties at distances typical to the Galactic halo, thus we define $\W$ and $\W_\sat$ as the true 6D, heliocentric positions of the star and progenitor and will include these in our model. By including these positions in the model, this model will work even when the star has missing dimensions or the progenitor location is unknown as in, e.g., the Orphan stream \citep{some orphan paper}.
 
 We assume that the observational uncertainties are Gaussian in heliocentric, spherical coordinates, such that
@@ -384,7 +385,7 @@ We leave the potential parameters ($q_1$, $q_z$, $\phi$, $\vhalo$) free to vary,
 \end{center}
 \end{figure}
 
-\subsection{\spitzer + \gaia}
+\subsection{Data with near-future uncertainties}
 We next take the same eight stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We take these stars to be RR Lyrae variables which are known to be excellent distance indicators via the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}. $\sim$100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
 
 For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. The observed positions and velocities of these stars are shown in Figure~\ref{fig:2.5e8_xz} (red, compare to the unobserved black points). We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties, though in reality some coordinates will have higher or lower uncertainties.
@@ -412,10 +413,10 @@ This experiment samples over the four potential parameters, the Lagrange point o
 \end{center}
 \end{figure}
 
-\subsection{\spitzer + current data}
+\subsection{Precise distance measurements with missing proper motions}
 The SMASH survey \citep{smashprop} will be completed by XXX, long before the final \gaia\, data release. Thus, we will soon have precise distance measurements for stars in the Sgr and Orphan streams, but poor proper motion constraints. [some comments on state of data for Sgr core, proper motions of] Here we study how well we can constrain the potential with our model given stars with missing data. We use the same observational uncertainties for the stars as mentioned in the previous experiment, but assume the proper motion's have not been measured. 
 
-\subsection{\spitzer + current data, no progenitor}
+\subsection{Precise distance measurements of stars with no observed progenitor}
 Most of the streams and debris structures discovered thus far have undetected or uncertain progenitors. [...]
 4 stars in Orphan-like stream, XX stars in GD-1 -like stream
 
