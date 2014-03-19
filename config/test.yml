@@ -12,7 +12,7 @@ plot:
 #output_path: /tmp
 
 # data
-data_file: data/observed_particles/2.5e8_N1024_DH.hdf5
+data_file: data/observed_particles/2.5e8.hdf5
 nparticles: 2
 
 # integration

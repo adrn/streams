@@ -29,7 +29,7 @@ particles:
     parameters: [d, mul, mub, vr, tub]
 
 satellite:
-    parameters: [d, mul, mub, vr]
+    parameters: [alpha, d, mul, mub, vr]
 
 # emcee
 start_truth: True
