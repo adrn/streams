@@ -235,7 +235,7 @@ python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=
     # particle_error_model=current_data_errors, satellite_error_model=current_data_errors,
     # particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
     observe_simulation(args.class_name,
-        particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
+        particle_error_model=current_data_errors, satellite_error_model=current_data_errors,
         selection_expr=args.expr, output_file=args.output_file,
         overwrite=args.overwrite, seed=args.seed,
         class_kwargs=dict(path=args.path,snapfile=args.snapfile))
