@@ -264,8 +264,8 @@ All model parameters are summarized in Table~\ref{tbl:params}. Assuming each sta
 \begin{multline}
 	p(\{\bs{\Theta}^{(i)}\}, \bs{\Theta}_\sat, \bs{\Theta}_\Phi \given \{\D^{(i)}\}, \D_\sat) = \\
 		\shoveleft{\frac{1}{\mathcal{Z}} \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \, p(\D_\sat \given \W_\sat)} 
-			p(\bs{\Theta}^{(i)} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi)) \, 
-			\, p(\bs{\Theta}_\sat)\,p(\bs{\Theta}_\Phi)
+			p(\bs{\Theta}^{(i)} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) \, 
+			p(\bs{\Theta}) \, p(\bs{\Theta}_\sat)\,p(\bs{\Theta}_\Phi)
 \end{multline}
 This model works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars become preferentially unbound around the satellite's pericenter because of tidal shocking. We will explore properly modeling this process in future work. 
 
@@ -306,7 +306,7 @@ For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to
 \begin{table}[h]
 \begin{center}
 	\begin{tabular}{l c l} \toprule
-		\multicolumn{3}{l}{{\bf \emph{Milky Way parameters}}} \\
+		\multicolumn{3}{l}{{\bf \emph{Milky Way parameters} ($\bs{\Theta}_\Phi$)}} \\
 		\toprule
 		Component & Parameter & Prior \\\toprule
 		disk & $M_{\rm disk}$ & $1.0\times10^{11}M_\odot$ (fixed) \\ 
@@ -323,13 +323,13 @@ For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to
 		& $\phi$ & $\mathcal{U}(52,142)$ deg\\
 		& $r_h$ & 12 kpc (fixed)\\
 		\toprule
-		\multicolumn{3}{l}{{\bf \emph{Progenitor parameters}}} \\
+		\multicolumn{3}{l}{{\bf \emph{Progenitor parameters} ($\bs{\Theta}_\sat$)}} \\
 		\toprule
 		position & $\bs{r}_\sat$ & $\|\bs{r}_\sat\|\sim\mathcal{U}(0,200)$~kpc \\
 		velocity & $\bs{v}_\sat$ & $\|\bs{v}_\sat\|\sim\mathcal{N}(\mu=0,\sigma^2=4000)$~km/s\\
 		Lagrange pt. offset & $\alpha$ & $\mathcal{N}(\mu=2,\sigma^2=1)$\\
 		\toprule
-		\multicolumn{3}{l}{{\bf \emph{Star parameters}}} \\
+		\multicolumn{3}{l}{{\bf \emph{Star parameters} ($\bs{\Theta}^{(i)}$)}} \\
 		\toprule
 		position & $\bs{r}$ & $\|\bs{r}\|\sim\mathcal{U}(0,200)$~kpc \\
 		velocity & $\bs{v}$ & $\|\bs{v}\|\sim\mathcal{N}(\mu=0,\sigma^2=4000)$~km/s\\
