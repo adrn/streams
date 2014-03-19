@@ -7,7 +7,6 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
-from collections import defaultdict
 import os, sys
 import logging
 import shutil
@@ -27,40 +26,13 @@ import streams.io as io
 from streams.io.sgr import SgrSimulation
 import streams.inference as si
 import streams.potential as sp
-from streams.util import get_pool
+from streams.util import get_pool, _label_map, _unit_transform
 
 global pool
 pool = None
 
 # Create logger
 logger = logging.getLogger(__name__)
-
-_label_map = defaultdict(lambda: "")
-_label_map['q1'] = "$q_1$"
-_label_map['q2'] = "$q_2$"
-_label_map['qz'] = "$q_z$"
-_label_map['phi'] = r"$\phi$ [deg]"
-_label_map['v_halo'] = r"$v_h$ [km/s]"
-_label_map['R_halo'] = r"$R_h$ [kpc]"
-_label_map['l'] = "$l$ [deg]"
-_label_map['b'] = "$b$ [deg]"
-_label_map['d'] = "$d$ [kpc]"
-_label_map['mul'] = r"$\mu_l$ [mas/yr]"
-_label_map['mub'] = r"$\mu_b$ [mas/yr]"
-_label_map['vr'] = r"$v_r$ [km/s]"
-_label_map['logmass'] = r"$\log m$ [$M_\odot$]"
-_label_map['logmdot'] = r"$\log \dot{m}$ [$M_\odot/$Myr]"
-
-_unit_transform = defaultdict(lambda: lambda x: x)
-_unit_transform['phi'] = lambda x: (x*u.rad).to(u.degree).value
-_unit_transform["v_halo"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
-_unit_transform["R_halo"] = lambda x: (x*u.kpc).to(u.kpc).value
-_unit_transform["l"] = lambda x: (x*u.rad).to(u.degree).value
-_unit_transform["b"] = lambda x: (x*u.rad).to(u.degree).value
-_unit_transform["d"] = lambda x: (x*u.kpc).to(u.kpc).value
-_unit_transform["mul"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
-_unit_transform["mub"] = lambda x: (x*u.rad/u.Myr).to(u.mas/u.yr).value
-_unit_transform["vr"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
 
 def fix_whack_walkers(acc_frac, pos, threshold=0.01):
     if np.any(acc_frac < 0.02):
