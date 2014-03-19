@@ -168,7 +168,7 @@ Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane 
 
 \begin{figure}[h]
 \begin{center}
-\includegraphics[width=\textwidth]{../../plots/paper2/simulated_streams.pdf}
+\includegraphics[width=\textwidth]{../../plots/paper2/simulated_streams.png}
 \caption{ Particle positions (grey dots) in Galactocentric cartesian coordinates from the final timestep of four n-body simulations with the same progenitor orbit initial conditions over a range of progenitor masses (columns). The progenitors were initialized as [TODO: DAH]. Black crosses indicate eight particles chosen from each mass simulation and used in the experiments described in Section~\ref{sec:experiments}.}\label{fig:sims}
 \end{center}
 \end{figure}
@@ -193,13 +193,13 @@ as a distance scale for the debris, where $M_{\rm enc}$ is the instantaneous enc
 \end{equation}
 We expect the debris star velocities to also scale with $(m/M_{\rm enc})^{1/3}$. These scalings assume that the satellite is spherical with isotropic velocities; correlations amongst intra-satellite orbits from, e.g., a disk will break these assumptions. 
 
-In a triaxial potential, the orbital plane of the satellite is not fixed but we still expect there to be \emph{effective} Lagrange points for a spherical satellite system along the line of centers connecting the origin of the parent potential to the satellite. We thus proceed by defining a coordinate system relative to the position and velocity of the progenitor, ($\bs{r}_p$,$\bs{v}_p$), rotated into the instantaneous orbital plane defined by $\bs{r}_p \times \bs{v}_p$, and normalized by the instantaneous tidal radius for positions (Eq.~\ref{eq:tidalradius}) and instantaneous velocity scale for velocity (Eq.~\ref{eq:velscale}). 
+In a triaxial potential, the orbital plane of the satellite is not fixed but we still expect there to be \emph{effective} Lagrange points for a spherical satellite system along the line of centers connecting the origin of the parent potential to the satellite. We thus proceed by defining a coordinate system relative to the position and velocity of the progenitor, ($\bs{r}_p$,$\bs{v}_p$), rotated into the instantaneous orbital plane defined by $\bs{L} = \bs{r}_p \times \bs{v}_p$, and normalized by the instantaneous tidal radius for positions (Eq.~\ref{eq:tidalradius}) and instantaneous velocity scale for velocity (Eq.~\ref{eq:velscale}). 
 % where $\hat{\bs r}_p = {\bs r}_p / |{\bs r}_p|$ and $\hat{\bs v}_p = {\bs v}_p / |{\bs v}_p|$
 The (time-dependent) basis vectors are given by
 \begin{align}
-	\hat{x}_1 &= \frac{\bs{r}_p}{\|\bs{r}_p\|}\\
-	\hat{x}_2 &= -\hat{x}_1 \times \hat{x}_3\\
-	\hat{x}_3 &= \frac{\bs{r}_p \times \bs{v}_p}{\|\bs{r}_p \times \bs{v}_p\|}.
+	\hat{\bs{x}}_1 &= \frac{\bs{r}_p}{\|\bs{r}_p\|}\\
+	\hat{\bs{x}}_2 &= \frac{\bs{L} \times \hat{\bs{x}}_1}{\|\bs{L} \times \hat{\bs{x}}_1\|} = \hat{\bs{x}}_3 \times \hat{\bs{x}}_1\\
+	\hat{\bs{x}}_3 &= \hat{\bs{L}} = \frac{\bs{r}_p \times \bs{v}_p}{\|\bs{r}_p \times \bs{v}_p\|}.
 \end{align}
 %(Section~\ref{sec:sims})
 Figure~\ref{fig:lpts_r} shows sections of particle orbits from the n-body simulations described above projected into this coordinate system and normalized, symmetric around their unbinding times, $\tub$, for each of the four progenitor masses. In these coordinates, the classical Lagrange points would be located at $x_1\approx\pm1,x_2\approx0,x_3\approx0$ (illustrated by the unit circle in top panels of Figure~\ref{fig:lpts_r}). Figure~\ref{fig:lpts_v} shows the velocity of each star also projected into these coordinates and normalized. Though not centered on the point-mass Lagrange points, the location of and dispersion about the effective Lagrange points in these scaled coordinates remain remarkably consistent across the range of progenitor masses explored. Furthermore, the dispersion in velocity is well-normalized by the velocity scale of Eq.~\ref{eq:velscale}, though it is clear that the velocity dispersion along $\hat{x}_1$, the radial vector to the satellite position, is larger than that in other dimensions, possibly due to tidal shocking. 
@@ -350,33 +350,12 @@ We first test the model using eight particles (stars) --- four from the leading 
 
 We leave the potential parameters ($q_1$, $q_z$, $\phi$, $\vhalo$) free to vary, along with the Lagrange point offset, $\Loffset$, and initialize an ensemble of 64 MCMC walkers by sampling from the priors summarized in Table~\ref{tbl:params}. We run the walkers for 10000 steps to burn-in, then restart the sampler starting from the final position of the burn-in phase and run for another 10000 steps. Figure~\ref{fig:trace} shows the walker positions over the 10000 inference steps for each of the five parameters. The autocorrelation time for each parameter is displayed on its corresponding panel and the horizontal lines indicate the true simulation values for the potential parameters. Figure~\ref{fig:exp1_posterior} shows projections of the posterior probability distribution for the parameters; with perfect data, the uncertainties on the potential parameters are all $<1\%$.
 
-\begin{figure*}[!ht]
-	\captionsetup[subfigure]{labelformat=empty}
-        \centering
-        \subfloat[]{
-                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_0.png}
-                \label{fig:trace0}
-	}
-        \subfloat[]{
-                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_1.png}
-                \label{fig:trace0}
-	}
-        
-        \subfloat[]{
-                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_2.png}
-                \label{fig:trace0}
-	}
-        \subfloat[]{
-                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_3.png}
-                \label{fig:trace0}
-	}
-        
-        \subfloat[]{
-                \includegraphics[width=0.5\textwidth]{../../plots/paper2/trace_4.png}
-                \label{fig:trace0}
-	}
-        \caption{TODO: mcmc trace plots}\label{fig:trace}
-\end{figure*}
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/mcmc_trace.png}
+\caption{ TODO: mcmc trace plots  }\label{fig:trace}
+\end{center}
+\end{figure}
 
 \begin{figure}[!ht]
 \begin{center}
@@ -388,7 +367,7 @@ We leave the potential parameters ($q_1$, $q_z$, $\phi$, $\vhalo$) free to vary,
 \subsection{Data with near-future uncertainties}
 We next take the same eight stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We take these stars to be RR Lyrae variables which are known to be excellent distance indicators via the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}. $\sim$100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
 
-For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. The observed positions and velocities of these stars are shown in Figure~\ref{fig:2.5e8_xz} (red, compare to the unobserved black points). We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties, though in reality some coordinates will have higher or lower uncertainties.
+For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties, though in reality some coordinates will have higher or lower uncertainties.
 
 This experiment samples over the four potential parameters, the Lagrange point offset, four phase-space coordinate parameters for each star (32 total), and four phase-space coordinate parameters for the progenitor --- 41 parameters in total. We use an ensemble of 256 walkers and draw initial conditions for the coordinate parameters by sampling from Gaussian's centered on the ``observed'' value with variances specified by the observational uncertainties. Other parameters --- potential parameters, $\Loffset$, and $\tub$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We again burn in the walkers for 10000 steps and run for 10000 steps post-burn-in. Figures~\ref{fig:exp2_potential}, \ref{fig:exp2_satellite}, \ref{fig:exp2_particle0} show the marginalized posteriors for the potential, satellite, and a single particle parameters. [....]
 
