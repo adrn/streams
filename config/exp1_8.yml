@@ -12,7 +12,7 @@ plot:
 # data
 data_file: data/observed_particles/2.5e8.hdf5
 nparticles: 8
-particle_idx: [611, 352, 67, 177, 681, 1762, 986, 721]
+particle_idx: [582, 585, 231, 300, 637, 508, 404, 1460]
 
 # integration
 dt: -1.
