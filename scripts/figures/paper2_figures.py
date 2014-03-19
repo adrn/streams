@@ -38,7 +38,7 @@ from streams.potential.lm10 import LawMajewski2010
 matplotlib.rc('xtick', labelsize=18)
 matplotlib.rc('ytick', labelsize=18)
 matplotlib.rc('axes', edgecolor='#444444', labelsize=24,
-              labelweight=400, linewidth=2.0)
+              labelweight=400, linewidth=1.5)
 matplotlib.rc('lines', markeredgewidth=0)
 matplotlib.rc('font', family='Source Sans Pro')
 
@@ -75,7 +75,7 @@ def simulated_streams():
             m = float(mass)
 
             data_filename = os.path.join(streamspath, "data", "observed_particles",
-                                         "2.5e{}_N1024_DH.hdf5".format(_m))
+                                         "2.5e{}.hdf5".format(_m))
             cfg_filename = os.path.join(streamspath, "config", "exp1_{}.yml".format(_m))
             data = read_hdf5(data_filename)
             true_particles = data["true_particles"].to_frame(galactocentric)
@@ -570,10 +570,10 @@ def trace_plots():
         acor = f["acor"].value
 
     # plot individual walkers
-    fig,axes = plt.subplots(5,1,figsize=(8.5,11))
+    fig,axes = plt.subplots(5,1,figsize=(8.5,11),sharex=True)
     for k in range(model.nparameters):
         for ii in range(config['walkers']):
-            axes.flat[k].plot(chain[ii,:,k], alpha=0.1, marker=None,
+            axes.flat[k].plot(chain[ii,5000:,k], alpha=0.1, marker=None,
                          drawstyle='steps', color='k')
 
         if k == 4:
