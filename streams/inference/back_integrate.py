@@ -98,7 +98,8 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
     p_x_hel = _gc_to_hel(p_orbits)
-    jac1 = _xyz_sph_jac(p_x_hel)
+    #jac1 = _xyz_sph_jac(p_x_hel)
+    jac1 = xyz_sph_jac(p_x_hel)
     #########################################################################
 
     #########################################################################

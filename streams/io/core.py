@@ -130,6 +130,8 @@ def read_hdf5(h5file, nparticles=None, particle_idx=None):
 
         true_tub = ptcl["tub"].value[particle_idx]
         true_tail_bit = ptcl["tail_bit"].value[particle_idx]
+        if np.any(np.isnan(true_tail_bit)):
+            raise ValueError("Tail bit NaN!")
 
         t1 = float(f["simulation"]["t1"].value)
         t2 = float(f["simulation"]["t2"].value)

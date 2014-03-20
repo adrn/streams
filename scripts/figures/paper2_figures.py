@@ -27,7 +27,7 @@ import scipy.optimize as so
 from scipy.stats import norm
 
 from streams import usys
-from streams.util import streamspath
+from streams.util import streamspath, _unit_transform, _label_map
 from streams.coordinates.frame import galactocentric
 from streams.io.sgr import SgrSimulation
 from streams.io import read_hdf5, read_config
@@ -557,6 +557,9 @@ def total_rv():
     figv.savefig(filenamev)
 
 def trace_plots():
+    matplotlib.rc('xtick', labelsize=18)
+    matplotlib.rc('ytick', labelsize=18)
+
     cfg_filename = os.path.join(streamspath, "config", "exp1_8.yml")
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
@@ -569,24 +572,49 @@ def trace_plots():
         p0 = f["p0"].value
         acor = f["acor"].value
 
+    bounds = (-7,7)
+    labels = ["$q_1$", "$q_z$", r"$\phi$", "$v_h$", r"$\alpha$"]
+    ticks = (-5, 0, 5)
+    ticklabels = ["-5%", "truth", "5%"]
+
     # plot individual walkers
     fig,axes = plt.subplots(5,1,figsize=(8.5,11),sharex=True)
-    for k in range(model.nparameters):
-        for ii in range(config['walkers']):
-            axes.flat[k].plot(chain[ii,5000:,k], alpha=0.1, marker=None,
-                         drawstyle='steps', color='k')
 
-        if k == 4:
-            p = model.parameters['satellite']['alpha']
-            axes.flat[k].set_ylim(0.5, 2.5)
-        else:
-            key = model.parameters['potential'].keys()[k]
-            prior = model.parameters['potential'][key]._prior
-            axes.flat[k].set_ylim((prior.a,prior.b))
-            axes.flat[k].axhline(model.truths[k], color='#31a354',
-                            lw=3., linestyle='-', alpha=0.75)
+    k = 0
+    for gname,group in model.parameters.items():
+        for pname,p in group.items():
 
+            if gname == "potential":
+                thischain = (chain[...,k] - p.truth) / p.truth*100.
+            else:
+                thischain = chain[...,k]
+
+            for ii in range(config['walkers']):
+                axes.flat[k].plot(thischain[ii,5000:],
+                                  alpha=0.1, marker=None,
+                                  drawstyle='steps', color='k')
+            axes.flat[k].set_ylabel(labels[k], rotation='horizontal')
+
+            if gname == "potential":
+                axes.flat[k].set_ylim(bounds)
+                axes.flat[k].axhline(0., color='#31a354', lw=2., linestyle='-', alpha=0.9)
+                axes.flat[k].set_yticks(ticks)
+                axes.flat[k].set_yticklabels(ticklabels)
+            else:
+                axes.flat[k].set_yticks([1.,1.5,2.])
+                axes.flat[k].set_ylim(0.75,2.25)
+            #axes.flat[k].yaxis.tick_right()
+            axes.flat[k].yaxis.set_label_position("right")
+
+            k += 1
+
+    axes.flat[-1].set_xlabel("Step number")
+    fig.tight_layout()
+    fig.subplots_adjust(hspace=0.04)
     fig.savefig(os.path.join(plot_path, "mcmc_trace.{}".format(ext)))
+
+def exp1_posterior():
+    pass
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
