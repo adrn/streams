@@ -127,7 +127,7 @@ def gaia_spitzer_errors(particles):
 
     return dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
 
-def current_data_errors(particles):
+def current_data_errors(particles, missing_dims=[]):
     """ Given particles in heliocentric frame, return an array of
         Gaia + Spitzer errors (same shape as particles._X).
     """
@@ -157,4 +157,9 @@ def current_data_errors(particles):
     # radial velocity
     vr = 10.*u.km/u.s * np.ones_like(particles["vr"].value)
 
-    return dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
+    errs = dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
+
+    for dim in missing_dims:
+        errs[dim] = np.inf*errs[dim].unit
+
+    return errs
