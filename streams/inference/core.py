@@ -217,6 +217,30 @@ class StreamModel(object):
             ix1 = 0
             for group_name,group in self.parameters.items():
                 for param_name,param in group.items():
+
+                    if param_name in heliocentric.coord_names:
+                        err = getattr(self, group_name).errors[param_name].decompose(usys).value
+                        if start_truth:
+                            val = getattr(self, "true_"+group_name)[param_name]\
+                                        .decompose(usys).value
+                            err /= 2.
+                        else:
+                            val = getattr(self, group_name)[param_name]\
+                                        .decompose(usys).value
+
+                        if np.any(np.isinf(err)):
+                            err[np.isinf(err)] = 0.001*val
+
+                        try:
+                            prior = self._prior_cache[(group_name,param_name)]
+                        except KeyError:
+                            prior = LogNormalPrior(val, err)
+                            self._prior_cache[(group_name,param_name)] = prior
+
+                        p0[ii,ix1:ix1+param.size] = np.ravel(prior.sample().T)
+                        ix1 += param.size
+                        continue
+
                     if start_truth:
                         prior = param._prior
                         if hasattr(prior, 'a') and hasattr(prior, 'b'):
@@ -407,8 +431,9 @@ class StreamModel(object):
         W_ij = np.array(W_ij)
         D_ij = np.array(D_ij)
         sig_ij = np.array(sig_ij)
-        data_like = -W_ij.shape[0]/2.*np.log(2*np.pi) - \
-                     np.sum(0.5*(np.log(sig_ij**2) + ((W_ij - D_ij)/sig_ij)**2), axis=0)
+        data_like = 0.5*(np.log(sig_ij**2) + ((W_ij - D_ij)/sig_ij)**2)
+        data_like[~np.isfinite(data_like)] = 0.
+        data_like = -W_ij.shape[0]/2.*np.log(2*np.pi) - np.sum(data_like, axis=0)
 
         # particle unbinding time
         try:
@@ -453,8 +478,9 @@ class StreamModel(object):
         W_j = np.array(W_j)
         D_j = np.squeeze(D_j)
         sig_j = np.squeeze(sig_j)
-        sat_like = -W_j.shape[0]/2.*np.log(2*np.pi) - \
-                    np.sum(0.5*(np.log(sig_j**2) + ((W_j - D_j)/sig_j)**2), axis=0)
+        sat_like = 0.5*(np.log(sig_j**2) + ((W_j - D_j)/sig_j)**2)
+        sat_like[~np.isfinite(sat_like)] = 0.
+        sat_like = -W_j.shape[0]/2.*np.log(2*np.pi) - np.sum(sat_like)
 
         # satellite mass
         try:
@@ -483,6 +509,8 @@ class StreamModel(object):
                                               tub, beta, p_shocked,
                                               alpha)
 
+        print(ln_like,data_like,sat_like)
+        print()
         return np.sum(ln_like + data_like) + sat_like
 
     def ln_posterior(self, p, *args):
