@@ -229,13 +229,18 @@ OR
 python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
 --file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_exp3.hdf5 \
 --seed=42 --path="sgr_nfw/M2.5e+08" --snapfile="SNAP113" --overwrite
+
+python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
+--file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_exp4.hdf5 \
+--seed=42 --path="sgr_nfw/M2.5e+08" --snapfile="SNAP113" --overwrite
     """
 
     # TODO: class kwargs
     # particle_error_model=current_data_errors, satellite_error_model=current_data_errors,
     # particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
     observe_simulation(args.class_name,
-        particle_error_model=current_data_errors, satellite_error_model=current_data_errors,
+        particle_error_model=lambda p: current_data_errors(p, missing_dims=["mul","mub"]),
+        satellite_error_model=lambda p: current_data_errors(p, missing_dims=["l","b","d","mul","mub", "vr"]),
         selection_expr=args.expr, output_file=args.output_file,
         overwrite=args.overwrite, seed=args.seed,
         class_kwargs=dict(path=args.path,snapfile=args.snapfile))
