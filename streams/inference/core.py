@@ -509,8 +509,6 @@ class StreamModel(object):
                                               tub, beta, p_shocked,
                                               alpha)
 
-        print(ln_like,data_like,sat_like)
-        print()
         return np.sum(ln_like + data_like) + sat_like
 
     def ln_posterior(self, p, *args):
