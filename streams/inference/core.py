@@ -229,7 +229,10 @@ class StreamModel(object):
                                         .decompose(usys).value
 
                         if np.any(np.isinf(err)):
-                            err[np.isinf(err)] = 0.001*val
+                            if param_name in ["mul", "mub", "vr"]:
+                                err[np.isinf(err)] = 0.01
+                            else:
+                                err[np.isinf(err)] = 1.
 
                         try:
                             prior = self._prior_cache[(group_name,param_name)]
@@ -239,6 +242,7 @@ class StreamModel(object):
 
                         p0[ii,ix1:ix1+param.size] = np.ravel(prior.sample().T)
                         ix1 += param.size
+
                         continue
 
                     if start_truth:
@@ -271,26 +275,7 @@ class StreamModel(object):
                         else:
                             p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
 
-                    if param_name in heliocentric.coord_names:
-                        err = getattr(self, group_name).errors[param_name].decompose(usys).value
-                        if start_truth:
-                            val = getattr(self, "true_"+group_name)[param_name]\
-                                        .decompose(usys).value
-                            err /= 10.
-                        else:
-                            val = getattr(self, group_name)[param_name]\
-                                        .decompose(usys).value
-
-                        try:
-                            prior = self._prior_cache[(group_name,param_name)]
-                        except KeyError:
-                            prior = LogNormalPrior(val, err)
-                            self._prior_cache[(group_name,param_name)] = prior
-
-                        p0[ii,ix1:ix1+param.size] = np.ravel(prior.sample().T)
-
                     ix1 += param.size
-
         return np.squeeze(p0)
 
     def _decompose_vector(self, p):
@@ -425,6 +410,7 @@ class StreamModel(object):
 
         # if any distance is > 150 kpc
         if np.any(p_hel[...,2] > 150.):
+            print("BORK")
             return -np.inf
 
         # compute the likelihood of the true positions given the observed
