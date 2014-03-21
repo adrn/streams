@@ -158,6 +158,7 @@ _label_map['vr'] = r"$v_r$ [km/s]"
 _label_map['logmass'] = r"$\log m$ [$M_\odot$]"
 _label_map['logmdot'] = r"$\log \dot{m}$ [$M_\odot/$Myr]"
 _label_map['alpha'] = r"$\alpha$"
+_label_map['tub'] = r"$t_{\rm ub}$ [Myr]"
 
 _unit_transform = defaultdict(lambda: lambda x: x)
 _unit_transform['phi'] = lambda x: (x*u.rad).to(u.degree).value
