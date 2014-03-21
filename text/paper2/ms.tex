@@ -34,6 +34,8 @@
 \newcommand{\pshock}{P_{\rm shock}}
 \newcommand{\paperone}{Paper 1}
 \newcommand{\vhalo}{v_{\rm h}}
+\newcommand{\rewinder}{\emph{Rewinder}}
+\newcommand{\potp}{$q_1,q_z,\phi,\vhalo$}
 
 \begin{document}
 
@@ -131,7 +133,7 @@ We identify a number of problems with existing approximate models; each method m
 \end{enumerate}
 
 %[][hereafter \paperone]
-In \citet{apw13}, we introduced a simple method (\emph{Rewinder}) for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity).  Specifically, a better model for the potential is one in which orbits of test particle stars (integrated backwards from their present position) came close (within the tidal radius in position, and escape velocity in velocity) to the orbit of the progenitor. In this article, we use these simple scalings --- which depend only on the mass and orbit of the progenitor and parent potential --- to present a fully probabilistic method for modeling tidal streams in any underlying potential given data with realistic uncertainties. The method relies on numerical orbit integration in ordinary phase-space and can thus incorporate arbitrarily complex models for the parent potential. The model uses individual stars as constraints --- not density matching --- and can therefore handle very small samples of well-measured stars (e.g., 4-16). The model trivially extends to incorporating multiple streams, debris structures, and other kinematic information. 
+In \citet{apw13}, we introduced a simple method for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity).  Specifically, a better model for the potential is one in which orbits of test particle stars (integrated backwards from their present position) came close (within the tidal radius in position, and escape velocity in velocity) to the orbit of the progenitor. In this article, we use these simple scalings --- which depend only on the mass and orbit of the progenitor and parent potential --- to present a fully probabilistic method (\rewinder) for modeling tidal streams in any underlying potential given data with realistic uncertainties. By ``model'' here we mean a justified, parametrized likelihood function with priors on the parameters. \rewinder\, relies on numerical orbit integration in ordinary phase-space and can thus incorporate arbitrarily complex models for the parent potential. Individual stars are used as constraints, thus \rewinder\, can handle very small samples of well-measured stars (e.g., 4-16). This model trivially extends to incorporating multiple streams, debris structures, and other kinematic information. 
 
 In Section~\ref{sec:sims} we describe a suite of n-body simulations that span a range of progenitor masses on a characteristic, mildly eccentric orbit. In Section~\ref{sec:} we describe [...]
 
@@ -348,24 +350,24 @@ For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to
 
 We first test the model using eight particles (stars) --- four from the leading tail, and four from the trailing tail --- randomly sampled from the $2.5\times10^8~M_\odot$ simulation (Section~\ref{sec:sims}), assuming perfect knowledge of the observed 6D positions for both the stars and the progenitor. The stars were required to have been stripped after the first pericentric passage and have a present-day distance within $50$ kpc of the Sun. Figure~\ref{fig:sims} (second column from right) shows the eight randomly chosen stars (black crosses) in Galactic coordinates, over-plotted on all other simulated particles (grey points). 
 
-We leave the potential parameters ($q_1$, $q_z$, $\phi$, $\vhalo$) free to vary, along with the Lagrange point offset, $\Loffset$, and initialize an ensemble of 64 MCMC walkers by sampling from the priors summarized in Table~\ref{tbl:params}. We run the walkers for 10000 steps to burn-in, then restart the sampler starting from the final position of the burn-in phase and run for another 5000 steps. Figure~\ref{fig:trace} shows the walker positions over the 5000 inference steps for each of the five parameters. The autocorrelation time for each parameter is displayed on its corresponding panel and the horizontal lines indicate the true simulation values for the potential parameters. Figure~\ref{fig:exp1_posterior} shows projections of the posterior probability distribution for the parameters; with perfect data, the uncertainties on the potential parameters are all $<1\%$.
+We leave the potential parameters ($q_1,q_z,\phi,\vhalo$) free to vary, along with the Lagrange point offset, $\Loffset$, and initialize an ensemble of 64 MCMC walkers by sampling from the priors summarized in Table~\ref{tbl:params}. We run the walkers for 10000 steps to burn-in, then restart the sampler starting from the final position of the burn-in phase and run for another 5000 steps. Figure~\ref{fig:trace} shows the walker positions over the 5000 inference steps for each of the five parameters. The autocorrelation time for each parameter is displayed on its corresponding panel and the horizontal lines indicate the true simulation values for the potential parameters. Figure~\ref{fig:exp1_posterior} shows projections of the posterior probability distribution for the parameters; with perfect data, the uncertainties on the potential parameters are all $<1\%$.
 
 \begin{figure}[!ht]
 \begin{center}
-\includegraphics[width=\textwidth]{../../plots/paper2/mcmc_trace.png}
-\caption{ TODO: mcmc trace plots  }\label{fig:trace}
+\includegraphics[width=0.9\textwidth]{../../plots/paper2/mcmc_trace.png}
+\caption{ Positions of all 64 MCMC walkers (see Section~\ref{sec:experiments}) for each parameter at each step of the inference (black lines). Horizontal green lines show the input values of the potential parameters (\potp). The MCMC chains do not display any bulk movement or stray walkers, implying, by eye, that the chains have converged. Projections of the sample densities are shown in Figure~\ref{fig:exp1_posterior}. }\label{fig:trace}
 \end{center}
 \end{figure}
 
 \begin{figure}[!ht]
 \begin{center}
 \includegraphics[width=\textwidth]{../../plots/paper2/exp1_posterior.png}
-\caption{ TODO  }\label{fig:exp1_posterior}
+\caption{ Projections of the posterior probability distribution over the four potential parameters (\potp) and Lagrange point offset ($\alpha$) assuming negligible uncertainties on the observed phase-space coordinates of eight stars and the progenitor, visualized as two-dimensional histograms of MCMC samples. Solid contours (black lines) show approximately 1$\sigma$ and 2$\sigma$ levels of the distribution. Vertical and horizontal lines (blue) show the true, input values for the potential parameters used in the n-body simulations. For the potential parameters, the axis ranges were chosen to be $\pm$5\% around the true values. Note that any biases in the inferred values are $\lesssim1\%$. }\label{fig:exp1_posterior}
 \end{center}
 \end{figure}
 
 \subsection{Data with near-future uncertainties}
-We next take the same eight stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We take these stars to be RR Lyrae variables which are known to be excellent distance indicators via the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}. $\sim$100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
+We next take the same eight stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We take these stars to be RR Lyrae variables which are known to be excellent distance indicators via the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}. Nearly 100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
 
 For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties, though in reality some coordinates will have higher or lower uncertainties.
 
@@ -387,8 +389,8 @@ This experiment samples over the four potential parameters, the Lagrange point o
 
 \begin{figure}[!ht]
 \begin{center}
-\includegraphics[width=\textwidth]{../../plots/paper2/exp2_particle0.png}
-\caption{ TODO  }\label{fig:exp2_particle0}
+\includegraphics[width=\textwidth]{../../plots/paper2/exp2_particle.png}
+\caption{ TODO  }\label{fig:exp2_particle}
 \end{center}
 \end{figure}
 
@@ -455,15 +457,11 @@ This is expected to be a generic feature in dynamical problems:
 [Another prediction of hierarchical structure formation in $\Lambda$CDM is the presence of substructure. In principle, this method would work on any potential that we can integrate orbits in.]
 
 \acknowledgements
-Rix, Bovy\\
-Gaia data challenge / Surrey / Gaia data team / Anthony Brown \\ % check with AB about citations
-APW is supported by a National Science Foundation Graduate Research
-Fellowship under Grant No.\ 11-44155. This work was supported in part by 
-the National Science Foundation under Grant No. PHYS-1066293 and the 
-hospitality of the Aspen Center for Physics.\\
-DWH was partially supported by NASA (Grant NNX12AI50G) and the NSF (Grant IIS-1124794).\\
-This research made use of Astropy, a community-developed core Python package for Astronomy \citep{astropy13}. \\
-Columbia HPC\\
+We thank Anthony Brown (Leiden) for insight on the \gaia\, data quality and for providing the open source \texttt{PyGaia} code for computing predicted uncertainties. We thank the organizers of the Gaia Challenge (2013) and the University of Surrey for hospitality during this workshop. We thank Hans-Walter Rix (MPIA) and Jo Bovy (IAS) for ... [TODO: HOGG].
+APW is supported by a National Science Foundation Graduate Research Fellowship under Grant No.\ 11-44155. This work was supported in part by the National Science Foundation under Grant No. PHYS-1066293. 
+DWH was partially supported by NASA (Grant NNX12AI50G) and the NSF (Grant IIS-1124794).
+This research made use of Astropy, a community-developed core Python package for Astronomy \citep{astropy13}.
+This work additionally relied on Columbia University's \emph{hotfoot} and \emph{yeti} compute clusters, and we acknowledge the Columbia HPC support staff for assistance. \\
 
 \bibliographystyle{apj}
 \bibliography{refs}
