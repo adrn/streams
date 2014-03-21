@@ -371,7 +371,7 @@ We next take the same eight stars used in the previous experiment and ``observe'
 
 For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties, though in reality some coordinates will have higher or lower uncertainties.
 
-This experiment samples over the four potential parameters, the Lagrange point offset, four phase-space coordinate parameters for each star (32 total), and four phase-space coordinate parameters for the progenitor --- 41 parameters in total. We use an ensemble of 256 walkers and draw initial conditions for the coordinate parameters by sampling from Gaussian's centered on the ``observed'' value with variances specified by the observational uncertainties. Other parameters --- potential parameters, $\Loffset$, and $\tub$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We again burn in the walkers for 10000 steps and run for 10000 steps post-burn-in. Figures~\ref{fig:exp2_potential}, \ref{fig:exp2_satellite}, \ref{fig:exp2_particle0} show the marginalized posteriors for the potential, satellite, and a single particle parameters. [....]
+This experiment samples over the four potential parameters, the Lagrange point offset, four phase-space coordinate parameters for each star (32 total), and four phase-space coordinate parameters for the progenitor --- 41 parameters in total. We use an ensemble of 256 walkers and draw initial conditions for the coordinate parameters by sampling from Gaussian's centered on the ``observed'' value with variances specified by the observational uncertainties. Other parameters --- potential parameters, $\Loffset$, and $\tub$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We burn in the walkers for 10000 steps and run for 10000 inference steps. Figures~\ref{fig:exp2_potential}, \ref{fig:exp2_satellite}, \ref{fig:exp2_particle} show the marginalized posteriors for the potential parameters, satellite parameters, and parameters for a single particle. 
 
 \begin{figure}[!ht]
 \begin{center}
@@ -395,10 +395,33 @@ This experiment samples over the four potential parameters, the Lagrange point o
 \end{figure}
 
 \subsection{Precise distance measurements with missing proper motions}
-The SMASH survey \citep{smashprop} will be completed by XXX, long before the final \gaia\, data release. Thus, we will soon have precise distance measurements for stars in the Sgr and Orphan streams, but poor proper motion constraints. [some comments on state of data for Sgr core, proper motions of] Here we study how well we can constrain the potential with our model given stars with missing proper motions. We use the same observational uncertainties for the stars as mentioned in the previous experiment, but assume the proper motion's have not been measured. 
+The SMASH survey \citep{smashprop} will be completed in 2014, long before the final \gaia\, data release. Thus, we will soon have precise distance measurements for stars in the Sgr and Orphan streams, but poor proper motion constraints. SMASH also targets several RR Lyrae in the Sgr core, which enable a high-precision distance measurement of the progenitor. Though proper motions have been measured for the Sgr progenitor, we now consider a case in which we have high-precision distances to stream stars and the progenitor, 15~km/s radial velocity uncertainty, and missing proper motions for all stars and progenitor. 
+
+As with the previous experiment, this experiment includes 41 model parameters in total. We again use an ensemble of 256 walkers, but this time initialize the walkers by sampling the coordinate parameters from Gaussians centered on the true positions with variances set to 1\% of the parameter values. Other parameters --- potential parameters, $\Loffset$, and $\tub$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We again burn in the walkers for 10000 steps and run for 10000 inference steps. Figures~\ref{fig:exp3_potential}, \ref{fig:exp3_satellite}, \ref{fig:exp3_particle} show the marginalized posteriors for the potential parameters, satellite parameters, and parameters for a single particle. 
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/exp3_potential.png}
+\caption{ Same as Figure~\ref{fig:exp2_potential} but for data with no proper motion measurements. }\label{fig:exp3_potential}
+\end{center}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/exp3_satellite.png}
+\caption{ Same as Figure~\ref{fig:exp2_satellite} but for data with no proper motion measurements.  }\label{fig:exp3_satellite}
+\end{center}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=\textwidth]{../../plots/paper2/exp3_particle.png}
+\caption{ Same as Figure~\ref{fig:exp2_particle} but for data with no proper motion measurements.  }\label{fig:exp3_particle}
+\end{center}
+\end{figure}
 
 \subsection{Precise distance measurements of stars with no observed progenitor}
-Most of the streams and debris structures discovered thus far have undetected or uncertain progenitors. [...]
+Most of the streams and debris structures discovered thus far have undetected or unconfirmed progenitors. [...]
 4 stars in Orphan-like stream, XX stars in GD-1 -like stream
 
 %\subsection{Mass comparison}
@@ -455,6 +478,9 @@ This is expected to be a generic feature in dynamical problems:
 [Don't eschew low-dimensional constraints on the potential!]
 
 [Another prediction of hierarchical structure formation in $\Lambda$CDM is the presence of substructure. In principle, this method would work on any potential that we can integrate orbits in.]
+
+\section{Conclusions}
+We have presented a probabilistic model (\rewinder) --- a likelihood function and with priors on the parameters --- for using stars observed in tidal streams to constrain properties of any underlying gravitational potential. \rewinder\, relies on direct orbit integration and not on computing conserved quantities (e.g., actions) and can thus be used with arbitrarily complex (e.g., time-dependent or clumpy) forms of the potential. We have performed several experiments ...
 
 \acknowledgements
 We thank Anthony Brown (Leiden) for insight on the \gaia\, data quality and for providing the open source \texttt{PyGaia} code for computing predicted uncertainties. We thank the organizers of the Gaia Challenge (2013) and the University of Surrey for hospitality during this workshop. We thank Hans-Walter Rix (MPIA) and Jo Bovy (IAS) for ... [TODO: HOGG].
