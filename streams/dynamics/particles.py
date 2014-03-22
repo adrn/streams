@@ -165,7 +165,6 @@ class ObservedParticle(Particle):
         super(ObservedParticle, self).__init__(coords, frame, units=units, meta=meta)
 
         # parse errors same as coords
-        self.errors = dict()
         self._error_X = np.zeros_like(self._X)
         for ii in range(self.ndim):
             name = self.frame.coord_names[ii]
@@ -185,9 +184,17 @@ class ObservedParticle(Particle):
 
             self._error_X[...,ii] = value
 
+    @property
+    def errors(self):
+        errors = dict()
+
+        for ii in range(self.ndim):
+            name = self.frame.coord_names[ii]
             # set error dictionary
-            self.errors[name] = (self._error_X[...,ii]*self._internal_units[ii])\
-                                    .to(self._repr_units[ii])
+            errors[name] = (self._error_X[...,ii]*self._internal_units[ii])\
+                            .to(self._repr_units[ii])
+
+        return errors
 
     @property
     def _repr_error_X(self):
