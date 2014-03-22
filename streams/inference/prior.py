@@ -28,6 +28,12 @@ class LogPrior(object):
 
 class LogUniformPrior(LogPrior):
 
+    def __str__(self):
+        return "Uniform({}, {})".format(self.a, self.b)
+
+    def __repr__(self):
+        return self.__str__()
+
     def __call__(self, value):
         if np.any((value < self.a) | (value > self.b)):
             return -np.inf

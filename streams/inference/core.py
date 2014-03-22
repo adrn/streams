@@ -98,6 +98,7 @@ class StreamModel(object):
         t1 = config.get("t1", float(d["t1"]))
         t2 = config.get("t2", float(d["t2"]))
         dt = config.get("dt", config.get('dt', -1.))
+        logger.debug("Integration from {} to {}, dt={} Myr".format(t1,t2,dt))
 
         # get the potential object specified from the potential subpackage
         from .. import potential as sp
@@ -105,7 +106,7 @@ class StreamModel(object):
         potential = Potential()
         logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
 
-        # Define the empty model to add parameters to
+        # Initialize the empty model to add parameters to
         model = cls(potential, lnpargs=[t1,t2,dt],
                     particles=particles,
                     satellite=satellite,
@@ -116,7 +117,7 @@ class StreamModel(object):
         if config["potential"]["parameters"]:
             for ii,name in enumerate(config["potential"]["parameters"]):
                 p = potential.parameters[name].copy()
-                logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a, p._prior.b))
+                logger.debug("Prior on {}: {}".format(name, p._prior))
                 model.add_parameter('potential', p)
 
         # Particle parameters
@@ -134,9 +135,13 @@ class StreamModel(object):
                     logger.debug("\t\t{}".format(name))
                 else:
                     p = getattr(particles,name)
-                    logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a,
-                                                                             p._prior.b))
+                    logger.debug("Prior on {}: {}".format(name, p._prior))
                     model.add_parameter('particles', p)
+
+            missing_dims = config["particles"].get("missing_dims", list())
+            for missing_dim in missing_dims:
+                ix = heliocentric.coord_names.index(missing_dim)
+                model.particles._error_X[:,ix] = np.inf
 
         # Satellite parameters
         if config['satellite']['parameters']:
@@ -158,9 +163,13 @@ class StreamModel(object):
 
                 else:
                     p = getattr(satellite,name)
-                    logger.debug("Prior on {}: Uniform({}, {})".format(name, p._prior.a,
-                                                                             p._prior.b))
+                    logger.debug("Prior on {}: {}".format(name, p._prior))
                     model.add_parameter('satellite', p)
+
+            missing_dims = config["satellite"].get("missing_dims", list())
+            for missing_dim in missing_dims:
+                ix = heliocentric.coord_names.index(missing_dim)
+                model.satellite._error_X[:,ix] = np.inf
 
         return model
 
@@ -195,6 +204,7 @@ class StreamModel(object):
             for param_name,param in group.items():
                 t = param.truth
                 if t is None:
+                    #t = np.ones(param.size)*np.nan
                     t = [None]*param.size
                 true_p = np.append(true_p, np.ravel(t))
 
@@ -410,16 +420,17 @@ class StreamModel(object):
 
         # if any distance is > 150 kpc
         if np.any(p_hel[...,2] > 150.):
-            print("BORK")
             return -np.inf
 
         # compute the likelihood of the true positions given the observed
         W_ij = np.array(W_ij)
         D_ij = np.array(D_ij)
         sig_ij = np.array(sig_ij)
+        K = sum(np.isfinite(sig_ij[:,0]))
+
         data_like = 0.5*(np.log(sig_ij**2) + ((W_ij - D_ij)/sig_ij)**2)
-        data_like[~np.isfinite(data_like)] = 0.
-        data_like = -W_ij.shape[0]/2.*np.log(2*np.pi) - np.sum(data_like, axis=0)
+        data_like[np.isinf(sig_ij)] = 0.
+        data_like = -K/2.*np.log(2*np.pi) - np.sum(data_like, axis=0)
 
         # particle unbinding time
         try:
@@ -464,9 +475,11 @@ class StreamModel(object):
         W_j = np.array(W_j)
         D_j = np.squeeze(D_j)
         sig_j = np.squeeze(sig_j)
+        K = sum(np.isfinite(sig_ij[:,0]))
+
         sat_like = 0.5*(np.log(sig_j**2) + ((W_j - D_j)/sig_j)**2)
-        sat_like[~np.isfinite(sat_like)] = 0.
-        sat_like = -W_j.shape[0]/2.*np.log(2*np.pi) - np.sum(sat_like)
+        sat_like[np.isinf(sig_j)] = 0.
+        sat_like = -K/2.*np.log(2*np.pi) - np.sum(sat_like)
 
         # satellite mass
         try:
@@ -492,8 +505,7 @@ class StreamModel(object):
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_gc, s_gc,
                                               logmass, logmdot,
-                                              tub, beta, p_shocked,
-                                              alpha)
+                                              tub, beta, alpha)
 
         return np.sum(ln_like + data_like) + sat_like
 

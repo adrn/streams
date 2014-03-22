@@ -34,7 +34,7 @@ def xyz_sph_jac(hel):
     return deet
 
 def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdot,
-                                tub, beta, p_shocked, alpha):
+                                tub, beta, alpha):
 
     """ Compute the likelihood of 6D heliocentric star positions today given the
         potential and position of the satellite.
@@ -59,15 +59,12 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
             Array of unbinding times for each star.
         beta : array_like
             Array of tail bits (K) to specify leading/trailing tail for each star.
-        p_shocked : array_like
-            Probability the star was shocked.
         alpha : float
             Position of effective tidal radius.
 
     """
 
-    K = np.sign(beta)
-    p_shocked = np.array(p_shocked)
+    beta = np.sign(beta)
 
     gc = np.vstack((s_gc,p_gc)).copy()
     acc = np.zeros_like(gc[:,:3])
@@ -145,7 +142,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     #                (np.log(v_disp) + VZ**2))
 
     sigma_r = 0.5
-    r_term = -0.5*((np.log(sigma_r) + (X-alpha*K)**2/sigma_r**2) + \
+    r_term = -0.5*((np.log(sigma_r) + (X-alpha*beta)**2/sigma_r**2) + \
                    (np.log(sigma_r) + Y**2/sigma_r**2) + \
                    (np.log(sigma_r) + Z**2/sigma_r**2))
     # r_term_trai = -0.5*((np.log(sigma_r) + (X-2*alpha)**2/sigma_r**2) + \
