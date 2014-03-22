@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import logging
+import random
 import shutil
 import time
 
@@ -54,6 +55,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
 
     # read configuration from a YAML file
     config = io.read_config(config_file)
+    np.random.seed(config["seed"])
+    random.seed(config["seed"])
 
     if not os.path.exists(config['streams_path']):
         raise IOError("Specified streams path '{}' doesn't exist!".format(config['streams_path']))
