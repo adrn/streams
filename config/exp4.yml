@@ -33,5 +33,5 @@ walkers: 256
 burn_in: 5000
 burn_beta: 1.
 cool_down: 0
-steps: 0
+steps: 5000
 thin_chain: False
