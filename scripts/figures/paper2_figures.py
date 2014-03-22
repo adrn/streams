@@ -10,6 +10,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import os, sys
 import cPickle as pickle
 import inspect
+from collections import OrderedDict
 
 # Third-party
 import astropy.units as u
@@ -25,6 +26,7 @@ from matplotlib import rc_context, rcParams, cm
 from matplotlib.patches import Rectangle, Ellipse, Circle
 import scipy.optimize as so
 from scipy.stats import norm
+import triangle
 
 from streams import usys
 from streams.util import streamspath, _unit_transform, _label_map
@@ -93,20 +95,18 @@ def simulated_streams():
 
             axes[0,ii].plot(p["x"].value, p["y"].value,
                             alpha=alpha, rasterized=True, color='#555555')
-            # axes[0,ii].plot(p_bound["x"].value, p_bound["y"].value,
-            #                 alpha=0.25, rasterized=True, color='#2b8cbe')
-            axes[0,ii].plot(true_particles["x"].value[idx],
-                         true_particles["y"].value[idx],
-                         marker='+', markeredgewidth=1.5,
-                         markersize=8, alpha=0.9, color='k')
             axes[1,ii].plot(p["x"].value, p["z"].value,
                             alpha=alpha, rasterized=True, color='#555555')
-            # axes[1,ii].plot(p_bound["x"].value, p_bound["z"].value,
-            #                 alpha=0.25, rasterized=True, color='#2b8cbe')
-            axes[1,ii].plot(true_particles["x"].value[idx],
-                         true_particles["z"].value[idx],
-                         marker='+', markeredgewidth=1.5,
-                         markersize=8, alpha=0.9, color='k')
+
+            if _m == 8:
+                axes[0,ii].plot(true_particles["x"].value[idx],
+                             true_particles["y"].value[idx],
+                             marker='+', markeredgewidth=1.5,
+                             markersize=8, alpha=0.9, color='k')
+                axes[1,ii].plot(true_particles["x"].value[idx],
+                             true_particles["z"].value[idx],
+                             marker='+', markeredgewidth=1.5,
+                             markersize=8, alpha=0.9, color='k')
             axes[1,ii].set_xticks(ticks)
             axes[1,ii].set_xlabel("$X$ [kpc]")
 
@@ -289,9 +289,9 @@ def Lpts():
         circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
                       edgecolor='k', linestyle='solid')
         axes[0,k].add_patch(circ)
-        #circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
-        #              edgecolor='k', linestyle='solid')
-        #axes[1,k].add_patch(circ)
+        circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
+                     edgecolor='k', linestyle='solid')
+        axes[1,k].add_patch(circ)
 
         axes[0,k].axhline(0., color='k', alpha=0.75)
         axes[1,k].axhline(0., color='k', alpha=0.75)
@@ -557,9 +557,6 @@ def total_rv():
     figv.savefig(filenamev)
 
 def trace_plots():
-    matplotlib.rc('xtick', labelsize=18)
-    matplotlib.rc('ytick', labelsize=18)
-
     cfg_filename = os.path.join(streamspath, "config", "exp1_8.yml")
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
@@ -614,7 +611,152 @@ def trace_plots():
     fig.savefig(os.path.join(plot_path, "mcmc_trace.{}".format(ext)))
 
 def exp1_posterior():
-    pass
+    cfg_filename = os.path.join(streamspath, "config", "exp1_8.yml")
+    config = read_config(cfg_filename)
+    model = StreamModel.from_config(config)
+
+    hdf5_filename = os.path.join(streamspath, "plots", "hotfoot", "exper1_8", "inference.hdf5")
+    with h5py.File(hdf5_filename, "r") as f:
+        chain = f["chain"].value
+        #flatchain = f["flatchain"].value
+        acceptance_fraction = f["acceptance_fraction"].value
+        p0 = f["p0"].value
+        acor = f["acor"].value
+
+    _flatchain = np.vstack(chain[:,2500::int(np.median(acor))])
+    flatchain = np.zeros_like(_flatchain)
+
+    params = OrderedDict(model.parameters['potential'].items() + \
+                         model.parameters['satellite'].items())
+    labels = ["$q_1$", "$q_z$", r"$\phi$ [deg]", "$v_h$ [km/s]", r"$\alpha$"]
+
+    truths = []
+    bounds = []
+    for ii,p in enumerate(params.values()):
+        if p.name == 'alpha':
+            truths.append(np.nan)
+            bounds.append((1., 2.0))
+            flatchain[:,ii] = _unit_transform[p.name](_flatchain[:,ii])
+            continue
+
+        truth = _unit_transform[p.name](p.truth)
+        truths.append(truth)
+        bounds.append((0.95*truth, 1.05*truth))
+        flatchain[:,ii] = _unit_transform[p.name](_flatchain[:,ii])
+
+    fig = triangle.corner(flatchain, plot_datapoints=False,
+                          truths=truths, extents=bounds, labels=labels)
+    fig.savefig(os.path.join(plot_path, "exp1_posterior.png"))
+
+def exp_posteriors(exp_num):
+    cfg_filename = os.path.join(streamspath, "config", "exp{}.yml".format(exp_num))
+    config = read_config(cfg_filename)
+    model = StreamModel.from_config(config)
+
+    hdf5_filename = os.path.join(streamspath, "plots", "hotfoot",
+                                 "exper{}".format(exp_num), "inference.hdf5")
+    with h5py.File(hdf5_filename, "r") as f:
+        chain = f["chain"].value
+        acceptance_fraction = f["acceptance_fraction"].value
+        _p0 = f["p0"].value
+        acor = f["acor"].value
+
+    print("median acor: {}".format(int(np.median(acor))))
+    _flatchain = np.vstack(chain[acceptance_fraction>0.03,5000::int(np.median(acor))])
+    d = model.label_flatchain(_flatchain)
+    p0 = model.label_flatchain(_p0)
+
+    # Potential
+    this_flatchain = np.zeros((_flatchain.shape[0], len(d["potential"])))
+    this_p0 = np.zeros((_p0.shape[0], this_flatchain.shape[1]))
+    truths = []
+    bounds = []
+    labels = []
+    for ii,pname in enumerate(d["potential"].keys()):
+        this_flatchain[:,ii] = _unit_transform[pname](np.squeeze(d["potential"][pname]))
+        this_p0[:,ii] = _unit_transform[pname](np.squeeze(p0["potential"][pname]))
+
+        p = model.parameters["potential"][pname]
+        truth = _unit_transform[pname](p.truth)
+        truths.append(truth)
+        bounds.append((0.75*truth, 1.25*truth))
+        labels.append(_label_map[pname])
+
+    fig = triangle.corner(this_flatchain, plot_datapoints=False,
+                          truths=truths, extents=bounds, labels=labels)
+    fig.savefig(os.path.join(plot_path, "exp{}_potential.{}".format(exp_num, ext)))
+
+    # Particle
+    p_idx = 5
+    this_flatchain = np.zeros((_flatchain.shape[0], len(d["particles"])))
+    this_p0 = np.zeros((_p0.shape[0], this_flatchain.shape[1]))
+    truths = []
+    bounds = []
+    labels = []
+    for ii,pname in enumerate(d["particles"].keys()):
+        this_flatchain[:,ii] = _unit_transform[pname](d["particles"][pname][:,p_idx])
+        this_p0[:,ii] = _unit_transform[pname](p0["particles"][pname][:,p_idx])
+
+        p = model.parameters["particles"][pname]
+        truth = _unit_transform[pname](p.truth[p_idx])
+        truths.append(truth)
+
+        if pname == "tub":
+            bounds.append((model.lnpargs[1], model.lnpargs[0]))
+        else:
+            sig = model.particles.errors[pname].value[p_idx]
+            mu = model.particles[pname].value[p_idx]
+            bounds.append((mu-3*sig, mu+3*sig))
+
+        labels.append(_label_map[pname])
+
+    # HACK
+    bounds = [(34,40), (1.95,2.26), (-1.3,-1.05), (-85,-40), bounds[-1]]
+    fig = triangle.corner(this_flatchain, plot_datapoints=False,
+                          truths=truths, labels=labels, extents=bounds)
+    fig.savefig(os.path.join(plot_path, "exp{}_particle.{}".format(exp_num, ext)))
+
+    # Satellite
+    this_flatchain = np.zeros((_flatchain.shape[0], len(d["satellite"])))
+    this_p0 = np.zeros((_p0.shape[0], this_flatchain.shape[1]))
+    truths = []
+    bounds = []
+    labels = []
+    # HACK BECAUSE I SUCK
+    keys = ["d","mul","mub","vr","alpha"]
+    #for ii,pname in enumerate(d["satellite"].keys()):
+    for ii,pname in enumerate(keys):
+        this_flatchain[:,ii] = _unit_transform[pname](d["satellite"][pname][:,0])
+        this_p0[:,ii] = _unit_transform[pname](p0["satellite"][pname][:,0])
+
+        p = model.parameters["satellite"][pname]
+        truth = _unit_transform[pname](p.truth)
+
+        if pname == "alpha":
+            bounds.append((1., 2.5))
+            truths.append(np.nan)
+        else:
+            truths.append(truth)
+            sig = model.satellite.errors[pname].value[0]
+            mu = model.satellite[pname].value[0]
+            bounds.append((mu-3*sig, mu+3*sig))
+
+        labels.append(_label_map[pname])
+
+    # HACK
+    bounds = [(29,32), (-2,-1.75), (1.4,1.7), (130,180), bounds[-1]]
+    fig = triangle.corner(this_flatchain, plot_datapoints=False,
+                          truths=truths, labels=labels, extents=bounds)
+    fig.savefig(os.path.join(plot_path, "exp{}_satellite.{}".format(exp_num, ext)))
+
+def exp2_posteriors():
+    exp_posteriors(2)
+
+def exp3_posteriors():
+    exp_posteriors(3)
+
+def exp4_posteriors():
+    exp_posteriors(4)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
