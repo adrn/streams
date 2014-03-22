@@ -569,10 +569,9 @@ def trace_plots():
         p0 = f["p0"].value
         acor = f["acor"].value
 
-    bounds = (-7,7)
     labels = ["$q_1$", "$q_z$", r"$\phi$", "$v_h$", r"$\alpha$"]
-    ticks = (-5, 0, 5)
-    ticklabels = ["-5%", "truth", "5%"]
+    bounds = [(1.3,1.5),(1.25,1.45),(85,115),(118,132),(0.5,2.5)]
+    ticks = [(1.35,1.4,1.45),(1.3,1.35,1.4),(90,100,110),(120,125,130),(1.,1.5,2.)]
 
     # plot individual walkers
     fig,axes = plt.subplots(5,1,figsize=(8.5,11),sharex=True)
@@ -580,34 +579,45 @@ def trace_plots():
     k = 0
     for gname,group in model.parameters.items():
         for pname,p in group.items():
-
-            if gname == "potential":
-                thischain = (chain[...,k] - p.truth) / p.truth*100.
-            else:
-                thischain = chain[...,k]
+            thischain = _unit_transform[pname](chain[...,k])
 
             for ii in range(config['walkers']):
                 axes.flat[k].plot(thischain[ii,5000:],
                                   alpha=0.1, marker=None,
                                   drawstyle='steps', color='k')
-            axes.flat[k].set_ylabel(labels[k], rotation='horizontal')
+            #axes.flat[k].set_ylabel(labels[k], rotation='horizontal')
+            axes[k].text(-0.02, 0.5, labels[k],
+                         horizontalalignment='right',
+                         fontsize=22,
+                         transform=axes[k].transAxes)
 
-            if gname == "potential":
-                axes.flat[k].set_ylim(bounds)
-                axes.flat[k].axhline(0., color='#31a354', lw=2., linestyle='-', alpha=0.9)
-                axes.flat[k].set_yticks(ticks)
-                axes.flat[k].set_yticklabels(ticklabels)
-            else:
-                axes.flat[k].set_yticks([1.,1.5,2.])
-                axes.flat[k].set_ylim(0.75,2.25)
-            #axes.flat[k].yaxis.tick_right()
-            axes.flat[k].yaxis.set_label_position("right")
+            if pname == "phi":
+                axes[k].text(1.07, 0.475, "deg",
+                         horizontalalignment='left',
+                         fontsize=18,
+                         transform=axes[k].transAxes)
+
+            elif pname == "v_halo":
+                axes[k].text(1.07, 0.475, "km/s",
+                         horizontalalignment='left',
+                         fontsize=18,
+                         transform=axes[k].transAxes)
+
+            axes[k].text(0.25, 0.1, r"$t_{\rm acor}$=" + "{}".format(int(acor[k])),
+                         horizontalalignment='right',
+                         fontsize=18,
+                         transform=axes[k].transAxes)
+
+            axes.flat[k].set_yticks(ticks[k])
+            axes.flat[k].set_ylim(bounds[k])
+            axes.flat[k].yaxis.tick_right()
+            #axes.flat[k].yaxis.set_label_position("right")
 
             k += 1
 
     axes.flat[-1].set_xlabel("Step number")
     fig.tight_layout()
-    fig.subplots_adjust(hspace=0.04)
+    fig.subplots_adjust(hspace=0.04, left=0.14, right=0.86)
     fig.savefig(os.path.join(plot_path, "mcmc_trace.{}".format(ext)))
 
 def exp1_posterior():
