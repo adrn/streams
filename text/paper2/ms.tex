@@ -108,7 +108,7 @@ The method generalizes to encompass mixtures of independent debris structures,
   Galaxy: halo
 }
 
-\section{Introduction}
+\section{Introduction}\label{sec:intro}
 
 Early large-scale, cosmological simulations of galaxy formation in the $\Lambda$CDM paradigm suggested that the spherically-averaged density profiles of dark matter halos follow a universal profile across a large dynamic range in mass \citep{navarro96}. Since then, higher resolution simulations --- both with and without baryons --- have produced dark matter halos that (1) are permeated with substructure on many scales, (2) are triaxial in shape, and (3) have shapes and orientations that vary with radius \citep{dubinski91, jing02, kuhlen07, veraciro11}. Dark-matter-only simulations produce triaxial halos \citep{jing02} with large density fluctuations \citep{zemp09}. Inclusion of baryons tends to soften the triaxiality and graininess in the inner galaxy through a combination of dissipative infall \citep{dubinski94} or cooling \citep{bryan13}. These processes combined with the gravity from a baryonic disk or ellipsoid can act to make the inner halo more oblate or spherical, however they do not seem to erase the clumpy, triaxial nature of the outer halo \citep[e.g.,][]{pontzen12}. This can lead to radially-dependent axis ratios, orientation, and smoothness, thus suggesting that the true mass distributions around Milky Way-like galaxies are not easily represented by integrable potentials.
 
@@ -308,6 +308,7 @@ In what follows, we use \rewinder\, to model ``observations'' of the n-body simu
 
 For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to sample from the posterior probability distribution given by our model. Standard MCMC algorithms (e.g., Metropolis-Hastings) update a single chain while exploring parameter space. We instead use an affine-invariant ``ensemble'' sampler \citep{goodman10} that, each step in parameter space, updates the positions of many ``walkers'' (the ensemble). This algorithm is implemented in the \project{Python} programming language \citep{foremanmackey13} and runs naturally in a parallelized environment, e.g., the message passing interface (MPI). In each experiment we run the walkers for a large number of steps from starting positions described below, then throw away these samples and take the positions from the final step of this ``burn-in'' phase as a starting point for the samples used for inference. We compute the autocorrelation time for each sampled parameter (using \texttt{ACOR}\footnote{www.math.nyu.edu/faculty/goodman/software/acor/}$^{,}$\footnote{https://github.com/dfm/acor}) and thin the chains by taking every $\mathrm{median}(t_{\rm acor})$ sample to ensure the samples are close to independent.
 
+% TODO: m and mdot!!
 \begin{table}[h]
 \begin{center}
 	\begin{tabular}{l c l} \toprule
@@ -422,7 +423,7 @@ As with the previous experiment, this experiment includes 49 model parameters in
 \end{center}
 \end{figure}
 
-\subsection{Precise distance measurements of stars with no observed progenitor}
+\subsection{Near-future uncertainties but no observed progenitor}
 Most of the streams and debris structures discovered thus far have undetected or unconfirmed progenitors. We expect the phase-space positions of the stars to provide constraints on the position of the progenitor even if it is unobserved. For this experiment, we consider a situation where we have precise (2\%) distance measurements, 10~km/s radial velocity uncertainties, and no proper motion measurements to eight stream stars (the same used in previous experiments), and no knowledge of the 6D position of the progenitor object. 
 
 Figures~\ref{fig:exp4_potential}, \ref{fig:exp4_satellite}, \ref{fig:exp4_particle} show the marginalized posteriors for the potential parameters, satellite parameters, and parameters for a single particle.
@@ -449,15 +450,28 @@ Figures~\ref{fig:exp4_potential}, \ref{fig:exp4_satellite}, \ref{fig:exp4_partic
 \end{figure}
 
 \section{Discussion}
-\rewinder\, addresses each of the issues identified with other stream modeling methods: 
-\begin{enumerate}
-	\item The true 6D positions of stars and the progenitor are included as parameters in the model and thus observational uncertainties and missing data dimensions are naturally incorporated in the inferences.
-	\item The orbits of the stars are directly integrated and only require a function that evaluates the acceleration due to the potential at any given time and position. In this article we only consider one parametrized model for the potential but [...]
-	\item Incorporating multiple streams only requires multiplying likelihoods.
-	\item The inference is much faster than full n-body modeling because the orbits of the stars and progenitor are integrated as test particles.
-\end{enumerate}
+In Section~\ref{sec:intro} we identified several issues that have only been partially solved by other stream modeling methods; \rewinder\, addresses each of these.
+%\begin{enumerate}
+%	\item Observational uncertainties and missing data dimensions are naturally handled in the inferences by including the true 6D positions of stars and the progenitor as parameters in the model.
+%	\item The orbits of the stars and progenitor are directly integrated and only require a function that evaluates the acceleration due to the potential at a given position (and time). 
+%	\item Incorporating multiple streams into the inference only requires multiplying likelihoods computed for each stream and progenitor.
+%	\item Each star adds constraints on the potential parameters and does not require matching a simulated density to the observed density of stars.
+%	\item The inference is much faster than full n-body modeling because the orbits of the stars and progenitor are integrated as test particles.
+%\end{enumerate}
 
-% Our method also naturally extends to using multiple debris structures \citep[see][who illustrate the power of using multiple streams to simultaneously constrain the potential]{deg14}.
+Observational uncertainties and missing data dimensions are naturally handled in the inferences by including the true 6D positions of stars and the progenitor as parameters in the model. This is a very important aspect [...because errors will be a function of distance, to properly model debris requires accounting for the uncertainties]. In this article we have tested \rewinder\, using data of varied quality for a small sample of stars. In future work, we will investigate the effect of reducing the data quality but increasing the sample size. %[the power of this method is in small samples with high-quality data]
+
+No assumptions were made about the the form of the Galactic potential used in \rewinder: the potential could be time-dependent, clumpy, or have properties that vary with radius. The orbits of the stars and progenitor are directly integrated and only require a function that evaluates the acceleration due to the potential at a given position (and time). The experiments in this article infer potential parameters from the same functional potential used in the n-body simulations that generated the fake data. In future work, we will (1) try fitting incorrect potential models to see if we can still recover global properties, e.g., flattening; (2) run simulations with smoothly changing potentials \citep[e.g.,][]{buist14} and model the time dependence; and (3) explore using a generic, non-parametric potential form (e.g., a basis function expansion) as the recovery potential model. 
+
+Each streams will provide constraints on different aspects of the potential. For example, more eccentric streams may better constrain the radial profile \citep[see][who illustrate the power of using multiple streams to simultaneously constrain the potential using orbit fitting]{deg14}. In this article, we only consider a stream on a Sgr-like orbit, which lies nearly in the Galactic $x$-$z$ plane. We find that the stream puts better constraints on the $z$-axis flattening, $q_z$, than on the flattening in the $x$-$y$ plane, $q_1$, as expected. The best measurements of the detailed shape of the Galactic potential will come from combining constraints from multiple streams. We have defined above a proper likelihood function for observed stars in a given stream, thus incorporating multiple streams into the inference only requires multiplying the likelihoods computed for each stream and progenitor pair.
+
+Each star adds constraints on the potential parameters and does not require matching a simulated density to the observed density of stars.
+
+[Issues about computation and scaling.]
+The inference is much faster than full n-body modeling because the orbits of the stars and progenitor are integrated as test particles.
+Each step in parameter space with \rewinder\, requires integrating the orbits of stars and the progenitor: we presently integrate with a fixed timestep using leapfrog integration. Computing the acceleration due to the given potential at each step is implemented in \project{Cython} (and approaches \project{ANSI-C}-like speed), but the rest of the code is written in pure-\project{Python}. Though already significantly less computationally intensive than running a full n-body simulation for every parameter step, running each MCMC walker for 10000 steps requires parallelization and a few hours of CPU time on a compute cluster. Further optimization of the integration method (e.g., using an adaptive method or implementing in \project{Cython}) could speed up the inference significantly.
+
+% TODO above: now address each point in more detail, shortcomings, what we'll do in future work
 
 Although the \gaia\, project will deliver hundreds of millions of stars useful for dynamical inference,
   it still might be that the most relevant stellar samples for inferring the Milky Way potential might be very small in the end.
@@ -492,29 +506,15 @@ This is expected to be a generic feature in dynamical problems:
   nonetheless but what could we do to improve it?  Related to this,
   the progenitor doesn't shrink with time (as it should).  What's up
   with that?]
-
-[We did not assume the potential is static in time.  At least not in
-  general; nothing in the method requires or suggests this.]
-
-[Issues about computation and scaling.]
+  
+[Haven't explored parameter space...]
+For experiments in this article with realistic uncertainties we have not performed a search in parameter space for the optimal values, and instead started the MCMC walkers with a small dispersion around the true parameter values.
 
 [Nothing special about streams; will work on any structures, including
   shells and the like.]
 
-[Different streams will constraint different properties of the potential -- multiple streams are crucial. Here we use a stream roughly in the X-Z plane, thus we expect it to be more sensitive to flattening in Z direction]
-
-[Don't eschew low-dimensional constraints on the potential!]
-
-[Another prediction of hierarchical structure formation in $\Lambda$CDM is the presence of substructure. In principle, this method would work on any potential that we can integrate orbits in.]
-
-[Haven't explored parameter space...]
-For experiments in this article with realistic uncertainties we have not performed a search in parameter space for the optimal values, and instead started the MCMC walkers with a small dispersion around the true parameter values.
-
-[Computational...]
-Each step in parameter space with \rewinder\, requires integrating the orbits of stars and the progenitor: we presently integrate with a fixed timestep using leapfrog integration. Computing the acceleration due to the given potential at each step is implemented in \project{Cython} (and approaches \project{ANSI-C}-like speed), but the rest of the code is written in pure-\project{Python}. Though already significantly less computationally intensive than running a full n-body simulation for every parameter step, running each MCMC walker for 10000 steps requires parallelization and a few hours of CPU time on a compute cluster. Further optimization of the integration method (e.g., using an adaptive method or implementing in \project{Cython}) could speed up the inference significantly.
-
 \section{Conclusions}
-We have presented a probabilistic model (\rewinder) --- a likelihood function and with priors on the parameters --- for using stars observed in tidal streams to constrain properties of any underlying gravitational potential. \rewinder\, relies on direct orbit integration and not on computing conserved quantities (e.g., actions) and can thus be used with arbitrarily complex (e.g., time-dependent or clumpy) forms of the potential. We have performed several experiments to show that \rewinder\, simultaneously constrains the potential and models the stream given simulated data with a range of realistic uncertainties. 
+We have presented a probabilistic model (\rewinder) --- a likelihood function and with priors on the parameters --- for using stars observed in tidal streams to constrain properties of any underlying gravitational potential. \rewinder\, relies on direct orbit integration and not on computing conserved quantities (e.g., actions) and can thus be used with arbitrarily complex (e.g., time-dependent or clumpy) forms of the potential. We have performed several experiments to show that \rewinder\, simultaneously constrains the potential and models a tidal stream given simulated data with a range of realistic uncertainties. 
 
 \acknowledgements
 We thank Anthony Brown (Leiden) for insight on the \gaia\, data quality and for providing the open source \texttt{PyGaia} code for computing predicted uncertainties. We thank the organizers of the Gaia Challenge (2013) and the University of Surrey for hospitality during this workshop. We thank Hans-Walter Rix (MPIA) and Jo Bovy (IAS) for ... [TODO: HOGG].
