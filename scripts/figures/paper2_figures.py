@@ -658,7 +658,7 @@ def exp1_posterior():
                           truths=truths, extents=bounds, labels=labels)
     fig.savefig(os.path.join(plot_path, "exp1_posterior.png"))
 
-def exp_posteriors(exp_num):
+def exp_posteriors(exp_num, slicey=-5000):
     cfg_filename = os.path.join(streamspath, "config", "exp{}.yml".format(exp_num))
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
@@ -672,7 +672,13 @@ def exp_posteriors(exp_num):
         acor = f["acor"].value
 
     print("median acor: {}".format(int(np.median(acor))))
-    _flatchain = np.vstack(chain[acceptance_fraction>0.03,5000::int(np.median(acor))])
+
+    if slicey is None:
+        slicey = slice(-5000,None,int(np.median(acor)))
+    else:
+        slicey = slice(slicey,None,int(np.median(acor)))
+
+    _flatchain = np.vstack(chain[acceptance_fraction>0.03,slicey])
     d = model.label_flatchain(_flatchain)
     p0 = model.label_flatchain(_p0)
 
@@ -732,10 +738,9 @@ def exp_posteriors(exp_num):
     truths = []
     bounds = []
     labels = []
-    # HACK BECAUSE I SUCK
-    keys = ["d","mul","mub","vr","alpha"]
-    #for ii,pname in enumerate(d["satellite"].keys()):
-    for ii,pname in enumerate(keys):
+
+    #for ii,pname in enumerate(keys):
+    for ii,pname in enumerate(d["satellite"].keys()):
         this_flatchain[:,ii] = _unit_transform[pname](d["satellite"][pname][:,0])
         this_p0[:,ii] = _unit_transform[pname](p0["satellite"][pname][:,0])
 
@@ -755,6 +760,7 @@ def exp_posteriors(exp_num):
 
     # HACK
     bounds = [(29,32), (-2,-1.75), (1.4,1.7), (130,180), bounds[-1]]
+    #bounds = None
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, labels=labels, extents=bounds)
     fig.savefig(os.path.join(plot_path, "exp{}_satellite.{}".format(exp_num, ext)))
@@ -763,7 +769,7 @@ def exp2_posteriors():
     exp_posteriors(2)
 
 def exp3_posteriors():
-    exp_posteriors(3)
+    exp_posteriors(3, slicey=-10000)
 
 def exp4_posteriors():
     exp_posteriors(4)
