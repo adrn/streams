@@ -18,8 +18,6 @@ particle_idx: [582, 585, 231, 300, 637, 508, 404, 1460]
 
 # integration
 dt: -1.
-# t1: 0
-# t2: -6200.
 
 potential:
     class_name: LawMajewski2010
@@ -27,9 +25,11 @@ potential:
 
 particles:
     parameters: [d, mul, mub, vr, tub]
+    missing_dims: []
 
 satellite:
-    parameters: [alpha, d, mul, mub, vr]
+    parameters: [d, mul, mub, vr, alpha]
+    missing_dims: []
 
 # emcee
 start_truth: True

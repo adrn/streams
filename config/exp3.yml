@@ -2,15 +2,17 @@
 seed: 42
 script: infer_potential.py
 name: exper3
+# streams_path: /path/to/streams
 
 # plots / output
 plot:
     mcmc_diagnostics: True
     posterior: True
     ext: png
+#output_path: /tmp
 
 # data
-data_file: data/observed_particles/2.5e8_exp3.hdf5
+data_file: data/observed_particles/2.5e8.hdf5
 nparticles: 8
 particle_idx: [582, 585, 231, 300, 637, 508, 404, 1460]
 
@@ -23,9 +25,11 @@ potential:
 
 particles:
     parameters: [d, mul, mub, vr, tub]
+    missing_dims: [mul, mub]
 
 satellite:
     parameters: [d, mul, mub, vr, alpha]
+    missing_dims: [mul, mub]
 
 # emcee
 start_truth: True
