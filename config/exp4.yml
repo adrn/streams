@@ -25,7 +25,7 @@ potential:
 
 particles:
     parameters: [d, mul, mub, vr, tub]
-    missing_dims: [mul, mub]
+    missing_dims: []
 
 satellite:
     parameters: [l, b, d, mul, mub, vr, alpha]
