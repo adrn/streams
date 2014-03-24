@@ -1,0 +1,41 @@
+# general
+seed: 42
+script: infer_potential.py
+name: exper5
+# streams_path: /path/to/streams
+
+# plots / output
+plot:
+    mcmc_diagnostics: True
+    posterior: True
+    ext: png
+#output_path: /tmp
+
+# data
+data_file: data/observed_particles/2.5e8.hdf5
+nparticles: 16
+particle_idx: [582, 585, 231, 300, 635, 1229, 1254, 1343, 637, 508, 404, 1460, 973, 1444, 1538, 1328]
+
+# integration
+dt: -1.
+
+potential:
+    class_name: LawMajewski2010
+    parameters: [q1, qz, phi, v_halo]
+
+particles:
+    parameters: [d, mul, mub, vr, tub]
+    missing_dims: [mul, mub]
+
+satellite:
+    parameters: [l, b, d, mul, mub, vr, alpha]
+    missing_dims: [l, b, d, mul, mub, vr]
+
+# emcee
+start_truth: True
+walkers: 512
+burn_in: 5000
+burn_beta: 1.
+cool_down: 0
+steps: 0
+thin_chain: False
