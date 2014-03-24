@@ -663,7 +663,9 @@ def exp_posteriors(exp_num, slicey=-5000):
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
 
-    hdf5_filename = os.path.join(streamspath, "plots", "hotfoot",
+    #hdf5_filename = os.path.join(streamspath, "plots", "hotfoot",
+    #                             "exper{}".format(exp_num), "inference.hdf5")
+    hdf5_filename = os.path.join(streamspath, "plots", "infer_potential",
                                  "exper{}".format(exp_num), "inference.hdf5")
     with h5py.File(hdf5_filename, "r") as f:
         chain = f["chain"].value
@@ -727,7 +729,7 @@ def exp_posteriors(exp_num, slicey=-5000):
         labels.append(_label_map[pname])
 
     # HACK
-    bounds = [(34,40), (1.95,2.26), (-1.3,-1.05), (-85,-40), bounds[-1]]
+    bounds = [(32.5,41), (1.75,2.4), (-1.45,-1.0), (-85,-40), bounds[-1]]
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, labels=labels, extents=bounds)
     fig.savefig(os.path.join(plot_path, "exp{}_particle.{}".format(exp_num, ext)))
@@ -759,7 +761,7 @@ def exp_posteriors(exp_num, slicey=-5000):
         labels.append(_label_map[pname])
 
     # HACK
-    bounds = [(29,32), (-2,-1.75), (1.4,1.7), (130,180), bounds[-1]]
+    bounds = [(28,33), (-2.1,-1.6), (1.3,1.8), (125,185), bounds[-1]]
     #bounds = None
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, labels=labels, extents=bounds)
