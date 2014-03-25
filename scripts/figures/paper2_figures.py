@@ -663,10 +663,10 @@ def exp_posteriors(exp_num, slicey=-5000):
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
 
-    #hdf5_filename = os.path.join(streamspath, "plots", "hotfoot",
-    #                             "exper{}".format(exp_num), "inference.hdf5")
-    hdf5_filename = os.path.join(streamspath, "plots", "infer_potential",
-                                 "exper{}".format(exp_num), "inference.hdf5")
+    hdf5_filename = os.path.join(streamspath, "plots", "hotfoot",
+                                "exper{}".format(exp_num), "inference.hdf5")
+    # hdf5_filename = os.path.join(streamspath, "plots", "infer_potential",
+    #                              "exper{}".format(exp_num), "inference.hdf5")
     with h5py.File(hdf5_filename, "r") as f:
         chain = f["chain"].value
         acceptance_fraction = f["acceptance_fraction"].value
@@ -762,19 +762,22 @@ def exp_posteriors(exp_num, slicey=-5000):
 
     # HACK
     bounds = [(28,33), (-2.1,-1.6), (1.3,1.8), (125,185), bounds[-1]]
+    if len(d["satellite"]) > len(bounds):
+        bounds = [(0,10), (-20,5)] + bounds
+
     #bounds = None
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, labels=labels, extents=bounds)
     fig.savefig(os.path.join(plot_path, "exp{}_satellite.{}".format(exp_num, ext)))
 
-def exp2_posteriors():
+def exp2_posteriors(slicey=-10000):
     exp_posteriors(2)
 
 def exp3_posteriors():
     exp_posteriors(3, slicey=-10000)
 
 def exp4_posteriors():
-    exp_posteriors(4)
+    exp_posteriors(4, slicey=-7500)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
