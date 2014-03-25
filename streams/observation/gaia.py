@@ -127,21 +127,10 @@ def gaia_spitzer_errors(particles):
 
     return dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
 
-def current_data_errors(particles, missing_dims=[]):
-    """ Given particles in heliocentric frame, return an array of
-        Gaia + Spitzer errors (same shape as particles._X).
-    """
+def current_data_star(particles):
 
-    # assuming [Fe/H] = -0.5 for Sgr
-    M_V, dM_V = rrl_M_V(-0.5)
-
-    try:
-        V = apparent_magnitude(M_V, particles["d"])
-    except AttributeError:
-        raise ValueError("Particles in wrong reference frame? Has "
-                         "coordinates: {}".format(particles.names))
-    dlb = parallax_error(V, rrl_V_minus_I)
-    dmu = 25*u.mas/u.yr
+    dlb = 0.1*u.arcsecond
+    dmu = 0.1*u.mas/u.yr # http://adsabs.harvard.edu/abs/2013ApJ...766...79K
 
     # angular position error is negligible
     l = dlb.to(particles["l"].unit)
@@ -152,14 +141,32 @@ def current_data_errors(particles, missing_dims=[]):
     mub = dmu.to(particles["mub"].unit)
 
     # distance
-    d = 0.02*particles["d"]
+    d = 0.15*particles["d"] # 15% distances, http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2004AJ....128..245M&db_key=AST&link_type=ABSTRACT&high=51a39ba3d727427
+
+    # radial velocity
+    vr = 5.*u.km/u.s * np.ones_like(particles["vr"].value) # M giant, http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=2004AJ....128..245M&db_key=AST&link_type=ABSTRACT&high=51a39ba3d727427
+
+    errs = dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
+    return errs
+
+def current_data_sat(particles):
+
+    dlb = 0.1*u.arcsecond
+    dmu = 0.2*u.mas/u.yr # http://iopscience.iop.org/1538-3881/139/3/839/pdf/aj_139_3_839.pdf
+
+    # angular position error is negligible
+    l = dlb.to(particles["l"].unit)
+    b = dlb.to(particles["b"].unit)
+
+    # proper motion
+    mul = dmu.to(particles["mul"].unit)
+    mub = dmu.to(particles["mub"].unit)
+
+    # distance
+    d = 0.8*u.kpc # http://adsabs.harvard.edu/abs/2009AJ....137.4478K
 
     # radial velocity
     vr = 10.*u.km/u.s * np.ones_like(particles["vr"].value)
 
     errs = dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
-
-    for dim in missing_dims:
-        errs[dim] = np.inf*errs[dim].unit
-
     return errs
