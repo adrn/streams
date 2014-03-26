@@ -35,13 +35,18 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def fix_whack_walkers(acc_frac, pos, threshold=0.01):
-    if np.any(acc_frac < 0.02):
-        ix = acc_frac < 0.02
+def fix_whack_walkers(pos, acc_frac, flatlnprob, flatchain, threshold=0.02):
+    if np.any(acc_frac < threshold):
+        ix = acc_frac < threshold
 
-        # resample positions for bad walkers
-        pos[ix] = np.random.normal(np.median(pos[~ix], axis=0),
-                                   np.fabs(np.median(pos[~ix], axis=0)/100.),
+        # # resample positions for bad walkers
+        # pos[ix] = np.random.normal(np.median(pos[~ix], axis=0),
+        #                            np.fabs(np.median(pos[~ix], axis=0)/100.),
+        #                            size=(sum(ix),pos.shape[1]))
+
+        best_pos = flatchain[flatlnprob.argmax()]
+        pos[ix] = np.random.normal(best_pos,
+                                   np.fabs(best_pos/100.),
                                    size=(sum(ix),pos.shape[1]))
 
     return pos
@@ -99,7 +104,10 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
             logger.info("Burning in sampler for {} steps...".format(nburn))
 
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
-            pos = fix_whack_walkers(sampler.acceptance_fraction, pos, threshold=0.02)
+            #pos = fix_whack_walkers(sampler, pos, threshold=0.02)
+            pos = fix_whack_walkers(pos, sampler.acceptance_fraction,
+                                    sampler.flatlnprobability, sampler.flatchain,
+                                    threshold=0.02)
 
             if burn_beta != 1 and ncool_down > 0:
                 best_idx = sampler.flatlnprobability.argmax()
@@ -130,7 +138,9 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
                 pass
 
             try:
-                pos = fix_whack_walkers(sampler.acceptance_fraction, pos, threshold=0.02)
+                pos = fix_whack_walkers(pos, sampler.acceptance_fraction,
+                                    sampler.flatlnprobability, sampler.flatchain,
+                                    threshold=0.02)
             except:
                 pass
 
@@ -170,11 +180,16 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
             old_chain = f["chain"].value
             old_flatchain = f["flatchain"].value
             old_lnprobability = f["lnprobability"].value
+            old_flatlnprobability = np.vstack(old_lnprobability)
             old_p0 = f["p0"].value
             old_acc_frac = f["acceptance_fraction"].value
 
         pos = old_chain[:,-1]
-        pos = fix_whack_walkers(old_acc_frac, pos, threshold=0.02)
+        #pos = fix_whack_walkers(pos, flatlnprob, flatchain, threshold=0.02)
+        pos = fix_whack_walkers(pos, old_acc_frac,
+                                old_flatlnprobability,
+                                old_flatchain,
+                                threshold=0.02)
 
         sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
 
