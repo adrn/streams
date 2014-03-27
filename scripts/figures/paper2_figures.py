@@ -299,11 +299,11 @@ def Lpts():
         axes[0,k].set_xlim(-5,5)
         axes[0,k].set_ylim(axes[0,k].get_xlim())
 
-        axes[1,k].set_xlabel(r"$x_1$")
+        axes[1,k].set_xlabel(r"$x_1/r_{\rm tide}$")
 
         if k == 0:
-            axes[0,k].set_ylabel(r"$x_2$")
-            axes[1,k].set_ylabel(r"$x_3$")
+            axes[0,k].set_ylabel(r"$x_2/r_{\rm tide}$")
+            axes[1,k].set_ylabel(r"$x_3/r_{\rm tide}$")
 
         _tcross = r_tide / np.sqrt(G.decompose(usys).value*m/r_tide)
         for ii,jj in enumerate(t_idx):
@@ -334,11 +334,11 @@ def Lpts():
         axes2[1,k].set_xlim(-5,5)
         axes2[1,k].set_ylim(axes2[1,k].get_xlim())
 
-        axes2[1,k].set_xlabel(r"$v_{x_1}$")
+        axes2[1,k].set_xlabel(r"$v_{x_1}/\sigma_v$")
 
         if k == 0:
-            axes2[0,k].set_ylabel(r"$v_{x_2}$")
-            axes2[1,k].set_ylabel(r"$v_{x_3}$")
+            axes2[0,k].set_ylabel(r"$v_{x_2}/\sigma_v$")
+            axes2[1,k].set_ylabel(r"$v_{x_3}/\sigma_v$")
 
         axes[0,k].text(0.5, 1.05, r"$2.5\times10^{}M_\odot$".format(_m),
                        horizontalalignment='center',
@@ -700,6 +700,12 @@ def exp_posteriors(exp_num, slicey=-5000):
         bounds.append((0.75*truth, 1.25*truth))
         labels.append(_label_map[pname])
 
+    q16,q50,q84 = np.array(np.percentile(this_flatchain, [16, 50, 84], axis=0))
+    q_m, q_p = q50-q16, q84-q50
+    for ii,pname in enumerate(d["potential"].keys()):
+        print("{} \n\t truth={:.2f}\n\t measured={:.2f}+{:.2f}-{:.2f}"\
+                    .format(pname,truths[ii],q50[ii],q_p[ii],q_m[ii]))
+
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, extents=bounds, labels=labels)
     fig.savefig(os.path.join(plot_path, "exp{}_potential.{}".format(exp_num, ext)))
@@ -770,14 +776,14 @@ def exp_posteriors(exp_num, slicey=-5000):
                           truths=truths, labels=labels, extents=bounds)
     fig.savefig(os.path.join(plot_path, "exp{}_satellite.{}".format(exp_num, ext)))
 
-def exp2_posteriors(slicey=-10000):
-    exp_posteriors(2)
+def exp2_posteriors():
+    exp_posteriors(2, slicey=-10000)
 
 def exp3_posteriors():
-    exp_posteriors(3, slicey=-10000)
+    exp_posteriors(3, slicey=-15000)
 
 def exp4_posteriors():
-    exp_posteriors(4, slicey=-7500)
+    exp_posteriors(4, slicey=-15000)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
