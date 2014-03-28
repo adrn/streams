@@ -259,7 +259,7 @@ class StreamModel(object):
                         prior = param._prior
                         if hasattr(prior, 'a') and hasattr(prior, 'b'):
                             mu = np.ravel(param.truth)
-                            sigma = (prior.b-prior.a)/2.
+                            sigma = mu/100.
                             a = (prior.a - mu) / sigma
                             b = (prior.b - mu) / sigma
                             if param.size > 1:
