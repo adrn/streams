@@ -90,19 +90,19 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     #########################################################################
     # if not marginalizing over unbinding time, get the orbit index closest to
     #   tub for each star
-    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
-    s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
-    p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
-    p_x_hel = _gc_to_hel(p_orbits)
-    #jac1 = _xyz_sph_jac(p_x_hel)
-    jac1 = xyz_sph_jac(p_x_hel)
+    # t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
+    # s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
+    # p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    # m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
+    # p_x_hel = _gc_to_hel(p_orbits)
+    # #jac1 = _xyz_sph_jac(p_x_hel)
+    # jac1 = xyz_sph_jac(p_x_hel)
     #########################################################################
 
     #########################################################################
     # if marginalizing over tub, just use the full orbits
-    # p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6))
-    # jac1 = _xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
+    p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6)).reshape(ntimes,nparticles,6)
+    jac1 = xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
     #########################################################################
 
     s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
@@ -141,7 +141,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     #                (np.log(v_disp) + VY**2) + \
     #                (np.log(v_disp) + VZ**2))
 
-    sigma_r = 0.5
+    sigma_r = sigma_v = 1.0
     r_term = -0.5*((np.log(sigma_r) + (X-alpha*beta)**2/sigma_r**2) + \
                    (np.log(sigma_r) + Y**2/sigma_r**2) + \
                    (np.log(sigma_r) + Z**2/sigma_r**2))
@@ -176,16 +176,16 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     # fig.savefig("/Users/adrian/Desktop/derp.png")
     # sys.exit(0)
 
-    sigma_v = 0.5
+    # sigma_v = 0.5
     v_term = -0.5*((np.log(sigma_v) + VX**2/sigma_v**2) + \
                    (np.log(sigma_v) + VY**2/sigma_v**2) + \
                    (np.log(sigma_v) + VZ**2/sigma_v**2))
 
     not_shocked = (r_term + v_term + jac1)
 
-    return not_shocked
+    #return not_shocked
 
-    # return logsumexp(r_term + v_term + jac1, axis=0)
+    return logsumexp(r_term + v_term + jac1, axis=0)
 
 
 
