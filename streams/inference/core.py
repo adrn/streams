@@ -407,12 +407,14 @@ class StreamModel(object):
         W_ij = []
         D_ij = []
         sig_ij = []
+        K = 0
         for k in heliocentric.coord_names:
             try:
                 p_hel.append(param_dict['particles'][k])
                 W_ij.append(param_dict['particles'][k])
                 D_ij.append(self.particles[k].decompose(usys).value)
                 sig_ij.append(self.particles.errors[k].decompose(usys).value)
+                K += 1
             except KeyError:
                 p_hel.append(self.true_particles[k].decompose(usys).value)
         p_hel = np.vstack(p_hel).T
@@ -426,11 +428,13 @@ class StreamModel(object):
         W_ij = np.array(W_ij)
         D_ij = np.array(D_ij)
         sig_ij = np.array(sig_ij)
-        K = sum(np.isfinite(sig_ij[:,0]))
 
-        data_like = 0.5*(np.log(sig_ij**2) + ((W_ij - D_ij)/sig_ij)**2)
-        data_like[np.isinf(sig_ij)] = 0.
-        data_like = -K/2.*np.log(2*np.pi) - np.sum(data_like, axis=0)
+        if K > 0:
+            data_like = 0.5*(np.log(sig_ij**2) + ((W_ij - D_ij)/sig_ij)**2)
+            data_like[np.isinf(sig_ij)] = 0.
+            data_like = -K/2.*np.log(2*np.pi) - np.sum(data_like, axis=0)
+        else:
+            data_like = 0.
 
         # particle unbinding time
         try:
@@ -449,12 +453,14 @@ class StreamModel(object):
         W_j = []
         D_j = []
         sig_j = []
+        K = 0
         for k in heliocentric.coord_names:
             try:
                 s_hel.append(param_dict['satellite'][k])
                 W_j.append(param_dict['satellite'][k])
                 D_j.append(self.satellite[k].decompose(usys).value)
                 sig_j.append(self.satellite.errors[k].decompose(usys).value)
+                K += 1
             except KeyError:
                 s_hel.append(self.true_satellite[k].decompose(usys).value)
         s_hel = np.vstack(s_hel).T
@@ -468,11 +474,13 @@ class StreamModel(object):
         W_j = np.array(W_j)
         D_j = np.squeeze(D_j)
         sig_j = np.squeeze(sig_j)
-        K = sum(np.isfinite(sig_ij[:,0]))
 
-        sat_like = 0.5*(np.log(sig_j**2) + ((W_j - D_j)/sig_j)**2)
-        sat_like[np.isinf(sig_j)] = 0.
-        sat_like = -K/2.*np.log(2*np.pi) - np.sum(sat_like)
+        if K > 0:
+            sat_like = 0.5*(np.log(sig_j**2) + ((W_j - D_j)/sig_j)**2)
+            sat_like[np.isinf(sig_j)] = 0.
+            sat_like = -K/2.*np.log(2*np.pi) - np.sum(sat_like)
+        else:
+            sat_like = 0.
 
         # satellite mass
         try:
