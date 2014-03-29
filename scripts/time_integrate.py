@@ -25,7 +25,7 @@ from streams.inference.back_integrate import back_integration_likelihood
 nparticles = 16
 potential = LawMajewski2010()
 simulation = io.SgrSimulation("sgr_nfw/M2.5e+08", "SNAP113")
-particles = simulation.particles(N=nparticles, expr="tub!=0")\
+particles = simulation.particles(n=nparticles, expr="tub!=0")\
                       .to_frame(heliocentric)
 satellite = simulation.satellite()\
                       .to_frame(heliocentric)
@@ -54,17 +54,17 @@ print(np.min(times), "seconds per integration")
 times = []
 for ii in range(10):
     a = time.time()
-    back_integration_likelihood(6200, 0, -1, potential, p_hel, s_hel,
-                                2.5e8, 0.01)
+    back_integration_likelihood(6200, 0, -1, potential, p_gc, s_gc,
+                                2.5e8, 0.01, particles.tub, 1.5,
+                                np.array([-1]*nparticles))
     times.append(time.time()-a)
 
 print(np.min(times), "seconds per likelihood call")
 
 _config = """
 name: test
-data_file: data/observed_particles/2.5e8_N1024.hdf5
-nparticles: 4
-particle_idx: [16, 194, 575, 702]
+data_file: data/observed_particles/2.5e8.hdf5
+nparticles: {}
 
 potential:
     class_name: LawMajewski2010
@@ -75,7 +75,7 @@ particles:
 
 satellite:
     parameters: [d,mul,mub,vr]
-"""
+""".format(nparticles)
 
 config = io.read_config(_config)
 model = si.StreamModel.from_config(config)
