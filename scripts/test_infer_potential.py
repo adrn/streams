@@ -37,8 +37,8 @@ logging.basicConfig(level=logging.DEBUG)
 minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8.hdf5
-nparticles: 8
-particle_idx: [582, 585, 231, 920, 637, 508, 404, 1460]
+nparticles: 4
+particle_idx: [582, 585, 637, 508]
 
 potential:
     class_name: LawMajewski2010
@@ -56,7 +56,7 @@ pot_params = """
 """
 
 ptc_params = """
-    parameters: [d, mul, mub]
+    parameters: [d]
 """
 #    parameters: [d, mul, mub, vr]
 
@@ -73,7 +73,7 @@ lm10_c = minimum_config.format(potential_params=pot_params,
 #                                 particles_params=ptc_params,
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params=pot_params,
-                                particles_params=ptc_params,
+                                particles_params="",
                                 satellite_params=sat_params)
 
 # particles_params=ptc_params,
