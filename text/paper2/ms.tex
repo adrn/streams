@@ -336,8 +336,8 @@ For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to
 		\toprule
 		position & $\bs{r}_0$ & $\|\bs{r}_0\|\sim\mathcal{U}(0,200)$~kpc \\
 		velocity & $\bs{v}_0$ & $\|\bs{v}_0\|\sim\mathcal{N}(\mu=0,\sigma^2=4000)$~km/s\\
-		tail assignment (binary) & $\beta$ & $\pm1$~equally likely (fixed at truth)\\ % TODO: how to say equal weight to -1 or 1?
-		time unbound & $\tub$ & $\mathcal{U}(0,6.2)~Gyr$\\ % TODO: talk about \tint (integration time) in text!
+		tail assignment (binary) & $\beta$ & $\pm1$~equally likely (fixed at truth)\\ 
+		time unbound & $\tub$ & $\mathcal{U}(0,6.2)~Gyr$\\ 
 		\bottomrule
 		\end{tabular}
 	\caption{Parameter values used in the experiments of Section~\ref{sec:experiments}. $\mathcal{N}$ is the normal (Gaussian) distribution, and $\mathcal{U}$ the uniform distribution. There are 11 parameters for the Milky Way potential, but only four are left free to vary; some parameters are fixed (denoted by ``(fixed)'') at the true values used in the N-body simulations that generated the fake data. The progenitor has nine parameters --- the position, $\bs{r}_{\rm p}$, and velocity, $\bs{v}_{\rm p}$, vectors each contain three components --- but only five are left free to vary. The sky coordinates (e.g., Galactic $l$, $b$) are assumed to be known with negligible uncertainty. Each star has eight associated parameters, five of which are allowed to vary. Sky coordinates are fixed, along with the tail assignment (whether the star belongs to the leading or trailing tail). For inference with eight stars, there are $4+5+8\times5=49$ free parameters. \label{tbl:params}}
