@@ -162,4 +162,23 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
                    (2*np.log(sigma_v) + vx2**2/sigma_v**2) + \
                    (2*np.log(sigma_v) + vx3**2/sigma_v**2))
 
+    # import matplotlib.pyplot as plt
+    # for ii in range(8):
+    #     ix = np.argmin(x1[:,ii]**2 + x2[:,ii]**2 + x3[:,ii]**2)
+    #     print(ix)
+
+    #     ix1 = ix-50
+    #     ix2 = ix+50
+
+    #     if ix1 < 0:
+    #         ix1 = 0
+
+    #     if ix2 > len(x1):
+    #         ix2 = len(x1)
+    #     plt.plot(x1[ix1:ix2,ii], x2[ix1:ix2,ii],
+    #              marker=None, alpha=0.4, color='k')
+
+    # plt.savefig("/Users/adrian/Desktop/derp.png")
+    # sys.exit(0)
+
     return logsumexp(r_term + v_term + jac, axis=0)
