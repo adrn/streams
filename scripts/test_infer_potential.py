@@ -62,7 +62,7 @@ ptc_params = """
 #    parameters: [d, mul, mub, vr]
 
 sat_params = """
-    parameters: [alpha]
+    parameters: [d, alpha]
 """
 #    parameters: [logmass, logmdot, d, mul, mub, vr]
 
@@ -70,7 +70,7 @@ sat_params = """
 #                                 particles_params=ptc_params,
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params=pot_params,
-                                particles_params="",
+                                particles_params=ptc_params,
                                 satellite_params=sat_params)
 
 # particles_params=ptc_params,
@@ -276,6 +276,24 @@ class TestStreamModel(object):
                         fig.savefig(os.path.join(test_path, "sat{}_{}.png".format(idx,param_name)))
                         plt.close('all')
                         idx += 1
+
+    def test_sample_priors(self):
+
+        test_path = os.path.join(output_path, "model", "priors")
+        if not os.path.exists(test_path):
+            os.mkdir(test_path)
+
+        p = self.model.sample_priors(size=100).T
+        #ptruths = self.model.start_truths(size=100).T
+        ptruths = self.model.sample_priors(size=100, start_truth=True).T
+
+        plt.figure(figsize=(5,5))
+        for ii,(vals,truevals) in enumerate(zip(p,ptruths)):
+            n,bins,pat = plt.hist(vals, bins=25, alpha=0.5)
+            plt.hist(truevals, bins=25, alpha=0.5)
+            plt.savefig(os.path.join(test_path, "{}.png".format(ii)))
+            plt.clf()
+        return
 
     def test_per_particle(self):
         _c = minimum_config.format(potential_params=pot_params,
