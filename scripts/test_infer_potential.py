@@ -25,6 +25,7 @@ import triangle
 from streams.coordinates.frame import galactocentric, heliocentric
 import streams.io as io
 import streams.inference as si
+from streams.inference.back_integrate import back_integration_likelihood
 import streams.potential as sp
 from streams.util import project_root
 
@@ -37,8 +38,8 @@ logging.basicConfig(level=logging.DEBUG)
 minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8.hdf5
-nparticles: 4
-particle_idx: [582, 585, 637, 508]
+nparticles: 8
+particle_idx: [60, 1283, 0, 1742, 1091, 767, 710, 147]
 
 potential:
     class_name: LawMajewski2010
@@ -64,10 +65,6 @@ sat_params = """
     parameters: [alpha]
 """
 #    parameters: [logmass, logmdot, d, mul, mub, vr]
-
-lm10_c = minimum_config.format(potential_params=pot_params,
-                               particles_params="",
-                               satellite_params="")
 
 # _config = minimum_config.format(potential_params=pot_params,
 #                                 particles_params=ptc_params,
@@ -279,6 +276,55 @@ class TestStreamModel(object):
                         fig.savefig(os.path.join(test_path, "sat{}_{}.png".format(idx,param_name)))
                         plt.close('all')
                         idx += 1
+
+    def test_per_particle(self):
+        _c = minimum_config.format(potential_params=pot_params,
+                                   particles_params="",
+                                   satellite_params="")
+        config = io.read_config(_c)
+        model = si.StreamModel.from_config(config)
+        model.sample_priors()
+
+        test_path = os.path.join(output_path, "model")
+        if not os.path.exists(test_path):
+            os.mkdir(test_path)
+
+        # likelihood args
+        t1, t2, dt = model.lnpargs
+        p_gc = model.true_particles.to_frame(galactocentric)._X
+        s_gc = model.true_satellite.to_frame(galactocentric)._X
+        logmass = model.satellite.logmass.truth
+        logmdot = model.satellite.logmdot.truth
+        alpha = model.satellite.alpha.truth
+        beta = model.particles.beta.truth
+
+        truth_dict = model._decompose_vector(model.truths)
+        group = truth_dict['potential']
+        for param_name,truths in group.items():
+            print(param_name)
+            param = model.parameters['potential'][param_name]
+            vals = np.linspace(0.9,1.1,Nfine)*truths
+
+            pparams = dict()
+            Ls = []
+            for val in vals:
+                pparams[param_name] = val
+                potential = model._potential_class(**pparams)
+                ln_like = back_integration_likelihood(t1, t2, dt,
+                                                      potential, p_gc, s_gc,
+                                                      logmass, logmdot,
+                                                      beta, alpha)
+                Ls.append(ln_like)
+            Ls = np.array(Ls).T
+
+            fig,ax = plt.subplots(1,1,figsize=(8,8))
+            for ii,Lvec in enumerate(Ls):
+                ax.plot(vals,Lvec,marker=None,linestyle='-',
+                        label=str(ii))
+            ax.legend(loc='lower right', fontsize=14)
+            fig.savefig(os.path.join(test_path, "per_particle_{}.png".format(param_name)))
+
+        plt.close('all')
 
     def test_twod(self):
 
