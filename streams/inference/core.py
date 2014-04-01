@@ -30,6 +30,20 @@ __all__ = ["StreamModel", "StreamModelSampler"]
 
 logger = logging.getLogger(__name__)
 
+# def log_normal(x, mu, sigma, axis=-1):
+#     X = x - mu
+#     k = X.shape[-1]
+
+#     term1 = -0.5*k*np.log(2*np.pi)
+#     term2 = -0.5*np.sum(np.log(sigma), axis=axis)
+#     term3 = -0.5*np.sum((X/sigma)**2, axis=axis)
+
+#     return term1+term2+term3
+
+def log_normal(x, mu, sigma):
+    X = x - mu
+    return -0.5*(np.log(2*np.pi) + 2*np.log(sigma) + (X/sigma)**2)
+
 class StreamModel(object):
 
     def __init__(self, potential, satellite, particles,
@@ -386,101 +400,24 @@ class StreamModel(object):
                 The dictionary of model parameter values.
         """
 
-        # get potential
+        ######################################################################
+        # potential parameters:
+        #
         pparams = self._given_potential_params.copy()
         for k,v in param_dict.get('potential',dict()).items():
             pparams[k] = v
 
-        # heliocentric particle positions
-        p_hel = []
-        # TODO: only use true_particles if none of these are specified.
-        #       otherwise, fix at the "observed" position, e.g.
-        # if len(param_dict['particles']) == 0:
-        #     ...true positions...
-        # else:
-        #     for k in ['l','b','d','mul','mub','vr']:
-        #         try:
-        #             p_hel.append(param_dict['particles'][k])
-        #         except KeyError:
-        #             p_hel.append(self.particles[k].decompose(usys).value)
-
-        W_ij = []
-        D_ij = []
-        sig_ij = []
-        K = 0
-        for k in heliocentric.coord_names:
-            try:
-                p_hel.append(param_dict['particles'][k])
-                W_ij.append(param_dict['particles'][k])
-                D_ij.append(self.particles[k].decompose(usys).value)
-                sig_ij.append(self.particles.errors[k].decompose(usys).value)
-                K += 1
-            except KeyError:
-                p_hel.append(self.true_particles[k].decompose(usys).value)
-        p_hel = np.vstack(p_hel).T
-        p_gc = _hel_to_gc(p_hel)
-
-        # if any distance is > 150 kpc
-        if np.any(p_hel[...,2] > 150.):
-            return -np.inf
-
-        # compute the likelihood of the true positions given the observed
-        W_ij = np.array(W_ij)
-        D_ij = np.array(D_ij)
-        sig_ij = np.array(sig_ij)
-
-        if K > 0:
-            data_like = 0.5*(np.log(sig_ij**2) + ((W_ij - D_ij)/sig_ij)**2)
-            data_like[np.isinf(sig_ij)] = 0.
-            data_like = -K/2.*np.log(2*np.pi) - np.sum(data_like, axis=0)
-        else:
-            data_like = 0.
-
-        # particle unbinding time
-        try:
-            tub = param_dict['particles']['tub']
-        except KeyError:
-            tub = self.particles.tub.truth
-
+        ######################################################################
+        # nuisance parameters:
+        #
         # particle tail assignment
         try:
             beta = param_dict['particles']['beta']
         except KeyError:
             beta = self.particles.beta.truth
-
-        # heliocentric satellite positions
-        s_hel = []
-        W_j = []
-        D_j = []
-        sig_j = []
-        K = 0
-        for k in heliocentric.coord_names:
-            try:
-                s_hel.append(param_dict['satellite'][k])
-                W_j.append(param_dict['satellite'][k])
-                D_j.append(self.satellite[k].decompose(usys).value)
-                sig_j.append(self.satellite.errors[k].decompose(usys).value)
-                K += 1
-            except KeyError:
-                s_hel.append(self.true_satellite[k].decompose(usys).value)
-        s_hel = np.vstack(s_hel).T
-        s_gc = _hel_to_gc(s_hel)
-
-        # if the satellite distance is > 150 kpc
-        V = np.squeeze(np.sqrt(np.sum(s_gc[...,3:]**2, axis=-1)))
-        if np.any(s_hel[...,2] > 150.) or V > 0.511: # 500 km/s
-            return -np.inf
-
-        W_j = np.array(W_j)
-        D_j = np.squeeze(D_j)
-        sig_j = np.squeeze(sig_j)
-
-        if K > 0:
-            sat_like = 0.5*(np.log(sig_j**2) + ((W_j - D_j)/sig_j)**2)
-            sat_like[np.isinf(sig_j)] = 0.
-            sat_like = -K/2.*np.log(2*np.pi) - np.sum(sat_like)
-        else:
-            sat_like = 0.
+            if np.any(np.isnan(beta)):
+                print("True tail assignment was NaN!")
+                sys.exit(1)
 
         # satellite mass
         try:
@@ -500,15 +437,95 @@ class StreamModel(object):
         except KeyError:
             alpha = self.satellite.alpha.truth
 
+        ######################################################################
+        # Heliocentric coordinates
+        #
+
+        # first see if any coordinates are parameters. if not, assume we're
+        #   running a test with no observational uncertainties
+        if param_dict.has_key('particles'):
+            param_names = param_dict['particles'].keys()
+            num_free = 0
+            for pname in param_names:
+                if pname in heliocentric.coord_names:
+                    num_free += 1
+        else:
+            num_free = 0
+
+        # Particles
+        if num_free == 0:
+            # no free coordinate parameters -- use truths
+            p_hel = self.true_particles._X
+            data_like = 0.
+        else:
+            p_hel = np.zeros_like(self.particles._X)
+            data_like = 0.
+            for ii,k in enumerate(heliocentric.coord_names):
+                if k in param_dict['particles'].keys():
+                    p_hel[:,ii] = param_dict['particles'][k]
+                    ll = log_normal(param_dict['particles'][k],
+                                    self.particles._X[:,ii],
+                                    self.particles._error_X[:,ii])
+                else:
+                    p_hel[:,ii] = self.particles._X[:,ii]
+                    ll = 0.
+
+                if np.any(np.isinf(ll)):
+                    ll = 0.
+
+                data_like += ll
+
+            # if any distance is > 150 kpc
+            if np.any(p_hel[...,2] > 150.):
+                return -np.inf
+        p_gc = _hel_to_gc(p_hel)
+
+        # Satellite
+        if param_dict.has_key('satellite'):
+            param_names = param_dict['satellite'].keys()
+            num_free = 0
+            for pname in param_names:
+                if pname in heliocentric.coord_names:
+                    num_free += 1
+        else:
+            num_free = 0.
+
+        if num_free == 0:
+            # no free coordinate parameters -- use truths
+            s_hel = self.true_satellite._X
+            sat_like = 0.
+        else:
+            s_hel = np.zeros_like(self.satellite._X)
+            sat_like = 0.
+            for ii,k in enumerate(heliocentric.coord_names):
+                if k in param_dict['satellite'].keys():
+                    s_hel[:,ii] = param_dict['satellite'][k]
+                    ll = log_normal(param_dict['satellite'][k],
+                                    self.satellite._X[:,ii],
+                                    self.satellite._error_X[:,ii])
+                else:
+                    s_hel[:,ii] = self.satellite._X[:,ii]
+                    ll = 0.
+
+                if np.any(np.isinf(ll)):
+                    ll = 0.
+
+                sat_like += ll
+
+            # if any distance is > 150 kpc
+            if np.any(s_hel[...,2] > 150.):
+                return -np.inf
+        s_gc = _hel_to_gc(s_hel)
+
         # TODO: don't create new potential each time, just modify _parameter_dict?
         potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_gc, s_gc,
                                               logmass, logmdot,
-                                              tub, beta, alpha)
+                                              beta, alpha)
 
-        return np.sum(ln_like + data_like) + sat_like
+        return np.sum(ln_like + data_like) + np.squeeze(sat_like)
 
     def ln_posterior(self, p, *args):
 

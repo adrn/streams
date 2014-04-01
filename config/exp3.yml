@@ -1,7 +1,7 @@
 # general
 seed: 42
 script: infer_potential.py
-name: exper3
+name: exper3_tub
 # streams_path: /path/to/streams
 
 # plots / output
@@ -14,7 +14,8 @@ plot:
 # data
 data_file: data/observed_particles/2.5e8.hdf5
 nparticles: 8
-particle_idx: [582, 585, 231, 300, 637, 508, 404, 1460]
+# particle_idx: [582, 585, 231, 300, 637, 508, 404, 1460]
+particle_idx: [60, 1283, 0, 1742, 1091, 767, 710, 147]
 
 # integration
 dt: -1.
@@ -24,7 +25,7 @@ potential:
     parameters: [q1, qz, phi, v_halo]
 
 particles:
-    parameters: [d, mul, mub, vr, tub]
+    parameters: [d, mul, mub, vr]
     missing_dims: [mul, mub]
 
 satellite:
@@ -34,8 +35,8 @@ satellite:
 # emcee
 start_truth: True
 walkers: 256
-burn_in: 5000
+burn_in: 2500
 burn_beta: 1.
 cool_down: 0
-steps: 5000
+steps: 10000
 thin_chain: False

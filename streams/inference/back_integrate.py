@@ -33,9 +33,7 @@ def xyz_sph_jac(hel):
     deet = np.log(np.abs(dtmnt))
     return deet
 
-def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdot,
-                                tub, beta, alpha):
-
+def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdot, beta, alpha):
     """ Compute the likelihood of 6D heliocentric star positions today given the
         potential and position of the satellite.
 
@@ -55,8 +53,6 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
             Log of the initial mass of the satellite.
         logmdot : float
             Log of the mass loss rate.
-        tub : array_like
-            Array of unbinding times for each star.
         beta : array_like
             Array of tail bits (K) to specify leading/trailing tail for each star.
         alpha : float
@@ -64,8 +60,10 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
 
     """
 
+    # the tail assignment for each star. Only need this to be +/- 1
     beta = np.sign(beta)
 
+    # stack the coordinates -- we integrate everything as test particles
     gc = np.vstack((s_gc,p_gc)).copy()
     acc = np.zeros_like(gc[:,:3])
     integrator = LeapfrogIntegrator(potential._acceleration_at,
@@ -74,7 +72,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
 
     ts, rs, vs = integrator.run(t1=t1, t2=t2, dt=dt)
     ntimes = len(ts)
-    nparticles = gc.shape[0]-1
+    nparticles = len(p_gc)
 
     # mass of the satellite vs. time
     m0 = np.exp(logm0)
@@ -90,19 +88,19 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     #########################################################################
     # if not marginalizing over unbinding time, get the orbit index closest to
     #   tub for each star
-    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
-    s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
-    p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
-    p_x_hel = _gc_to_hel(p_orbits)
-    #jac1 = _xyz_sph_jac(p_x_hel)
-    jac1 = xyz_sph_jac(p_x_hel)
+    # t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
+    # s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
+    # p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    # m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
+    # p_x_hel = _gc_to_hel(p_orbits)
+    # #jac = _xyz_sph_jac(p_x_hel)
+    # jac = xyz_sph_jac(p_x_hel)
     #########################################################################
 
     #########################################################################
-    # if marginalizing over tub, just use the full orbits
-    # p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6))
-    # jac1 = _xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
+    # if marginalizing over tub, use the full orbits
+    p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6)).reshape(ntimes,nparticles,6)
+    jac = xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
     #########################################################################
 
     s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
@@ -113,96 +111,74 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     v_disp = s_V * r_tide / s_R
 
     # instantaneous cartesian basis to project into
-    x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
-    _y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
-    z_hat = np.cross(x_hat, _y_hat)
-    y_hat = -np.cross(x_hat, z_hat)
+    x1_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
+    _x2_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
+    _x3_hat = np.cross(x1_hat, _x2_hat)
+    _x2_hat = -np.cross(x1_hat, _x3_hat)
+    x2_hat = _x2_hat / np.sqrt(np.sum(_x2_hat**2, axis=-1))[...,np.newaxis]
+    x3_hat = _x3_hat /np.sqrt(np.sum(_x3_hat**2, axis=-1))[...,np.newaxis]
 
     # translate to satellite position
     rel_orbits = p_orbits - s_orbit
     rel_pos = rel_orbits[...,:3]
     rel_vel = rel_orbits[...,3:]
 
-    # project onto each
-    X = np.sum(rel_pos * x_hat, axis=-1) / r_tide
-    Y = np.sum(rel_pos * y_hat, axis=-1) / r_tide
-    Z = np.sum(rel_pos * z_hat, axis=-1) / r_tide
+    # # project onto each
+    # X = np.sum(rel_pos * x_hat, axis=-1) / r_tide
+    # Y = np.sum(rel_pos * y_hat, axis=-1) / r_tide
+    # Z = np.sum(rel_pos * z_hat, axis=-1) / r_tide
 
-    VX = np.sum(rel_vel * x_hat, axis=-1) / v_disp
-    VY = np.sum(rel_vel * y_hat, axis=-1) / v_disp
-    VZ = np.sum(rel_vel * z_hat, axis=-1) / v_disp
+    # VX = np.sum(rel_vel * x_hat, axis=-1) / v_disp
+    # VY = np.sum(rel_vel * y_hat, axis=-1) / v_disp
+    # VZ = np.sum(rel_vel * z_hat, axis=-1) / v_disp
+
+    # # position likelihood is gaussian at lagrange points
+    # sigma_r = sigma_v = 1.0
+    # r_term = -0.5*((np.log(sigma_r) + (X-alpha*beta)**2/sigma_r**2) + \
+    #                (np.log(sigma_r) + Y**2/sigma_r**2) + \
+    #                (np.log(sigma_r) + Z**2/sigma_r**2))
+
+    # v_term = -0.5*((np.log(sigma_v) + VX**2/sigma_v**2) + \
+    #                (np.log(sigma_v) + VY**2/sigma_v**2) + \
+    #                (np.log(sigma_v) + VZ**2/sigma_v**2))
+
+    # project into new frame
+    x1 = np.sum(rel_pos * x1_hat, axis=-1)
+    x2 = np.sum(rel_pos * x2_hat, axis=-1)
+    x3 = np.sum(rel_pos * x3_hat, axis=-1)
+
+    vx1 = np.sum(rel_vel * x1_hat, axis=-1)
+    vx2 = np.sum(rel_vel * x2_hat, axis=-1)
+    vx3 = np.sum(rel_vel * x3_hat, axis=-1)
 
     # position likelihood is gaussian at lagrange points
-    # r_term = -0.5*((np.log(r_tide) + (X-alpha*K)**2) + \
-    #                (np.log(r_tide) + Y**2) + \
-    #                (np.log(r_tide) + Z**2))
+    sigma_r = r_tide
+    r_term = -0.5*((2*np.log(sigma_r) + (x1-alpha*beta*r_tide)**2/sigma_r**2) + \
+                   (2*np.log(2*sigma_r) + x2**2/(2*sigma_r)**2) + \
+                   (2*np.log(sigma_r) + x3**2/sigma_r**2))
 
-    # v_term = -0.5*((np.log(v_disp) + VX**2) + \
-    #                (np.log(v_disp) + VY**2) + \
-    #                (np.log(v_disp) + VZ**2))
-
-    sigma_r = 0.5
-    r_term = -0.5*((np.log(sigma_r) + (X-alpha*beta)**2/sigma_r**2) + \
-                   (np.log(sigma_r) + Y**2/sigma_r**2) + \
-                   (np.log(sigma_r) + Z**2/sigma_r**2))
-    # r_term_trai = -0.5*((np.log(sigma_r) + (X-2*alpha)**2/sigma_r**2) + \
-    #                     (np.log(sigma_r) + Y**2/sigma_r**2) + \
-    #                     (np.log(sigma_r) + Z**2/sigma_r**2))
-    # r_term = np.zeros_like(r_term_lead)
-    # r_term[K<1] = r_term_lead[K<1]
-    # r_term[K>1] = r_term_trai[K>1]
+    sigma_v = v_disp
+    v_term = -0.5*((2*np.log(sigma_v) + vx1**2/sigma_v**2) + \
+                   (2*np.log(sigma_v) + vx2**2/sigma_v**2) + \
+                   (2*np.log(sigma_v) + vx3**2/sigma_v**2))
 
     # import matplotlib.pyplot as plt
-    # fig,axes = plt.subplots(2,2,figsize=(12,12),sharex=True,sharey=True)
+    # for ii in range(8):
+    #     ix = np.argmin(x1[:,ii]**2 + x2[:,ii]**2 + x3[:,ii]**2)
+    #     print(ix)
 
-    # XX = np.concatenate((np.random.normal(-alpha,0.5,size=len(X)//2),
-    #                      np.random.normal(alpha,0.5,size=len(X)//2)))
-    # YY = np.random.normal(0.,0.5,size=len(X))
-    # ZZ = np.random.normal(0.,0.5,size=len(X))
-    # alpha = 0.1
-    # axes[0,0].plot(XX, YY, linestyle='none', marker='.', alpha=alpha)
-    # axes[0,1].plot(YY, YY, linestyle='none', marker='.', alpha=alpha)
-    # axes[1,0].plot(XX, ZZ, linestyle='none', marker='.', alpha=alpha)
-    # axes[1,1].plot(YY, ZZ, linestyle='none', marker='.', alpha=alpha)
+    #     ix1 = ix-50
+    #     ix2 = ix+50
 
-    # alpha = 0.4
-    # axes[0,0].plot(X, Y, linestyle='none', marker='.', alpha=alpha)
-    # axes[0,1].plot(Y, Y, linestyle='none', marker='.', alpha=alpha)
-    # axes[1,0].plot(X, Z, linestyle='none', marker='.', alpha=alpha)
-    # axes[1,1].plot(Y, Z, linestyle='none', marker='.', alpha=alpha)
+    #     if ix1 < 0:
+    #         ix1 = 0
 
-    # axes[1,1].set_xlim(-5,5)
-    # axes[1,1].set_ylim(-5,5)
-    # fig.savefig("/Users/adrian/Desktop/derp.png")
+    #     if ix2 > len(x1):
+    #         ix2 = len(x1)
+    #     plt.plot(x1[ix1:ix2,ii], x2[ix1:ix2,ii],
+    #              marker=None, alpha=0.4, color='k')
+
+    # plt.savefig("/Users/adrian/Desktop/derp.png")
     # sys.exit(0)
 
-    sigma_v = 0.5
-    v_term = -0.5*((np.log(sigma_v) + VX**2/sigma_v**2) + \
-                   (np.log(sigma_v) + VY**2/sigma_v**2) + \
-                   (np.log(sigma_v) + VZ**2/sigma_v**2))
-
-    not_shocked = (r_term + v_term + jac1)
-
-    return not_shocked
-
-    # return logsumexp(r_term + v_term + jac1, axis=0)
-
-
-
-
-    # # shocked stuff
-    # var_r = 10.*r_tide**2
-    # r_term2 = -0.5*(3*np.log(var_r) + X/var_r + Y/var_r + Z/var_r)
-
-    # var_v = 10.*v_disp**2
-    # v_term2 = -0.5*(3*np.log(var_v) + VX/var_v + VY/var_v + VZ/var_v)
-
-    # shocked = (r_term2 + v_term2 + jac1)
-    # arg = np.vstack((shocked, not_shocked))
-
-    # scale = np.ones_like(arg)
-    # scale[0,:] = p_shocked
-    # scale[1,:] = 1-p_shocked
-
-    # lnlike = logsumexp(arg, b=scale, axis=0)
-    # return lnlike
+    return logsumexp(r_term + v_term + jac, axis=0)

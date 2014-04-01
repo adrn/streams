@@ -250,10 +250,12 @@ def Lpts():
         v_disp = s_V * r_tide / s_R
 
         # cartesian basis to project into
-        x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
-        _y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
-        z_hat = np.cross(x_hat, _y_hat)
-        y_hat = -np.cross(x_hat, z_hat)
+        x1_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
+        _x2_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
+        _x3_hat = np.cross(x1_hat, _x2_hat)
+        _x2_hat = -np.cross(x1_hat, _x3_hat)
+        x2_hat = _x2_hat / np.linalg.norm(_x2_hat, axis=-1)[...,np.newaxis]
+        x3_hat = _x3_hat / np.linalg.norm(_x3_hat, axis=-1)[...,np.newaxis]
 
         # translate to satellite position
         rel_orbits = p_orbits - s_orbit
@@ -261,14 +263,13 @@ def Lpts():
         rel_vel = rel_orbits[...,3:]
 
         # project onto each
-        X = np.sum(rel_pos * x_hat, axis=-1)
-        Y = np.sum(rel_pos * y_hat, axis=-1)
-        Z = np.sum(rel_pos * z_hat, axis=-1)
+        x1 = np.sum(rel_pos * x1_hat, axis=-1)
+        x2 = np.sum(rel_pos * x2_hat, axis=-1)
+        x3 = np.sum(rel_pos * x3_hat, axis=-1)
 
-        VX = np.sum(rel_vel * x_hat, axis=-1)
-        VY = np.sum(rel_vel * y_hat, axis=-1)
-        VZ = np.sum(rel_vel * z_hat, axis=-1)
-        VV = np.sqrt(VX**2+VY**2+VZ**2)
+        vx1 = np.sum(rel_vel * x1_hat, axis=-1)
+        vx2 = np.sum(rel_vel * x2_hat, axis=-1)
+        vx3 = np.sum(rel_vel * x3_hat, axis=-1)
 
         _tcross = r_tide / np.sqrt(G.decompose(usys).value*m/r_tide)
         for ii,jj in enumerate(t_idx):
@@ -279,11 +280,11 @@ def Lpts():
             ix1,ix2 = jj-bnd, jj+bnd
             if ix1 < 0: ix1 = 0
             if ix2 > max(sgr.t1,sgr.t2): ix2 = -1
-            axes[0,k].plot(X[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
-                           Y[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
+            axes[0,k].plot(x1[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
+                           x2[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
                            linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
-            axes[1,k].plot(X[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
-                           Z[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
+            axes[1,k].plot(x1[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
+                           x3[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
                            linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
 
         circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
@@ -314,11 +315,11 @@ def Lpts():
             ix1,ix2 = jj-bnd, jj+bnd
             if ix1 < 0: ix1 = 0
             if ix2 > max(sgr.t1,sgr.t2): ix2 = -1
-            axes2[0,k].plot(VX[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
-                            VY[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
+            axes2[0,k].plot(vx1[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
+                            vx2[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
                             linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
-            axes2[1,k].plot(VX[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
-                            VZ[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
+            axes2[1,k].plot(vx1[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
+                            vx3[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
                             linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
 
         circ = Circle((0,0), radius=1., fill=False, alpha=0.75,

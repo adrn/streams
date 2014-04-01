@@ -1,7 +1,7 @@
 # general
 seed: 42
 script: infer_potential.py
-name: exper1_8
+name: exper1_8_tub
 
 # plots / output
 plot:
@@ -12,7 +12,8 @@ plot:
 # data
 data_file: data/observed_particles/2.5e8.hdf5
 nparticles: 8
-particle_idx: [582, 585, 231, 300, 637, 508, 404, 1460]
+# particle_idx: [582, 585, 231, 300, 637, 508, 404, 1460]
+particle_idx: [60, 1283, 0, 1742, 1091, 767, 710, 147]
 
 # integration
 dt: -1.

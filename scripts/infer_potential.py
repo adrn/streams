@@ -104,6 +104,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
             logger.info("Burning in sampler for {} steps...".format(nburn))
 
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
+
             #pos = fix_whack_walkers(sampler, pos, threshold=0.02)
             pos = fix_whack_walkers(pos, sampler.acceptance_fraction,
                                     sampler.flatlnprobability, sampler.flatchain,
