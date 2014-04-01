@@ -22,7 +22,7 @@ potential:
     parameters: [q1, qz]
 
 particles:
-    parameters: [d, mul, mub, vr]
+    parameters: [d, mul, tub]
 
 satellite:
     parameters: [d, mul, mub, vr, alpha]
