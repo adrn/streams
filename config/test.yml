@@ -32,7 +32,7 @@ satellite:
 # emcee
 start_truth: True
 walkers: 32
-burn_in: 10
+burn_in: 25
 burn_beta: 1.
 cool_down: 0
 steps: 0
