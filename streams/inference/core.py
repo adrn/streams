@@ -247,14 +247,13 @@ class StreamModel(object):
                         if start_truth:
                             val = getattr(self, "true_"+group_name)[param_name]\
                                         .decompose(usys).value
-                            err /= 2.
                         else:
                             val = getattr(self, group_name)[param_name]\
                                         .decompose(usys).value
 
                         if np.any(np.isinf(err)):
                             if param_name in ["mul", "mub", "vr"]:
-                                err[np.isinf(err)] = 0.01
+                                err[np.isinf(err)] = 0.1*val[np.isinf(err)]
                             else:
                                 err[np.isinf(err)] = 1.
 
@@ -273,7 +272,7 @@ class StreamModel(object):
                         prior = param._prior
                         if hasattr(prior, 'a') and hasattr(prior, 'b'):
                             mu = np.ravel(param.truth)
-                            sigma = mu/100.
+                            sigma = mu/10.
                             a = (prior.a - mu) / sigma
                             b = (prior.b - mu) / sigma
                             if param.size > 1:
