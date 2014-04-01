@@ -45,19 +45,19 @@ class LawMajewski2010(CompositePotential):
 
         params = dict()
         params['q1'] = ModelParameter(name='q1', truth=1.38,
-                            prior=LogUniformPrior(1.0,1.7))
+                            prior=LogUniformPrior(0.71,2.0))
         params['q2'] = ModelParameter(name='q2', truth=1.,
                             prior=LogUniformPrior(0.71,1.5))
         params['qz'] = ModelParameter(name='qz', truth=1.36,
-                            prior=LogUniformPrior(1.0,1.7))
+                            prior=LogUniformPrior(0.71,2.0))
         params['phi'] = ModelParameter(name='phi',
                             truth=(97.*u.deg).decompose(usys).value,
-                            prior=LogUniformPrior((80.*u.deg).decompose(usys).value,
-                                                  (120.*u.deg).decompose(usys).value))
+                            prior=LogUniformPrior((62.*u.deg).decompose(usys).value,
+                                                  (132.*u.deg).decompose(usys).value))
         params['v_halo'] = ModelParameter(name='v_halo',
                             truth=(121.858*u.km/u.s).decompose(usys).value,
                             prior=LogUniformPrior((100.*u.km/u.s).decompose(usys).value,
-                                                  (150.*u.km/u.s).decompose(usys).value))
+                                                  (200.*u.km/u.s).decompose(usys).value))
         params['R_halo'] = ModelParameter(name='R_halo',
                             truth=(12.*u.kpc).decompose(usys).value,
                             prior=LogUniformPrior((8.*u.kpc).decompose(usys).value,
