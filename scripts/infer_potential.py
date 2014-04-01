@@ -310,7 +310,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
         logger.debug("Plotting posterior distributions...")
 
         flatchain_dict = model.label_flatchain(thin_flatchain)
-        p0 = model.sample_priors(size=10000) # HACK HACK HACK
+        p0 = model.sample_priors(size=1000) # HACK HACK HACK
         p0_dict = model.label_flatchain(np.vstack(p0))
         potential_group = model.parameters.get('potential', None)
         particles_group = model.parameters.get('particles', None)
