@@ -409,7 +409,7 @@ class StreamModel(object):
 
         ######################################################################
         # nuisance parameters:
-        #
+
         # particle tail assignment
         try:
             beta = param_dict['particles']['beta']
@@ -418,6 +418,12 @@ class StreamModel(object):
             if np.any(np.isnan(beta)):
                 print("True tail assignment was NaN!")
                 sys.exit(1)
+
+        # particle unbinding time
+        try:
+            tub = param_dict['particles']['tub']
+        except KeyError:
+            tub = self.particles.tub.truth
 
         # satellite mass
         try:
@@ -523,7 +529,7 @@ class StreamModel(object):
         ln_like = back_integration_likelihood(t1, t2, dt,
                                               potential, p_gc, s_gc,
                                               logmass, logmdot,
-                                              beta, alpha)
+                                              beta, alpha, tub)
 
         return np.sum(ln_like + data_like) + np.squeeze(sat_like)
 

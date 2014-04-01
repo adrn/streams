@@ -297,6 +297,7 @@ class TestStreamModel(object):
         logmdot = model.satellite.logmdot.truth
         alpha = model.satellite.alpha.truth
         beta = model.particles.beta.truth
+        tub = model.particles.tub.truth
 
         truth_dict = model._decompose_vector(model.truths)
         group = truth_dict['potential']
@@ -313,7 +314,7 @@ class TestStreamModel(object):
                 ln_like = back_integration_likelihood(t1, t2, dt,
                                                       potential, p_gc, s_gc,
                                                       logmass, logmdot,
-                                                      beta, alpha)
+                                                      beta, alpha, tub)
                 Ls.append(ln_like)
             Ls = np.array(Ls).T
 

@@ -33,7 +33,8 @@ def xyz_sph_jac(hel):
     deet = np.log(np.abs(dtmnt))
     return deet
 
-def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdot, beta, alpha):
+def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdot,
+                                beta, alpha, tub):
     """ Compute the likelihood of 6D heliocentric star positions today given the
         potential and position of the satellite.
 
@@ -88,19 +89,19 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     #########################################################################
     # if not marginalizing over unbinding time, get the orbit index closest to
     #   tub for each star
-    # t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
-    # s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
-    # p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    # m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
-    # p_x_hel = _gc_to_hel(p_orbits)
-    # #jac = _xyz_sph_jac(p_x_hel)
-    # jac = xyz_sph_jac(p_x_hel)
+    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
+    s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
+    p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+    m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
+    p_x_hel = _gc_to_hel(p_orbits)
+    #jac = _xyz_sph_jac(p_x_hel)
+    jac = xyz_sph_jac(p_x_hel)
     #########################################################################
 
     #########################################################################
     # if marginalizing over tub, use the full orbits
-    p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6)).reshape(ntimes,nparticles,6)
-    jac = xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
+    # p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6)).reshape(ntimes,nparticles,6)
+    # jac = xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
     #########################################################################
 
     s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
@@ -181,4 +182,6 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     # plt.savefig("/Users/adrian/Desktop/derp.png")
     # sys.exit(0)
 
-    return logsumexp(r_term + v_term + jac, axis=0)
+    #return logsumexp(r_term + v_term + jac, axis=0)
+
+    return r_term + v_term + jac
