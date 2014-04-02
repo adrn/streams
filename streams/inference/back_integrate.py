@@ -125,25 +125,6 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     rel_pos = rel_orbits[...,:3]
     rel_vel = rel_orbits[...,3:]
 
-    # # project onto each
-    # X = np.sum(rel_pos * x_hat, axis=-1) / r_tide
-    # Y = np.sum(rel_pos * y_hat, axis=-1) / r_tide
-    # Z = np.sum(rel_pos * z_hat, axis=-1) / r_tide
-
-    # VX = np.sum(rel_vel * x_hat, axis=-1) / v_disp
-    # VY = np.sum(rel_vel * y_hat, axis=-1) / v_disp
-    # VZ = np.sum(rel_vel * z_hat, axis=-1) / v_disp
-
-    # # position likelihood is gaussian at lagrange points
-    # sigma_r = sigma_v = 1.0
-    # r_term = -0.5*((np.log(sigma_r) + (X-alpha*beta)**2/sigma_r**2) + \
-    #                (np.log(sigma_r) + Y**2/sigma_r**2) + \
-    #                (np.log(sigma_r) + Z**2/sigma_r**2))
-
-    # v_term = -0.5*((np.log(sigma_v) + VX**2/sigma_v**2) + \
-    #                (np.log(sigma_v) + VY**2/sigma_v**2) + \
-    #                (np.log(sigma_v) + VZ**2/sigma_v**2))
-
     # project into new frame
     x1 = np.sum(rel_pos * x1_hat, axis=-1)
     x2 = np.sum(rel_pos * x2_hat, axis=-1)
