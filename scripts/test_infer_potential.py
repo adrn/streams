@@ -39,8 +39,7 @@ minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8.hdf5
 nparticles: 8
-particle_idx: [60, 1283, 0, 1742, 1091, 767, 710, 147]
-# particle_idx: [582, 585, 231, 300, 637, 508, 404, 1460]
+particle_idx: [60, 0, 1091, 79, 1283, 1742, 767, 710]
 
 potential:
     class_name: LawMajewski2010
@@ -72,7 +71,7 @@ sat_params = """
 #                                 satellite_params=sat_params)
 _config = minimum_config.format(potential_params=pot_params,
                                 particles_params="",
-                                satellite_params="")
+                                satellite_params=sat_params)
 
 # particles_params=ptc_params,
 # satellite_params=sat_params
