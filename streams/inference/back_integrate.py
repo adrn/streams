@@ -117,10 +117,8 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     _x2_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
     _x3_hat = np.cross(x1_hat, _x2_hat)
     _x2_hat = -np.cross(x1_hat, _x3_hat)
-    # x2_hat = _x2_hat / np.sqrt(np.sum(_x2_hat**2, axis=-1))[...,np.newaxis]
-    # x3_hat = _x3_hat /np.sqrt(np.sum(_x3_hat**2, axis=-1))[...,np.newaxis]
-    x2_hat = _x2_hat / np.linalg.norm(_x2_hat, axis=-1)[...,np.newaxis]
-    x3_hat = _x3_hat / np.linalg.norm(_x3_hat, axis=-1)[...,np.newaxis]
+    x2_hat = _x2_hat / np.sqrt(np.sum(_x2_hat**2, axis=-1))[...,np.newaxis]
+    x3_hat = _x3_hat /np.sqrt(np.sum(_x3_hat**2, axis=-1))[...,np.newaxis]
 
     # translate to satellite position
     rel_orbits = p_orbits - s_orbit
