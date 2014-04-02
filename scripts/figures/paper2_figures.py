@@ -33,7 +33,7 @@ from streams.util import streamspath, _unit_transform, _label_map
 from streams.coordinates.frame import galactocentric
 from streams.io.sgr import SgrSimulation
 from streams.io import read_hdf5, read_config
-from streams.inference import StreamModel
+from streams.inference import StreamModel, particles_x1x2x3
 from streams.integrate import LeapfrogIntegrator
 from streams.potential.lm10 import LawMajewski2010
 
@@ -231,45 +231,15 @@ def Lpts():
         sgr = SgrSimulation(sgr_path.format(_m),snapfile)
         p = sgr.particles(n=nparticles, expr=expr)
         s = sgr.satellite()
+        dt = -1.
 
-        X = np.vstack((s._X[...,:3], p._X[...,:3].copy()))
-        V = np.vstack((s._X[...,3:], p._X[...,3:].copy()))
-        integrator = LeapfrogIntegrator(sgr.potential._acceleration_at,
-                                        np.array(X), np.array(V),
-                                        args=(X.shape[0], np.zeros_like(X)))
-        ts, rs, vs = integrator.run(t1=sgr.t1, t2=sgr.t2, dt=-1.)
-
-        s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
-        p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+        coord, r_tide, v_disp = particles_x1x2x3(p, s,
+                                                 sgr.potential,
+                                                 sgr.t1, sgr.t2, dt,
+                                                 at_tub=False)
+        (x1,x2,x3,vx1,vx2,vx3) = coord
+        ts = np.arange(sgr.t1,sgr.t2+dt,dt)
         t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
-
-        m_t = (-s.mdot*ts + s.m0)[:,np.newaxis]
-        s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
-        s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
-        r_tide = sgr.potential._tidal_radius(m_t, s_orbit[...,:3])
-        v_disp = s_V * r_tide / s_R
-
-        # cartesian basis to project into
-        x1_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
-        _x2_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
-        _x3_hat = np.cross(x1_hat, _x2_hat)
-        _x2_hat = -np.cross(x1_hat, _x3_hat)
-        x2_hat = _x2_hat / np.linalg.norm(_x2_hat, axis=-1)[...,np.newaxis]
-        x3_hat = _x3_hat / np.linalg.norm(_x3_hat, axis=-1)[...,np.newaxis]
-
-        # translate to satellite position
-        rel_orbits = p_orbits - s_orbit
-        rel_pos = rel_orbits[...,:3]
-        rel_vel = rel_orbits[...,3:]
-
-        # project onto each
-        x1 = np.sum(rel_pos * x1_hat, axis=-1)
-        x2 = np.sum(rel_pos * x2_hat, axis=-1)
-        x3 = np.sum(rel_pos * x3_hat, axis=-1)
-
-        vx1 = np.sum(rel_vel * x1_hat, axis=-1)
-        vx2 = np.sum(rel_vel * x2_hat, axis=-1)
-        vx3 = np.sum(rel_vel * x3_hat, axis=-1)
 
         _tcross = r_tide / np.sqrt(G.decompose(usys).value*m/r_tide)
         for ii,jj in enumerate(t_idx):
@@ -321,6 +291,109 @@ def Lpts():
             axes2[1,k].plot(vx1[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
                             vx3[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
                             linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+
+        circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
+                      edgecolor='k', linestyle='solid')
+        axes2[0,k].add_patch(circ)
+        circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
+                      edgecolor='k', linestyle='solid')
+        axes2[1,k].add_patch(circ)
+
+        axes2[0,k].axhline(0., color='k', alpha=0.75)
+        axes2[1,k].axhline(0., color='k', alpha=0.75)
+
+        axes2[1,k].set_xlim(-5,5)
+        axes2[1,k].set_ylim(axes2[1,k].get_xlim())
+
+        axes2[1,k].set_xlabel(r"$v_{x_1}/\sigma_v$")
+
+        if k == 0:
+            axes2[0,k].set_ylabel(r"$v_{x_2}/\sigma_v$")
+            axes2[1,k].set_ylabel(r"$v_{x_3}/\sigma_v$")
+
+        axes[0,k].text(0.5, 1.05, r"$2.5\times10^{}M_\odot$".format(_m),
+                       horizontalalignment='center',
+                       fontsize=24,
+                       transform=axes[0,k].transAxes)
+
+        axes2[0,k].text(0.5, 1.05, r"$2.5\times10^{}M_\odot$".format(_m),
+                        horizontalalignment='center',
+                        fontsize=24,
+                        transform=axes2[0,k].transAxes)
+
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
+    fig.savefig(filename)
+
+    fig2.tight_layout()
+    fig2.subplots_adjust(top=0.92, hspace=0.025, wspace=0.1)
+    fig2.savefig(filename2)
+
+def Lpts_tub():
+
+    potential = LawMajewski2010()
+    filename = os.path.join(plot_path, "Lpts_r_tub.{}".format(ext))
+    filename2 = os.path.join(plot_path, "Lpts_v_tub.{}".format(ext))
+
+    fig,axes = plt.subplots(2,4,figsize=grid_figsize,
+                            sharex=True, sharey=True)
+    fig2,axes2 = plt.subplots(2,4,figsize=grid_figsize,
+                              sharex=True, sharey=True)
+
+    bins = np.linspace(-3,3,50)
+    nparticles = 2000
+    for k,_m in enumerate(range(6,9+1)):
+        mass = "2.5e{}".format(_m)
+        m = float(mass)
+        print(mass)
+
+        sgr = SgrSimulation(sgr_path.format(_m),snapfile)
+        p = sgr.particles(n=nparticles, expr=expr)
+        s = sgr.satellite()
+
+        coord, r_tide, v_disp = particles_x1x2x3(p, s,
+                                                 sgr.potential,
+                                                 sgr.t1, sgr.t2, -1.,
+                                                 at_tub=True)
+        (x1,x2,x3,vx1,vx2,vx3) = coord
+
+        axes[0,k].plot(x1/r_tide,
+                       x2/r_tide,
+                       linestyle='none', alpha=0.1, marker='.',
+                       color='#555555', zorder=-1)
+        axes[1,k].plot(x1/r_tide,
+                       x3/r_tide,
+                       linestyle='none', alpha=0.1, marker='.',
+                       color='#555555', zorder=-1)
+
+        circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
+                      edgecolor='k', linestyle='solid')
+        axes[0,k].add_patch(circ)
+        circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
+                     edgecolor='k', linestyle='solid')
+        axes[1,k].add_patch(circ)
+
+        axes[0,k].axhline(0., color='k', alpha=0.75)
+        axes[1,k].axhline(0., color='k', alpha=0.75)
+
+        axes[0,k].set_xlim(-5,5)
+        axes[0,k].set_ylim(axes[0,k].get_xlim())
+
+        axes[1,k].set_xlabel(r"$x_1/r_{\rm tide}$")
+
+        if k == 0:
+            axes[0,k].set_ylabel(r"$x_2/r_{\rm tide}$")
+            axes[1,k].set_ylabel(r"$x_3/r_{\rm tide}$")
+
+
+        axes2[0,k].plot(vx1/v_disp,
+                        vx2/v_disp,
+                        linestyle='none', alpha=0.1, marker='.',
+                        color='#555555', zorder=-1)
+        axes2[1,k].plot(vx1/v_disp,
+                        vx3/v_disp,
+                        linestyle='none', alpha=0.1, marker='.',
+                        color='#555555', zorder=-1)
 
         circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
                       edgecolor='k', linestyle='solid')
