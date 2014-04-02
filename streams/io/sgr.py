@@ -100,18 +100,23 @@ class SgrSimulation(object):
 
         # guess whether in leading or trailing tail
         if tail_bit:
-            x1,x2,x3,vx1,vx2,vx3 = particles_x1x2x3(p, self.satellite(),
-                                                    self.potential,
-                                                    self.t1, self.t2, -1)
+            coord, r_tide, v_disp = particles_x1x2x3(p, self.satellite(),
+                                                     self.potential,
+                                                     self.t1, self.t2, -1,
+                                                     at_tub=True)
+            (x1,x2,x3,vx1,vx2,vx3) = coord
             p.meta["tail_bit"] = p.tail_bit = guess_tail_bit(x1,x2)
         else:
             tail_bit = np.ones(p.nparticles)*np.nan
 
         if clean:
             if not tail_bit:
-                x1,x2,x3,vx1,vx2,vx3 = particles_x1x2x3(p, self.satellite(),
-                                                        self.potential,
-                                                        self.t1, self.t2, -1)
+                coord, r_tide, v_disp = particles_x1x2x3(p, self.satellite(),
+                                                         self.potential,
+                                                         self.t1, self.t2, -1,
+                                                         at_tub=True)
+                (x1,x2,x3,vx1,vx2,vx3) = coord
+
                 tail_bit = guess_tail_bit(x1,x2)
             else:
                 tail_bit = p.tail_bit
@@ -119,9 +124,9 @@ class SgrSimulation(object):
             # reject any with nan tail_bit
             idx = ~np.isnan(tail_bit)
 
-            # reject any with |x1| > 3  or |x2| > 2
-            idx &= np.fabs(x1) < 3
-            idx &= np.fabs(x2) < 2
+            # reject any with |x1| > 2.5  or |x2| > 1.2
+            idx &= np.fabs(x1/r_tide) < 2.5
+            idx &= np.fabs(x2/r_tide) < 1.2
 
             _X = p._X[idx]
             meta["tub"] = p.tub[idx]
