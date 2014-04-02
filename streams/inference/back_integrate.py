@@ -90,6 +90,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     # if not marginalizing over unbinding time, get the orbit index closest to
     #   tub for each star
     t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
+
     s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
     p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
     m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
@@ -116,8 +117,10 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     _x2_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
     _x3_hat = np.cross(x1_hat, _x2_hat)
     _x2_hat = -np.cross(x1_hat, _x3_hat)
-    x2_hat = _x2_hat / np.sqrt(np.sum(_x2_hat**2, axis=-1))[...,np.newaxis]
-    x3_hat = _x3_hat /np.sqrt(np.sum(_x3_hat**2, axis=-1))[...,np.newaxis]
+    # x2_hat = _x2_hat / np.sqrt(np.sum(_x2_hat**2, axis=-1))[...,np.newaxis]
+    # x3_hat = _x3_hat /np.sqrt(np.sum(_x3_hat**2, axis=-1))[...,np.newaxis]
+    x2_hat = _x2_hat / np.linalg.norm(_x2_hat, axis=-1)[...,np.newaxis]
+    x3_hat = _x3_hat / np.linalg.norm(_x3_hat, axis=-1)[...,np.newaxis]
 
     # translate to satellite position
     rel_orbits = p_orbits - s_orbit
@@ -153,7 +156,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     vx3 = np.sum(rel_vel * x3_hat, axis=-1)
 
     # position likelihood is gaussian at lagrange points
-    sigma_r = r_tide
+    sigma_r = 0.5*r_tide
     r_term = -0.5*((2*np.log(sigma_r) + (x1-alpha*beta*r_tide)**2/sigma_r**2) + \
                    (2*np.log(2*sigma_r) + x2**2/(2*sigma_r)**2) + \
                    (2*np.log(sigma_r) + x3**2/sigma_r**2))
@@ -164,21 +167,11 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
                    (2*np.log(sigma_v) + vx3**2/sigma_v**2))
 
     # import matplotlib.pyplot as plt
-    # for ii in range(8):
-    #     ix = np.argmin(x1[:,ii]**2 + x2[:,ii]**2 + x3[:,ii]**2)
-    #     print(ix)
-
-    #     ix1 = ix-50
-    #     ix2 = ix+50
-
-    #     if ix1 < 0:
-    #         ix1 = 0
-
-    #     if ix2 > len(x1):
-    #         ix2 = len(x1)
-    #     plt.plot(x1[ix1:ix2,ii], x2[ix1:ix2,ii],
-    #              marker=None, alpha=0.4, color='k')
-
+    # plt.figure(figsize=(5,5))
+    # plt.plot(x1 / r_tide, x2 / r_tide, marker='o',
+    #          alpha=0.4, color='k', linestyle='none')
+    # plt.xlim(-3,3)
+    # plt.ylim(-3,3)
     # plt.savefig("/Users/adrian/Desktop/derp.png")
     # sys.exit(0)
 

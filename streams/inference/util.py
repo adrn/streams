@@ -30,16 +30,26 @@ def particles_x1x2x3(particles, satellite, potential, t1, t2, dt, at_tub=True):
     ts, rs, vs = integrator.run(t1=t1, t2=t2, dt=-1.)
     s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
     p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
+    m_t = (-s.mdot*ts + s.m0)[:,np.newaxis]
 
     if at_tub:
         t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in p.tub])
         s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
         p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
+        m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
+
+    r_tide = potential._tidal_radius(m_t, s_orbit[...,:3])
+    s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
+    s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
+    v_disp = s_V * r_tide / s_R
 
     # instantaneous cartesian basis to project into
-    x_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
-    y_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
-    z_hat = np.cross(x_hat, y_hat)
+    x1_hat = s_orbit[...,:3] / np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))[...,np.newaxis]
+    _x2_hat = s_orbit[...,3:] / np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))[...,np.newaxis]
+    _x3_hat = np.cross(x1_hat, _x2_hat)
+    _x2_hat = -np.cross(x1_hat, _x3_hat)
+    x2_hat = _x2_hat / np.linalg.norm(_x2_hat, axis=-1)[...,np.newaxis]
+    x3_hat = _x3_hat / np.linalg.norm(_x3_hat, axis=-1)[...,np.newaxis]
 
     # translate to satellite position
     rel_orbits = p_orbits - s_orbit
@@ -47,15 +57,15 @@ def particles_x1x2x3(particles, satellite, potential, t1, t2, dt, at_tub=True):
     rel_vel = rel_orbits[...,3:]
 
     # project onto X
-    X = np.sum(rel_pos * x_hat, axis=-1)
-    Y = np.sum(rel_pos * y_hat, axis=-1)
-    Z = np.sum(rel_pos * z_hat, axis=-1)
+    x1 = np.sum(rel_pos * x1_hat, axis=-1)
+    x2 = np.sum(rel_pos * x2_hat, axis=-1)
+    x3 = np.sum(rel_pos * x3_hat, axis=-1)
 
-    VX = np.sum(rel_vel * x_hat, axis=-1)
-    VY = np.sum(rel_vel * y_hat, axis=-1)
-    VZ = np.sum(rel_vel * z_hat, axis=-1)
+    vx1 = np.sum(rel_vel * x1_hat, axis=-1)
+    vx2 = np.sum(rel_vel * x2_hat, axis=-1)
+    vx3 = np.sum(rel_vel * x3_hat, axis=-1)
 
-    return (X,Y,Z,VX,VY,VZ)
+    return (x1,x2,x3,vx1,vx2,vx3), r_tide, v_disp
 
 def guess_tail_bit(x1,x2):
     """ Guess the tail assigment for each particle. """
