@@ -345,74 +345,53 @@ class TestStreamModel(object):
 
         plt.close('all')
 
-    def test_twod(self):
+    def test_coordinate_constraints(self):
+        """ Want to test that having a missing dimension, other coordinates
+            place constraints on the missing one.
+        """
 
-        x_param = 'mul'
-        y_param = 'mub'
+        test_path = os.path.join(output_path, "model", "coords")
+        if not os.path.exists(test_path):
+            os.mkdir(test_path)
+
+        ptc_params = """
+    parameters: [l,b,d,mul,mub,vr]
+    missing_dims: [l,b,d,mul,mub,vr]
+        """
 
         sat_params = """
-    parameters: [{}, {}]
-        """.format(x_param, y_param)
-        _config = minimum_config.format(potential_params="",
-                                        particles_params="",
-                                        satellite_params=sat_params)
-        config = io.read_config(_config)
-        model = si.StreamModel.from_config(config)
-        model.sample_priors()
-        truth_dict = model._decompose_vector(model.truths)
-
-        nbins = 12
-        x_vals = np.linspace(0.95,1.05,nbins)*truth_dict['satellite'][x_param]
-        y_vals = np.linspace(0.95,1.05,nbins)*truth_dict['satellite'][y_param]
-
-        vals = []
-        X,Y = np.meshgrid(x_vals, y_vals)
-        for x,y in zip(X.ravel(), Y.ravel()):
-            lp = model(np.array([x,y]))
-            vals.append(lp)
-        vals = np.array(vals)
-        vals = vals.reshape(nbins, nbins)
-
-        plt.clf()
-        plt.pcolor(X,Y,vals)
-        plt.axvline(truth_dict['satellite'][x_param])
-        plt.axhline(truth_dict['satellite'][y_param])
-        plt.savefig(os.path.join(output_path, "log_twod_{}_{}.png".format(x_param, y_param)))
-
-        vals = np.exp(vals-np.max(vals))
-        plt.clf()
-        plt.pcolor(X,Y,vals)
-        plt.axvline(truth_dict['satellite'][x_param])
-        plt.axhline(truth_dict['satellite'][y_param])
-        plt.savefig(os.path.join(output_path, "twod_{}_{}.png".format(x_param, y_param)))
-
-    def test_sanity(self):
-        sat_params = """
-    parameters: [logmass,d]
+    parameters: [l,b,d,mul,mub,vr]
+    missing_dims: [l,b,d,mul,mub,vr]
         """
         _config = minimum_config.format(potential_params="",
-                                        particles_params="",
+                                        particles_params=ptc_params,
                                         satellite_params=sat_params)
+
         config = io.read_config(_config)
         model = si.StreamModel.from_config(config)
         model.sample_priors()
-        truth_dict = model._decompose_vector(model.truths)
 
-        v1 = model(model.truths)
+        ix = -3
+        truth = model.truths[ix]
 
-        sat_params = """
-    parameters: [d]
-        """
-        _config = minimum_config.format(potential_params="",
-                                        particles_params="",
-                                        satellite_params=sat_params)
-        config = io.read_config(_config)
-        model = si.StreamModel.from_config(config)
-        model.sample_priors()
-        truth_dict = model._decompose_vector(model.truths)
-        v2 = model(model.truths)
+        vals = np.linspace(-0.02, 0., Nfine)
+        #vals = np.linspace(-0.012,-0.003,Nfine)
+        Ls = []
+        for val in vals:
+            p = model.truths.copy()
+            p[ix] = val
+            Ls.append(model(p))
+        Ls = np.array(Ls)
 
-        print(v1, v2)
+        fig,ax = plt.subplots(1,1,figsize=(8,8))
+        ax.plot(vals,Ls,marker=None,linestyle='-')
+        ax.axvline(truth)
+        fig.savefig(os.path.join(test_path, "{}.png".format("mul")))
+
+        fig,ax = plt.subplots(1,1,figsize=(8,8))
+        ax.plot(vals,np.exp(Ls-np.max(Ls)),marker=None,linestyle='-')
+        ax.axvline(truth)
+        fig.savefig(os.path.join(test_path, "{}_exp.png".format("mul")))
 
 if __name__ == "__main__":
     import cProfile
