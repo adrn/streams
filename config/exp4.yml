@@ -25,11 +25,11 @@ potential:
     parameters: [q1, qz, phi, v_halo]
 
 particles:
-    parameters: [d, mul, mub, vr, tub]
+    parameters: [l, b, d, mul, mub, vr, tub]
     missing_dims: []
 
 satellite:
-    parameters: [d, mul, mub, vr, alpha]
+    parameters: [l, b, d, mul, mub, vr, alpha]
     missing_dims: []
 
 # emcee
