@@ -87,13 +87,14 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
     nburn = config.get("burn_in", 0)
     ncool_down = config.get("cool_down", 100)
     burn_beta = config.get("burn_beta", 1.)
+    start_truth = config.get("start_truth", False)
 
     if not os.path.exists(output_file) and not continue_sampler:
         logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
 
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers,
-                                 start_truth=config.get("start_truth", False))
+                                 start_truth=start_truth)
         logger.debug("Priors sampled...")
 
         if nburn > 0:
@@ -110,12 +111,14 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
                                     sampler.flatlnprobability, sampler.flatchain,
                                     threshold=0.02)
 
-            if burn_beta != 1 and ncool_down > 0:
+            if ncool_down > 0 and not start_truth:
                 best_idx = sampler.flatlnprobability.argmax()
                 best_pos = sampler.flatchain[best_idx]
 
                 #best_pos = np.median(sampler.flatchain, axis=0)
-                std = np.std(p0, axis=0) / 10.
+                # std = np.std(p0, axis=0) / 10.
+                std = np.median(np.absolute(p0 - np.median(data, axis=0)[np.newaxis]), axis=0)
+                std /= 10.
                 pos = np.array([np.random.normal(best_pos, std) \
                                 for kk in range(nwalkers)])
 
