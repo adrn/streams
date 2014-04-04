@@ -35,21 +35,38 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def fix_whack_walkers(pos, acc_frac, flatlnprob, flatchain, threshold=0.02):
+def fix_whack_walkers(pos, acc_frac, flatlnprob, flatchain, threshold=None):
+    if threshold is None:
+        threshold = 0.02
+
     if np.any(acc_frac < threshold):
         ix = acc_frac < threshold
 
-        # # resample positions for bad walkers
-        # pos[ix] = np.random.normal(np.median(pos[~ix], axis=0),
-        #                            np.fabs(np.median(pos[~ix], axis=0)/100.),
-        #                            size=(sum(ix),pos.shape[1]))
-
+        # resample positions for bad walkers
         best_pos = flatchain[flatlnprob.argmax()]
-        pos[ix] = np.random.normal(best_pos,
-                                   np.fabs(best_pos/100.),
+
+        # compute walker variance using median absolute deviation
+        std = np.median(np.absolute(flatchain - np.median(flatchain, axis=0)[np.newaxis]), axis=0)
+        std /= 10.
+        pos[ix] = np.random.normal(best_pos, std,
                                    size=(sum(ix),pos.shape[1]))
 
     return pos
+
+def write_sampler(sampler, filename):
+    # write the sampler data to an HDF5 file
+    logger.info("Writing sampler data to '{}'...".format(filename))
+    with h5py.File(filename, "w") as f:
+        f["chain"] = sampler.chain
+        f["flatchain"] = sampler.flatchain
+        f["lnprobability"] = sampler.lnprobability
+        f["p0"] = p0
+        f["acceptance_fraction"] = sampler.acceptance_fraction
+        try:
+            f["acor"] = sampler.acor
+        except:
+            logger.warn("Failed to compute autocorrelation time.")
+            f["acor"] = []
 
 def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler=False):
     """ TODO: """
@@ -84,9 +101,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
     # read in the number of walkers to use
     nwalkers = config["walkers"]
     nsteps = config["steps"]
+    output_every = config["output_every"]
     nburn = config.get("burn_in", 0)
-    ncool_down = config.get("cool_down", 100)
-    burn_beta = config.get("burn_beta", 1.)
     start_truth = config.get("start_truth", False)
 
     if not os.path.exists(output_file) and not continue_sampler:
@@ -98,35 +114,15 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
         logger.debug("Priors sampled...")
 
         if nburn > 0:
-            model.lnpargs.append(burn_beta)
             sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
 
             time0 = time.time()
             logger.info("Burning in sampler for {} steps...".format(nburn))
-
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
 
-            #pos = fix_whack_walkers(sampler, pos, threshold=0.02)
             pos = fix_whack_walkers(pos, sampler.acceptance_fraction,
                                     sampler.flatlnprobability, sampler.flatchain,
-                                    threshold=0.02)
-
-            if ncool_down > 0 and not start_truth:
-                best_idx = sampler.flatlnprobability.argmax()
-                best_pos = sampler.flatchain[best_idx]
-
-                #best_pos = np.median(sampler.flatchain, axis=0)
-                # std = np.std(p0, axis=0) / 10.
-                std = np.median(np.absolute(p0 - np.median(data, axis=0)[np.newaxis]), axis=0)
-                std /= 10.
-                pos = np.array([np.random.normal(best_pos, std) \
-                                for kk in range(nwalkers)])
-
-                # reset temperature
-                model.lnpargs[3] = 1.
-                sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
-
-                pos, xx, yy = sampler.run_mcmc(pos, ncool_down)
+                                    threshold=config.get("acc_threshold", None))
 
             t = time.time() - time0
             logger.debug("Spent {} seconds on burn-in...".format(t))
@@ -135,43 +131,22 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
             pos = p0
 
         if nsteps > 0:
-            # reset temperature
-            try:
-                model.lnpargs[3] = 1.
-            except:
-                pass
-
-            try:
-                pos = fix_whack_walkers(pos, sampler.acceptance_fraction,
-                                    sampler.flatlnprobability, sampler.flatchain,
-                                    threshold=0.02)
-            except:
-                pass
-
             sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
 
             logger.info("Running {} walkers for {} steps..."\
                     .format(nwalkers, nsteps))
 
             time0 = time.time()
-            pos, prob, state = sampler.run_mcmc(pos, nsteps)
+            ii = 0
+            for results in self.sample(pos, iterations=nsteps):
+                ii += 1
+
+                if (ii % output_every) == 0 and ii > 0:
+                    # TODO: write to file?
+                    write_sampler(sampler, output_file)
 
             t = time.time() - time0
             logger.debug("Spent {} seconds on main sampling...".format(t))
-
-        # write the sampler data to numpy save files
-        logger.info("Writing sampler data to '{}'...".format(output_file))
-        with h5py.File(output_file, "w") as f:
-            f["chain"] = sampler.chain
-            f["flatchain"] = sampler.flatchain
-            f["lnprobability"] = sampler.lnprobability
-            f["p0"] = p0
-            f["acceptance_fraction"] = sampler.acceptance_fraction
-            try:
-                f["acor"] = sampler.acor
-            except:
-                logger.warn("Failed to compute autocorrelation time.")
-                f["acor"] = []
 
     elif os.path.exists(output_file) and not continue_sampler:
         logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
@@ -193,7 +168,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
         pos = fix_whack_walkers(pos, old_acc_frac,
                                 old_flatlnprobability,
                                 old_flatchain,
-                                threshold=0.02)
+                                threshold=config.get("acc_threshold", None))
 
         sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
 
