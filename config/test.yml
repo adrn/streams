@@ -22,16 +22,16 @@ potential:
     parameters: [q1, qz]
 
 particles:
-    parameters: [d, mul, tub]
+#    parameters: [d, mul, tub]
 
 satellite:
-    parameters: [d, mul, mub, vr, alpha]
+#    parameters: [d, mul, mub, vr, alpha]
 
 # emcee
 start_truth: True
-walkers: 32
-burn_in: 25
-burn_beta: 1.
-cool_down: 0
-steps: 0
+acceptance_threshold: 0.01
+walkers: 8
+burn_in: 0
+steps: 20
+output_every: 10
 thin_chain: False
