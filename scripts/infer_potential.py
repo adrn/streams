@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import glob
 import logging
 import random
 import shutil
@@ -16,6 +17,7 @@ import time
 # Third-party
 import astropy.units as u
 from emcee.utils import sample_ball
+from emcee import autocorr
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -173,17 +175,20 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
     plot_ext = plot_config.get("ext", "png")
 
     for filename in glob.glob(os.path.join(cache_output_path,"*.hdf5")):
-        with h5py.File(output_file, "r") as f:
+        with h5py.File(filename, "r") as f:
             try:
                 chain = np.hstack((chain,f["chain"].value))
             except NameError:
                 chain = f["chain"].value
 
             acceptance_fraction = f["acceptance_fraction"].value
-            try:
-                acor = f["acor"].value
-            except:
-                acor = []
+
+    try:
+        acor = autocorr.integrated_time(np.mean(chain, axis=0), axis=0,
+                                        window=50) # 50 comes from emcee
+    except:
+        acor = []
+
     flatchain = np.vstack(chain)
 
     # thin chain
