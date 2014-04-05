@@ -34,9 +34,9 @@ satellite:
 
 # emcee
 start_truth: True
+acceptance_threshold: 0.03
 walkers: 256
 burn_in: 5000
-burn_beta: 1.
-cool_down: 0
-steps: 5000
+steps: 100000
+output_every: 1000
 thin_chain: False

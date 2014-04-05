@@ -560,7 +560,7 @@ class StreamModel(object):
 
 class StreamModelSampler(EnsembleSampler):
 
-    def __init__(self, model, nwalkers=None, pool=None):
+    def __init__(self, model, nwalkers=None, pool=None, a=2.):
         """ """
 
         if nwalkers is None:
@@ -568,7 +568,7 @@ class StreamModelSampler(EnsembleSampler):
         self.nwalkers = nwalkers
 
         super(StreamModelSampler, self).__init__(self.nwalkers, model.nparameters, model,
-                                                 pool=pool)
+                                                 pool=pool, a=a)
 
     def write(self, filename, ii=None):
         if ii is None:

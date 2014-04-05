@@ -92,6 +92,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
     output_every = config.get("output_every", None)
     nburn = config.get("burn_in", 0)
     start_truth = config.get("start_truth", False)
+    a = config.get("a", 2.) # emcee tuning param
 
     if not os.path.exists(cache_output_path) and not continue_sampler:
         logger.info("Output path '{}' doesn't exist, running inference..."\
@@ -104,7 +105,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
         logger.debug("Priors sampled...")
 
         if nburn > 0:
-            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool, a=a)
 
             time0 = time.time()
             logger.info("Burning in sampler for {} steps...".format(nburn))
@@ -121,7 +122,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
             pos = p0
 
         if nsteps > 0:
-            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool, a=a)
             sampler.run_inference(pos, nsteps, path=cache_output_path, first_step=0,
                                   output_every=output_every,
                                   output_file_fmt="inference_{:06d}.hdf5")
@@ -155,7 +156,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
                                 old_flatchain,
                                 threshold=config.get("acceptance_threshold", None))
 
-        sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+        sampler = si.StreamModelSampler(model, nwalkers, pool=pool, a=a)
         logger.info("Continuing sampler...running {} walkers for {} steps..."\
                 .format(nwalkers, nsteps))
         sampler.run_inference(pos, nsteps, path=cache_output_path, first_step=last_step,
