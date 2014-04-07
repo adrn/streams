@@ -1,0 +1,25 @@
+#!/bin/bash
+
+if [[ -z "$1" ]]; then
+    echo "You must specify a source machine."
+    exit
+fi
+
+if [[ -z "$2" ]]; then
+    echo "You must specify an experiment name, e.g. 'exper2'."
+    exit
+fi
+
+if [[ -z "$STREAMSPATH" ]]; then
+    echo "Env var STREAMSPATH must be set."
+fi
+
+if [[ "$1" == "yeti" ]]; then
+    echo `rsync -vazr --include="*.hdf5" yeti:/vega/astro/users/amp2217/projects/streams/plots/infer_potential/$2/cache/* ~/projects/streams/plots/yeti/$2/cache/`
+
+elif [[ "$1" == "hotfoot" ]]; then
+    echo `rsync -vazr --exclude="*.hdf5" --include="*.png" hotfoot:/hpc/astro/users/amp2217/projects/streams/plots/infer_potential/$2/cache/* ~/projects/streams/plots/hotfoot/$2/cache/`
+
+else
+    echo "ERROR: Unrecognized machine '$1'"
+fi
