@@ -8,6 +8,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
+import glob
 import logging
 import random
 import shutil
@@ -16,6 +17,7 @@ import time
 # Third-party
 import astropy.units as u
 from emcee.utils import sample_ball
+from emcee import autocorr
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,18 +37,20 @@ pool = None
 # Create logger
 logger = logging.getLogger(__name__)
 
-def fix_whack_walkers(pos, acc_frac, flatlnprob, flatchain, threshold=0.02):
+def fix_whack_walkers(pos, acc_frac, flatlnprob, flatchain, threshold=None):
+    if threshold is None:
+        threshold = 0.02
+
     if np.any(acc_frac < threshold):
         ix = acc_frac < threshold
 
-        # # resample positions for bad walkers
-        # pos[ix] = np.random.normal(np.median(pos[~ix], axis=0),
-        #                            np.fabs(np.median(pos[~ix], axis=0)/100.),
-        #                            size=(sum(ix),pos.shape[1]))
-
+        # resample positions for bad walkers
         best_pos = flatchain[flatlnprob.argmax()]
-        pos[ix] = np.random.normal(best_pos,
-                                   np.fabs(best_pos/100.),
+
+        # compute walker variance using median absolute deviation
+        std = np.median(np.absolute(flatchain - np.median(flatchain, axis=0)[np.newaxis]), axis=0)
+        std /= 10.
+        pos[ix] = np.random.normal(best_pos, std,
                                    size=(sum(ix),pos.shape[1]))
 
     return pos
@@ -70,27 +74,30 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
     # the path to write things to
     output_path = config["output_path"]
     logger.debug("Will write data to:\n\t{}".format(output_path))
-    output_file = os.path.join(output_path, "inference.hdf5")
+    cache_output_path = os.path.join(output_path, "cache")
 
     # get a StreamModel from a config dict
     model = si.StreamModel.from_config(config)
     logger.info("Model has {} parameters".format(model.nparameters))
 
-    if os.path.exists(output_file) and overwrite:
-        logger.info("Writing over output file '{}'".format(output_file))
-        os.remove(output_file)
+    if os.path.exists(cache_output_path) and overwrite:
+        logger.info("Writing over output path '{}'".format(cache_output_path))
+        logger.debug("Deleting files: '{}'".format(os.listdir(cache_output_path)))
+        shutil.rmtree(cache_output_path)
 
     # emcee parameters
     # read in the number of walkers to use
     nwalkers = config["walkers"]
     nsteps = config["steps"]
+    output_every = config.get("output_every", None)
     nburn = config.get("burn_in", 0)
-    ncool_down = config.get("cool_down", 100)
-    burn_beta = config.get("burn_beta", 1.)
     start_truth = config.get("start_truth", False)
+    a = config.get("a", 2.) # emcee tuning param
 
-    if not os.path.exists(output_file) and not continue_sampler:
-        logger.info("Output file '{}' doesn't exist, running inference...".format(output_file))
+    if not os.path.exists(cache_output_path) and not continue_sampler:
+        logger.info("Output path '{}' doesn't exist, running inference..."\
+                    .format(cache_output_path))
+        os.mkdir(cache_output_path)
 
         # sample starting positions
         p0 = model.sample_priors(size=nwalkers,
@@ -98,35 +105,15 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
         logger.debug("Priors sampled...")
 
         if nburn > 0:
-            model.lnpargs.append(burn_beta)
-            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool, a=a)
 
             time0 = time.time()
             logger.info("Burning in sampler for {} steps...".format(nburn))
-
             pos, xx, yy = sampler.run_mcmc(p0, nburn)
 
-            #pos = fix_whack_walkers(sampler, pos, threshold=0.02)
             pos = fix_whack_walkers(pos, sampler.acceptance_fraction,
                                     sampler.flatlnprobability, sampler.flatchain,
-                                    threshold=0.02)
-
-            if ncool_down > 0 and not start_truth:
-                best_idx = sampler.flatlnprobability.argmax()
-                best_pos = sampler.flatchain[best_idx]
-
-                #best_pos = np.median(sampler.flatchain, axis=0)
-                # std = np.std(p0, axis=0) / 10.
-                std = np.median(np.absolute(p0 - np.median(data, axis=0)[np.newaxis]), axis=0)
-                std /= 10.
-                pos = np.array([np.random.normal(best_pos, std) \
-                                for kk in range(nwalkers)])
-
-                # reset temperature
-                model.lnpargs[3] = 1.
-                sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
-
-                pos, xx, yy = sampler.run_mcmc(pos, ncool_down)
+                                    threshold=config.get("acceptance_threshold", None))
 
             t = time.time() - time0
             logger.debug("Spent {} seconds on burn-in...".format(t))
@@ -135,88 +122,46 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
             pos = p0
 
         if nsteps > 0:
-            # reset temperature
-            try:
-                model.lnpargs[3] = 1.
-            except:
-                pass
+            sampler = si.StreamModelSampler(model, nwalkers, pool=pool, a=a)
+            sampler.run_inference(pos, nsteps, path=cache_output_path, first_step=0,
+                                  output_every=output_every,
+                                  output_file_fmt="inference_{:06d}.hdf5")
 
-            try:
-                pos = fix_whack_walkers(pos, sampler.acceptance_fraction,
-                                    sampler.flatlnprobability, sampler.flatchain,
-                                    threshold=0.02)
-            except:
-                pass
+    elif os.path.exists(cache_output_path) and not continue_sampler:
+        logger.info("Output path '{}' already exists, not running sampler..."\
+                    .format(cache_output_path))
 
-            sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
+    elif os.path.exists(cache_output_path) and continue_sampler:
+        if len(os.listdir(cache_output_path)) == 0:
+            logger.error("No files in path: {}".format(cache_output_path))
+            sys.exit(1)
 
-            logger.info("Running {} walkers for {} steps..."\
-                    .format(nwalkers, nsteps))
+        continue_file = config.get("continue_file", os.listdir(cache_output_path)[-1])
+        continue_file = os.path.join(cache_output_path, continue_file)
+        if not os.path.exists(continue_file):
+            logger.error("File {} doesn't exist!".format(continue_file))
+            sys.exit(1)
 
-            time0 = time.time()
-            pos, prob, state = sampler.run_mcmc(pos, nsteps)
-
-            t = time.time() - time0
-            logger.debug("Spent {} seconds on main sampling...".format(t))
-
-        # write the sampler data to numpy save files
-        logger.info("Writing sampler data to '{}'...".format(output_file))
-        with h5py.File(output_file, "w") as f:
-            f["chain"] = sampler.chain
-            f["flatchain"] = sampler.flatchain
-            f["lnprobability"] = sampler.lnprobability
-            f["p0"] = p0
-            f["acceptance_fraction"] = sampler.acceptance_fraction
-            try:
-                f["acor"] = sampler.acor
-            except:
-                logger.warn("Failed to compute autocorrelation time.")
-                f["acor"] = []
-
-    elif os.path.exists(output_file) and not continue_sampler:
-        logger.info("Output file '{}' already exists, not running sampler...".format(output_file))
-
-    elif os.path.exists(output_file) and continue_sampler:
-        # TODO: right now, trusts that you use the right config file to restart...
-        logger.info("Output file '{}' already exists, continuing sampler...".format(output_file))
-
-        with h5py.File(output_file, "r") as f:
+        with h5py.File(continue_file, "r") as f:
             old_chain = f["chain"].value
-            old_flatchain = f["flatchain"].value
+            old_flatchain = np.vstack(old_chain)
             old_lnprobability = f["lnprobability"].value
             old_flatlnprobability = np.vstack(old_lnprobability)
-            old_p0 = f["p0"].value
             old_acc_frac = f["acceptance_fraction"].value
+            last_step = f["last_step"].value
 
         pos = old_chain[:,-1]
-        #pos = fix_whack_walkers(pos, flatlnprob, flatchain, threshold=0.02)
         pos = fix_whack_walkers(pos, old_acc_frac,
                                 old_flatlnprobability,
                                 old_flatchain,
-                                threshold=0.02)
+                                threshold=config.get("acceptance_threshold", None))
 
-        sampler = si.StreamModelSampler(model, nwalkers, pool=pool)
-
+        sampler = si.StreamModelSampler(model, nwalkers, pool=pool, a=a)
         logger.info("Continuing sampler...running {} walkers for {} steps..."\
                 .format(nwalkers, nsteps))
-
-        time0 = time.time()
-        pos, prob, state = sampler.run_mcmc(pos, nsteps)
-
-        t = time.time() - time0
-        logger.debug("Spent {} seconds on sampling...".format(t))
-
-        with h5py.File(output_file, "w") as f:
-            f["chain"] = np.hstack((old_chain,sampler.chain))
-            f["flatchain"] = np.vstack((old_flatchain,sampler.flatchain))
-            f["lnprobability"] = np.hstack((old_lnprobability,sampler.lnprobability))
-            f["p0"] = old_p0
-            f["acceptance_fraction"] = sampler.acceptance_fraction
-            try:
-                f["acor"] = sampler.acor
-            except:
-                logger.warn("Failed to compute autocorrelation time.")
-                f["acor"] = []
+        sampler.run_inference(pos, nsteps, path=cache_output_path, first_step=last_step,
+                              output_every=output_every,
+                              output_file_fmt = "inference_{:06d}.hdf5")
 
     else:
         print("Unknown state.")
@@ -230,15 +175,22 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
     plot_config = config.get("plot", dict())
     plot_ext = plot_config.get("ext", "png")
 
-    with h5py.File(output_file, "r") as f:
-        chain = f["chain"].value
-        flatchain = f["flatchain"].value
-        acceptance_fraction = f["acceptance_fraction"].value
-        p0 = f["p0"].value
-        try:
-            acor = f["acor"].value
-        except:
-            acor = []
+    for filename in glob.glob(os.path.join(cache_output_path,"*.hdf5")):
+        with h5py.File(filename, "r") as f:
+            try:
+                chain = np.hstack((chain,f["chain"].value))
+            except NameError:
+                chain = f["chain"].value
+
+            acceptance_fraction = f["acceptance_fraction"].value
+
+    try:
+        acor = autocorr.integrated_time(np.mean(chain, axis=0), axis=0,
+                                        window=50) # 50 comes from emcee
+    except:
+        acor = []
+
+    flatchain = np.vstack(chain)
 
     # thin chain
     if config.get("thin_chain", True):
