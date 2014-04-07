@@ -111,7 +111,7 @@ The method generalizes to encompass mixtures of independent debris structures,
 
 % TODO: audit all uses of the word 'model'
 
-Early large-scale, cosmological simulations of galaxy formation in the $\Lambda$CDM paradigm suggested that the spherically-averaged density profiles of dark matter halos follow a universal profile across a large dynamic range in mass \citep{navarro96}. Since then, higher resolution simulations --- both with and without baryons --- have produced dark matter halos that (1) are permeated with substructure on many scales, (2) are triaxial in shape, and (3) have shapes and orientations that vary with radius \citep{dubinski91, jing02, kuhlen07, veraciro11}. Dark-matter-only simulations produce triaxial halos \citep{jing02} with large density fluctuations \citep{zemp09}. Inclusion of baryons tends to soften the triaxiality and graininess in the inner galaxy through a combination of dissipative infall \citep{dubinski94} or cooling \citep{bryan13}. These processes combined with the gravity from a baryonic disk or ellipsoid can act to make the inner halo more oblate or spherical, however they do not seem to erase the clumpy, triaxial nature of the outer halo \citep[e.g.,][]{pontzen12}. This can lead to radially-dependent axis ratios, orientation, and smoothness, and suggests that the true mass distributions around Milky Way-like galaxies are not easily represented by simple potentials. [Methods that seek to measure the potential of the Milky Way must be flexible enough to handle generic potential forms. We take a first step towards this goal with the likelihood function presented below; it works in phase-space and relies on orbit integration, not on computing actions or approximate potentials...]
+Early large-scale, cosmological simulations of galaxy formation in the $\Lambda$CDM paradigm suggested that the spherically-averaged density profiles of dark matter halos follow a universal profile across a large dynamic range in mass \citep{navarro96}. Since then, higher resolution simulations --- both with and without baryons --- have produced dark matter halos that (1) are permeated with substructure on many scales, (2) are triaxial in shape, and (3) have shapes and orientations that vary with radius \citep{dubinski91, jing02, kuhlen07, veraciro11}. Dark-matter-only simulations produce triaxial halos \citep{jing02} with large density fluctuations \citep{zemp09}. Inclusion of baryons tends to soften the triaxiality and graininess in the inner galaxy through a combination of dissipative infall \citep{dubinski94} or cooling \citep{bryan13}. These processes combined with the gravity from a baryonic disk or ellipsoid can act to make the inner halo more oblate or spherical, however they do not seem to erase the clumpy, triaxial nature of the outer halo \citep[e.g.,][]{pontzen12}. This can lead to radially-dependent axis ratios, orientation, and smoothness, and suggests that the true mass distributions around Milky Way-like galaxies are not easily represented by simple potentials. Methods that seek to measure the potential of the Milky Way must be flexible enough to handle generic potentials where finding approximate analytic forms or computing actions is not possible.
 
 The bulk of the baryonic matter in galaxies spans roughly 5-10\% of the extent of the host dark matter halo. Hence, the brightest and most easily observable components of a galaxy are sensitive to the inner portion of the host halos mass distribution. For example, the rotation curves of disk galaxies trace the inner mass with exquisite sensitivity since matter in disks can be assumed to move on nearly circular orbits. Measurements of the dark matter distribution at large radii is complicated by the low density of visible tracers, observational difficulties of measuring kinematics of stars at large distances, and unknown orbits. Around external galaxies, the extended mass distribution has been studied using a variety of approaches \citep[see][for a a complete and detailed review]{courteau13}. For example, the kinematics of tracer populations such as globular clusters or planetary nebulae can be used to derive mass estimates under the assumptions that these satellite systems are on random orbits and are well-mixed in orbital phase \citep[early investigations include][]{mendez01,cote03}. Simple, parameterized fits to both the mass and orbit distribution have been simultaneously constrained using such data \citep[e.g.][]{napolitano11,deason12c}. Alternatively, the statistical properties of gravitationally lensed background sources around a galaxy can be used to constrain the \emph{projected} shape, orientation, and radial profile of mass \citep[see, for example, the Lens Structure and Dynamics Survey described in][]{koopmans02}. Of course, lensing reconstructions can only be performed for galaxies which closely intersect our line of sight to background sources, but the advent of large photometric catalogues has allowed automatic searches for such chance alignments and significant increases in the number of objects studied in this way \citep[e.g. the Sloan Lens ACS Survey, see][]{bolton06}.
 
@@ -121,7 +121,7 @@ Another approach to using halo stars as potential measures is to exploit the non
 
 \citet[][LM10]{law10} used N-body simulations of the disruption of the Sgr dwarf galaxy to simultaneously model the debris and underlying Milky Way potential. By varying parameters of the Milky Way potential, they found ``best-fit'' parameters by comparing the properties of observed Sgr stars to their simulated debris. The computational costs of running N-body simulations limited their search to a grid of potential parameters and forced the authors to fix many other parameters (e.g., properties of the disk and bulge). Nevertheless, they were able to constrain the 3D shape of the Milky Way potential out to $\sim$70 kpc and found that the best-fitting halo has a prolate, triaxial shape elongated in the Galactic Z direction, orthogonal to the plane of the disk. Though an unlikely orientation for the halo --- \cite{debattista13} find that the disk of the Milky Way would not remain stable in such a configuration --- LM10 showed that the data is at a state where such inference can be attempted. 
 
-The computational costs associated with N-body modeling has motivated the development of many methods that approximately model tidal streams. The simplest alternative is to fit a single orbit to observed debris \citep[e.g.,][]{koposov10, deg13}. Though this is known to be incorrect and leads to biases in inferred properties of the underlying potential \citep[e.g.,][]{eyre11, lux13, sanders13a}, \cite{deg14} and \cite{lux13} have used orbit fitting to demonstrate the power of combining multiple streams in dynamical inference. To account for the offset between the orbit of the progenitor and the orbits of the debris stars, methods have been proposed that model the debris as an orbit plus some dispersion or offset, either in phase space \citep[e.g.,][]{eyre09a, varghese11, kuepper12} or action-angle coordinates \citep{eyre11, sanders13b, bovy14, sanders14}. In this work we do \emph{not} assume that streams follow the orbit of the progenitor. Other statistical methods have been proposed \citep[][]{penarrubia12, johnston99a, sanderson14} that may prove powerful when applied to, for example, data from the \gaia\, mission, where full 6D coordinates will be known for large samples of stars in the halo --- and therefore many debris structures --- but stream membership is not known for all stars.
+The computational costs associated with N-body modeling has motivated the development of many methods that approximately model tidal streams. The simplest alternative is to fit a single orbit to observed debris \citep[e.g.,][]{koposov10, deg13}. Though this is known to be incorrect and leads to biases in inferred properties of the underlying potential \citep[e.g.,][]{eyre11, lux13, sanders13a}, \cite{deg14} and \cite{lux13} have used orbit fitting to demonstrate the power of combining multiple streams in dynamical inference. To account for the offset between the orbit of the progenitor and the orbits of the debris stars, methods have been proposed that model the debris as an orbit plus some dispersion or offset, either in phase space \citep[e.g.,][]{eyre09a, varghese11, kuepper12} or action-angle coordinates \citep{eyre11, sanders13b, bovy14, sanders14}. In this work we do \emph{not} assume that streams follow the orbit of the progenitor. Other statistical methods have been proposed \citep[][]{penarrubia12, johnston99a} that may prove powerful when applied to, for example, data from the \gaia\, mission, where full 6D coordinates will be known for large samples of stars in the halo --- and therefore many debris structures --- but stream membership is not known for all stars. %sanderson14
 
 Motivated by the strengths of previous work, we identify a minimum set of issues that any approximate stream modeling or potential recovery method should address (see Section~\ref{sec:discussion} for a more detailed discussion of these points in the context of this work):
 \begin{enumerate}
@@ -136,7 +136,7 @@ In \citet{apw13}, we introduced a simple method based on the work of \citet{john
 
 In this paper, we present a fully probabilistic model (\rewinder) for modeling tidal streams in any underlying potential given data with realistic uncertainties by building on these simple scalings, which depend only on the mass and orbit of the progenitor and parent potential. By ``probabilistic model'' we mean a justified, parametrized likelihood function with priors on the parameters. \rewinder\ relies on numerical orbit integration in ordinary phase-space and can thus incorporate arbitrarily complex models for the parent potential. Individual stars are used as constraints, thus \rewinder\ can handle very small samples of well-measured stars (e.g., 4-16). This model trivially extends to incorporating multiple streams, debris structures, and other kinematic information. 
 
-In Section~\ref{sec:sims} we describe a suite of N-body simulations that span a range of progenitor masses on a characteristic, mildly eccentric orbit. In Section~\ref{sec:} we describe [...]
+In Section~\ref{sec:sims} we describe a suite of N-body simulations that span a range of progenitor masses on a characteristic, mildly eccentric orbit. In Section~\ref{sec:method} we use these simulations to motivate a new, flexible model for tidal streams that works entirely in phase-space (\rewinder). In Section~\ref{sec:experiments} we demonstrate how \rewinder\ can be used to measure properties of a non-trivial Galactic potential by performing several experiments with simulated observations of data from N-body simulations. We discuss the results of these experiments in Section~\ref{sec:discussion}. We conclude in Section~\ref{sec:conclusion}.
 
 \section{Simulations}\label{sec:sims}
 We performed a set of N-body simulations with the SCF basis function expansion code \citep{hernquist92} to build realistic models of streams for studying the phase-space distribution of debris as it is stripped from its progenitor. We later use one of these simulations to test \rewinder. In each simulation, a $10^5$ particle NFW-profile satellite was inserted at the apogalacticon of its orbit in a static, triaxial host halo, described below. The satellite was evolved first in isolation, then the host potential was turned on slowly over 10 satellite internal dynamical times to reduce artificial gravitational shocking. The initial position and velocity was obtained by integrating the orbit of the Sagittarius dwarf galaxy from present-day coordinates ${\bf r}  =(19.0, 2.7, -6.9)\ \mathrm{kpc}, \ {\bf v} = (230., -35., 195.) \ \mathrm{km\ s^{-1}}$ \citep{law10} backwards for $\sim$6 Gyr. The N-body satellite was then reintegrated from that initial position for the same interaction time and number of timesteps. This orbit has its apogalacticon at approximately 59 kpc and perigalacticon near 12 kpc with an average orbital period of 930 Myr, although all of these quantities vary over the course of the simulation due to the halo's triaxiality. Total energy is conserved to $\sim$2\% of the satellite internal potential energy.
@@ -163,7 +163,7 @@ The total potential then is just
 \begin{equation}
 	\Phi_{\rm tot} = \Phi_{\rm disk} + \Phi_{\rm spher} + \Phi_{\rm halo}\label{eq:lm10}.
 \end{equation}
-Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane (Y=0) and Y-Z plane (X=0) for a few choices of  $q_1$,  $q_z$, and $\phi$ while holding all other parameters fixed, as described in the figure caption. The parameters used for the simulations are the same as used in \citet{law10}: [TODO].
+Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane (Y=0) and Y-Z plane (X=0) for a few choices of  $q_1$,  $q_z$, and $\phi$ while holding all other parameters fixed, as described in the figure caption. The potential parameters used for the simulations are shown in the ``Truth'' column of Table~\ref{tbl:params}.
 
 \begin{figure}[h]
 \begin{center}
@@ -179,7 +179,7 @@ Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane 
 \end{center}
 \end{figure}
 
-\section{Method (\rewinder)}
+\section{Method (\rewinder)}\label{sec:method}
 
 \subsection{Motivation: tidal debris}\label{sec:debris}
 
@@ -248,25 +248,24 @@ To model the true, 6D, present-day position of the star, $\W$, we first transfor
 	p(\bs{\Theta} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) &= p(\bs{r}_0,\bs{v}_0, \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi)\,\left\vert\J\right\vert_{t=\tub}\label{eq:starlike}\\
 	p(\bs{r}_0,\bs{v}_0, \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \rtide^2)\,\mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma^2_v)_{t=\tub}
 \end{align}
-where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale}. $\left\vert\J\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. All quantities in this expression are evaluated at $t=\tub$. For a single star, the evaluation of the likelihood works as follows: given present-day coordinates for the star and progenitor and nuisance parameters ($\tub,\Loffset,\tailbit$),
+where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale}. $\left\vert\J\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. All quantities in this expression are evaluated at $t=\tub$. For a single star, the evaluation of the likelihood works as follows: given present-day coordinates for the star and progenitor, potential parameter values ($\bs{\Theta}_\Phi$), and nuisance parameter values ($\tub,\Loffset,\tailbit$),
 \begin{enumerate}
 	\item transform star and progenitor positions in heliocentric coordinates to Galactocentric, cartesian coordinates;
-	\item integrate star and progenitor orbits backwards (as test particles) for the total interaction time, $t_{\rm int}\approx6$~Gyr;
+	\item integrate star and progenitor orbits backwards as test particles in the potential given by $\bs{\Theta}_\Phi$ for the total interaction time, $t_{\rm int}\approx6$~Gyr;
 	\item at the timestep closest to $\tub$, transform the particle position to the relative, normalized coordinates defined in Section~\ref{sec:debris};
 	\item compute the likelihood given by Equation~\ref{eq:starlike}.
 \end{enumerate}
-Assuming each star is an independent tracer, the full posterior for many stars is then just the product of the individual likelihoods with the priors:
+Assuming each star is an independent tracer, the full likelihood for many stars is then just the product of the individual likelihoods:
 %\begin{multline}
-%	p(\Phi, \{\W^{(i)}\}, \W_\sat, m_0, \dot{m}, \tub, \Loffset, \tailbit, \given \{\D^{(i)}\}, \D_\sat) = \\
-%		\shoveleft{\hspace{1em}\frac{1}{\mathcal{Z}} \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \, p(\D_\sat \given \W_\sat)}\\
-%			\times p(\W^{(i)} \given \W_\sat, m_0, \dot{m}, \tub^{(i)}, \Phi, \Loffset, \tailbit^{(i)}) \, 
-%			\, p(\tub^{(i)}) \, p(\Phi) \, p(\Loffset)
+%	p(\{\bs{\Theta}^{(i)}\}, \bs{\Theta}_\sat, \bs{\Theta}_\Phi \given \{\D^{(i)}\}, \D_\sat) = \\
+%		\frac{1}{\mathcal{Z}} \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \, p(\D_\sat \given \W_\sat)\,
+%			p(\bs{\Theta}^{(i)} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) \, 
+%			p(\bs{\Theta}) \, p(\bs{\Theta}_\sat)\,p(\bs{\Theta}_\Phi)
 %\end{multline}
 \begin{multline}
-	p(\{\bs{\Theta}^{(i)}\}, \bs{\Theta}_\sat, \bs{\Theta}_\Phi \given \{\D^{(i)}\}, \D_\sat) = \\
-		\frac{1}{\mathcal{Z}} \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \, p(\D_\sat \given \W_\sat)\,
-			p(\bs{\Theta}^{(i)} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) \, 
-			p(\bs{\Theta}) \, p(\bs{\Theta}_\sat)\,p(\bs{\Theta}_\Phi)
+	p(\{\D^{(i)}\}, \D_\sat \given \{\bs{\Theta}^{(i)}\}, \bs{\Theta}_\sat, \bs{\Theta}_\Phi ) = \\
+		p(\D_\sat \given \W_\sat) \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \,
+			p(\bs{\Theta}^{(i)} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi)
 \end{multline}
 All parameters are summarized in Table~\ref{tbl:params}.
 
@@ -304,38 +303,38 @@ For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to
 
 \begin{table}[h]
 \begin{center}
-	\begin{tabular}{l c l} \toprule
-		\multicolumn{3}{l}{{\bf \emph{Milky Way parameters} ($\bs{\Theta}_\Phi$)}} \\
+	\begin{tabular}{l c c l} \toprule
+		\multicolumn{4}{l}{{\bf \emph{Milky Way parameters} ($\bs{\Theta}_\Phi$)}} \\
 		\toprule
-		Component & Parameter & Prior \\\toprule
-		disk & $M_{\rm disk}$ & $1.0\times10^{11}\,\msun$ (fixed) \\ 
-		& $a$ & 6.5 kpc (fixed)\\
-		& $b$ & 0.26 kpc (fixed)\\
+		Component & Parameter & Truth & Prior \\\toprule
+		disk & $M_{\rm disk}$ & $1.0\times10^{11}\,\msun$ & fixed \\ 
+		& $a$ & 6.5 kpc & fixed\\
+		& $b$ & 0.26 kpc & fixed\\
 		\midrule
-		spheroid & $M_{\rm spher}$ & $3.4\times10^{10}\,\msun$ (fixed)\\ 
-		& $c$ & 0.7 kpc (fixed)\\
+		spheroid & $M_{\rm spher}$ & $3.4\times10^{10}\,\msun$ & fixed\\ 
+		& $c$ & 0.7 kpc & fixed\\
 		\midrule
-		halo & $\vhalo$ & $\mathcal{U}(100,200)$ km/s \\
-		& $q_1$ & $\mathcal{U}(1,2)$\\
-		& $q_2$ & 1.0 (fixed)\\
-		& $q_z$ & $\mathcal{U}(1,2)$\\
-		& $\phi$ & $\mathcal{U}(52,142)$ deg\\
-		& $r_h$ & 12 kpc (fixed)\\
+		halo & $\vhalo$ & 121.858 & $\mathcal{U}(100,200)$ km/s \\
+		& $q_1$ & 1.38 & $\mathcal{U}(1,2)$\\
+		& $q_2$ & 1.0 & fixed\\
+		& $q_z$ & 1.36 & $\mathcal{U}(1,2)$\\
+		& $\phi$ & 97 & $\mathcal{U}(52,142)$ deg\\
+		& $r_h$ & 12 kpc & fixed\\
 		\toprule
-		\multicolumn{3}{l}{{\bf \emph{Progenitor parameters} ($\bs{\Theta}_\sat$)}} \\
+		\multicolumn{4}{l}{{\bf \emph{Progenitor parameters} ($\bs{\Theta}_\sat$)}} \\
 		\toprule
-		position & $\bs{r}_{\sat,0}$ & $\|\bs{r}_{\sat,0}\|\sim\mathcal{U}(0,200)$~kpc \\
-		velocity & $\bs{v}_{\sat,0}$ & $\|\bs{v}_{\sat,0}\|\sim\mathcal{N}(\mu=0,\sigma^2=4000)$~km/s\\
-		Lagrange pt. offset & $\alpha$ & $\mathcal{N}(\mu=2,\sigma^2=1)$\\
-		initial mass & $m_0$ & $2.5\times10^8\,\msun$ (fixed)\\
-		mass loss & $\dot{m}$ & $3.2\times10^4\,\msun$/Myr (fixed)\\
+		position & $\bs{r}_{\sat,0}$ & -- & $\|\bs{r}_{\sat,0}\|\sim\mathcal{U}(0,200)$~kpc \\
+		velocity & $\bs{v}_{\sat,0}$ & -- & $\|\bs{v}_{\sat,0}\|\sim\mathcal{U}(0,500)$~km/s\\
+		Lagrange pt. offset & $\alpha$ & -- & $\mathcal{U}(0.5, 2.5)$\\
+		initial mass & $m_0$ & $2.5\times10^8\,\msun$ & fixed\\
+		mass loss & $\dot{m}$ & -- & $3.2\times10^4\,\msun$/Myr (fixed)\\
 		\toprule
-		\multicolumn{3}{l}{{\bf \emph{Star parameters} ($\bs{\Theta}^{(i)}$)}} \\
+		\multicolumn{4}{l}{{\bf \emph{Star parameters} ($\bs{\Theta}^{(i)}$)}} \\
 		\toprule
-		position & $\bs{r}_0$ & $\|\bs{r}_0\|\sim\mathcal{U}(0,200)$~kpc \\
-		velocity & $\bs{v}_0$ & $\|\bs{v}_0\|\sim\mathcal{N}(\mu=0,\sigma^2=4000)$~km/s\\
-		tail assignment (binary) & $\beta$ & $\pm1$~equally likely (fixed at truth)\\ 
-		time unbound & $\tub$ & $\mathcal{U}(0,6.2)~Gyr$\\ 
+		position & $\bs{r}_0$ & -- & $\|\bs{r}_0\|\sim\mathcal{U}(0,200)$~kpc \\
+		velocity & $\bs{v}_0$ & -- & $\|\bs{v}_0\|\sim\mathcal{U}(0,500)$~km/s\\
+		tail assignment (binary) & $\beta$ & -- & $\pm1$~equally likely (fixed at truth)\\ 
+		time unbound & $\tub$ & -- & $\mathcal{U}(0,6.2)$ Gyr\\ 
 		\bottomrule
 		\end{tabular}
 	\caption{Parameter values used in the experiments of Section~\ref{sec:experiments}. $\mathcal{N}$ is the normal (Gaussian) distribution, and $\mathcal{U}$ the uniform distribution. There are 11 parameters for the Milky Way potential, but only four are left free to vary; some parameters are fixed (denoted by ``(fixed)'') at the true values used in the N-body simulations that generated the fake data. The progenitor has nine parameters --- the position, $\bs{r}_{\rm p}$, and velocity, $\bs{v}_{\rm p}$, vectors each contain three components --- but only five are left free to vary. The sky coordinates (e.g., Galactic $l$, $b$) are assumed to be known with negligible uncertainty. Each star has eight associated parameters, five of which are allowed to vary. Sky coordinates are fixed, along with the tail assignment (whether the star belongs to the leading or trailing tail). For inference with eight stars, there are $4+5+8\times5=49$ free parameters. \label{tbl:params}}
@@ -496,7 +495,7 @@ We model tidal debris as having been stripped from the progenitor with some disp
 %[Haven't explored parameter space...]
 %For the second two experiments (Section~\ref{sec:exp3} and \ref{sec:exp4}), we have not performed a proper search in parameter space for the optimal values. Instead, the MCMC walkers were started with a small dispersion around the true parameter values. We have shown that if started from truth, the walkers will [...]. 
 
-\section{Conclusions}
+\section{Conclusions}\label{sec:conclusion}
 We have presented a probabilistic model (\rewinder) --- a likelihood function and with priors on the parameters --- for using stars observed in tidal streams to constrain properties of any underlying gravitational potential. \rewinder\ relies on direct orbit integration and not on computing conserved quantities (e.g., actions) and can thus be used with arbitrarily complex (e.g., time-dependent or clumpy) forms of the potential. We have performed several experiments to show that \rewinder\ simultaneously constrains the potential and models a tidal stream given simulated data with a range of realistic uncertainties. 
 
 \acknowledgements
