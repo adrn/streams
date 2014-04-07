@@ -39,7 +39,10 @@ minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8.hdf5
 nparticles: 8
-particle_idx: [60, 0, 1091, 79, 1283, 1742, 767, 710]
+# particle_idx: [60, 0, 1091, 79, 1283, 1742, 767, 710]
+# particle_idx: [130, 2689, 3, 3667, 2266, 1576, 1460, 287]
+particle_idx: [130, 2689, 3, 3667, 710, 1576, 1460, 1283]
+
 
 potential:
     class_name: LawMajewski2010
