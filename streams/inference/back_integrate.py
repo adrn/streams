@@ -29,8 +29,13 @@ def xyz_sph_jac(hel):
     cosb, sinb = np.cos(b), np.sin(b)
 
     Rsun = 8.
-    dtmnt = d**2*(Rsun**2*cosb + Rsun*d*sinb**2*cosl - 2*Rsun*d*cosl + d**2*sinb**4*cosb - d**2*cosb**5 + 2*d**2*cosb**3)*cosb
-    deet = np.log(np.abs(dtmnt))
+    #dtmnt = d**2*(Rsun**2*cosb + Rsun*d*sinb**2*cosl - 2*Rsun*d*cosl + d**2*sinb**4*cosb - d**2*cosb**5 + 2*d**2*cosb**3)*cosb
+    #dtmnt = np.log(np.abs(d**2*cosb)) + np.log(np.abs(Rsun**2*cosb - Rsun*d*cosb**2*cosl - Rsun*d*cosl + d**2*cosb))
+    dtmnt2 = np.log(np.abs(d**4*cosb))
+
+    #deet = np.log(np.abs(dtmnt))
+    deet = dtmnt
+
     return deet
 
 def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdot,
