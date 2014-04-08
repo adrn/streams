@@ -11,6 +11,7 @@ import os, sys
 import cPickle as pickle
 import inspect
 from collections import OrderedDict
+import glob
 
 # Third-party
 import astropy.units as u
@@ -732,46 +733,45 @@ def exp1_posterior():
                           truths=truths, extents=bounds, labels=labels)
     fig.savefig(os.path.join(plot_path, "exp1_posterior.png"))
 
-def exp_posteriors(exp_num, slicey=-5000):
+def exp_posteriors(exp_num, slicey=None):
     cfg_filename = os.path.join(streamspath, "config", "exp{}.yml".format(exp_num))
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
 
-    hdf5_filename = os.path.join(streamspath, "plots", "hotfoot",
-                                "exper{}".format(exp_num), "inference.hdf5")
-    # hdf5_filename = os.path.join(streamspath, "plots", "infer_potential",
-    #                              "exper{}".format(exp_num), "inference.hdf5")
-    with h5py.File(hdf5_filename, "r") as f:
-        chain = f["chain"].value
-        acceptance_fraction = f["acceptance_fraction"].value
-        _p0 = f["p0"].value
-        acor = f["acor"].value
+    cache_path = os.path.join(streamspath, "plots", "yeti",
+                              "exper{}".format(exp_num), "cache")
 
+    for filename in glob.glob(os.path.join(cache_path,"*.hdf5")):
+        print(filename)
+        with h5py.File(filename, "r") as f:
+            try:
+                chain = np.hstack((chain,f["chain"].value))
+            except NameError:
+                chain = f["chain"].value
+            acceptance_fraction = f["acceptance_fraction"].value
+
+    acor = np.array([1000.])
     print("median acor: {}".format(int(np.median(acor))))
 
     if slicey is None:
-        slicey = slice(-5000,None,int(np.median(acor)))
+        slicey = slice(-10000,None,int(np.median(acor)))
     else:
         slicey = slice(slicey,None,int(np.median(acor)))
 
-    _flatchain = np.vstack(chain[acceptance_fraction>0.03,slicey])
+    _flatchain = np.vstack(chain[acceptance_fraction>0.05,slicey])
     d = model.label_flatchain(_flatchain)
-    p0 = model.label_flatchain(_p0)
 
     # Potential
     this_flatchain = np.zeros((_flatchain.shape[0], len(d["potential"])))
-    this_p0 = np.zeros((_p0.shape[0], this_flatchain.shape[1]))
     truths = []
-    bounds = []
+    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200)]
     labels = []
     for ii,pname in enumerate(d["potential"].keys()):
         this_flatchain[:,ii] = _unit_transform[pname](np.squeeze(d["potential"][pname]))
-        this_p0[:,ii] = _unit_transform[pname](np.squeeze(p0["potential"][pname]))
 
         p = model.parameters["potential"][pname]
         truth = _unit_transform[pname](p.truth)
         truths.append(truth)
-        bounds.append((0.75*truth, 1.25*truth))
         labels.append(_label_map[pname])
 
     q16,q50,q84 = np.array(np.percentile(this_flatchain, [16, 50, 84], axis=0))
@@ -785,15 +785,13 @@ def exp_posteriors(exp_num, slicey=-5000):
     fig.savefig(os.path.join(plot_path, "exp{}_potential.{}".format(exp_num, ext)))
 
     # Particle
-    p_idx = 5
+    p_idx = 7
     this_flatchain = np.zeros((_flatchain.shape[0], len(d["particles"])))
-    this_p0 = np.zeros((_p0.shape[0], this_flatchain.shape[1]))
     truths = []
     bounds = []
     labels = []
     for ii,pname in enumerate(d["particles"].keys()):
         this_flatchain[:,ii] = _unit_transform[pname](d["particles"][pname][:,p_idx])
-        this_p0[:,ii] = _unit_transform[pname](p0["particles"][pname][:,p_idx])
 
         p = model.parameters["particles"][pname]
         truth = _unit_transform[pname](p.truth[p_idx])
@@ -809,14 +807,14 @@ def exp_posteriors(exp_num, slicey=-5000):
         labels.append(_label_map[pname])
 
     # HACK
-    bounds = [(32.5,41), (1.75,2.4), (-1.45,-1.0), (-85,-40), bounds[-1]]
+    #bounds = [(32.5,41), (1.75,2.4), (-1.45,-1.0), (-85,-40), bounds[-1]]
+    bounds = None
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, labels=labels, extents=bounds)
     fig.savefig(os.path.join(plot_path, "exp{}_particle.{}".format(exp_num, ext)))
 
     # Satellite
     this_flatchain = np.zeros((_flatchain.shape[0], len(d["satellite"])))
-    this_p0 = np.zeros((_p0.shape[0], this_flatchain.shape[1]))
     truths = []
     bounds = []
     labels = []
@@ -824,7 +822,6 @@ def exp_posteriors(exp_num, slicey=-5000):
     #for ii,pname in enumerate(keys):
     for ii,pname in enumerate(d["satellite"].keys()):
         this_flatchain[:,ii] = _unit_transform[pname](d["satellite"][pname][:,0])
-        this_p0[:,ii] = _unit_transform[pname](p0["satellite"][pname][:,0])
 
         p = model.parameters["satellite"][pname]
         truth = _unit_transform[pname](p.truth)
