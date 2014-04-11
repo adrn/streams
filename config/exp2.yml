@@ -14,7 +14,6 @@ plot:
 # data
 data_file: data/observed_particles/2.5e8.hdf5
 nparticles: 4
-# particle_idx: [582, 585, 231, 300, 637, 508, 404, 1460]
 particle_idx: [3, 3667, 710, 1576]
 
 # integration
@@ -36,8 +35,8 @@ satellite:
 start_truth: True
 acceptance_threshold: 0.1
 walkers: 256
-burn_in: 5000
+burn_in: 2500
 steps: 10000
 output_every: 1000
-a: 1.5
+a: 1.25
 thin_chain: False

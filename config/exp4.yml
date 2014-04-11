@@ -13,8 +13,8 @@ plot:
 
 # data
 data_file: data/observed_particles/2.5e8_exp4.hdf5
-nparticles: 8
-particle_idx: [130, 2689, 3, 3667, 710, 1576, 1460, 1283]
+nparticles: 4
+particle_idx: [3, 3667, 710, 1576]
 
 # integration
 dt: -1.
@@ -35,7 +35,7 @@ satellite:
 start_truth: True
 acceptance_threshold: 0.1
 walkers: 256
-burn_in: 5000
+burn_in: 2500
 steps: 10000
 output_every: 1000
 a: 1.25
