@@ -34,7 +34,7 @@ def main(config_file):
             accfr = f["acceptance_fraction"].value
 
             _a = (np.min(accfr),np.median(accfr),np.max(accfr))
-            print("min, median, max: {}, {}, {}".format(_a))
+            print("min, median, max: {}, {}, {}".format(*_a))
 
     acf = autocorr.function(np.mean(chain, axis=0), axis=0)
 
