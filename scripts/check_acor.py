@@ -29,7 +29,7 @@ def main(config_file):
     if not os.path.exists(output_path):
         os.mkdir(output_path)
 
-    for filename in glob.glob(os.path.join(cache_path,"inference_1*.hdf5")):
+    for filename in glob.glob(os.path.join(cache_path,"*.hdf5")):
         with h5py.File(filename, "r") as f:
             try:
                 chain = np.hstack((chain,f["chain"].value))
