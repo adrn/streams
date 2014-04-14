@@ -24,7 +24,7 @@ def main(config_file):
     # read configuration from a YAML file
     config = io.read_config(config_file)
     output_path = os.path.join(config["output_path"], "diagnostics")
-    cache_path = os.path.join(output_path,"cache")
+    cache_path = os.path.join(config["output_path"],"cache")
 
     if not os.path.exists(output_path):
         os.mkdir(output_path)
