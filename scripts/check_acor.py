@@ -24,7 +24,7 @@ def main(config_file):
     output_path = config["output_path"]
     cache_path = os.path.join(output_path,"cache")
 
-    for filename in glob.glob(os.path.join(cache_path,"*.hdf5")):
+    for filename in glob.glob(os.path.join(cache_path,"inference_1*.hdf5")):
         with h5py.File(filename, "r") as f:
             try:
                 chain = np.hstack((chain,f["chain"].value))
