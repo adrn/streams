@@ -12,6 +12,7 @@ import glob
 
 # Third-party
 from emcee import autocorr
+import matplotlib.pyplot as plt
 import numpy as np
 import h5py
 
@@ -22,8 +23,11 @@ import streams.io as io
 def main(config_file):
     # read configuration from a YAML file
     config = io.read_config(config_file)
-    output_path = config["output_path"]
+    output_path = os.path.join(config["output_path"], "diagnostics")
     cache_path = os.path.join(output_path,"cache")
+
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
 
     for filename in glob.glob(os.path.join(cache_path,"inference_1*.hdf5")):
         with h5py.File(filename, "r") as f:
@@ -43,17 +47,17 @@ def main(config_file):
         plt.plot(acf[:,ii], marker=None, alpha=0.75)
     plt.savefig(os.path.join(output_path, "acf.png"))
 
-    windows = np.logspace(1, 4, 25)
-    acors = []
-    for window in windows:
-        _acor = autocorr.integrated_time(np.mean(chain, axis=0),
-                                         axis=0, window=window) # 50 comes from emcee
-        acors.append(np.median(_acor))
+    # windows = np.logspace(1, 4, 25)
+    # acors = []
+    # for window in windows:
+    #     _acor = autocorr.integrated_time(np.mean(chain, axis=0),
+    #                                      axis=0, window=window) # 50 comes from emcee
+    #     acors.append(np.median(_acor))
 
-    plt.clf()
-    v = plt.loglog(windows, acors, linestyle='none', marker='o')
-    plt.ylim(1,1e4)
-    plt.savefig(os.path.join(output_path, "acor_windows.png"))
+    # plt.clf()
+    # v = plt.loglog(windows, acors, linestyle='none', marker='o')
+    # plt.ylim(1,1e4)
+    # plt.savefig(os.path.join(output_path, "acor_windows.png"))
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
