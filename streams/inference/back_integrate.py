@@ -91,24 +91,9 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     s_orbit = np.vstack((rs[:,0][:,np.newaxis].T, vs[:,0][:,np.newaxis].T)).T
     p_orbits = np.vstack((rs[:,1:].T, vs[:,1:].T)).T
 
-    #########################################################################
-    # if not marginalizing over unbinding time, get the orbit index closest to
-    #   tub for each star
-    t_idx = np.array([np.argmin(np.fabs(ts - t)) for t in tub])
-
-    s_orbit = np.array([s_orbit[jj,0] for jj in t_idx])
-    p_orbits = np.array([p_orbits[jj,ii] for ii,jj in enumerate(t_idx)])
-    m_t = np.squeeze(np.array([m_t[jj] for jj in t_idx]))
-    p_x_hel = _gc_to_hel(p_orbits)
-    #jac = _xyz_sph_jac(p_x_hel)
-    jac = xyz_sph_jac(p_x_hel)
-    #########################################################################
-
-    #########################################################################
-    # if marginalizing over tub, use the full orbits
-    # p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6)).reshape(ntimes,nparticles,6)
-    # jac = xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
-    #########################################################################
+    # marginalizing over tub, use the full orbits
+    p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6)).reshape(ntimes,nparticles,6)
+    jac = xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
 
     s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
     s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
@@ -139,26 +124,26 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     vx2 = np.sum(rel_vel * x2_hat, axis=-1)
     vx3 = np.sum(rel_vel * x3_hat, axis=-1)
 
-    # position likelihood is gaussian at lagrange points
     sigma_r = 0.5*r_tide
+    sigma_v = v_disp
+
+    # compute the p-s distance
+    D_ps_r = (x1-alpha*beta*r_tide)**2/sigma_r**2 + x2**2/(2*sigma_r)**2 + x3**2/sigma_r**2
+    D_ps_v = vx1**2/sigma_v**2 + vx2**2/sigma_v**2 + vx3**2/sigma_v**2
+    D_ps = D_ps_r + D_ps_v
+
+    # position likelihood is gaussian at lagrange points
     r_term = -0.5*((2*np.log(sigma_r) + (x1-alpha*beta*r_tide)**2/sigma_r**2) + \
                    (2*np.log(2*sigma_r) + x2**2/(2*sigma_r)**2) + \
                    (2*np.log(sigma_r) + x3**2/sigma_r**2))
 
-    sigma_v = v_disp
     v_term = -0.5*((2*np.log(sigma_v) + vx1**2/sigma_v**2) + \
                    (2*np.log(sigma_v) + vx2**2/sigma_v**2) + \
                    (2*np.log(sigma_v) + vx3**2/sigma_v**2))
 
-    # import matplotlib.pyplot as plt
-    # plt.figure(figsize=(5,5))
-    # plt.plot(x1 / r_tide, x2 / r_tide, marker='o',
-    #          alpha=0.4, color='k', linestyle='none')
-    # plt.xlim(-3,3)
-    # plt.ylim(-3,3)
-    # plt.savefig("/Users/adrian/Desktop/derp.png")
-    # sys.exit(0)
+    # for each star, find the index at which D_ps is minimum and only integrate up to this point
+    LL = np.zeros(nparticles)
+    for ii,jj in enumerate(D_ps.argmin(axis=0)):
+        LL[ii] = logsumexp(r_term[jj:,ii] + v_term[jj:,ii] + jac[jj:,ii])
 
-    #return logsumexp(r_term + v_term + jac, axis=0)
-
-    return r_term + v_term + jac
+    return LL
