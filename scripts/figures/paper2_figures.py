@@ -733,7 +733,7 @@ def exp1_posterior():
                           truths=truths, extents=bounds, labels=labels)
     fig.savefig(os.path.join(plot_path, "exp1_posterior.png"))
 
-def exp_posteriors(exp_num, slicey=None):
+def exp_posteriors(exp_num):
     cfg_filename = os.path.join(streamspath, "config", "exp{}.yml".format(exp_num))
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
@@ -753,12 +753,7 @@ def exp_posteriors(exp_num, slicey=None):
     acor = np.array([1000.])
     print("median acor: {}".format(int(np.median(acor))))
 
-    if slicey is None:
-        slicey = slice(-10000,None,int(np.median(acor)))
-    else:
-        slicey = slice(slicey,None,int(np.median(acor)))
-
-    _flatchain = np.vstack(chain[acceptance_fraction>0.05,slicey])
+    _flatchain = np.vstack(chain[acceptance_fraction>0.05])
     d = model.label_flatchain(_flatchain)
 
     # Potential
@@ -785,7 +780,7 @@ def exp_posteriors(exp_num, slicey=None):
     fig.savefig(os.path.join(plot_path, "exp{}_potential.{}".format(exp_num, ext)))
 
     # Particle
-    p_idx = 7
+    p_idx = 2
     this_flatchain = np.zeros((_flatchain.shape[0], len(d["particles"])))
     truths = []
     bounds = []
@@ -848,13 +843,13 @@ def exp_posteriors(exp_num, slicey=None):
     fig.savefig(os.path.join(plot_path, "exp{}_satellite.{}".format(exp_num, ext)))
 
 def exp2_posteriors():
-    exp_posteriors(2, slicey=-10000)
+    exp_posteriors(2)
 
 def exp3_posteriors():
-    exp_posteriors(3, slicey=-15000)
+    exp_posteriors(3)
 
 def exp4_posteriors():
-    exp_posteriors(4, slicey=-15000)
+    exp_posteriors(4)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
