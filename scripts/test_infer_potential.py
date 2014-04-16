@@ -38,10 +38,8 @@ logging.basicConfig(level=logging.DEBUG)
 minimum_config = """
 name: test
 data_file: data/observed_particles/2.5e8.hdf5
-nparticles: 8
-# particle_idx: [60, 0, 1091, 79, 1283, 1742, 767, 710]
-# particle_idx: [130, 2689, 3, 3667, 2266, 1576, 1460, 287]
-particle_idx: [130, 2689, 3, 3667, 710, 1576, 1460, 1283]
+nparticles: 4
+particle_idx: [3, 3667, 710, 1576]
 
 
 potential:
@@ -301,7 +299,7 @@ class TestStreamModel(object):
     def test_per_particle(self):
         _c = minimum_config.format(potential_params=pot_params,
                                    particles_params="",
-                                   satellite_params="")
+                                   satellite_params=sat_params)
         config = io.read_config(_c)
         model = si.StreamModel.from_config(config)
         model.sample_priors()
@@ -316,7 +314,8 @@ class TestStreamModel(object):
         s_gc = model.true_satellite.to_frame(galactocentric)._X
         logmass = model.satellite.logmass.truth
         logmdot = model.satellite.logmdot.truth
-        alpha = model.satellite.alpha.truth
+        #true_alpha = model.satellite.alpha.truth
+        true_alpha = 1.4
         beta = model.particles.beta.truth
         tub = model.particles.tub.truth
 
@@ -335,16 +334,45 @@ class TestStreamModel(object):
                 ln_like = back_integration_likelihood(t1, t2, dt,
                                                       potential, p_gc, s_gc,
                                                       logmass, logmdot,
-                                                      beta, alpha, tub)
+                                                      beta, true_alpha, tub)
                 Ls.append(ln_like)
             Ls = np.array(Ls).T
 
             fig,ax = plt.subplots(1,1,figsize=(8,8))
             for ii,Lvec in enumerate(Ls):
                 ax.plot(vals,Lvec,marker=None,linestyle='-',
-                        label=str(ii))
+                        label=str(ii), alpha=0.5)
+
+            if param_name == "v_halo":
+                ax.set_ylim(-300,50)
+
+            ax.axvline(truths)
             ax.legend(loc='lower right', fontsize=14)
             fig.savefig(os.path.join(test_path, "per_particle_{}.png".format(param_name)))
+
+        #########################
+        # alpha
+        param = model.parameters['satellite']['alpha']
+        vals = np.linspace(0.5,2.5,Nfine)
+
+        potential = model._potential_class()
+        Ls = []
+        for val in vals:
+            ln_like = back_integration_likelihood(t1, t2, dt,
+                                                  potential, p_gc, s_gc,
+                                                  logmass, logmdot,
+                                                  beta, val, tub)
+            Ls.append(ln_like)
+        Ls = np.array(Ls).T
+
+        fig,ax = plt.subplots(1,1,figsize=(8,8))
+        for ii,Lvec in enumerate(Ls):
+            ax.plot(vals,Lvec,marker=None,linestyle='-',
+                    label=str(ii), alpha=0.5)
+
+        ax.axvline(true_alpha)
+        ax.legend(loc='lower right', fontsize=14)
+        fig.savefig(os.path.join(test_path, "per_particle_alpha.png"))
 
         plt.close('all')
 
