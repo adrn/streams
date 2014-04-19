@@ -142,8 +142,10 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
                    (2*np.log(sigma_v) + vx3**2/sigma_v**2))
 
     # for each star, find the index at which D_ps is minimum and only integrate up to this point
-    LL = np.zeros(nparticles)
-    for ii,jj in enumerate(D_ps.argmin(axis=0)):
-        LL[ii] = logsumexp(r_term[jj:,ii] + v_term[jj:,ii] + jac[jj:,ii])
+    # LL = np.zeros(nparticles)
+    # for ii,jj in enumerate(D_ps.argmin(axis=0)):
+    #     #LL[ii] = logsumexp(r_term[jj:,ii] + v_term[jj:,ii] + jac[jj:,ii])
+    #     LL[ii] = logsumexp(r_term[:,ii] + v_term[:,ii] + jac[:,ii])
 
+    LL = logsumexp(r_term+v_term+jac, axis=0)
     return LL
