@@ -34,7 +34,7 @@ job_sh = """#!/bin/sh
 date
 
 #Command to execute Python program
-/usr/local/bin/mpiexec -n {mpi_threads:d} {astro:s}/yt-x86_64/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v --mpi {overwrite} {contin}
+mpiexec -n {mpi_threads:d} {astro:s}/{py:s}/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v --mpi {overwrite} {contin}
 
 date
 
@@ -65,8 +65,10 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
     if group == "vega":
         group = 'yeti'
         nproc_per_node = 16
+        py = "anaconda"
     else:
         nproc_per_node = 8
+        py = "yt-x86_64"
 
     if overwrite:
         ovr = "-o"
@@ -95,7 +97,8 @@ def main(config_file, mpi_threads=None, walltime=None, memory=None,
                        overwrite=ovr,
                        ppn=nproc_per_node,
                        ib=ib,
-                       contin=cnt)
+                       contin=cnt,
+                       py=py)
 
     yn = raw_input("About to submit the following job: \n\n{0}\n\n Is "
                    "this right? [y]/n: ".format(sh))
