@@ -24,10 +24,8 @@ from streams.util import streamspath
 def master_inference(filename):
     """ Create a master inference hdf5 file from output every 1000 steps """
 
-    cfg_filename = os.path.join(streamspath, "config", filename)
-    config = read_config(cfg_filename)
     cache_path = os.path.join(streamspath, "plots", "infer_potential",
-                              config["name"], "cache")
+                              filename, "cache")
 
     for filename in sorted(glob.glob(os.path.join(cache_path,"inference_*.hdf5"))):
         print(filename)
