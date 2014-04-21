@@ -136,7 +136,8 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
             logger.error("No files in path: {}".format(cache_output_path))
             sys.exit(1)
 
-        continue_file = config.get("continue_file", os.listdir(cache_output_path)[-1])
+        continue_files = glob.glob(os.path.join(cache_output_path, "inference_*.hdf5"))
+        continue_file = config.get("continue_file", sorted(continue_files)[-1])
         continue_file = os.path.join(cache_output_path, continue_file)
         if not os.path.exists(continue_file):
             logger.error("File {} doesn't exist!".format(continue_file))
