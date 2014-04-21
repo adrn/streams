@@ -26,8 +26,10 @@ def master_inference(filename):
 
     cfg_filename = os.path.join(streamspath, "config", filename)
     config = read_config(cfg_filename)
+    cache_path = os.path.join(streamspath, "plots", "infer_potential",
+                              config["name"], "cache")
 
-    for filename in sorted(glob.glob(os.path.join(cache_path,"*.hdf5"))):
+    for filename in sorted(glob.glob(os.path.join(cache_path,"inference_*.hdf5"))):
         print(filename)
         with h5py.File(filename, "r") as f:
             try:
@@ -39,8 +41,7 @@ def master_inference(filename):
     acor_time = int(2*np.max(tau))
     print("Autocorrelation time: ", acor_time)
 
-    fn = os.path.join(streamspath, "plots", "infer_potential",
-                      config["name"], "combined_inference.hdf5")
+    fn = os.path.join(cache_path, "combined_inference.hdf5")
 
     with h5py.File(fn, "w") as f:
         f["chain"] = chain[:,::acor_time].copy()
@@ -55,4 +56,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    master_inference
+    master_inference(args.filename)
