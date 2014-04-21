@@ -9,9 +9,11 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 import os, sys
 import logging
+import glob
 
 # Third-party
 import acor
+import h5py
 import numpy as np
 import astropy.units as u
 
@@ -34,8 +36,9 @@ def master_inference(filename):
                 chain = np.hstack((chain,f["chain"].value))
             except NameError:
                 chain = f["chain"].value
-
-    tau, mean, sigma = acor.acor(chain)
+    
+    #taur = [acor.acor(chain[:,:,i])[0] for i in range(chain.shape[2])]
+    tau,mm,xx = acor.acor(np.mean(chain,axis=0).T)
     acor_time = int(2*np.max(tau))
     print("Autocorrelation time: ", acor_time)
 
