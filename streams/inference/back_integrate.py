@@ -127,11 +127,6 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     sigma_r = 0.5*r_tide
     sigma_v = v_disp
 
-    # compute the p-s distance
-    D_ps_r = (x1-alpha*beta*r_tide)**2/sigma_r**2 + x2**2/(2*sigma_r)**2 + x3**2/sigma_r**2
-    D_ps_v = vx1**2/sigma_v**2 + vx2**2/sigma_v**2 + vx3**2/sigma_v**2
-    D_ps = D_ps_r + D_ps_v
-
     # position likelihood is gaussian at lagrange points
     r_term = -0.5*((2*np.log(sigma_r) + (x1-alpha*beta*r_tide)**2/sigma_r**2) + \
                    (2*np.log(2*sigma_r) + x2**2/(2*sigma_r)**2) + \
@@ -140,12 +135,6 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
     v_term = -0.5*((2*np.log(sigma_v) + vx1**2/sigma_v**2) + \
                    (2*np.log(sigma_v) + vx2**2/sigma_v**2) + \
                    (2*np.log(sigma_v) + vx3**2/sigma_v**2))
-
-    # for each star, find the index at which D_ps is minimum and only integrate up to this point
-    # LL = np.zeros(nparticles)
-    # for ii,jj in enumerate(D_ps.argmin(axis=0)):
-    #     #LL[ii] = logsumexp(r_term[jj:,ii] + v_term[jj:,ii] + jac[jj:,ii])
-    #     LL[ii] = logsumexp(r_term[:,ii] + v_term[:,ii] + jac[:,ii])
 
     LL = logsumexp(r_term+v_term+jac, axis=0)
     return LL
