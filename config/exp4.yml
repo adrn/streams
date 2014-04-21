@@ -1,7 +1,7 @@
 # general
 seed: 42
 script: infer_potential.py
-name: exper4
+name: exper4_marg_tub
 # streams_path: /path/to/streams
 
 # plots / output
@@ -24,7 +24,7 @@ potential:
     parameters: [q1, qz, phi, v_halo]
 
 particles:
-    parameters: [d, mul, mub, vr, tub]
+    parameters: [d, mul, mub, vr]
     missing_dims: []
 
 satellite:
@@ -33,10 +33,10 @@ satellite:
 
 # emcee
 start_truth: True
-acceptance_threshold: 0.01
+acceptance_threshold: 0.05
 walkers: 256
 burn_in: 2500
-steps: 50000
+steps: 100000
 output_every: 1000
 a: 1.25
 thin_chain: False
