@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     # Define parser object
     parser = ArgumentParser(description="")
-    parser.add_argument("-f", "--file", dest="file", required=True,
+    parser.add_argument("-f", "--file", dest="filename", required=True,
                         help="Path to the configuration file to run with.")
 
     args = parser.parse_args()
