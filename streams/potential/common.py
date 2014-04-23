@@ -43,12 +43,12 @@ def _cartesian_point_mass_model(bases):
 
     def f(r,r_0,m):
         rr = r-r_0
-        R = np.sqrt(np.sum(rr**2, axis=1))
+        R = np.sqrt(np.sum(rr**2, axis=1))[:,np.newaxis]
         return -_G * m / R
 
     def df(r,r_0,m):
         rr = r-r_0
-        a = (np.sum(rr**2, axis=1)**-1.5)
+        a = (np.sum(rr**2, axis=1)**-1.5)[:,np.newaxis]
         return -_G * m * (r-r_0) * a
 
     return (f, df)
