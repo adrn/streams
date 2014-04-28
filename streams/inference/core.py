@@ -71,11 +71,7 @@ class EmceeModel(object):
 
         true_p = np.array([])
         for group_name,param_name,param in self._walk(self.parameters):
-            t = param.truth
-            if t is None:
-                #t = np.ones(param.size)*np.nan
-                t = [None]*param.size
-            true_p = np.append(true_p, np.ravel(t))
+            true_p = np.append(true_p, np.ravel(param.truth))
 
         return true_p
 

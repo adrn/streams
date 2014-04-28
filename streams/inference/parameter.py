@@ -51,7 +51,13 @@ class ModelParameter(u.Quantity):
         if prior is None:
             prior = LogPrior()
 
-        # TODO: type check
+        if truth is None:
+            truth = np.zeros_like(_value)*np.nan
+
+        if not isinstance(prior, LogPrior):
+            raise TypeError("prior must be a LogPrior subclass, not {}."
+                            .format(type(prior)))
+
         self.prior = prior
         self.truth = truth
         self.name = str(name)

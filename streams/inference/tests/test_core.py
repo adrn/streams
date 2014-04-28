@@ -116,6 +116,14 @@ class TestEmceeModel(object):
             decom = model.vector_to_parameters(vec)
             print(model.ln_likelihood(decom))
 
+    def test_truths(self):
+        for model in self.models:
+            truths = np.array([])
+            for group,name,p in model._walk(model.parameters):
+                truths = np.append(truths,p.truth)
+
+            assert np.all(truths == model.truths)
+
     def test_sample_priors(self):
         for model in self.models:
             pri = model.sample_priors(size=5)
