@@ -28,8 +28,7 @@ __all__ = ["Potential", "CartesianPotential", "CompositePotential", "PotentialPa
 
 class PotentialParameter(object):
 
-    def __init__(self, value=None, truth=None, range=(),
-                 latex="", units=usys):
+    def __init__(self, value=None, truth=None, range=(), latex="", units=usys):
 
         if value is None and truth is None:
             raise ValueError("If value not specified, must specify truth.")
