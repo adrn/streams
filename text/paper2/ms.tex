@@ -249,13 +249,18 @@ To model the true, 6D, present-day position of the star, $\W$, we first transfor
 	p(\bs{\Theta} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) &= p(\bs{r}_0,\bs{v}_0, \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi)\,\left\vert\J\right\vert_{t=\tub}\label{eq:starlike}\\
 	p(\bs{r}_0,\bs{v}_0, \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \rtide^2)\,\mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma^2_v)_{t=\tub}
 \end{align}
-where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale}. $\left\vert\J\right\vert = \left\vert\frac{\partial(x,y,z,v_x,v_y,v_z)}{\partial(l,b,d,\mu_l,\mu_b,v_r)}\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. All quantities in this expression are evaluated at $t=\tub$. For a single star, the evaluation of the likelihood works as follows: given present-day coordinates for the star and progenitor, potential parameter values ($\bs{\Theta}_\Phi$), and nuisance parameter values ($\tub,\Loffset,\tailbit$),
+where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale}. $\left\vert\J\right\vert = \left\vert\frac{\partial(x,y,z,v_x,v_y,v_z)}{\partial(l,b,d,\mu_l,\mu_b,v_r)}\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. All quantities in this expression are evaluated at $t=\tub$. 
+
+We have found that leaving the unbinding time as a free parameter makes the likelihood severely multi-modal. 
+
+For a single star, the evaluation of the likelihood works as follows: given present-day coordinates for the star and progenitor, potential parameter values ($\bs{\Theta}_\Phi$), and nuisance parameter values ($\tub,\Loffset,\tailbit$),
 \begin{enumerate}
 	\item transform star and progenitor positions in heliocentric coordinates to Galactocentric, cartesian coordinates;
 	\item integrate star and progenitor orbits backwards as test particles in the potential given by $\bs{\Theta}_\Phi$ for the total interaction time, $t_{\rm int}\approx6$~Gyr;
 	\item at the timestep closest to $\tub$, transform the particle position to the relative, normalized coordinates defined in Section~\ref{sec:debris};
 	\item compute the likelihood given by Equation~\ref{eq:starlike}.
 \end{enumerate}
+
 Assuming each star is an independent tracer, the full likelihood for many stars is then just the product of the individual likelihoods:
 %\begin{multline}
 %	p(\{\bs{\Theta}^{(i)}\}, \bs{\Theta}_\sat, \bs{\Theta}_\Phi \given \{\D^{(i)}\}, \D_\sat) = \\
