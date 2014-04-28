@@ -43,11 +43,15 @@ class LogUniformPrior(LogPrior):
         """ Return 0 if value is outside of the range
             defined by a < value < b.
         """
-        self.a = np.array(a)
-        self.b = np.array(b)
+        self.a = np.atleast_1d(a)
+        self.b = np.atleast_1d(b)
+        self.shape = self.a.shape
 
-    def sample(self, size=None):
-        return np.random.uniform(self.a, self.b, size=size)
+        if self.a.shape != self.b.shape:
+            raise ValueError("a and b must match in shape!")
+
+    def sample(self, size=1):
+        return np.random.uniform(self.a, self.b, size=(size,)+self.shape)
 
 class LogExponentialPrior(LogPrior):
 
