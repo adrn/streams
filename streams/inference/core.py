@@ -133,7 +133,7 @@ class Model(object):
         if np.any(np.isinf(ln_prior)):
             return -np.inf
 
-        ln_like = self.ln_likelihood(param_dict, *self.ln_likelihood_args)
+        ln_like = self.ln_likelihood(parameters, *self.ln_likelihood_args)
 
         if np.any(np.isnan(ln_like)) or np.any(np.isnan(ln_prior)):
             return -np.inf
