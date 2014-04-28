@@ -67,22 +67,6 @@ class ModelParameter(u.Quantity):
         """ Return a copy of this `ModelParameter` instance """
         return self.copy()
 
-    # def prior(self, value):
-    #     """ """
-
-    #     if isiterable(self._prior):
-    #         return np.array([p(value) for p,value in zip(self._prior,value)])
-    #     else:
-    #         return self._prior(value)
-
-    # def sample(self, size=None):
-    #     """ """
-
-    #     if isiterable(self._prior):
-    #         return np.array([p.sample(size=size) for p in self._prior]).T
-    #     else:
-    #         return self._prior.sample(size=size)
-
     def __reduce__(self):
         # patch to pickle ModelParameter objects (ndarray subclasses),
         # see http://www.mail-archive.com/numpy-discussion@scipy.org/msg02446.html
