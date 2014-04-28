@@ -107,9 +107,9 @@ class LogNormalPrior(LogPrior):
         dets = np.linalg.slogdet(self.cov)[1]
         self._norm = -0.5*self.ndim*np.log(2*np.pi) - 0.5*dets
 
-    def sample(self, size=None):
-        s = np.random.multivariate_normal(self.mu, np.diag(self.sigma**2), size=size)
-        if size is not None:
-            return np.squeeze(np.rollaxis(s, 1))
-        else:
-            return np.squeeze(s)
+    def sample(self, size=1):
+        s = np.array([np.random.multivariate_normal(m,C,size=size)
+                        for m,C in zip(self.mean, self.cov)])
+
+        return np.rollaxis(s, 1)
+        #return s
