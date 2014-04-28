@@ -26,12 +26,17 @@ logger = logging.getLogger(__name__)
 
 class Model(object):
 
-    def __init__(self):
+    def __init__(self, ln_likelihood=None, ln_likelihood_args=()):
         """ """
 
         self.parameters = OrderedDict()
         self.nparameters = 0
-        pass
+
+        if ln_likelihood is None:
+            ln_likelihood = lambda *args,**kwargs: 0.
+
+        self.ln_likelihood = ln_likelihood
+        self.ln_likelihood_args = ln_likelihood_args
 
     def add_parameter(self, parameter, parameter_group=None):
         """ Add a parameter to the model.
@@ -121,6 +126,24 @@ class Model(object):
 
         return ln_prior
 
+    def ln_posterior(self, parameters):
+        ln_prior = self.ln_prior(parameters)
+
+        # short-circuit if any prior value is -infinity
+        if np.any(np.isinf(ln_prior)):
+            return -np.inf
+
+        ln_like = self.ln_likelihood(param_dict, *self.ln_likelihood_args)
+
+        if np.any(np.isnan(ln_like)) or np.any(np.isnan(ln_prior)):
+            return -np.inf
+
+        return np.sum(ln_like) + np.sum(ln_prior)
+
+    def __call__(self, p):
+        parameters = self.vector_to_parameters(p)
+        return self.ln_posterior(parameters)
+
 '''
     def sample_priors(self, size=None, start_truth=False):
         """ Draw samples from the priors over the model parameters.
@@ -198,48 +221,6 @@ class Model(object):
 
                     ix1 += param.size
         return np.squeeze(p0)
-
-    def label_flatchain(self, flatchain):
-        """ Turns a flattened MCMC chain (e.g., sampler.flatchain from emcee) and
-            turns it into a dictionary of parameter samples.
-
-            Parameters
-            ----------
-            flatchain : array_like
-                The flattened MCMC chain of parameter values. Should have shape (nsteps, ndim).
-        """
-        d = OrderedDict()
-
-        nsamples,ndim = flatchain.shape
-        # make sure ndim == nparameters
-        if ndim != self.nparameters:
-            raise ValueError("Flatchain ndim != model nparameters")
-
-        ix1 = 0
-        for group_name,group in self.parameters.items():
-            for param_name,param in group.items():
-                try:
-                    d[group_name][param_name] = flatchain[:,ix1:ix1+param.size]
-                except:
-                    d[group_name] = OrderedDict()
-                    d[group_name][param_name] = flatchain[:,ix1:ix1+param.size]
-
-                if param.size > 1:
-                    shp = (nsamples,) + param.shape
-                    d[group_name][param_name] = d[group_name][param_name].reshape(shp)
-
-                ix1 += param.size
-
-        return d
-
-    def ln_prior(self, param_dict, *args):
-        ln_prior = 0.
-        for group_name,group in self.parameters.items():
-            for param_name,param in group.items():
-                lp = param.prior(param_dict[group_name][param_name])
-                ln_prior += lp
-
-        return ln_prior
 
     def ln_likelihood(self, param_dict, *args):
         """ Evaluate the log-posterior at the given parameter set.
@@ -383,28 +364,6 @@ class Model(object):
 
         return np.sum(ln_like + data_like) + np.squeeze(sat_like)
 
-    def ln_posterior(self, p, *args):
 
-        param_dict = self._decompose_vector(p)
-
-        ln_prior = self.ln_prior(param_dict, *args)
-
-        # short-circuit if any prior value is -infinity
-        if np.any(np.isinf(ln_prior)):
-            return -np.inf
-
-        ln_like = self.ln_likelihood(param_dict, *args)
-
-        if np.any(np.isnan(ln_like)) or np.any(np.isnan(ln_prior)):
-            return -np.inf
-
-        try:
-            return np.sum(ln_like)*args[3] + np.sum(ln_prior)
-        except:
-            return np.sum(ln_like) + np.sum(ln_prior)
-
-    def __call__(self, p):
-        # TODO: each call, adjust temperature according to self.annealing?
-        return self.ln_posterior(p, *self.lnpargs)
 
 '''

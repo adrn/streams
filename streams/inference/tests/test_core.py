@@ -99,6 +99,18 @@ class TestModel(object):
             for group,name,p in model._walk(model.parameters):
                 print(decom[group][name].shape)
 
+    def test_prior(self):
+        for model in self.models:
+            vec = np.random.random(size=model.nparameters)
+            decom = model.vector_to_parameters(vec)
+            print(model.ln_prior(decom))
+
+    def test_likelihood(self):
+        for model in self.models:
+            vec = np.random.random(size=model.nparameters)
+            decom = model.vector_to_parameters(vec)
+            print(model.ln_likelihood(decom))
+
 
 # class TestStreamModel(object):
 
