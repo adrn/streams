@@ -112,4 +112,3 @@ class LogNormalPrior(LogPrior):
                         for m,C in zip(self.mean, self.cov)])
 
         return np.rollaxis(s, 1)
-        #return s
