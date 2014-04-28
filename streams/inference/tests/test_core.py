@@ -10,6 +10,7 @@ import time as pytime
 import copy
 
 # Third-party
+import emcee
 import numpy as np
 import pytest
 import astropy.units as u
@@ -111,6 +112,64 @@ class TestModel(object):
             decom = model.vector_to_parameters(vec)
             print(model.ln_likelihood(decom))
 
+    def test_sample_priors(self):
+        m = ModelParameter("m", value=np.nan, truth=1.,
+                           prior=LogNormalPrior(0.,2.))
+        b = ModelParameter("b", value=np.nan, truth=6.7,
+                           prior=LogUniformPrior(0.,10.))
+
+        model = Model()
+        model.add_parameter(m)
+        model.add_parameter(b)
+        model.parameters['main']['m']
+        model.parameters['main']['b']
+
+        nwalkers = 16
+        ndim = 2
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, model)
+
+        p0 = [np.random.rand(ndim) for i in range(nwalkers)]
+        sampler.run_mcmc(p0, 1000)
+
+        fig,axes = plt.subplots(1,2)
+        axes[0].hist(sampler.flatchain[:,0])
+        axes[1].hist(sampler.flatchain[:,1])
+        fig.savefig(os.path.join(plot_path,"priors.png"))
+
+    def test_fit_line(self):
+        m = ModelParameter("m", value=np.nan, truth=1.,
+                           prior=LogUniformPrior(0.,2.))
+        b = ModelParameter("b", value=np.nan, truth=6.7,
+                           prior=LogUniformPrior(0.,10.))
+
+        ndata = 15
+        x = np.random.uniform(0.,10.,size=ndata)
+        x.sort()
+        y = m.truth*x + b.truth
+        sigma_y = np.random.uniform(0.5,1.,size=ndata)
+        y += np.random.normal(0., sigma_y)
+
+        def ln_likelihood(parameters, x, y, sigma_y):
+            model_val = parameters['main']['m']*x + parameters['main']['b']
+            return -0.5*((y - model_val) / sigma_y)**2
+
+        model = Model(ln_likelihood, (x,y,sigma_y))
+        model.add_parameter(m)
+        model.add_parameter(b)
+        model.parameters['main']['m']
+        model.parameters['main']['b']
+
+        nwalkers = 16
+        ndim = 2
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, model)
+
+        p0 = [np.random.rand(ndim) for i in range(nwalkers)]
+        sampler.run_mcmc(p0, 1000)
+
+        fig,axes = plt.subplots(1,2)
+        axes[0].hist(sampler.flatchain[500:,0])
+        axes[1].hist(sampler.flatchain[500:,1])
+        fig.savefig(os.path.join(plot_path,"fit_line.png"))
 
 # class TestStreamModel(object):
 
