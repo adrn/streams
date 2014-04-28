@@ -39,26 +39,30 @@ class TestModelParameter(object):
         assert repr(p) == "<ModelParameter 'm'>"
         assert str(p) == "m"
 
-class TestModel(object):
+class TestEmceeModel(object):
 
     def setup(self):
         np.random.seed(42)
 
-        self.flat_model = Model()
+        self.flat_model = EmceeModel()
         for name in "abcdefg":
-            p = ModelParameter(name, value=np.nan, truth=np.random.random())
+            p = ModelParameter(name, value=np.nan, truth=np.random.random(),
+                               prior=LogUniformPrior(0.,1.))
             self.flat_model.add_parameter(p)
 
-        self.group_model = Model()
+        self.group_model = EmceeModel()
         for group in ["herp","derp"]:
             for name in "abcd":
-                p = ModelParameter(name, value=np.nan, truth=np.random.random())
+                p = ModelParameter(name, value=np.nan, truth=np.random.random(),
+                                   prior=LogUniformPrior(0.,1.))
                 self.group_model.add_parameter(p, parameter_group=group)
 
-        self.vec_model = Model()
+        self.vec_model = EmceeModel()
         for name in "abcd":
             length = np.random.randint(2,10)
-            p = ModelParameter(name, value=[np.nan]*length, truth=np.random.random(size=length))
+            troof = np.random.random(size=length)
+            p = ModelParameter(name, value=[np.nan]*length, truth=troof,
+                               prior=LogUniformPrior(0*troof,0*troof+1))
             self.vec_model.add_parameter(p)
 
         self.models = [self.group_model, self.flat_model, self.vec_model]
@@ -69,7 +73,7 @@ class TestModel(object):
         b = ModelParameter("b", value=np.nan, truth=6.7,
                            prior=LogUniformPrior(0.,10.))
 
-        model = Model()
+        model = EmceeModel()
         model.add_parameter(m)
         model.add_parameter(b)
         model.parameters['main']['m']
@@ -113,12 +117,17 @@ class TestModel(object):
             print(model.ln_likelihood(decom))
 
     def test_sample_priors(self):
+        for model in self.models:
+            pri = model.sample_priors(size=5)
+            print(pri.shape)
+
+    def test_mcmc_sample_priors(self):
         m = ModelParameter("m", value=np.nan, truth=1.,
                            prior=LogNormalPrior(0.,2.))
         b = ModelParameter("b", value=np.nan, truth=6.7,
                            prior=LogUniformPrior(0.,10.))
 
-        model = Model()
+        model = EmceeModel()
         model.add_parameter(m)
         model.add_parameter(b)
         model.parameters['main']['m']
@@ -150,44 +159,21 @@ class TestModel(object):
         y += np.random.normal(0., sigma_y)
 
         def ln_likelihood(parameters, x, y, sigma_y):
-            model_val = parameters['main']['m']*x + parameters['main']['b']
+            model_val = parameters['line']['m']*x + parameters['line']['b']
             return -0.5*((y - model_val) / sigma_y)**2
 
-        model = Model(ln_likelihood, (x,y,sigma_y))
-        model.add_parameter(m)
-        model.add_parameter(b)
-        model.parameters['main']['m']
-        model.parameters['main']['b']
+        model = EmceeModel(ln_likelihood, (x,y,sigma_y))
+        model.add_parameter(m, 'line')
+        model.add_parameter(b, 'line')
 
         nwalkers = 16
         ndim = 2
         sampler = emcee.EnsembleSampler(nwalkers, ndim, model)
 
-        p0 = [np.random.rand(ndim) for i in range(nwalkers)]
+        p0 = model.sample_priors(size=nwalkers)
         sampler.run_mcmc(p0, 1000)
 
         fig,axes = plt.subplots(1,2)
         axes[0].hist(sampler.flatchain[500:,0])
         axes[1].hist(sampler.flatchain[500:,1])
         fig.savefig(os.path.join(plot_path,"fit_line.png"))
-
-# class TestStreamModel(object):
-
-#     def setup(self):
-
-#         self.plot_path = os.path.join(plot_path, "StreamModel")
-#         if not os.path.exists(self.plot_path):
-#             os.mkdir(self.plot_path)
-
-#         np.random.seed(52)
-#         self.Nparticles = 25
-#         self.simulation = SgrSimulation(mass="2.5e8")
-#         self.args = (self.simulation.t1,self.simulation.t2,-1.)
-
-#         self.particles = self.simulation.particles(N=self.Nparticles,
-#                                                    expr="tub!=0")
-#         self.particles = self.particles.to_frame(heliocentric)
-
-#         self.potential = LawMajewski2010()
-#         self.satellite = self.simulation.satellite()
-#         self.satellite = self.satellite.to_frame(heliocentric)

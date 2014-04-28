@@ -20,11 +20,11 @@ from .. import usys
 from .parameter import ModelParameter
 from .prior import *
 
-__all__ = ["Model"]
+__all__ = ["EmceeModel"]
 
 logger = logging.getLogger(__name__)
 
-class Model(object):
+class EmceeModel(object):
 
     def __init__(self, ln_likelihood=None, ln_likelihood_args=()):
         """ """
@@ -144,8 +144,7 @@ class Model(object):
         parameters = self.vector_to_parameters(p)
         return self.ln_posterior(parameters)
 
-'''
-    def sample_priors(self, size=None, start_truth=False):
+    def sample_priors(self, size=1):
         """ Draw samples from the priors over the model parameters.
 
             Parameters
@@ -156,214 +155,10 @@ class Model(object):
                 Sample centered on true values.
         """
 
-        sz = size if size is not None else 1
-        p0 = np.zeros((sz, self.nparameters))
-        for ii in range(sz):
-            ix1 = 0
-            for group_name,group in self.parameters.items():
-                for param_name,param in group.items():
+        p0 = np.zeros((size, self.nparameters))
+        ix1 = 0
+        for group_name,param_name,param in self._walk(self.parameters):
+            p0[:,ix1:ix1+param.size] = param.prior.sample(size=size)
+            ix1 += param.size
 
-                    if param_name in heliocentric.coord_names:
-                        err = getattr(self, group_name).errors[param_name].decompose(usys).value
-                        if start_truth:
-                            val = getattr(self, "true_"+group_name)[param_name]\
-                                        .decompose(usys).value
-                        else:
-                            val = getattr(self, group_name)[param_name]\
-                                        .decompose(usys).value
-
-                        if np.any(np.isinf(err)):
-                            if param_name in ["mul", "mub", "vr"]:
-                                err[np.isinf(err)] = 0.1*val[np.isinf(err)]
-                            else:
-                                err[np.isinf(err)] = 1.
-
-                        try:
-                            prior = self._prior_cache[(group_name,param_name)]
-                        except KeyError:
-                            prior = LogNormalPrior(val, err)
-                            self._prior_cache[(group_name,param_name)] = prior
-
-                        p0[ii,ix1:ix1+param.size] = np.ravel(prior.sample().T)
-                        ix1 += param.size
-
-                        continue
-
-                    if start_truth:
-                        prior = param._prior
-                        if hasattr(prior, 'a') and hasattr(prior, 'b'):
-                            mu = np.ravel(param.truth)
-                            sigma = mu/100.
-                            a = (prior.a - mu) / sigma
-                            b = (prior.b - mu) / sigma
-                            if param.size > 1:
-                                rvs = []
-                                for aa,bb,mm,ss in zip(a,b,mu,sigma):
-                                    X = truncnorm(aa, bb,
-                                                  loc=mm, scale=ss)
-                                    rvs.append(X.rvs())
-                            else:
-                                X = truncnorm(a, b,
-                                              loc=mu, scale=sigma)
-                                rvs = X.rvs()
-
-                            p0[ii,ix1:ix1+param.size] = np.ravel(rvs)
-                        elif hasattr(prior, 'mu'):
-                            v = np.random.normal(param.truth, prior.sigma/2.)
-                            p0[ii,ix1:ix1+param.size] = np.ravel(v)
-                        else:
-                            p0[ii,ix1:ix1+param.size] = np.ravel(param.truth)
-                    else:
-                        if param.size > 1:
-                            p0[ii,ix1:ix1+param.size] = np.ravel(param.sample().T)
-                        else:
-                            p0[ii,ix1:ix1+param.size] = np.ravel(param.sample())
-
-                    ix1 += param.size
-        return np.squeeze(p0)
-
-    def ln_likelihood(self, param_dict, *args):
-        """ Evaluate the log-posterior at the given parameter set.
-
-            Parameters
-            ----------
-            param_dict : dict
-                The dictionary of model parameter values.
-        """
-
-        ######################################################################
-        # potential parameters:
-        #
-        pparams = self._given_potential_params.copy()
-        for k,v in param_dict.get('potential',dict()).items():
-            pparams[k] = v
-
-        ######################################################################
-        # nuisance parameters:
-
-        # particle tail assignment
-        try:
-            beta = param_dict['particles']['beta']
-        except KeyError:
-            beta = self.particles.beta.truth
-            if np.any(np.isnan(beta)):
-                print("True tail assignment was NaN!")
-                sys.exit(1)
-
-        # particle unbinding time
-        try:
-            tub = param_dict['particles']['tub']
-        except KeyError:
-            tub = self.particles.tub.truth
-
-        # satellite mass
-        try:
-            logmass = param_dict['satellite']['logmass']
-        except KeyError:
-            logmass = self.satellite.logmass.truth
-
-        # satellite mass-loss
-        try:
-            logmdot = param_dict['satellite']['logmdot']
-        except KeyError:
-            logmdot = self.satellite.logmdot.truth
-
-        # position of effective tidal radius
-        try:
-            alpha = param_dict['satellite']['alpha']
-        except KeyError:
-            alpha = self.satellite.alpha.truth
-
-        ######################################################################
-        # Heliocentric coordinates
-        #
-
-        # first see if any coordinates are parameters. if not, assume we're
-        #   running a test with no observational uncertainties
-        if param_dict.has_key('particles'):
-            param_names = param_dict['particles'].keys()
-            num_free = 0
-            for pname in param_names:
-                if pname in heliocentric.coord_names:
-                    num_free += 1
-        else:
-            num_free = 0
-
-        # Particles
-        if num_free == 0:
-            # no free coordinate parameters -- use truths
-            p_hel = self.true_particles._X
-            data_like = 0.
-        else:
-            p_hel = np.zeros_like(self.particles._X)
-            data_like = 0.
-            for ii,k in enumerate(heliocentric.coord_names):
-                if k in param_dict['particles'].keys():
-                    p_hel[:,ii] = param_dict['particles'][k]
-                    ll = log_normal(param_dict['particles'][k],
-                                    self.particles._X[:,ii],
-                                    self.particles._error_X[:,ii])
-                else:
-                    p_hel[:,ii] = self.particles._X[:,ii]
-                    ll = 0.
-
-                if np.any(np.isinf(ll)):
-                    ll = 0.
-
-                data_like += ll
-
-            # if any distance is > 150 kpc
-            if np.any(p_hel[...,2] > 150.):
-                return -np.inf
-        p_gc = _hel_to_gc(p_hel)
-
-        # Satellite
-        if param_dict.has_key('satellite'):
-            param_names = param_dict['satellite'].keys()
-            num_free = 0
-            for pname in param_names:
-                if pname in heliocentric.coord_names:
-                    num_free += 1
-        else:
-            num_free = 0.
-
-        if num_free == 0:
-            # no free coordinate parameters -- use truths
-            s_hel = self.true_satellite._X
-            sat_like = 0.
-        else:
-            s_hel = np.zeros_like(self.satellite._X)
-            sat_like = 0.
-            for ii,k in enumerate(heliocentric.coord_names):
-                if k in param_dict['satellite'].keys():
-                    s_hel[:,ii] = param_dict['satellite'][k]
-                    ll = log_normal(param_dict['satellite'][k],
-                                    self.satellite._X[:,ii],
-                                    self.satellite._error_X[:,ii])
-                else:
-                    s_hel[:,ii] = self.satellite._X[:,ii]
-                    ll = 0.
-
-                if np.any(np.isinf(ll)):
-                    ll = 0.
-
-                sat_like += ll
-
-            # if any distance is > 150 kpc
-            if np.any(s_hel[...,2] > 150.):
-                return -np.inf
-        s_gc = _hel_to_gc(s_hel)
-
-        # TODO: don't create new potential each time, just modify _parameter_dict?
-        potential = self._potential_class(**pparams)
-        t1, t2, dt = args[:3]
-        ln_like = back_integration_likelihood(t1, t2, dt,
-                                              potential, p_gc, s_gc,
-                                              logmass, logmdot,
-                                              beta, alpha, tub)
-
-        return np.sum(ln_like + data_like) + np.squeeze(sat_like)
-
-
-
-'''
+        return p0
