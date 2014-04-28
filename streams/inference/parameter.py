@@ -16,6 +16,7 @@ import astropy.units as u
 from astropy.utils import isiterable
 
 # Project
+from .. import usys
 from .prior import LogPrior
 
 __all__ = ["ModelParameter"]
@@ -25,14 +26,24 @@ logger = logging.getLogger(__name__)
 class ModelParameter(u.Quantity):
 
     def __new__(cls, name, value=np.nan, prior=None, truth=None):
-        """ """
+        """ Represents a model parameter to be used in inference.
+            `value` must be set so the object knows the shape of the
+            parameter, e.g., whether it is a vector or scalar.
 
-        #super(ModelParameter, self).__init__(v)
-        try:
-            value = value.decompose(usys)
-        except:
-            value = np.zeros_like(truth)
-            value[...] = np.nan
+            Parameters
+            ----------
+            name : str
+                Parameter name.
+            value : quantity_like
+            prior : LogPrior
+            truth : quantity_like
+        """
+
+        value = np.atleast_1d(value)
+        if hasattr(value, "unit"):
+            _value = value.decompose(usys)
+        else:
+            _value = value*u.dimensionless_unscaled
 
         self = super(ModelParameter, cls).__new__(cls, value)
 
@@ -41,7 +52,7 @@ class ModelParameter(u.Quantity):
             prior = LogPrior()
 
         # TODO: type check
-        self._prior = prior
+        self.prior = prior
         self.truth = truth
         self.name = str(name)
 
@@ -50,27 +61,27 @@ class ModelParameter(u.Quantity):
     def copy(self):
         """ Return a copy of this `ModelParameter` instance """
         return ModelParameter(name=self.name, value=self.value*self.unit,
-                              prior=self._prior, truth=self.truth)
+                              prior=self.prior, truth=self.truth)
 
     def __deepcopy__(self):
         """ Return a copy of this `ModelParameter` instance """
         return self.copy()
 
-    def prior(self, value):
-        """ """
+    # def prior(self, value):
+    #     """ """
 
-        if isiterable(self._prior):
-            return np.array([p(value) for p,value in zip(self._prior,value)])
-        else:
-            return self._prior(value)
+    #     if isiterable(self._prior):
+    #         return np.array([p(value) for p,value in zip(self._prior,value)])
+    #     else:
+    #         return self._prior(value)
 
-    def sample(self, size=None):
-        """ """
+    # def sample(self, size=None):
+    #     """ """
 
-        if isiterable(self._prior):
-            return np.array([p.sample(size=size) for p in self._prior]).T
-        else:
-            return self._prior.sample(size=size)
+    #     if isiterable(self._prior):
+    #         return np.array([p.sample(size=size) for p in self._prior]).T
+    #     else:
+    #         return self._prior.sample(size=size)
 
     def __reduce__(self):
         # patch to pickle ModelParameter objects (ndarray subclasses),
@@ -88,5 +99,12 @@ class ModelParameter(u.Quantity):
         super(ModelParameter, self).__setstate__(nd_state)
         self.__dict__.update(own_state)
 
+    def __repr__(self):
+        extra = ""
+        if self.truth is not None:
+            extra = " truth={}".format(self.truth)
+
+        return "<ModelParameter '{}'{}>".format(self.name, extra)
+
     def __str__(self):
-        return "{}: {}".format(self.name, super(ModelParameter, self).__str__())
+        return self.name
