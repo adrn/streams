@@ -14,7 +14,7 @@ import logging
 import numpy as np
 import astropy.units as u
 
-__all__ = ["LogPrior", "LogUniformPrior", "LogExponentialPrior", "LogNormalPrior"]
+__all__ = ["LogPrior", "LogUniformPrior", "LogNormalPrior"]
 
 logger = logging.getLogger(__name__)
 
@@ -53,80 +53,59 @@ class LogUniformPrior(LogPrior):
     def sample(self, size=1):
         return np.random.uniform(self.a, self.b, size=(size,)+self.shape)
 
-class LogExponentialPrior(LogPrior):
-
-    def __call__(self, value):
-        if np.any(value < 0):
-            return -np.inf
-
-        return self.lna - self.a*value
-
-    def __init__(self, a):
-        """ Logarithm of exponential distribution with scale or
-            rate parameter 'a'.
-        """
-        self.a = a
-        self.lna = np.log(a)
-
-    def sample(self, size=None):
-        x = np.random.uniform(0., 1., size=size)
-        return x
-
-class LogNormalCovPrior(LogPrior):
-
-    def __call__(self, value):
-        X = np.atleast_2d(self.mu - value)
-        q = np.array([np.dot(d,np.dot(icov,d.T)) \
-                      for icov,d in zip(self._icov, X)])
-
-        return np.squeeze(self._norm - 0.5 * q)
-
-    def __init__(self, mu, sigma=None, cov=None):
-        self.mu = np.atleast_2d(mu)
-
-        if sigma is not None:
-            sigma = np.array(sigma)
-            if sigma.shape[-1] != mu.shape[-1]:
-                raise ValueError("Shape of std dev vector (sigma) must match"
-                                 " shape of mean vector (mu) along axis=-1")
-            cov = np.diag(sigma**2)
-
-        if cov is None:
-            raise ValueError("Must specify vector of sigmas or "
-                             "covariance matrix.")
-
-        if 2 > cov.ndim > 3:
-            raise ValueError("covariance matrix must be 2D or 3D")
-
-        self.cov = cov
-        if self.cov.ndim == 2:
-            self.cov = self.cov[np.newaxis]
-
-        k = self.cov.shape[-1]
-
-        self._icov = np.array([np.linalg.inv(c) for c in self.cov])
-        self._norm = -0.5*k*np.log(2*np.pi)
-        self._norm -=0.5*np.array([np.linalg.slogdet(c)[1] for c in self.cov])
-
-    def sample(self, size=None):
-        s = np.array([np.random.multivariate_normal(mu, cov, size=size) \
-                      for mu,cov in zip(self.mu, self.cov)])
-        if size is not None:
-            return np.squeeze(np.rollaxis(s, 1))
-        else:
-            return np.squeeze(s)
-
 class LogNormalPrior(LogPrior):
 
     def __call__(self, value):
-        X = self.mu - np.atleast_1d(value)
-        return self._norm - 0.5 * np.sum((X / self.sigma)**2)
+        value = np.atleast_1d(value)
+        if value.ndim <= 1:
+            value = np.atleast_2d(value).T.copy()
+        else:
+            value = np.atleast_2d(value)
 
-    def __init__(self, mu, sigma):
-        self.mu = np.atleast_1d(mu)
-        self.sigma = np.atleast_1d(sigma)
-        k = len(self.mu)
-        self._norm = -0.5*k*np.log(2*np.pi) - np.sum(np.log(self.sigma))
+        X = self.mean - value
+        arg = np.array([np.dot(XX, np.dot(IC,XX)) for XX,IC in zip(X,self.icov)])
+        return self._norm - 0.5*arg
+
+    def __init__(self, mean, stddev=None, cov=None):
+        """ (2,) -> 2 independent 1D Gaussians
+            (1,2) -> 1 2D Gaussian
+        """
+        mean = np.atleast_1d(mean)
+        if mean.ndim <= 1:
+            self.mean = np.atleast_2d(mean).T.copy()
+        else:
+            self.mean = np.atleast_2d(mean)
+
+        self.shape = self.mean.shape
+        self.ndim = self.shape[-1]
+
+        if stddev is not None:
+            if mean.ndim <= 1:
+                stddev = np.atleast_2d(stddev).T.copy()
+            else:
+                stddev = np.atleast_2d(stddev)
+
+            if stddev.shape != self.shape:
+                raise ValueError("stddev has wrong shape {}, should be {}"
+                                 .format(stddev.shape,self.shape))
+
+            cov = np.array([np.diag(s**2) for s in stddev])
+
+        elif cov is not None:
+            if cov.ndim < 2:
+                raise ValueError("Invalid covariance matrix - must have 2 dims.")
+            elif cov.ndim == 2:
+                cov = cov.reshape((1,)+cov.shape)
+
+        else:
+            raise ValueError("You must specify stddev or cov.")
+
+        self.stddev = stddev
+        self.cov = cov
+        self.icov = np.linalg.inv(cov)
+
+        dets = np.linalg.slogdet(self.cov)[1]
+        self._norm = -0.5*self.ndim*np.log(2*np.pi) - 0.5*dets
 
     def sample(self, size=None):
         s = np.random.multivariate_normal(self.mu, np.diag(self.sigma**2), size=size)
