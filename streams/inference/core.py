@@ -16,7 +16,6 @@ import numpy as np
 import astropy.units as u
 
 # Project
-from .. import usys
 from .parameter import ModelParameter
 from .prior import *
 
@@ -113,7 +112,7 @@ class EmceeModel(object):
 
         vec = np.array([])
         for group_name,param_name,param in self._walk(parameters):
-            p = np.ravel(parameters[group_name][param_name].decompose(usys).value)
+            p = np.ravel(parameters[group_name][param_name].value)
             vec = np.append(vec, p)
 
         return vec
