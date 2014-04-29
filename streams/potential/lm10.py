@@ -18,7 +18,7 @@ from scipy.signal import argrelmin,argrelmax
 
 from .core import CartesianPotential, CompositePotential, PotentialParameter
 from .common import MiyamotoNagaiPotential, HernquistPotential, LogarithmicPotentialLJ
-from ._lm10_acceleration import lm10_acceleration
+from ._lm10_acceleration import lm10_acceleration, lm10_potential
 from .. import usys
 from ..util import _parse_quantity
 
@@ -92,6 +92,9 @@ class LawMajewski2010(CompositePotential):
 
     def _acceleration_at(self, r, n_particles, acc):
         return lm10_acceleration(r, n_particles, acc, **self._parameter_dict)
+
+    def _value_at(self, r, n_particles, pot):
+        return lm10_potential(r, n_particles, pot, **self._parameter_dict)
 
     def _enclosed_mass(self, R):
         """ Compute the enclosed mass at the position r. Assumes it's far from

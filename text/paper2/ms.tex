@@ -91,7 +91,7 @@ of satellite disruption in a multi-component Milky Way including a triaxial dark
 The data sets were generated with
   observational uncertainties to mimic current and near-future surveys of various stars.
 % Results:
-We find that even with a small number (8) of well-measured stream stars,
+We find that even with four well-measured stream stars,
   we can infer properties of the triaxial potential ???? with accuracies of order ??? percent ??? and
   missing phase-space coordinates of the stars ??? with accuracies of order ????.
 The method generalizes to encompass mixtures of independent debris structures,
@@ -109,8 +109,6 @@ The method generalizes to encompass mixtures of independent debris structures,
 }
 
 \section{Introduction}\label{sec:intro}
-
-% TODO: audit all uses of the word 'model'
 
 Early large-scale, cosmological simulations of galaxy formation in the $\Lambda$CDM paradigm suggested that the spherically-averaged density profiles of dark matter halos follow a universal profile across a large dynamic range in mass \citep{navarro96}. Since then, higher resolution simulations --- both with and without baryons --- have produced dark matter halos that (1) are permeated with substructure on many scales, (2) are triaxial in shape, and (3) have shapes and orientations that vary with radius \citep{dubinski91, jing02, kuhlen07, veraciro11}. Dark-matter-only simulations produce triaxial halos \citep{jing02} with large density fluctuations \citep{zemp09}. Inclusion of baryons tends to soften the triaxiality and graininess in the inner galaxy through a combination of dissipative infall \citep{dubinski94} or cooling \citep{bryan13}. These processes combined with the gravity from a baryonic disk or ellipsoid can act to make the inner halo more oblate or spherical, however they do not seem to erase the clumpy, triaxial nature of the outer halo \citep[e.g.,][]{pontzen12}. This can lead to radially-dependent axis ratios, orientation, and smoothness, and suggests that the true mass distributions around Milky Way-like galaxies are not easily represented by simple potentials. Methods that seek to measure the potential of the Milky Way must be flexible enough to handle generic potentials where finding simple analytic forms or computing actions may not be possible.
 
@@ -130,7 +128,7 @@ Motivated by the strengths of previous work, we identify a minimum set of issues
 	\item \textbf{Form of the potential:} There is large uncertainty in the radial profile, shape, orientation, and graininess of the outer halo and the constancy of these parameters over distance. Properly describing the potential may require non-parametric techniques or complex analytic functions so the method should not rely on the existence of or ability to compute simple conserved orbital properties, such as actions.
 	\item \textbf{Multiple debris structures:} Near-future photometric surveys such as \gaia\, and the \project{LSST} will likely discover many new streams and kinematic associations of stars. Potential recovery methods should be able to simultaneously use multiple streams and incorporate other dynamical constraints.
 	\item \textbf{Comparing models to data:} Matching generated streams to observed stellar densities is difficult; models that rely on this must account for observational biases, internal properties of the progenitor, and background halo stars. [TODO: are we matching densities?]
-	\item \textbf{Computational expense:} Full N-body simulations are expensive to run; incorporating an N-body simulation into a likelihood function evaluation and then performing a parameter search would be computationally intensive and, presently, intractable. [TODO: KVJ?] 
+	\item \textbf{Computational expense:} Full N-body simulations are expensive to run; incorporating an N-body simulation into a likelihood function evaluation and then performing a parameter search would be computationally intensive and, presently, intractable.
 \end{enumerate}
 
 In \citet{apw13}, we introduced a simple method based on the work of \citet{johnston99a} for using individual stars associated with tidal debris combined with knowledge about the mass and orbit of the progenitor to constrain properties of the host galaxy potential. The method exploits the relationship between the phase-space distribution of debris and (measurable) properties of the progenitor system (e.g., the tidal radius and escape velocity).  Specifically, a better potential is one in which orbits of test particle stars (integrated backwards from their present position) came close (within the tidal radius in position, and escape velocity in velocity) to the orbit of the progenitor at some time in the past. 
@@ -146,7 +144,7 @@ To capture the character of streams across a range of merger mass ratios, four s
 
 We take care to record the time at which each particle is unbound from the satellite in the simulations: we locate the position of the remnant iteratively by first calculating the satellite potential with all particles, remove particles with kinetic energies sufficient to escape, then recalculate the potential without those particles until the system converges. There is no spatial restriction on where a particle may become unbound and all particles (both bound and unbound) contribute their gravity during normal timesteps, presuming that they are resolved by the basis functions. 
 
-In all simulations, the host potential is taken to be a three-component sum of a Miyamoto-Nagai disk \citep{miyamoto75}, Hernquist spheroid , and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
+In all simulations, the host potential is taken to be a three-component sum of a Miyamoto-Nagai disk \citep{miyamoto75}, Hernquist spheroid, and a triaxial, logarithmic halo \citep[e.g.,][]{law10}:
 \begin{align}
 	&\Phi_{\rm disk}(R,z) = -\frac{GM_{\rm disk}}{\sqrt{R^2 + (a + \sqrt{z^2 + b^2})^2}}\\
 	&\Phi_{\rm spher}(r) = -\frac{GM_{\rm spher}}{r + c}\\
@@ -209,7 +207,7 @@ In a triaxial potential, the orbital plane of the satellite is not fixed but we 
 	\hat{\bs{x}}_2 &= \frac{\bs{L} \times \hat{\bs{x}}_1}{\|\bs{L} \times \hat{\bs{x}}_1\|} = \hat{\bs{x}}_3 \times \hat{\bs{x}}_1\\
 	\hat{\bs{x}}_3 &= \hat{\bs{L}} = \frac{\bs{L}}{\|\bs{L}\|} = \frac{\bs{r}_p \times \bs{v}_p}{\|\bs{r}_p \times \bs{v}_p\|}\label{eq:x3}.
 \end{align}
-Figure~\ref{fig:lpts_r} shows sections of particle orbits (for particles that are stripped) from the N-body simulations described above projected into this coordinate system. The positions are normalized by the instantaneous tidal radius (Eq.~\ref{eq:tidalradius}) and velocities are normalized by the instantaneous velocity scale (Eq.~\ref{eq:velscale}). Sections of the orbits symmetric around their unbinding times, $\tub$, are shown for each of the four progenitor masses. In these coordinates, the classical Lagrange points would be located at $x_1\approx\pm\rtide,x_2=0,x_3=0$ (illustrated by the intersection of the black unit circles and horizontal lines in Figure~\ref{fig:lpts_r}). Though not centered on the point-mass Lagrange points, the location of and dispersion about the effective Lagrange points in these scaled coordinates remain remarkably consistent across the range of progenitor masses explored. Figure~\ref{fig:lpts_v} shows the velocity orbits of each star also projected into these coordinates and normalized. The dispersion in velocity is well-normalized by the velocity scale of Eq.~\ref{eq:velscale}, though it is clear that the velocity dispersion along $\hat{x}_1$, the radial vector to the satellite position, is larger than that in other dimensions, possibly because of tidal shocking. 
+Figure~\ref{fig:lpts_r} shows sections of particle orbits (for particles that are stripped) from the N-body simulations described above, projected into this coordinate system. The positions are normalized by the instantaneous tidal radius (Eq.~\ref{eq:tidalradius}) and velocities are normalized by the instantaneous velocity scale (Eq.~\ref{eq:velscale}). Sections of the orbits symmetric around their unbinding times, $\tub$, are shown for each of the four progenitor masses. In these coordinates, the classical Lagrange points would be located at $x_1\approx\pm\rtide,x_2=0,x_3=0$ (illustrated by the intersection of the black unit circles and horizontal lines in Figure~\ref{fig:lpts_r}). Though not centered on the point-mass Lagrange points, the location of and dispersion about the effective Lagrange points in these scaled coordinates remain remarkably consistent across the range of progenitor masses explored. Figure~\ref{fig:lpts_v} shows the velocity orbits of each star also projected into these coordinates and normalized. The dispersion in velocity is well-normalized by the velocity scale of Eq.~\ref{eq:velscale}, though it is clear that the velocity dispersion along $\hat{x}_1$, the radial vector to the satellite position, is larger than that in other dimensions, possibly because of tidal shocking. 
 
 We find that even in a triaxial potential, the dispersion --- in position and velocity --- of tidally stripped debris as it comes unbound from the satellite scales with the mass ratio $(m / M_{\rm enc})^{1/3}$. This motivates a model for tidal debris in which each star was ``released'' at the instantaneous, effective Lagrange point at its unbinding time, $\tub$, with a dispersion in position and velocity, all of which depend only on the mass and orbit of the progenitor and the parent potential. We present this model in detail below.
 
@@ -237,6 +235,18 @@ We find that even in a triaxial potential, the dispersion --- in position and ve
 \subsection{Probabilistic model}
 Suppose we observe the 6D position of a star, $\D$, in heliocentric coordinates --- e.g., the measured position on the sky, ($l$, $b$); distance, $d$; proper motions, ($\mu_l$, $\mu_b$); and line-of-sight velocity, $v_r$ --- and have determined through some other means that this star was once part of a progenitor system (e.g., satellite galaxy) with mass $m(t)$ that is disrupting and forming a cold debris structure in the potential, $\Phi$, of the parent galaxy (e.g., the Milky Way). We assume that the mass of the parent system enclosed within the pericenter of the orbit of the satellite, $M_{\rm enc}(R_{\rm peri})$, is much larger than the initial mass of the satellite, $M_{\rm enc}(R_{\rm peri})\gg m(t=0)$. The present position of the progenitor is observed to be at heliocentric position $\D_\sat$ (where any subscript $\sat$ refers to the progenitor). In general, the data for the star and progenitor will have significant uncertainties or missing dimensions at distances typical to the Galactic halo, thus we define $\W$ and $\W_\sat$ as the true 6D, heliocentric positions of the star and progenitor and will include these in our model. Since we include these positions as parameters, this will work even when the star has missing dimensions or the progenitor location is unknown \citep[as in the Orphan stream,][]{belokurov07}.
 
+To model the true, 6D, present-day position of the star, $\W$, we first transform to cartesian, Galactocentric coordinates where ($\bs{r}_0,\bs{v}_0$) and ($\bs{r}_{\sat,0},\bs{v}_{\sat,0}$) are the position and velocity of the star and progenitor today. The star is taken as having been sampled at $t=\tub$ (the unbinding time) from an isotropic Gaussian centered on one of the effective Lagrange points in position, and an isotropic Gaussian centered on the origin in velocity. The present-day phase-space position is the result of integrating this sample forward from $\tub$ in the parent potential, $\Phi$, whose form is parametrized by the vector $\bs{\Theta}_\Phi$. We assume that once the star becomes ``unbound'' from the satellite the potential of the satellite can be ignored,\footnote{This assumption breaks down for sufficiently large-mass progenitors, somewhere between $\sim10^8-10^9~\msun$.} and thus treat the star as a test particle. The satellite mass enters this prescription through the tidal radius; a changing satellite mass will skew the positions of the effective Lagrange points and velocity scale. We allow for mass-loss by incorporating the initial satellite mass, $m_0$, and a constant mass-loss term, $\dot{m}$ into the model: $m(t) = m_0 - \dot{m}t$. Finally, we add two additional parameters: a constant, global factor, $\Loffset$, that scales the position of the effective Lagrange points relative to the classical tidal radius, and a binary parameter $\tailbit$, that is either $-1$ or $+1$ depending on whether the star is in the leading or trailing tail. To compress notation, we pack all progenitor parameters ($\W_\sat, m_0, \dot{m}, \Loffset$) into the vector $\bs{\Theta}_\sat$. The likelihood is then: %, and all star parameters ($\W, \tailbit, \tub$) into the vector $\bs{\Theta}$
+\begin{align}
+	p(\W \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi, \tailbit, \tub) &= p(\bs{r}_0,\bs{v}_0, \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi, \tailbit, \tub)\,\left\vert\J\right\vert\label{eq:starlike}\\
+	p(\bs{r}_0,\bs{v}_0, \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \rtide^2)\,\mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma^2_v)
+\end{align}
+where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale} and the positions and velocities ($\bs{r},\bs{v}, \bs{r}_{\sat},\bs{v}_{\sat}$) are evaluated at the unbinding time, $\tub$, by integrating the orbits backwards from ($\bs{r}_0,\bs{v}_0, \bs{r}_{\sat,0},\bs{v}_{\sat,0}$). $\left\vert\J\right\vert = \left\vert\frac{\partial(x,y,z,v_x,v_y,v_z)}{\partial(l,b,d,\mu_l,\mu_b,v_r)}\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. 
+
+The likelihood above is evaluated for each star at its unbinding time, however this is not a priori known for any star. Furthermore, the idea of a single-valued unbinding time is not well defined as (1) it depends strongly on the particular definition of ``unbound'' and (2) for debris disrupted on near-circular orbits, the debris may pass close to the progenitor several times. We marginalize over the unbinding time, assuming a uniform distribution of unbinding times over the entire interaction time:
+\begin{align}
+	p(\W \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi, \tailbit) &= \int p(\W \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi, \tailbit, \tub)\,p(\tub)\,d\tub
+\end{align}
+
 We assume that the observational uncertainties are Gaussian in heliocentric, spherical coordinates, such that
 \begin{align}
 	p(\D \given \W) &= \mathcal{N}(\D \given \W, \bSigma)\label{eq:obsstar}\\
@@ -244,18 +254,14 @@ We assume that the observational uncertainties are Gaussian in heliocentric, sph
 \end{align}
 where $\mathcal{N}$ represents the normal distribution, and the covariance matrices $\bSigma$ and $\bSigma_\sat$ specify the observational uncertainties on the observed 6D position of the star and progenitor, respectively. 
 
-To model the true, 6D, present-day position of the star, $\W$, we first transform to cartesian, Galactocentric coordinates where ($\bs{r}_0,\bs{v}_0$) and ($\bs{r}_{\sat,0},\bs{v}_{\sat,0}$) are the position and velocity of the star and progenitor today. The star is taken as having been sampled at $t=\tub$ (the unbinding time) from an isotropic Gaussian centered on one of the effective Lagrange points in position, and an isotropic Gaussian centered on the origin in velocity. The present-day phase-space position is the result of integrating this sample forward from $\tub$ in the parent potential, $\Phi$, whose form is parametrized by the vector $\bs{\Theta}_\Phi$. We assume that once the star becomes ``unbound'' from the satellite the potential of the satellite can be ignored,\footnote{This assumption breaks down for sufficiently large-mass progenitors, somewhere between $\sim10^8-10^9~\msun$.} and thus treat the star as a test particle. The satellite mass enters this prescription through the tidal radius; a changing satellite mass will skew the positions of the effective Lagrange points and velocity scale. We allow for mass-loss by incorporating the initial satellite mass, $m_0$, and a constant mass-loss term, $\dot{m}$ into the model: $m(t) = m_0 - \dot{m}t$. Finally, we add two additional parameters: a constant, global factor, $\Loffset$, that scales the position of the effective Lagrange points relative to the classical tidal radius, and a binary parameter $\tailbit$, that is either $-1$ or $+1$ depending on whether the star is in the leading or trailing tail. To compress notation, we pack all progenitor parameters ($\W_\sat, m_0, \dot{m}, \Loffset$) into the vector $\bs{\Theta}_\sat$, and all star parameters ($\W, \tailbit, \tub$) into the vector $\bs{\Theta}$. The likelihood is then:
-\begin{align}
-	p(\bs{\Theta} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) &= p(\bs{r}_0,\bs{v}_0, \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi)\,\left\vert\J\right\vert_{t=\tub}\label{eq:starlike}\\
-	p(\bs{r}_0,\bs{v}_0, \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi) &= \mathcal{N}(\bs{r} \given \bs{r}_\sat - \Loffset\,\tailbit\,\rtide\,\hat{x}_1, \rtide^2)\,\mathcal{N}(\bs{v} \given \bs{v}_\sat, \sigma^2_v)_{t=\tub}
-\end{align}
-where $\rtide$ is given by Eq.~\ref{eq:tidalradius}, and $\sigma_v$ by Eq.~\ref{eq:velscale}. $\left\vert\J\right\vert = \left\vert\frac{\partial(x,y,z,v_x,v_y,v_z)}{\partial(l,b,d,\mu_l,\mu_b,v_r)}\right\vert$ is the absolute value of the determinant of the Jacobian that defines the transformation from heliocentric, spherical to Galactocentric, cartesian coordinates. All quantities in this expression are evaluated at $t=\tub$. For a single star, the evaluation of the likelihood works as follows: given present-day coordinates for the star and progenitor, potential parameter values ($\bs{\Theta}_\Phi$), and nuisance parameter values ($\tub,\Loffset,\tailbit$),
+For a single star, the evaluation of the likelihood works as follows: given present-day coordinates for the star and progenitor, potential parameter values ($\bs{\Theta}_\Phi$), and nuisance parameter values ($\tub,\Loffset,\tailbit$),
 \begin{enumerate}
 	\item transform star and progenitor positions in heliocentric coordinates to Galactocentric, cartesian coordinates;
 	\item integrate star and progenitor orbits backwards as test particles in the potential given by $\bs{\Theta}_\Phi$ for the total interaction time, $t_{\rm int}\approx6$~Gyr;
-	\item at the timestep closest to $\tub$, transform the particle position to the relative, normalized coordinates defined in Section~\ref{sec:debris};
-	\item compute the likelihood given by Equation~\ref{eq:starlike}.
+	\item transform the particle position to the relative, normalized coordinates defined in Section~\ref{sec:debris};
+	\item compute the likelihood given by Equation~\ref{eq:starlike} at each timestep of the integration and marginalize over the unbinding time, $\tub$.
 \end{enumerate}
+
 Assuming each star is an independent tracer, the full likelihood for many stars is then just the product of the individual likelihoods:
 %\begin{multline}
 %	p(\{\bs{\Theta}^{(i)}\}, \bs{\Theta}_\sat, \bs{\Theta}_\Phi \given \{\D^{(i)}\}, \D_\sat) = \\
@@ -266,9 +272,9 @@ Assuming each star is an independent tracer, the full likelihood for many stars 
 \begin{multline}
 	p(\{\D^{(i)}\}, \D_\sat \given \{\bs{\Theta}^{(i)}\}, \bs{\Theta}_\sat, \bs{\Theta}_\Phi ) = \\
 		p(\D_\sat \given \W_\sat) \, \prod_i \, p(\D^{(i)} \given \W^{(i)}) \,
-			p(\bs{\Theta}^{(i)} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi)
+			p(\W^{(i)} \given \bs{\Theta}_\sat, \bs{\Theta}_\Phi, \tailbit^{(i)})
 \end{multline}
-All parameters are summarized in Table~\ref{tbl:params}.
+where $\bs{\Theta}^{(i)} = (\W^{(i)}, \tailbit^{(i)})$. All parameters are summarized in Table~\ref{tbl:params}.
 
 %For this article, we modify the above to be a mixture model: we add a new parameter for each star, $\pshock$, which is the probability that the star is drawn from a broader, ``shocked'' distribution instead of a tight Gaussian centered on an effective Lagrange point:
 %\begin{multline}
@@ -344,7 +350,7 @@ For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to
 
 \subsection{Data with negligible uncertainties}\label{sec:exp1}
 
-We first test \rewinder\ using only eight stars (particles) --- four from the leading tail, and four from the trailing tail --- randomly sampled from the $2.5\times10^8\,\msun$ simulation (Section~\ref{sec:sims}), assuming the observed 6D positions for both the stars and the progenitor have negligible uncertainties. The stars were required to have been stripped after the first pericentric passage and have a present-day distance within $50$ kpc of the Sun. Figure~\ref{fig:sims} (second column from right) shows the eight randomly chosen stars (black crosses) in Galactic coordinates, over-plotted on all other simulated particles (grey points). 
+We first test \rewinder\ using only four stars (particles) --- two from the leading tail, and two from the trailing tail --- randomly sampled from the $2.5\times10^8\,\msun$ simulation (Section~\ref{sec:sims}), assuming the observed 6D positions for both the stars and the progenitor have negligible uncertainties. The stars were required to have been stripped after the first pericentric passage and have a present-day distance within $50$ kpc of the Sun. Figure~\ref{fig:sims} (second column from right) shows the eight randomly chosen stars (black crosses) in Galactic coordinates, over-plotted on all other simulated particles (grey points). 
 
 We leave the potential parameters ($q_1,q_z,\phi,\vhalo$) free to vary, along with the Lagrange point offset, $\Loffset$, and initialize an ensemble of 64 MCMC walkers by sampling from the priors summarized in Table~\ref{tbl:params}. We run the walkers for 10000 steps to burn-in, then restart the sampler starting from the final position of the burn-in phase and run for another 5000 inference steps. Figure~\ref{fig:trace} shows the walker positions over the 5000 inference steps for each of the five parameters. The autocorrelation time for each parameter is displayed on its corresponding panel. Figure~\ref{fig:exp1_posterior} shows projections of the posterior probability distribution for the parameters; with perfect data, the uncertainties on the potential parameters are all $<1\%$.
 
@@ -363,13 +369,11 @@ We leave the potential parameters ($q_1,q_z,\phi,\vhalo$) free to vary, along wi
 \end{figure}
 
 \subsection{Data with near-future uncertainties}\label{sec:exp2}
-We next take the same eight stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We require these stars to be RR Lyrae variables which are known to be excellent distance indicators via the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}. Nearly 100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
+We next take the same four stars used in the previous experiment and ``observe'' them with optimistic observational uncertainties. We require these stars to be RR Lyrae variables which are known to be excellent distance indicators via the mid-infrared period-luminosity relation \citep[as shown in, e.g.,][]{madore12}. Nearly 100 RR Lyrae associated with the Sgr stream and $\sim$30 associated with the Orphan stream will be observed with \spitzer as part of the SMASH survey \citep{smashprop} with expected fractional distance uncertainties around $\sim$2\%. These stars will also be included in the \gaia\, proper motion catalog: at a distance of $\sim$50~kpc, a typical RR Lyrae will have a tangential velocity error around $\sim$20~km/s.
 
-For this experiment, we (1) assume the stars are bright distance indicators --- RR Lyrae --- such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties though in reality some coordinates will have even better measurements.
+For this experiment, we (1) assume the stars are RR Lyrae stars (e.g., bright distance indicators) such that the fractional distance uncertainty is $2\%$; (2) neglect the uncertainty in angular position, $l,b$ (for a typical RR Lyrae at 50~kpc this is $\sim$$10^{-7}$~deg for \gaia); (3) assume we can measure radial velocities to these stars with 5~km/s uncertainty; and (4) compute the sky-averaged \gaia\, proper-motion uncertainty for each star assuming an F0V spectral type using the \texttt{PyGaia}\footnote{https://github.com/agabrown/PyGaia} code and use this uncertainty for both components of proper motion. We further assume that we know the tail assignment for each star, $\beta$. We observe the position of the progenitor with the same observational uncertainties though in reality some coordinates will have even better measurements.
 
-This experiment samples over the four potential parameters, the Lagrange point offset, four phase-space coordinate parameters plus the unbinding time for each star (40 total), and four phase-space coordinate parameters for the progenitor --- 49 parameters in total. We use an ensemble of 256 walkers and draw initial conditions for the coordinate parameters by sampling from Gaussian's centered on the ``observed'' value with variances specified by the observational uncertainties. Other parameters --- potential parameters, $\Loffset$, and $\tub$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. [TODO: start from truth...] We burn in the walkers for 10000 steps and run for 10000 inference steps. Figures~\ref{fig:exp2_potential}, \ref{fig:exp2_satellite}, \ref{fig:exp2_particle} show the marginalized posteriors for the potential parameters, satellite parameters, and parameters for a single particle. 
-
-% TODO: slight bias in values due to particular sample of stars?
+This experiment samples over the four potential parameters, the Lagrange point offset, four phase-space coordinate parameters for each star (16 total), and four phase-space coordinate parameters for the progenitor --- 25 parameters in total. We use an ensemble of 256 walkers and draw initial conditions for the coordinate parameters by sampling from Gaussian's centered on the ``observed'' value with variances specified by the observational uncertainties. Other parameters --- potential parameters and $\Loffset$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We burn in the walkers for 50000 steps and run for 100000 inference steps, but thin the chains by taking every $2\times \max(t_{\rm acor})$ sample, where $\max(t_{\rm acor}) \approx 4000$~steps. Figures~\ref{fig:exp2_potential}, \ref{fig:exp2_satellite}, \ref{fig:exp2_particle} show the marginalized posteriors for the potential parameters, satellite parameters, and parameters for a single particle. 
 
 \begin{figure}[!ht]
 \begin{center}
@@ -393,9 +397,9 @@ This experiment samples over the four potential parameters, the Lagrange point o
 \end{figure}
 
 \subsection{Precise distance measurements with missing proper motions}\label{sec:exp3}
-The SMASH survey \citep{smashprop} will be completed within a year (early 2015), long before the final \gaia\, data release. Thus, we will soon have precise distance measurements for stars in the Sgr and Orphan streams, but poor proper motion constraints. SMASH also targets several RR Lyrae in the Sgr core, which enable a high-precision distance measurement of the progenitor. Though proper motions have been measured for the Sgr progenitor, we now consider a case in which we have high-precision (2\%) distances to stream stars and the progenitor, 10~km/s radial velocity uncertainty, and missing proper motions for all stars and progenitor. 
+The SMASH survey \citep{smashprop} will be completed within a year (early 2015), long before the final \gaia\, data release. Thus, we will soon have precise distance measurements for stars in the Sgr and Orphan streams, but poor or no proper motion constraints. SMASH also targets several RR Lyrae in the Sgr core, which will enable a high-precision distance measurement of the progenitor. Though proper motions have been measured for the Sgr progenitor, we now consider a case in which we have high-precision (2\%) distances to stream stars and the progenitor, 10~km/s radial velocity uncertainty, but missing proper motions for all stars and progenitor. 
 
-As with the previous experiment, this experiment includes 49 model parameters in total. We again use an ensemble of 256 walkers, but this time initialize the walkers by sampling the coordinate parameters from Gaussians centered on the true positions with variances set to 1\% of the parameter values. Other parameters --- potential parameters, $\Loffset$, and $\tub$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We again burn in the walkers for 10000 steps and run for 10000 inference steps. Figures~\ref{fig:exp3_potential}, \ref{fig:exp3_satellite}, \ref{fig:exp3_particle} show the marginalized posteriors for the potential parameters, satellite parameters, and parameters for a single particle. Accounting for observational uncertainties does increase the uncertainties in the constraints on the potential parameters (as expected), but this demonstrates that a small sample of well-measured stream stars provide an enormous amount of information about the triaxiality of the potential.
+As with the previous experiment, this experiment includes 25 model parameters in total. We again use an ensemble of 256 walkers. Other parameters --- potential parameters and $\Loffset$ --- are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We burn in the walkers for 50000 steps and run for 500000 inference steps. We again thin the chains by taking every $2\times \max(t_{\rm acor})$ sample, but here the autocorrelation time is found to be very long, $\max(t_{\rm acor}) \approx 25000$~steps. Figures~\ref{fig:exp3_potential}, \ref{fig:exp3_satellite}, \ref{fig:exp3_particle} show the marginalized posteriors for the potential parameters, satellite parameters, and parameters for a single particle. Even a small sample of stars with precise distance measurements provide an enormous amount of information about the triaxiality of the potential.
 
 \begin{figure}[!ht]
 \begin{center}
@@ -418,36 +422,35 @@ As with the previous experiment, this experiment includes 49 model parameters in
 \end{center}
 \end{figure}
 
-%TODO: remove exp 3 and explain that it is possible but computationally difficult...
-
-\subsection{Current data}\label{sec:exp4}
-% Most of the streams and debris structures discovered thus far have undetected or unconfirmed progenitors. We expect the phase-space positions of the stars to provide constraints on the position of the progenitor even if it is unobserved. For this experiment, we consider a situation where we have precise (2\%) distance measurements, 10~km/s radial velocity uncertainties, and no proper motion measurements to eight stream stars (the same used in previous experiments), and no knowledge of the 6D position of the progenitor object. 
-Without measured proper motions, the extremely precise distance measurements combined with moderate precision radial velocities are sufficient for constraining the properties of the debris and the potential. How important are these distance measurements? We now test \rewinder\ on just eight stars assuming the best uncertainties available for existing data of the Sgr stream. For the stream stars, we adopt 15\% distance uncertainties \citep[typical for M-giants, e.g.,][]{majewski04}, 0.1~mas/yr proper motion uncertainties \citep{koposov13}, and 5~km/s radial velocity uncertainties \citep{majewski04}. Note that we neglect any systematic uncertainties or trends with metallicity which are known to effect M-giant distance measurement accuracy. For the progenitor (Sgr core), we adopt a 1~kpc distance uncertainty \citep{kunder09}, 0.2~mas/yr proper motion uncertainties \citep{pryor10}, and 10~km/s radial velocity uncertainty \citep{frinchaboy12}. We  neglect uncertainties in the sky coordinates.
-
-Again, this experiment includes 49 model parameters in total. We use an ensemble of 256 walkers and also initialize the walkers by sampling the coordinate parameters from Gaussians centered on the true positions with variances set to 1\% of the parameter values. The potential parameters, $\Loffset$, and $\tub$ [TODO: truth] are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We again burn in the walkers for 10000 steps and run for 10000 inference steps. Figures~\ref{fig:exp4_potential}, \ref{fig:exp4_satellite}, \ref{fig:exp4_particle} show the marginalized posteriors for the potential parameters, satellite parameters, and parameters for the same star shown in previous figures. %[TODO: ..statement about results]
-
-\begin{figure}[!ht]
-\begin{center}
-\includegraphics[width=\textwidth]{../../plots/paper2/exp4_potential.png}
-\caption{Same as Figure~\ref{fig:exp2_potential} but with realistic, present-day uncertainties. }\label{fig:exp4_potential}
-\end{center}
-\end{figure}
-
-\begin{figure}[!ht]
-\begin{center}
-\includegraphics[width=\textwidth]{../../plots/paper2/exp4_satellite.png}
-\caption{ Same as Figure~\ref{fig:exp2_satellite} but with realistic, present-day uncertainties. }\label{fig:exp4_satellite}
-\end{center}
-\end{figure}
-
-\begin{figure}[!ht]
-\begin{center}
-\includegraphics[width=\textwidth]{../../plots/paper2/exp4_particle.png}
-\caption{ Same as Figure~\ref{fig:exp2_particle} but with realistic, present-day uncertainties. }\label{fig:exp4_particle}
-\end{center}
-\end{figure}
+%\subsection{Current data}\label{sec:exp4}
+%% Most of the streams and debris structures discovered thus far have undetected or unconfirmed progenitors. We expect the phase-space positions of the stars to provide constraints on the position of the progenitor even if it is unobserved. For this experiment, we consider a situation where we have precise (2\%) distance measurements, 10~km/s radial velocity uncertainties, and no proper motion measurements to eight stream stars (the same used in previous experiments), and no knowledge of the 6D position of the progenitor object. 
+%Without measured proper motions, the extremely precise distance measurements combined with moderate precision radial velocities are sufficient for constraining the properties of the debris and the potential. How important are these distance measurements? We now test \rewinder\ on just eight stars assuming the best uncertainties available for existing data of the Sgr stream. For the stream stars, we adopt 15\% distance uncertainties \citep[typical for M-giants, e.g.,][]{majewski04}, 0.1~mas/yr proper motion uncertainties \citep{koposov13}, and 5~km/s radial velocity uncertainties \citep{majewski04}. Note that we neglect any systematic uncertainties or trends with metallicity which are known to effect M-giant distance measurement accuracy. For the progenitor (Sgr core), we adopt a 1~kpc distance uncertainty \citep{kunder09}, 0.2~mas/yr proper motion uncertainties \citep{pryor10}, and 10~km/s radial velocity uncertainty \citep{frinchaboy12}. We  neglect uncertainties in the sky coordinates.
+%
+%Again, this experiment includes 49 model parameters in total. We use an ensemble of 256 walkers and also initialize the walkers by sampling the coordinate parameters from Gaussians centered on the true positions with variances set to 1\% of the parameter values. The potential parameters, $\Loffset$, and $\tub$ [TODO: truth] are initialized by drawing from the priors summarized in Table~\ref{tbl:params}. We again burn in the walkers for 10000 steps and run for 10000 inference steps. Figures~\ref{fig:exp4_potential}, \ref{fig:exp4_satellite}, \ref{fig:exp4_particle} show the marginalized posteriors for the potential parameters, satellite parameters, and parameters for the same star shown in previous figures. %[TODO: ..statement about results]
+%
+%\begin{figure}[!ht]
+%\begin{center}
+%\includegraphics[width=\textwidth]{../../plots/paper2/exp4_potential.png}
+%\caption{Same as Figure~\ref{fig:exp2_potential} but with realistic, present-day uncertainties. }\label{fig:exp4_potential}
+%\end{center}
+%\end{figure}
+%
+%\begin{figure}[!ht]
+%\begin{center}
+%\includegraphics[width=\textwidth]{../../plots/paper2/exp4_satellite.png}
+%\caption{ Same as Figure~\ref{fig:exp2_satellite} but with realistic, present-day uncertainties. }\label{fig:exp4_satellite}
+%\end{center}
+%\end{figure}
+%
+%\begin{figure}[!ht]
+%\begin{center}
+%\includegraphics[width=\textwidth]{../../plots/paper2/exp4_particle.png}
+%\caption{ Same as Figure~\ref{fig:exp2_particle} but with realistic, present-day uncertainties. }\label{fig:exp4_particle}
+%\end{center}
+%\end{figure}
 
 \section{Discussion}\label{sec:discussion}
+
 {\bf 1. Observational uncertainties:} Any method that uses tidal debris as a potential measure must also model the (significant) uncertainties on the kinematic measurements; \rewinder\ handles observational uncertainties and missing data dimensions by including the true 6D positions of stars and the progenitor as model parameters. In this article we have tested \rewinder\ using data of varied quality for a small sample of stars. 
 
 {\bf 2. Form of the potential:} No assumptions were made about the the form of the Galactic potential used in \rewinder: the potential could be time-dependent, clumpy, or have properties that vary with radius. The orbits of the stars and progenitor are directly integrated and only require a function that evaluates the acceleration due to the potential at a given position (and time). The simple experiments in this article infer potential parameters from the same functional potential used in the N-body simulations that generated the fake data. In future work, we will (1) try fitting incorrect potential models to see if we can still recover global properties (e.g., flattening); (2) run simulations with smoothly changing potentials \citep[e.g.,][]{buist14} and attempt to model the time dependence; and (3) explore using a generic, non-parametric potential form (e.g., a basis function expansion) as the recovery potential model. 
@@ -473,12 +476,14 @@ Again, this experiment includes 49 model parameters in total. We use an ensemble
 
 %In this article, we have only applied \rewinder\ to simulated observations of a kinematically ``hot'' stream; a large mass satellite will have a large dispersion in both position and velocity space. It has been shown previously that simulated cold streams are better than hot streams at recovering potential properties (cite?), however it is not clear whether this remains true with realistic observational uncertainties on the stream stars. For instance, when the uncertainties ``blur'' out the kinematic overdensity that is the stream, it is not known whether a cold stream would still be more informative than an equal sample of stars in a hot stream such as Sgr. This blurring could also make it more difficult to determine stream membership.
 
-\rewinder works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars are preferentially stripped around the satellite's pericenter because of tidal shocking. We will explore properly modeling this process in future work. We have focused on modeling streams of stars formed from a disrupting satellite on a mildly eccentric orbit. On more eccentric orbits, the debris tends to form more shell or cloud-like structures. The morphological distinction between stellar streams and stellar clouds is just related to the orbit of the disrupting satellite within the parent galaxy. With a proper model for the tidal shocking that occurs on an eccentric orbit, \rewinder\ could also be applied to structures such as the Triangulum-Andromeda \citep{rochapinto04} or Hercules-Aquila \citep{belokurov07b} stellar clouds, both possible shell-like structures viewed from the inside. 
+\rewinder\, works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars are preferentially stripped around the satellite's pericenter because of tidal shocking. We will explore properly modeling this process in future work. We have focused on modeling streams of stars formed from a disrupting satellite on a mildly eccentric orbit. On more eccentric orbits, the debris tends to form more shell or cloud-like structures. The morphological distinction between stellar streams and stellar clouds is just related to the orbit of the disrupting satellite within the parent galaxy. With a proper model for the tidal shocking that occurs on an eccentric orbit, \rewinder\ could also be applied to structures such as the Triangulum-Andromeda \citep{rochapinto04} or Hercules-Aquila \citep{belokurov07b} stellar clouds, both possible shell-like structures viewed from the inside. 
 
 We model tidal debris as having been stripped from the progenitor with some dispersion about effective Lagrange points. We assume that the distributions in position and velocity at these points are isotropic Gaussians. It is clear from Figures~\ref{fig:lpts_r} and \ref{fig:lpts_v} that there is more structure to the positions and velocities of stars around the time they are stripped. For instance, the distribution of positions of the trailing debris is more extended and possibly offset from zero in the $\hat{\bs{x}}_2$ direction. We have shown that using this simple model, \emph{precise} measurements of the Milky Way potential are attainable with near-future data, however we have not discussed the \emph{accuracy} of such measurements. Bonaca et al. (in prep.) show that fitting a rigid potential model to the potential of the \project{Via Lactea} halo ... %\cite{bonaca14}
   
 %[Haven't explored parameter space...]
 %For the second two experiments (Section~\ref{sec:exp3} and \ref{sec:exp4}), we have not performed a proper search in parameter space for the optimal values. Instead, the MCMC walkers were started with a small dispersion around the true parameter values. We have shown that if started from truth, the walkers will [...]. 
+
+% TODO: We have tested leaving the unbinding time as a free parameter but have found that this makes the likelihood severely multi-modal and thus very difficult to sample
 
 \section{Conclusions}\label{sec:conclusion}
 We have presented a probabilistic model (\rewinder) --- a likelihood function and with priors on the parameters --- for using stars observed in tidal streams to constrain properties of any underlying gravitational potential. \rewinder\ relies on direct orbit integration and not on computing conserved quantities (e.g., actions) and can thus be used with arbitrarily complex (e.g., time-dependent or clumpy) forms of the potential. We have performed several experiments to show that \rewinder\ simultaneously constrains the potential and models a tidal stream given simulated data with a range of realistic uncertainties. 
@@ -488,7 +493,7 @@ We thank Anthony Brown (Leiden) for insight on the \gaia\, data quality and for 
 APW is supported by a National Science Foundation Graduate Research Fellowship under Grant No.\ 11-44155. This work was supported in part by the National Science Foundation under Grant No. PHYS-1066293. 
 DWH was partially supported by NASA (Grant NNX12AI50G) and the NSF (Grant IIS-1124794).
 This research made use of Astropy, a community-developed core Python package for Astronomy \citep{astropy13}.
-This work additionally relied on Columbia University's \emph{hotfoot} and \emph{yeti} compute clusters, and we acknowledge the Columbia HPC support staff for assistance. \\
+This work additionally relied on Columbia University's \emph{Hotfoot} and \emph{Yeti} compute clusters, and we acknowledge the Columbia HPC support staff for assistance. \\
 
 \bibliographystyle{apj}
 \bibliography{refs}
