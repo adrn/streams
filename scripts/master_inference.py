@@ -36,9 +36,11 @@ def master_inference(filename):
                 chain = np.hstack((chain,f["chain"].value))
             except NameError:
                 chain = f["chain"].value
-    
+
+            accfrac = f["acceptance_fraction"].value
+
     #taur = [acor.acor(chain[:,:,i])[0] for i in range(chain.shape[2])]
-    tau,mm,xx = acor.acor(np.mean(chain,axis=0).T)
+    tau,mm,xx = acor.acor(np.mean(chain[accfrac > 0.02],axis=0).T)
     acor_time = int(2*np.max(tau))
     print("Autocorrelation time: ", acor_time)
 
