@@ -539,6 +539,7 @@ def exp1_posterior():
         bounds.append((0.95*truth, 1.05*truth))
         flatchain[:,ii] = _unit_transform[p.name](_flatchain[:,ii])
 
+    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(1.1,2.5)]
     fig = triangle.corner(flatchain, plot_datapoints=False,
                           truths=truths, extents=bounds, labels=labels)
     fig.savefig(os.path.join(plot_path, "exp1_posterior.png"))
@@ -560,7 +561,7 @@ def exp_posteriors(exp_num):
     # Potential
     this_flatchain = np.zeros((_flatchain.shape[0], len(d["potential"])))
     truths = []
-    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200)]
+    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(1.1,2.5)]
     labels = []
     for ii,pname in enumerate(d["potential"].keys()):
         this_flatchain[:,ii] = _unit_transform[pname](np.squeeze(d["potential"][pname]))
