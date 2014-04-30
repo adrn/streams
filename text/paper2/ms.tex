@@ -91,12 +91,12 @@ of satellite disruption in a multi-component Milky Way including a triaxial dark
 The data sets were generated with
   observational uncertainties to mimic current and near-future surveys of various stars.
 % Results:
-We find that even with four well-measured stream stars,
-  we can infer properties of the triaxial potential ???? with accuracies of order ??? percent ??? and
-  missing phase-space coordinates of the stars ??? with accuracies of order ????.
+We find that with just four well-measured stream stars,
+  we can infer properties of a triaxial potential with precisions of order 5-7 percent.
+Without proper motions we find that these same stars provide 15 percent constraints on potential parameters
+  and precisions around 25 percent for recovering missing phase-space coordinates.
 The method generalizes to encompass mixtures of independent debris structures,
   or situations in which star membership in structures is unknown.
-% [Get more quantitative here?]
 % Conclusions: 
 \end{abstract}
 
@@ -166,8 +166,8 @@ Figure~\ref{fig:potential} shows equipotential slices in the Galactic X-Z plane 
 
 \begin{figure}[h]
 \begin{center}
-\includegraphics[width=\textwidth]{../../plots/paper2/potentials.pdf}
-\caption{ Equipotential contours for the LM10 potential (Eq.~\ref{eq:lm10}) in Galactocentric, cartesian coordinates for various halo parameter choices. For all panels, $\vhalo=121.858~\mathrm{km}/\mathrm{s}$, $r_h=12~\mathrm{kpc}$. Left to right, each column represents a new choice of parameters. If not specified, other parameters are fixed to $q_1=q_2=q_z=1$ and $\phi=0^\circ$ (far left panels).  }\label{fig:potential}
+\includegraphics[width=\textwidth]{../../plots/paper2/potentials.png}
+\caption{ Equipotential contours for the LM10 potential (Eq.~\ref{eq:lm10}) in Galactocentric, cartesian coordinates for various halo parameter choices. For all panels, $\vhalo=121.858~\mathrm{km}/\mathrm{s}$, $r_h=12~\mathrm{kpc}$, and $q_2=1$. Left to right, each column represents a new choice of parameters. If not specified, other parameters are fixed to $q_1=q_z=1$ and $\phi=0^\circ$ (far left panels). Panels on far right show the best-fit parameter values from LM10. }\label{fig:potential}
 \end{center}
 \end{figure}
 
@@ -453,7 +453,7 @@ As with the previous experiment, this experiment includes 25 model parameters in
 
 {\bf 1. Observational uncertainties:} Any method that uses tidal debris as a potential measure must also model the (significant) uncertainties on the kinematic measurements; \rewinder\ handles observational uncertainties and missing data dimensions by including the true 6D positions of stars and the progenitor as model parameters. In this article we have tested \rewinder\ using data of varied quality for a small sample of stars. 
 
-{\bf 2. Form of the potential:} No assumptions were made about the the form of the Galactic potential used in \rewinder: the potential could be time-dependent, clumpy, or have properties that vary with radius. The orbits of the stars and progenitor are directly integrated and only require a function that evaluates the acceleration due to the potential at a given position (and time). The simple experiments in this article infer potential parameters from the same functional potential used in the N-body simulations that generated the fake data. In future work, we will (1) try fitting incorrect potential models to see if we can still recover global properties (e.g., flattening); (2) run simulations with smoothly changing potentials \citep[e.g.,][]{buist14} and attempt to model the time dependence; and (3) explore using a generic, non-parametric potential form (e.g., a basis function expansion) as the recovery potential model. 
+{\bf 2. Form of the potential:} No assumptions were made about the the form of the Galactic potential used in \rewinder: the potential could be time-dependent, clumpy, or have properties that vary with radius. The orbits of the stars and progenitor are directly integrated and only require a function that evaluates the acceleration due to the potential at a given position (and time). The simple experiments in this article infer potential parameters from the same functional potential used in the N-body simulations that generated the fake data. We have shown that using this simple model, \emph{precise} measurements of the Milky Way potential are attainable with near-future data, however we have not discussed the \emph{accuracy} of such measurements. Bonaca et al. (in prep.) show that fitting a rigid potential model to the live potential of the \project{Via Lactea} halo ...TODO. In future work, we will (1) try fitting incorrect potential models to see if we can still recover global properties (e.g., flattening); (2) run simulations with smoothly changing potentials \citep[e.g.,][]{buist14} and attempt to model the time dependence; and (3) explore using a generic, non-parametric potential form (e.g., a basis function expansion) as the recovery potential model. 
 
 {\bf 3. Multiple debris structures:} Each stream will provide constraints on different properties of the potential. For example, more eccentric streams may better constrain the radial profile \citep[see][who illustrate the power of using multiple streams to simultaneously constrain the potential using orbit fitting]{deg14}. In this article, we only consider a stream on a Sgr-like orbit, which lies nearly in the Galactic $x$-$z$ plane. We find that the stream puts better constraints on the $z$-axis flattening, $q_z$, than on the flattening in the $x$-$y$ plane, $q_1$, as expected. The best measurements of the detailed shape of the Galactic potential will come from combining constraints from multiple streams. We have defined above a proper likelihood function for observed stars in a given stream, thus incorporating multiple streams into the inference only requires multiplying the likelihoods computed for each stream and progenitor pair.
 
@@ -478,7 +478,7 @@ As with the previous experiment, this experiment includes 25 model parameters in
 
 \rewinder\, works well when all stars are lost due to tidal pruning. Even on a mildly eccentric orbit, stars are preferentially stripped around the satellite's pericenter because of tidal shocking. We will explore properly modeling this process in future work. We have focused on modeling streams of stars formed from a disrupting satellite on a mildly eccentric orbit. On more eccentric orbits, the debris tends to form more shell or cloud-like structures. The morphological distinction between stellar streams and stellar clouds is just related to the orbit of the disrupting satellite within the parent galaxy. With a proper model for the tidal shocking that occurs on an eccentric orbit, \rewinder\ could also be applied to structures such as the Triangulum-Andromeda \citep{rochapinto04} or Hercules-Aquila \citep{belokurov07b} stellar clouds, both possible shell-like structures viewed from the inside. 
 
-We model tidal debris as having been stripped from the progenitor with some dispersion about effective Lagrange points. We assume that the distributions in position and velocity at these points are isotropic Gaussians. It is clear from Figures~\ref{fig:lpts_r} and \ref{fig:lpts_v} that there is more structure to the positions and velocities of stars around the time they are stripped. For instance, the distribution of positions of the trailing debris is more extended and possibly offset from zero in the $\hat{\bs{x}}_2$ direction. We have shown that using this simple model, \emph{precise} measurements of the Milky Way potential are attainable with near-future data, however we have not discussed the \emph{accuracy} of such measurements. Bonaca et al. (in prep.) show that fitting a rigid potential model to the potential of the \project{Via Lactea} halo ... %\cite{bonaca14}
+We model tidal debris as having been stripped from the progenitor with some dispersion about effective Lagrange points. We assume that the distributions in position and velocity at these points are isotropic Gaussians. It is clear from Figures~\ref{fig:lpts_r} and \ref{fig:lpts_v} that there is more structure to the positions and velocities of stars around the time they are stripped. For instance, the distribution of positions of the trailing debris is more extended and possibly offset from zero in the $\hat{\bs{x}}_2$ direction. 
   
 %[Haven't explored parameter space...]
 %For the second two experiments (Section~\ref{sec:exp3} and \ref{sec:exp4}), we have not performed a proper search in parameter space for the optimal values. Instead, the MCMC walkers were started with a small dispersion around the true parameter values. We have shown that if started from truth, the walkers will [...]. 
@@ -486,10 +486,11 @@ We model tidal debris as having been stripped from the progenitor with some disp
 % TODO: We have tested leaving the unbinding time as a free parameter but have found that this makes the likelihood severely multi-modal and thus very difficult to sample
 
 \section{Conclusions}\label{sec:conclusion}
-We have presented a probabilistic model (\rewinder) --- a likelihood function and with priors on the parameters --- for using stars observed in tidal streams to constrain properties of any underlying gravitational potential. \rewinder\ relies on direct orbit integration and not on computing conserved quantities (e.g., actions) and can thus be used with arbitrarily complex (e.g., time-dependent or clumpy) forms of the potential. We have performed several experiments to show that \rewinder\ simultaneously constrains the potential and models a tidal stream given simulated data with a range of realistic uncertainties. 
+We have presented a probabilistic model (\rewinder) --- a likelihood function and with priors on the parameters --- for using stars observed in tidal streams to constrain properties of any underlying gravitational potential. \rewinder\ relies on direct orbit integration and not on computing conserved quantities (e.g., actions) and can thus be used with arbitrarily complex (e.g., time-dependent or clumpy) forms of the potential. We have performed several experiments to show that \rewinder\ simultaneously constrains the potential and models a tidal stream given simulated data with a range of realistic uncertainties. We find that with realistic but future high-quality data --- that is, high precision distance measurements from RR Lyrae and proper motions from \gaia --- a small sample of just four stars in a tidal stream modeled with \rewinder\, provide measurements of potential parameters that rival present-day constraints from running full N-body simulations. For this high-quality data, we recover the input potential parameter values with uncertainties of order 5-7 percent. Without proper motion data the uncertainties are around 15 percent. TODO: concluding sentence.
 
 \acknowledgements
 We thank Anthony Brown (Leiden) for insight on the \gaia\, data quality and for providing the open source \texttt{PyGaia} code for computing predicted uncertainties. We thank the organizers of the Gaia Challenge (2013) and the University of Surrey for hospitality during this workshop. We thank Hans-Walter Rix (MPIA) and Jo Bovy (IAS) for ... [TODO: HOGG].
+[TODO: thank Marla, Ana?]
 APW is supported by a National Science Foundation Graduate Research Fellowship under Grant No.\ 11-44155. This work was supported in part by the National Science Foundation under Grant No. PHYS-1066293. 
 DWH was partially supported by NASA (Grant NNX12AI50G) and the NSF (Grant IIS-1124794).
 This research made use of Astropy, a community-developed core Python package for Astronomy \citep{astropy13}.
