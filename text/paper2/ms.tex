@@ -1,5 +1,5 @@
-%\documentclass{emulateapj}
-\documentclass[letterpaper,12pt,preprint]{aastex}
+\documentclass{emulateapj}
+%\documentclass[letterpaper,12pt,preprint]{aastex}
 
 % packages
 \usepackage{amssymb,amsmath,amsbsy}
@@ -261,7 +261,7 @@ where $\mathcal{N}$ represents the normal distribution, and the covariance matri
 For a single star, the evaluation of the likelihood works as follows: given observed, present-day coordinates for the star and progenitor ($\D,\D_\sat$), potential parameter values ($\bs{\Theta}_\Phi$), and nuisance parameter values ($\Loffset,\tailbit$),
 \begin{enumerate}
 	\item transform star and progenitor positions in heliocentric coordinates to Galactocentric, cartesian coordinates;
-	\item integrate star and progenitor orbits backwards as test particles in the potential given by $\bs{\Theta}_\Phi$ for the total interaction time, $t_{\rm int}\approx6$~Gyr;
+	\item integrate star and progenitor orbits backwards as test particles in the potential given by $\bs{\Theta}_\Phi$ for the total interaction time, $t_{\rm int}\approx6.2$~Gyr;
 	\item transform the particle position to the relative, normalized coordinates defined in Section~\ref{sec:debris};
 	\item compute the likelihood given by Equation~\ref{eq:starlike} at each timestep of the integration and marginalize over the unbinding time, $\tub$.
 \end{enumerate}
@@ -312,7 +312,7 @@ In what follows, we use \rewinder\ to model ``observations'' of a small sample o
 
 For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to sample from the posterior probability distribution given by our model. Standard MCMC algorithms (e.g., Metropolis-Hastings) update a single chain while exploring parameter space. We instead use an affine-invariant ``ensemble'' sampler \citep{goodman10} that, each step in parameter space, updates the positions of many ``walkers'' (the ensemble). This algorithm is implemented in the \texttt{Python} programming language \citep{foremanmackey13} and runs naturally in a parallelized environment such as the message passing interface (MPI). In each experiment we run the walkers for a large number of steps from starting positions described below, then throw away these samples and take the positions from the final step of this ``burn-in'' phase as a starting point for the samples used for inference. We compute the autocorrelation time for each sampled parameter (using \texttt{ACOR}\footnote{\url{http://www.math.nyu.edu/faculty/goodman/software/acor/}}$^{,}$\footnote{\url{https://github.com/dfm/acor}}) and thin the chains by taking every $\mathrm{max}(t_{\rm acor})$ sample to ensure the samples are close to independent.
 
-\begin{table}[h]
+\begin{table*}[ht]
 \begin{center}
 	\begin{tabular}{l c c l} \toprule
 		\multicolumn{4}{l}{{\bf \emph{Milky Way parameters} ($\bs{\Theta}_\Phi$)}} \\
@@ -344,12 +344,12 @@ For all experiments below, we use a Markov Chain Monte Carlo (MCMC) algorithm to
 		\toprule
 		position & $\bs{r}_0$ & -- & $\|\bs{r}_0\|\sim\mathcal{U}(0,200)$~kpc \\
 		velocity & $\bs{v}_0$ & -- & $\|\bs{v}_0\|\sim\mathcal{U}(0,500)$~km/s\\
-		tail assignment (binary) & $\beta$ & -- & $\pm1$~equally likely (fixed at truth)\\ 
+		tail assignment & $\beta$ & -- & $\pm1$~equally likely (fixed at truth)\\ 
 		\bottomrule
 		\end{tabular}
 	\caption{Parameter values used in the experiments of Section~\ref{sec:experiments}. $\mathcal{N}$ is the normal (Gaussian) distribution, and $\mathcal{U}$ the uniform distribution. There are 11 parameters for the Milky Way potential, but only four are left free to vary; some parameters are fixed (denoted by ``(fixed)'') at the true values used in the N-body simulations that generated the fake test data. The progenitor has nine parameters --- the position, $\bs{r}_{\rm p}$, and velocity, $\bs{v}_{\rm p}$, vectors each contain three components --- but only five are left free to vary. The sky coordinates (e.g., Galactic $l$, $b$) are assumed to be known with negligible uncertainty. Each star has eight associated parameters, five of which are allowed to vary. Sky coordinates are fixed, along with the tail assignment (whether the star belongs to the leading or trailing tail). For inference with four stars, there are $4+5+4\times4=25$ free parameters. \label{tbl:params}}
 \end{center}
-\end{table}
+\end{table*}
 
 \subsection{Data with negligible uncertainties}\label{sec:exp1}
 
@@ -456,7 +456,7 @@ As with the previous experiment, this experiment includes 25 model parameters in
 
 {\bf 1. Observational uncertainties:} Any method that uses tidal debris as a potential measure must also model the (significant) uncertainties on the kinematic measurements; \rewinder\ handles observational uncertainties and missing data dimensions by including the true 6D positions of stars and the progenitor as model parameters. In this article we have tested \rewinder\ using data of varied quality for a small sample of stars. 
 
-{\bf 2. Form of the potential:} No assumptions were made about the the form of the Galactic potential used in \rewinder: the potential could be time-dependent, clumpy, or have properties that vary with radius. The orbits of the stars and progenitor are directly integrated and only require a function that evaluates the acceleration due to the potential at a given position (and time). The simple experiments in this article infer potential parameters from the same functional potential used in the N-body simulations that generated the fake data. We have shown that using this simple model, \emph{precise} measurements of the Milky Way potential are attainable with near-future data, however we have not discussed the \emph{accuracy} of such measurements. Bonaca et al. (in prep.) show that fitting a rigid potential model to the live potential of the \project{Via Lactea} halo ...TODO. In future work, we will (1) try fitting incorrect potential models to see if we can still recover global properties (e.g., flattening); (2) run simulations with smoothly changing potentials \citep[e.g.,][]{buist14} and attempt to model the time dependence; and (3) explore using a generic, non-parametric potential form (e.g., a basis function expansion) as the recovery potential model. 
+{\bf 2. Form of the potential:} No assumptions were made about the the form of the Galactic potential used in \rewinder: the potential could be time-dependent, clumpy, or have properties that vary with radius. The orbits of the stars and progenitor are directly integrated and only require a function that evaluates the acceleration due to the potential at a given position (and time). The simple experiments in this article infer potential parameters from the same functional potential used in the N-body simulations that generated the fake data. We have shown that using this simple model, \emph{precise} measurements of the Milky Way potential are attainable with near-future data, however we have not discussed the \emph{accuracy} of such measurements. Bonaca et al. (in prep.) show that using a static potential model to fit the live potential of the \project{Via Lactea} halo with tidal streams can introduce significant biases to measurements of the halo mass, even with perfect knowledge of the 6D coordinates of stars in the streams. In future work, we will (1) try fitting incorrect potential models to see if we can still recover global properties (e.g., flattening); (2) run simulations with smoothly changing potentials \citep[e.g.,][]{buist14} and attempt to model the time dependence; and (3) explore using a generic, non-parametric potential form (e.g., a basis function expansion) as the recovery potential model. 
 
 {\bf 3. Multiple debris structures:} Each stream will provide constraints on different properties of the potential. For example, more eccentric streams may better constrain the radial profile \citep[see][who illustrate the power of using multiple streams to simultaneously constrain the potential using orbit fitting]{deg14}. In this article, we only consider a stream on a Sgr-like orbit, which lies nearly in the Galactic $x$-$z$ plane. We find that the stream puts better constraints on the $z$-axis flattening, $q_z$, than on the flattening in the $x$-$y$ plane, $q_1$, as one might expect. The best measurements of the detailed shape of the Galactic potential will come from combining constraints from multiple streams. We have defined above a proper likelihood function for observed stars in a given stream, thus incorporating multiple streams into the inference only requires multiplying the likelihoods computed for each stream and progenitor pair.
 
@@ -493,7 +493,7 @@ We have presented a probabilistic model (\rewinder) --- a likelihood function an
 
 \acknowledgements
 We thank Anthony Brown (Leiden) for insight on the \gaia\, data quality and for providing the open source \texttt{PyGaia} code for computing predicted uncertainties. We thank the organizers of the Gaia Challenge (2013) and the University of Surrey for hospitality during the workshop. We thank Ana Bonaca (Yale), Jo Bovy (IAS), Marla Geha (Yale), Andreas K{\"u}pper (Columbia), and Hans-Walter Rix (MPIA) for useful discussions.
-KVJ thanks the Institute of Astronomy for hospitality.
+KVJ thanks the Institute of Astronomy at the University of Cambridge for hospitality.
 APW is supported by a National Science Foundation Graduate Research Fellowship under Grant No.\ 11-44155. This work was supported in part by the National Science Foundation under Grant No. PHYS-1066293 and AST-1312196. 
 DWH was partially supported by the NSF (Grant IIS-1124794) and the Moore-Sloan Data Science Environment at NYU.
 This research made use of Astropy, a community-developed core \texttt{Python} package for Astronomy \citep{astropy13}. This research has made use of NASA's Astrophysics Data System.
