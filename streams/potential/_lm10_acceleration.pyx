@@ -31,6 +31,62 @@ cdef extern from "math.h":
 #DTYPE = np.double
 #ctypedef np.double_t DTYPE_t
 
+@cython.boundscheck(False) # turn of bounds-checking for entire function
+@cython.cdivision(True)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+def lm10_potential(np.ndarray[double, ndim=2] r, int n_particles,
+                   np.ndarray[double, ndim=1] pot,
+                   double q1, double qz, double phi, double v_halo,
+                   double q2, double R_halo):
+
+    cdef double fac1, fac2, fac3, _tmp, _tmp_1, _tmp_2, R_pl_c
+    cdef double G, a, b_sq, c, m_disk, m_bulge
+    G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
+
+    # Miyamoto-Nagai
+    a = 6.5 # kpc
+    b_sq = 0.26*0.26 # kpc^2
+    Gm_disk = G*1.E11 # M_sun
+
+    # Hernquist
+    c = 0.7 # kpc
+    Gm_bulge = G*3.4E10 # M_sun
+
+    # Halo
+    cdef double q1_sq, q2_sq, qz_sq, R_halo_sq, v_halo_sq, sinphi, cosphi, C1, C2, C3
+    q1_sq = q1*q1
+    q2_sq = q2*q2
+    qz_sq = qz*qz
+    R_halo_sq = R_halo*R_halo # kpc
+    v_halo_sq = v_halo*v_halo
+    sinphi = sin(phi)
+    cosphi = cos(phi)
+    C1 = cosphi**2/q1_sq + sinphi**2/q2_sq
+    C2 = cosphi**2/q2_sq + sinphi**2/q1_sq
+    C3 = 2.*sinphi*cosphi*(1./q1_sq - 1./q2_sq)
+
+    cdef double x, y, z
+    cdef double xx, yy, zz
+
+    for ii in range(n_particles):
+        x = r[ii,0]
+        y = r[ii,1]
+        z = r[ii,2]
+
+        xx = x*x
+        yy = y*y
+        zz = z*z
+        R = sqrt(xx + yy + zz)
+
+        _disk = -Gm_disk / np.sqrt(xx + yy + (a + sqrt(zz+b_sq))**2)
+        _spher = -Gm_bulge / (R+c)
+        _halo = v_halo_sq*log(C1*xx + C2*yy + C3*x*y + zz/qz_sq + R_halo_sq)
+
+        pot[ii] = _disk + _spher + _halo
+
+    return np.array(pot)
+
 #@cython.profile(True)
 @cython.boundscheck(False) # turn of bounds-checking for entire function
 @cython.cdivision(True)
@@ -103,23 +159,22 @@ def lm10_acceleration(np.ndarray[double, ndim=2] r, int n_particles,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def lm10_potential(np.ndarray[double, ndim=2] r, int n_particles,
-                   np.ndarray[double, ndim=1] pot,
-                   double q1, double qz, double phi, double v_halo,
-                   double q2, double R_halo):
+def lm10_jerk(np.ndarray[double, ndim=2] W, int n_particles,
+              np.ndarray[double, ndim=2] acc,
+              double q1, double qz, double phi, double v_halo,
+              double q2, double R_halo):
 
-    cdef double fac1, fac2, fac3, _tmp, _tmp_1, _tmp_2, R_pl_c
-    cdef double G, a, b_sq, c, m_disk, m_bulge
+    cdef double G, a, b_sq, c
     G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
 
     # Miyamoto-Nagai
     a = 6.5 # kpc
     b_sq = 0.26*0.26 # kpc^2
-    Gm_disk = G*1.E11 # M_sun
+    GMD = G*1.E11 # M_sun
 
     # Hernquist
     c = 0.7 # kpc
-    Gm_bulge = G*3.4E10 # M_sun
+    GMB = G*3.4E10 # M_sun
 
     # Halo
     cdef double q1_sq, q2_sq, qz_sq, R_halo_sq, v_halo_sq, sinphi, cosphi, C1, C2, C3
@@ -136,21 +191,42 @@ def lm10_potential(np.ndarray[double, ndim=2] r, int n_particles,
 
     cdef double x, y, z
     cdef double xx, yy, zz
+    cdef double H, D1, D2, r, r_sq
 
     for ii in range(n_particles):
-        x = r[ii,0]
-        y = r[ii,1]
-        z = r[ii,2]
+        x = W[ii,0]
+        y = W[ii,1]
+        z = W[ii,2]
+
+        dx = W[ii,6]
+        dy = W[ii,7]
+        dz = W[ii,8]
 
         xx = x*x
         yy = y*y
         zz = z*z
-        R = sqrt(xx + yy + zz)
 
-        _disk = -Gm_disk / np.sqrt(xx + yy + (a + sqrt(zz+b_sq))**2)
-        _spher = -Gm_bulge / (R+c)
-        _halo = v_halo_sq*log(C1*xx + C2*yy + C3*x*y + zz/qz_sq + R_halo_sq)
+        # some more quantities for speed
+        H = C1*xx + C2*yy + C3*x*y + zz/qz_sq + R_halo_sq
+        D1 = a + sqrt(zz + b_sq)
+        D2 = sqrt(xx + yy + D1*D1)
+        r_sq = xx + yy + zz
+        r = sqrt(r)
 
-        pot[ii] = _disk + _spher + _halo
+        XX = 2*C1/H*v_halo_sq - GMB/(r*(c+r)**2) + 2*GMB*xx/(r_sq*(c+r)**3) + GMB*xx/(r**3*(c+r)**2) + v_halo_sq/H**2*(-2*C1*x-C3*y)*(2*C1*x+C3*y) - GMD/D2**3 + 3*GMD/D2**5*xx
 
-    return np.array(pot)
+        YY = 2*C2/H*v_halo_sq - GMB/(r*(c+r)**2) + 2*GMB*yy/(r_sq*(c+r)**3) + GMB*yy/(r**3*(c+r)**2) + v_halo_sq/H**2*(-2*C2*y-C3*x)*(2*C2*y+C3*x) - GMD/D2**3 + 3*GMD/D2**5*yy
+
+        ZZ = -GMB/(r*(c+r)**2) + 2*GMB*zz/(r_sq*(c+r)**3) + GMB*zz/(r**3*(c+r)**2) + 2*v_halo_sq*(H*qz_sq) - 4*v_halo_sq*zz / (H**2*qz_sq*qz_sq) + GMD*zz*D1 / (D2**3 * (b_sq + zz)**1.5) - GMD*zz / (D2**3*(b_sq + zz)) - GMD*D1/(D2**3*sqrt(b_sq + zz)) + 3*GMD*zz/(D2**5*(b_sq + zz))*D1**2
+
+        XY = C3*v_halo_sq/H + 2*GMB*x*y/(r_sq*(r+c)**3) + GMB*x*y/(r**3*(r+c)**2) + v_halo_sq/H**2*(-2*C1*x-C3*y)*(2*C2*y+C3*x) + 3*GMD*x*y/D2**5
+
+        XZ = 2*GMB*x*z/(r_sq*(r+c)**3) + GMB*x*z/(r**3*(r+c)**2) + 2*v_halo_sq*z/(H**2*qz_sq)*(-2*C1*x-C3*y) + 3*GMD*x*z/(D2**5*sqrt(b_sq+zz))*D1
+
+        YZ = 2*GMB*y*z/(r_sq*(r+c)**3) + GMB*y*z/(r**3*(r+c)**2) + 2*v_halo_sq*z/(H**2*qz_sq)*(-2*C2*y-C3*x) + 3*GMD*y*z/(D2**5*sqrt(b_sq+zz))*D1
+
+        acc[ii,0] = -(XX*dx + XY*dy + XZ*dz)
+        acc[ii,1] = -(XY*dx + YY*dy + YZ*dz)
+        acc[ii,2] = -(XZ*dx + YZ*dy + ZZ*dz)
+
+    return acc
