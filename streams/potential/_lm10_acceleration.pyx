@@ -159,17 +159,17 @@ def lm10_acceleration(np.ndarray[double, ndim=2] r, int n_particles,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def lm10_jerk(np.ndarray[double, ndim=2] W, int n_particles,
-              np.ndarray[double, ndim=2] acc,
-              double q1, double qz, double phi, double v_halo,
-              double q2, double R_halo):
+def lm10_variational_acceleration(np.ndarray[double, ndim=2] W, int n_particles,
+                                  np.ndarray[double, ndim=2] acc,
+                                  double q1, double qz, double phi, double v_halo,
+                                  double q2, double R_halo):
 
-    cdef double G, a, b_sq, c
+    cdef double G, a, b_2, c
     G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
 
     # Miyamoto-Nagai
     a = 6.5 # kpc
-    b_sq = 0.26*0.26 # kpc^2
+    b_2 = 0.26*0.26 # kpc^2
     GMD = G*1.E11 # M_sun
 
     # Hernquist
@@ -177,21 +177,22 @@ def lm10_jerk(np.ndarray[double, ndim=2] W, int n_particles,
     GMB = G*3.4E10 # M_sun
 
     # Halo
-    cdef double q1_sq, q2_sq, qz_sq, R_halo_sq, v_halo_sq, sinphi, cosphi, C1, C2, C3
-    q1_sq = q1*q1
-    q2_sq = q2*q2
-    qz_sq = qz*qz
-    R_halo_sq = R_halo*R_halo # kpc
-    v_halo_sq = v_halo*v_halo
+    cdef double q1_2, q2_2, qz_2, rh_2, vh_2, sinphi, cosphi, C1, C2, C3
+    q1_2 = q1*q1
+    q2_2 = q2*q2
+    qz_2 = qz*qz
+    rh_2 = R_halo*R_halo # kpc
+    vh_2 = v_halo*v_halo
     sinphi = sin(phi)
     cosphi = cos(phi)
-    C1 = cosphi**2/q1_sq + sinphi**2/q2_sq
-    C2 = cosphi**2/q2_sq + sinphi**2/q1_sq
-    C3 = 2.*sinphi*cosphi*(1./q1_sq - 1./q2_sq)
+    C1 = cosphi**2/q1_2 + sinphi**2/q2_2
+    C2 = cosphi**2/q2_2 + sinphi**2/q1_2
+    C3 = 2.*sinphi*cosphi*(1./q1_2 - 1./q2_2)
 
     cdef double x, y, z
     cdef double xx, yy, zz
-    cdef double H, D1, D2, r, r_sq
+    cdef double dx, dy, dz
+    cdef double H, bz, abz, RD, r_2, r, rcr
 
     for ii in range(n_particles):
         x = W[ii,0]
@@ -206,27 +207,49 @@ def lm10_jerk(np.ndarray[double, ndim=2] W, int n_particles,
         yy = y*y
         zz = z*z
 
-        # some more quantities for speed
-        H = C1*xx + C2*yy + C3*x*y + zz/qz_sq + R_halo_sq
-        D1 = a + sqrt(zz + b_sq)
-        D2 = sqrt(xx + yy + D1*D1)
-        r_sq = xx + yy + zz
-        r = sqrt(r)
+        # some quantities for speed
+        H = C1*xx + C2*yy + C3*x*y + zz/qz_2 + rh_2
+        bz = sqrt(zz + b_2)
+        abz = a + bz
+        RD = xx + yy + abz*abz
+        r_2 = xx + yy + zz
+        r = sqrt(r_2)
+        rcr = r*(c+r)
 
-        XX = 2*C1/H*v_halo_sq - GMB/(r*(c+r)**2) + 2*GMB*xx/(r_sq*(c+r)**3) + GMB*xx/(r**3*(c+r)**2) + v_halo_sq/H**2*(-2*C1*x-C3*y)*(2*C1*x+C3*y) - GMD/D2**3 + 3*GMD/D2**5*xx
+        # -----------------------------------------
+        # acceleration terms for the regular orbit
 
-        YY = 2*C2/H*v_halo_sq - GMB/(r*(c+r)**2) + 2*GMB*yy/(r_sq*(c+r)**3) + GMB*yy/(r**3*(c+r)**2) + v_halo_sq/H**2*(-2*C2*y-C3*x)*(2*C2*y+C3*x) - GMD/D2**3 + 3*GMD/D2**5*yy
+        # Bulge
+        fB = GMB / (rcr*(r+c))
 
-        ZZ = -GMB/(r*(c+r)**2) + 2*GMB*zz/(r_sq*(c+r)**3) + GMB*zz/(r**3*(c+r)**2) + 2*v_halo_sq*(H*qz_sq) - 4*v_halo_sq*zz / (H**2*qz_sq*qz_sq) + GMD*zz*D1 / (D2**3 * (b_sq + zz)**1.5) - GMD*zz / (D2**3*(b_sq + zz)) - GMD*D1/(D2**3*sqrt(b_sq + zz)) + 3*GMD*zz/(D2**5*(b_sq + zz))*D1**2
+        # Disk
+        fD = GMD / RD**1.5
 
-        XY = C3*v_halo_sq/H + 2*GMB*x*y/(r_sq*(r+c)**3) + GMB*x*y/(r**3*(r+c)**2) + v_halo_sq/H**2*(-2*C1*x-C3*y)*(2*C2*y+C3*x) + 3*GMD*x*y/D2**5
+        # Halo
+        fH = vh_2 / H
 
-        XZ = 2*GMB*x*z/(r_sq*(r+c)**3) + GMB*x*z/(r**3*(r+c)**2) + 2*v_halo_sq*z/(H**2*qz_sq)*(-2*C1*x-C3*y) + 3*GMD*x*z/(D2**5*sqrt(b_sq+zz))*D1
+        # acc. is -dPhi/d{xyz}
+        acc[ii,0] = -(fB*x + fD*x + fH*(2.*C1*x + C3*y))
+        acc[ii,1] = -(fB*y + fD*y + fH*(2.*C2*y + C3*x))
+        acc[ii,2] = -(fB*z + fD*z*abz/bz + 2*fH*z/qz_2)
 
-        YZ = 2*GMB*y*z/(r_sq*(r+c)**3) + GMB*y*z/(r**3*(r+c)**2) + 2*v_halo_sq*z/(H**2*qz_sq)*(-2*C2*y-C3*x) + 3*GMD*y*z/(D2**5*sqrt(b_sq+zz))*D1
+        # -----------------------------------------
+        # acceleration terms for the deviation orbit
 
-        acc[ii,0] = -(XX*dx + XY*dy + XZ*dz)
-        acc[ii,1] = -(XY*dx + YY*dy + YZ*dz)
-        acc[ii,2] = -(XZ*dx + YZ*dy + ZZ*dz)
+        XX = 2*C1*fH - GMB*xx/(r*rcr**2) + fB - 2*fB*xx/rcr + fD - 3*fD*xx/RD + fH*(-2*C1*x - C3*y)*(2*C1*x + C3*y)/H
 
-    return acc
+        XY = C3*fH - GMB*x*y/(r*rcr**2) - 2*fB*x*y/rcr - 3*fD*x*y/RD + fH*(2*C1*x + C3*y)*(-2*C2*y - C3*x)/H
+
+        XZ = -GMB*x*z/(r*rcr**2) - 2*fB*x*z/rcr - 3*fD*x*z*(a + bz)/(RD*bz) - 2*fH*z*(2*C1*x + C3*y)/(H*qz_2)
+
+        YY = 2*C2*fH - GMB*yy/(r*rcr**2) + fB - 2*fB*yy/rcr + fD - 3*fD*yy/RD + fH*(-2*C2*y - C3*x)*(2*C2*y + C3*x)/H
+
+        YZ = -GMB*y*z/(r*rcr**2) - 2*fB*y*z/rcr - 3*fD*y*z*(a + bz)/(RD*bz) - 2*fH*z*(2*C2*y + C3*x)/(H*qz_2)
+
+        ZZ = -GMB*zz/(r*rcr**2) + fB - 2*fB*zz/rcr + 2*fH/qz_2 + fD*(a + bz)/bz + fD*zz/bz**2 - fD*zz*(a + bz)/bz**3 - 3*fD*zz*(a + bz)**2/(RD*bz**2) - 4*fH*zz/(H*qz_2**2)
+
+        acc[ii,3] = -(XX*dx + XY*dy + XZ*dz)
+        acc[ii,4] = -(XY*dx + YY*dy + YZ*dz)
+        acc[ii,5] = -(XZ*dx + YZ*dy + ZZ*dz)
+
+    return np.array(acc)
