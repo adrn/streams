@@ -79,7 +79,7 @@ def simulated_streams():
 
             data_filename = os.path.join(streamspath, "data", "observed_particles",
                                          "2.5e{}.hdf5".format(_m))
-            cfg_filename = os.path.join(streamspath, "config", "exp1_{}.yml".format(_m))
+            cfg_filename = os.path.join(streamspath, "config", "exp2.yml".format(_m))
             data = read_hdf5(data_filename)
             true_particles = data["true_particles"].to_frame(galactocentric)
             config = read_config(cfg_filename)
@@ -133,26 +133,28 @@ def potentials():
     potentials.append(LawMajewski2010(**base_params))
 
     pp = base_params.copy()
-    pp['q1'] = 1.5
+    pp['qz'] = 1.5
     potentials.append(LawMajewski2010(**pp))
-    axes[0,1].text(0.5, 1.05, r"$q_1=1.5$",
+    axes[0,1].text(0.5, 1.05, r"$q_z=1.5$",
                    horizontalalignment='center',
                    fontsize=20,
                    transform=axes[0,1].transAxes)
 
     pp = base_params.copy()
-    pp['qz'] = 1.5
+    pp['phi'] = (45*u.degree).to(u.radian).value
+    pp['q1'] = 1.5
     potentials.append(LawMajewski2010(**pp))
-    axes[0,2].text(0.5, 1.05, r"$q_z=1.5$",
+    axes[0,2].text(0.5, 1.05, r"$q_1=1.5$, $\phi=45^\circ$",
                    horizontalalignment='center',
                    fontsize=20,
                    transform=axes[0,2].transAxes)
 
     pp = base_params.copy()
-    pp['phi'] = 45*u.degree
-    pp['q1'] = 1.5
+    pp['q1'] = 1.38
+    pp['qz'] = 1.36
+    pp['phi'] = (97*u.degree).to(u.radian).value
     potentials.append(LawMajewski2010(**pp))
-    axes[0,3].text(0.5, 1.05, r"$q_1=1.5$, $\phi=45^\circ$",
+    axes[0,3].text(0.5, 1.05, r"$q_1=1.38$, $q_z=1.36$, $\phi=97^\circ$",
                    horizontalalignment='center',
                    fontsize=20,
                    transform=axes[0,3].transAxes)
@@ -165,13 +167,15 @@ def potentials():
                    for xx in range(3)])
     r[0] = X1.ravel()
     r[1] = X2.ravel()
+    ngrid = len(r.T)
+    pot = np.zeros(ngrid)
 
     levels = None
     for ii,potential in enumerate(potentials):
         axes[0,ii].set_xticks([-50,0,50])
         axes[0,ii].set_yticks([-50,0,50])
 
-        Z = potential._value_at(r.T).reshape(X1.shape)
+        Z = potential._value_at(r.T, ngrid, pot).reshape(X1.shape)
         if levels is None:
             cs = axes[0,ii].contourf(X1, X2, Z, cmap=cm.Blues_r)
             levels = cs.levels
@@ -193,7 +197,7 @@ def potentials():
         axes[1,ii].set_xticks([-50,0,50])
         axes[1,ii].set_yticks([-50,0,50])
 
-        Z = potential._value_at(r.T).reshape(X1.shape)
+        Z = potential._value_at(r.T, ngrid, pot).reshape(X1.shape)
         if levels is None:
             cs = axes[1,ii].contourf(X1, X2, Z, cmap=cm.Blues_r)
             levels = cs.levels
@@ -535,6 +539,7 @@ def exp1_posterior():
         bounds.append((0.95*truth, 1.05*truth))
         flatchain[:,ii] = _unit_transform[p.name](_flatchain[:,ii])
 
+    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(1.1,2.5)]
     fig = triangle.corner(flatchain, plot_datapoints=False,
                           truths=truths, extents=bounds, labels=labels)
     fig.savefig(os.path.join(plot_path, "exp1_posterior.png"))
@@ -556,7 +561,7 @@ def exp_posteriors(exp_num):
     # Potential
     this_flatchain = np.zeros((_flatchain.shape[0], len(d["potential"])))
     truths = []
-    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200)]
+    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(1.1,2.5)]
     labels = []
     for ii,pname in enumerate(d["potential"].keys()):
         this_flatchain[:,ii] = _unit_transform[pname](np.squeeze(d["potential"][pname]))
@@ -598,9 +603,15 @@ def exp_posteriors(exp_num):
 
         labels.append(_label_map[pname])
 
+    q16,q50,q84 = np.array(np.percentile(this_flatchain, [16, 50, 84], axis=0))
+    q_m, q_p = q50-q16, q84-q50
+    for ii,pname in enumerate(d["particles"].keys()):
+        print("{} \n\t truth={:.2f}\n\t measured={:.2f}+{:.2f}-{:.2f}"\
+                    .format(pname,truths[ii],q50[ii],q_p[ii],q_m[ii]))
+
     # HACK
-    #bounds = [(32.5,41), (1.75,2.4), (-1.45,-1.0), (-85,-40), bounds[-1]]
-    bounds = None
+    bounds = [(31.5,38.5), (-0.1,2.0), (-1.8,-0.5), (-45,-5)]
+    #bounds = None
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, labels=labels, extents=bounds)
     fig.savefig(os.path.join(plot_path, "exp{}_particle.{}".format(exp_num, ext)))
@@ -630,7 +641,8 @@ def exp_posteriors(exp_num):
         labels.append(_label_map[pname])
 
     # HACK
-    bounds = [(28,33), (-2.1,-1.6), (1.3,1.8), (125,185), bounds[-1]]
+    #bounds = [(28,33), (-2.1,-1.6), (1.3,1.8), (125,185), bounds[-1]]
+    bounds = [(26,32), (-2.6,-1.5), (1.3,2.0), (120,175), bounds[-1]]
     if len(d["satellite"]) > len(bounds):
         bounds = [(0,10), (-20,5)] + bounds
 
