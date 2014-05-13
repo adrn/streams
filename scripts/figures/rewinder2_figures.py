@@ -52,7 +52,7 @@ snapfile = 'SNAP113'
 # sgr_path = 'sgr_plummer/2.5e{}'
 # snapfile = 'SNAP'
 
-plot_path = os.path.join(streamspath, "plots/paper2/")
+plot_path = os.path.join(streamspath, "plots/rewinder2/")
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
 
@@ -542,7 +542,7 @@ def exp1_posterior():
     bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(1.1,2.5)]
     fig = triangle.corner(flatchain, plot_datapoints=False,
                           truths=truths, extents=bounds, labels=labels)
-    fig.savefig(os.path.join(plot_path, "exp1_posterior.png"))
+    fig.savefig(os.path.join(plot_path, "exp1_posterior.{}".format(ext)))
 
 def exp_posteriors(exp_num):
     cfg_filename = os.path.join(streamspath, "config", "exp{}.yml".format(exp_num))
