@@ -1,0 +1,16 @@
+#!/bin/bash
+
+python scripts/figures/rewinder2_figures.py -f simulated_streams
+python scripts/figures/rewinder2_figures.py -f potentials
+python scripts/figures/rewinder2_figures.py -f Lpts
+python scripts/figures/rewinder2_figures.py -f trace_plots
+python scripts/figures/rewinder2_figures.py -f exp1_posterior
+python scripts/figures/rewinder2_figures.py -f exp2_posteriors
+python scripts/figures/rewinder2_figures.py -f exp3_posteriors
+
+# for f in plots/rewinder2/*.pdf;
+# do
+#     echo "Processing $f file..";
+#     export TOF="${f%.*}"
+#     pdftoeps 1 "$TOF"
+# done
