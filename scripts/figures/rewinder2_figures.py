@@ -56,7 +56,7 @@ plot_path = os.path.join(streamspath, "plots/rewinder2/")
 if not os.path.exists(plot_path):
     os.mkdir(plot_path)
 
-ext = 'png'
+ext = 'pdf'
 grid_figsize = (14,7.5)
 
 def simulated_streams():
@@ -216,6 +216,7 @@ def potentials():
     fig.savefig(filename)
 
 def Lpts():
+    np.random.seed(42)
 
     potential = LawMajewski2010()
     filename = os.path.join(plot_path, "Lpts_r.{}".format(ext))
@@ -255,12 +256,18 @@ def Lpts():
             ix1,ix2 = jj-bnd, jj+bnd
             if ix1 < 0: ix1 = 0
             if ix2 > max(sgr.t1,sgr.t2): ix2 = -1
+
+            axes[0,k].set_rasterization_zorder(1)
             axes[0,k].plot(x1[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
                            x2[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
-                           linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+                           linestyle='-', alpha=0.1, marker=None, color='#555555',
+                           zorder=-1)
+
+            axes[1,k].set_rasterization_zorder(1)
             axes[1,k].plot(x1[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
                            x3[jj-bnd:jj+bnd,ii]/r_tide[jj-bnd:jj+bnd,0],
-                           linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+                           linestyle='-', alpha=0.1, marker=None, color='#555555',
+                           zorder=-1)
 
         circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
                       edgecolor='k', linestyle='solid')
@@ -290,12 +297,18 @@ def Lpts():
             ix1,ix2 = jj-bnd, jj+bnd
             if ix1 < 0: ix1 = 0
             if ix2 > max(sgr.t1,sgr.t2): ix2 = -1
+
+            axes2[0,k].set_rasterization_zorder(1)
             axes2[0,k].plot(vx1[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
                             vx2[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
-                            linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+                            linestyle='-', alpha=0.1, marker=None, color='#555555',
+                            zorder=-1)
+
+            axes2[1,k].set_rasterization_zorder(1)
             axes2[1,k].plot(vx1[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
                             vx3[jj-bnd:jj+bnd,ii]/v_disp[jj-bnd:jj+bnd,0],
-                            linestyle='-', alpha=0.1, marker=None, color='#555555', zorder=-1)
+                            linestyle='-', alpha=0.1, marker=None, color='#555555',
+                            zorder=-1)
 
         circ = Circle((0,0), radius=1., fill=False, alpha=0.75,
                       edgecolor='k', linestyle='solid')
@@ -469,7 +482,7 @@ def trace_plots():
             for ii in range(config['walkers']):
                 axes.flat[k].plot(thischain[ii,5000:],
                                   alpha=0.1, marker=None,
-                                  drawstyle='steps', color='k')
+                                  drawstyle='steps', color='k', zorder=0)
             #axes.flat[k].set_ylabel(labels[k], rotation='horizontal')
             axes[k].text(-0.02, 0.5, labels[k],
                          horizontalalignment='right',
@@ -498,6 +511,7 @@ def trace_plots():
             axes.flat[k].yaxis.tick_right()
             #axes.flat[k].yaxis.set_label_position("right")
 
+            axes.flat[k].set_rasterization_zorder(1)
             k += 1
 
     axes.flat[-1].set_xlabel("Step number")
