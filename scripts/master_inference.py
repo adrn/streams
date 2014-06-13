@@ -23,7 +23,7 @@ from streams.io import read_hdf5, read_config
 from streams.inference import StreamModel
 from streams.util import streamspath
 
-def master_inference(path):
+def master_inference(path, all=False, outfile="combined_inference.hdf5"):
     """ Create a master inference hdf5 file from output every 1000 steps """
 
     # first see if relative
@@ -42,16 +42,22 @@ def master_inference(path):
 
             accfrac = f["acceptance_fraction"].value
 
-    #taur = [acor.acor(chain[:,:,i])[0] for i in range(chain.shape[2])]
-    tau,mm,xx = acor.acor(np.mean(chain[accfrac > 0.02],axis=0).T)
-    acor_time = int(2*np.max(tau))
-    print("Autocorrelation times: ", tau)
-    print("Max autocorrelation time: ", acor_time)
+    if not all:
+        #taur = [acor.acor(chain[:,:,i])[0] for i in range(chain.shape[2])]
+        tau,mm,xx = acor.acor(np.mean(chain[accfrac > 0.02],axis=0).T)
+        acor_time = int(2*np.max(tau))
+        print("Autocorrelation times: ", tau)
+        print("Max autocorrelation time: ", acor_time)
 
-    fn = os.path.join(cache_path, "combined_inference.hdf5")
+        _chain = chain[:,::acor_time].copy()
+
+    else:
+        _chain = chain.copy()
+
+    fn = os.path.join(cache_path, outfile)
 
     with h5py.File(fn, "w") as f:
-        f["chain"] = chain[:,::acor_time].copy()
+        f["chain"] = _chain
         f["acor"] = tau
 
 if __name__ == '__main__':
@@ -61,6 +67,10 @@ if __name__ == '__main__':
     parser = ArgumentParser(description="")
     parser.add_argument("--path", dest="path", required=True,
                         help="Path to the inference files relative to $STREAMSPATH.")
+    parser.add_argument("--all", dest="all", action="store_true",
+                        help="Return all steps instead of every max(t_acor).")
+    parser.add_argument("--outfile", dest="outfile",
+                        help="Name of output file.")
 
     args = parser.parse_args()
-    master_inference(args.path)
+    master_inference(args.path, args.all, args.outfile)
