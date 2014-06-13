@@ -23,11 +23,11 @@ from streams.io import read_hdf5, read_config
 from streams.inference import StreamModel
 from streams.util import streamspath
 
-def master_inference(filename):
+def master_inference(path):
     """ Create a master inference hdf5 file from output every 1000 steps """
 
-    cache_path = os.path.join(streamspath, "plots", "infer_potential",
-                              filename, "cache")
+    # first see if relative
+    cache_path = os.path.join(streamspath, "plots", "infer_potential", path)
     print(cache_path)
     for filename in sorted(glob.glob(os.path.join(cache_path,"inference_*.hdf5"))):
         print(filename)
@@ -54,9 +54,9 @@ if __name__ == '__main__':
 
     # Define parser object
     parser = ArgumentParser(description="")
-    parser.add_argument("-f", "--file", dest="filename", required=True,
-                        help="Path to the configuration file to run with.")
+    parser.add_argument("--path", dest="path", required=True,
+                        help="Path to the inference files relative to "
+                             "STREAMSPATH/plots/infer_potential.")
 
     args = parser.parse_args()
-
-    master_inference(args.filename)
+    master_inference(args.path)
