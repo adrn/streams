@@ -27,7 +27,7 @@ def master_inference(path):
     """ Create a master inference hdf5 file from output every 1000 steps """
 
     # first see if relative
-    cache_path = os.path.join(streamspath, "plots", "infer_potential", path)
+    cache_path = os.path.join(streamspath, path)
     print(cache_path)
     for filename in sorted(glob.glob(os.path.join(cache_path,"inference_*.hdf5"))):
         print(filename)
@@ -55,8 +55,7 @@ if __name__ == '__main__':
     # Define parser object
     parser = ArgumentParser(description="")
     parser.add_argument("--path", dest="path", required=True,
-                        help="Path to the inference files relative to "
-                             "STREAMSPATH/plots/infer_potential.")
+                        help="Path to the inference files relative to $STREAMSPATH.")
 
     args = parser.parse_args()
     master_inference(args.path)
