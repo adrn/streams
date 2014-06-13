@@ -29,6 +29,9 @@ def master_inference(path):
     # first see if relative
     cache_path = os.path.join(streamspath, path)
     print(cache_path)
+    if not os.path.exists(cache_path):
+        raise IOError("Path doesn't exist!")
+
     for filename in sorted(glob.glob(os.path.join(cache_path,"inference_*.hdf5"))):
         print(filename)
         with h5py.File(filename, "r") as f:
