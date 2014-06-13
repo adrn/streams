@@ -42,14 +42,15 @@ def master_inference(path, all=False, outfile="combined_inference.hdf5"):
 
             accfrac = f["acceptance_fraction"].value
 
+    ix = accfrac > 0.02
+    print(sum(~ix), "<2% acceptance")
+    #tau,mm,xx = acor.acor(np.mean(chain[ix],axis=0).T)
+    tau = [acor.acor(np.mean(chain[ix],axis=0).T[i])[0] for i in range(chain.shape[-1])]
+    acor_time = int(2*np.max(tau))
+    print("Autocorrelation times: ", tau)
+    print("Max autocorrelation time: ", acor_time)
+
     if not all:
-        ix = accfrac > 0.02
-        print(sum(~ix), "<2% acceptance")
-        #tau,mm,xx = acor.acor(np.mean(chain[ix],axis=0).T)
-        tau = [acor.acor(np.mean(chain[ix],axis=0).T[i])[0] for i in range(chain.shape[-1])]
-        acor_time = int(2*np.max(tau))
-        print("Autocorrelation times: ", tau)
-        print("Max autocorrelation time: ", acor_time)
         _chain = chain[:,::acor_time].copy()
 
     else:
