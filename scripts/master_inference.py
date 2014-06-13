@@ -52,6 +52,7 @@ def master_inference(path):
 
     with h5py.File(fn, "w") as f:
         f["chain"] = chain[:,::acor_time].copy()
+        f["acor"] = tau
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
