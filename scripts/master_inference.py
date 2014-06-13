@@ -29,6 +29,7 @@ def master_inference(filename):
     cache_path = os.path.join(streamspath, "plots", "infer_potential",
                               filename, "cache")
 
+    print(cache_path)
     for filename in sorted(glob.glob(os.path.join(cache_path,"inference_*.hdf5"))):
         print(filename)
         with h5py.File(filename, "r") as f:
