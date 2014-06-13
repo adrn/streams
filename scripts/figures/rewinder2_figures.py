@@ -459,12 +459,10 @@ def trace_plots():
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
 
-    hdf5_filename = os.path.join(streamspath, "plots", "hotfoot", "exper1_8", "inference.hdf5")
+    hdf5_filename = os.path.join(streamspath, "plots", "yeti", "exper1_8", "cache", "combined_inference.hdf5")
+    print(hdf5_filename)
     with h5py.File(hdf5_filename, "r") as f:
         chain = f["chain"].value
-        flatchain = f["flatchain"].value
-        acceptance_fraction = f["acceptance_fraction"].value
-        p0 = f["p0"].value
         acor = f["acor"].value
 
     labels = ["$q_1$", "$q_z$", r"$\phi$", "$v_h$", r"$\alpha$"]
@@ -527,12 +525,8 @@ def exp1_posterior():
     hdf5_filename = os.path.join(streamspath, "plots", "hotfoot", "exper1_8", "inference.hdf5")
     with h5py.File(hdf5_filename, "r") as f:
         chain = f["chain"].value
-        #flatchain = f["flatchain"].value
-        acceptance_fraction = f["acceptance_fraction"].value
-        p0 = f["p0"].value
-        acor = f["acor"].value
 
-    _flatchain = np.vstack(chain[:,2500::int(np.median(acor))])
+    _flatchain = np.vstack(chain)
     flatchain = np.zeros_like(_flatchain)
 
     params = OrderedDict(model.parameters['potential'].items() + \

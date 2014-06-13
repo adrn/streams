@@ -42,7 +42,8 @@ def master_inference(path):
     #taur = [acor.acor(chain[:,:,i])[0] for i in range(chain.shape[2])]
     tau,mm,xx = acor.acor(np.mean(chain[accfrac > 0.02],axis=0).T)
     acor_time = int(2*np.max(tau))
-    print("Autocorrelation time: ", acor_time)
+    print("Autocorrelation times: ", tau)
+    print("Max autocorrelation time: ", acor_time)
 
     fn = os.path.join(cache_path, "combined_inference.hdf5")
 
