@@ -459,18 +459,20 @@ def trace_plots():
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
 
-    hdf5_filename = os.path.join(streamspath, "plots", "yeti", "exper1_8", "cache", "combined_inference.hdf5")
+    hdf5_filename = os.path.join(streamspath, "plots", "yeti", "exper1_8", "cache", "combined_inference_all.hdf5")
+    if not os.path.exists(hdf5_filename): raise IOError("Path doesn't exist!")
+
     print(hdf5_filename)
     with h5py.File(hdf5_filename, "r") as f:
         chain = f["chain"].value
         acor = f["acor"].value
 
-    labels = ["$q_1$", "$q_z$", r"$\phi$", "$v_h$", r"$\alpha$"]
-    bounds = [(1.3,1.5),(1.25,1.45),(85,115),(118,132),(0.5,2.5)]
-    ticks = [(1.35,1.4,1.45),(1.3,1.35,1.4),(90,100,110),(120,125,130),(1.,1.5,2.)]
+    labels = ["$q_1$", "$q_z$", r"$\phi$", "$v_h$", "$r_h$", r"$\alpha$"]
+    bounds = [(1.2,1.6),(1.2,1.6),(85,115),(111,131),(8,20),(0.5,2.5)]
+    ticks = [(1.35,1.4,1.45),(1.3,1.35,1.4),(90,100,110),(120,125,130),(10,15,20),(1.,1.5,2.)]
 
     # plot individual walkers
-    fig,axes = plt.subplots(5,1,figsize=(8.5,11),sharex=True)
+    fig,axes = plt.subplots(6,1,figsize=(8.5,11),sharex=True)
 
     k = 0
     for gname,group in model.parameters.items():
@@ -478,9 +480,10 @@ def trace_plots():
             thischain = _unit_transform[pname](chain[...,k])
 
             for ii in range(config['walkers']):
-                axes.flat[k].plot(thischain[ii,5000:],
+                axes.flat[k].plot(thischain[ii,:],
                                   alpha=0.1, marker=None,
                                   drawstyle='steps', color='k', zorder=0)
+
             #axes.flat[k].set_ylabel(labels[k], rotation='horizontal')
             axes[k].text(-0.02, 0.5, labels[k],
                          horizontalalignment='right',
@@ -499,12 +502,19 @@ def trace_plots():
                          fontsize=18,
                          transform=axes[k].transAxes)
 
+            elif pname == "R_halo":
+                axes[k].text(1.07, 0.475, "kpc",
+                         horizontalalignment='left',
+                         fontsize=18,
+                         transform=axes[k].transAxes)
+
             axes[k].text(0.25, 0.1, r"$t_{\rm acor}$=" + "{}".format(int(acor[k])),
                          horizontalalignment='right',
                          fontsize=18,
                          transform=axes[k].transAxes)
 
             axes.flat[k].set_yticks(ticks[k])
+            axes.flat[k].set_xlim(0,10000)
             axes.flat[k].set_ylim(bounds[k])
             axes.flat[k].yaxis.tick_right()
             #axes.flat[k].yaxis.set_label_position("right")
@@ -522,7 +532,11 @@ def exp1_posterior():
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
 
-    hdf5_filename = os.path.join(streamspath, "plots", "hotfoot", "exper1_8", "inference.hdf5")
+    hdf5_filename = os.path.join(streamspath, "plots", "yeti", "exper1_8", "cache",
+                                 "combined_inference.hdf5")
+    print(hdf5_filename)
+    if not os.path.exists(hdf5_filename): raise IOError("Path doesn't exist!")
+
     with h5py.File(hdf5_filename, "r") as f:
         chain = f["chain"].value
 
@@ -531,7 +545,7 @@ def exp1_posterior():
 
     params = OrderedDict(model.parameters['potential'].items() + \
                          model.parameters['satellite'].items())
-    labels = ["$q_1$", "$q_z$", r"$\phi$ [deg]", "$v_h$ [km/s]", r"$\alpha$"]
+    labels = ["$q_1$", "$q_z$", r"$\phi$ [deg]", "$v_h$ [km/s]", "$r_h$ [kpc]", r"$\alpha$"]
 
     truths = []
     bounds = []
@@ -547,7 +561,7 @@ def exp1_posterior():
         bounds.append((0.95*truth, 1.05*truth))
         flatchain[:,ii] = _unit_transform[p.name](_flatchain[:,ii])
 
-    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(1.1,2.5)]
+    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(8,20),(1.1,2.5)]
     fig = triangle.corner(flatchain, plot_datapoints=False,
                           truths=truths, extents=bounds, labels=labels)
     fig.savefig(os.path.join(plot_path, "exp1_posterior.{}".format(ext)))
