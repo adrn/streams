@@ -29,8 +29,7 @@ def master_inference(path, all=False, outfile="combined_inference.hdf5"):
     # first see if relative
     cache_path = os.path.join(streamspath, path)
     print(cache_path)
-    if not os.path.exists(cache_path):
-        raise IOError("Path doesn't exist!")
+    if not os.path.exists(cache_path): raise IOError("Path doesn't exist!")
 
     for filename in sorted(glob.glob(os.path.join(cache_path,"inference_*.hdf5"))):
         print(filename)
