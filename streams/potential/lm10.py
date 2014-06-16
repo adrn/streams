@@ -60,8 +60,8 @@ class LawMajewski2010(CompositePotential):
                                                   (170.*u.km/u.s).decompose(usys).value))
         params['R_halo'] = ModelParameter(name='R_halo',
                             truth=(12.*u.kpc).decompose(usys).value,
-                            prior=LogUniformPrior((8.*u.kpc).decompose(usys).value,
-                                                  (20*u.kpc).decompose(usys).value))
+                            prior=LogUniformPrior((5.*u.kpc).decompose(usys).value,
+                                                  (40*u.kpc).decompose(usys).value))
 
         self._parameter_dict = dict()
         self.parameters = dict(params)
