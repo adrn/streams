@@ -5,6 +5,8 @@ import numpy as np
 cimport numpy as np
 np.import_array()
 
+from scipy.misc import logsumexp
+
 import cython
 cimport cython
 
@@ -15,7 +17,7 @@ cdef extern from "math.h":
     double sin(double x)
     double cos(double x)
     double log(double x)
-    double abs(double x)
+    double fabs(double x)
     double exp(double x)
 
 @cython.boundscheck(False)
@@ -93,30 +95,56 @@ cdef inline double lm10_tidal_radius(double m, double R,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef inline void leapfrog_step(double[:,:] r, double[:,:] v, double[:,:] acc,
+cdef inline void leapfrog_init(double[:,:] r, double[:,:] v, double[:,:] v_12,
+                        double[:,:] acc,
                         int nparticles, double dt,
                         double GM_bulge, double c,
                         double GM_disk, double a, double b,
                         double C1, double C2, double C3, double qz,
                         double v_halo, double R_halo):
-    """ Need to call
-            lm10_acceleration(...)
-        before looping over leapfrog_step to initialize!
-    """
-    cdef int i,j
-
-    for i in range(nparticles):
-        for j in range(3):
-            v[i,j] = v[i,j] + 0.5*dt*acc[i,j]; # incr. vel. by half-step
-            r[i,j] = r[i,j] + dt*v[i,j]; # incr. pos. by full-step
 
     lm10_acceleration(r, acc, nparticles,
                       GM_bulge, c,
                       GM_disk, a, b,
                       C1, C2, C3, qz, v_halo, R_halo);
+
     for i in range(nparticles):
         for j in range(3):
-            v[i,j] = v[i,j] + 0.5*dt*acc[i,j]; # incr. vel. by half-step
+            v_12[i,j] = v[i,j] + 0.5*dt*acc[i,j]
+
+@cython.boundscheck(False)
+@cython.cdivision(True)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+cdef inline void leapfrog_step(double[:,:] r, double[:,:] v, double[:,:] v_12,
+                        double[:,:] acc,
+                        int nparticles, double dt,
+                        double GM_bulge, double c,
+                        double GM_disk, double a, double b,
+                        double C1, double C2, double C3, double qz,
+                        double v_halo, double R_halo):
+    """ Velocities need to be offset from positions by 1/2 step! To
+        'prime' the integration, call
+
+            leapfrog_init(r, v, v_12, ...)
+
+        before looping over leapfrog_step!
+    """
+    cdef int i,j
+
+    for i in range(nparticles):
+        for j in range(3):
+            r[i,j] = r[i,j] + dt*v_12[i,j]; # incr. pos. by full-step
+
+    lm10_acceleration(r, acc, nparticles,
+                      GM_bulge, c,
+                      GM_disk, a, b,
+                      C1, C2, C3, qz, v_halo, R_halo);
+
+    for i in range(nparticles):
+        for j in range(3):
+            v[i,j] = v[i,j] + dt*acc[i,j]; # incr. synced vel. by full-step
+            v_12[i,j] = v_12[i,j] + dt*acc[i,j]; # incr. leapfrog vel. by full-step
 
 @cython.boundscheck(False)
 @cython.cdivision(True)
@@ -161,7 +189,7 @@ cdef inline double basis(double[:,:] x, double[:,:] v,
 @cython.nonecheck(False)
 cdef inline void ln_likelihood_helper(double sat_mass,
                                double[:,:] x, double[:,:] v, int nparticles,
-                               double alpha, double[:] betas, double[:] jac,
+                               double alpha, double[:] betas,
                                double GM_bulge, double c,
                                double GM_disk, double a, double b,
                                double C1, double C2, double C3, double qz,
@@ -173,10 +201,7 @@ cdef inline void ln_likelihood_helper(double sat_mass,
     cdef double beta
     cdef double sigma_r, sigma_v
 
-    # marginalizing over tub, use the full orbits
-    #p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6)).reshape(ntimes,nparticles,6)
-    #jac = xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
-
+    cdef double jac, d, BB, cosb, Rsun = 8.
     cdef double sat_R = sqrt(x[0,0]**2 + x[0,1]**2 + x[0,2]**2)
     cdef double sat_V = sqrt(v[0,0]**2 + v[0,1]**2 + v[0,2]**2)
     cdef double r_tide = lm10_tidal_radius(sat_mass, sat_R,
@@ -188,12 +213,35 @@ cdef inline void ln_likelihood_helper(double sat_mass,
     # compute instantaneous orbital plane coordinates
     basis(x, v, x1_hat, x2_hat, x3_hat)
 
+    # x = X[ii,0] + Rsun
+    # y = X[ii,1]
+    # z = X[ii,2]
+
+    # # transform from cartesian to spherical
+    # b = 1.5707963267948966 - acos(z/d)
+
     for i in range(nparticles):
         beta = betas[i]
+
         # translate to satellite position
         for j in range(3):
             dx[j] = x[i+1,j] - x[0,j]
             dv[j] = v[i+1,j] - v[0,j]
+
+        # hijacking these vars to use for jacobian calc.
+        #   this is basically the transformation from GC cartesian to
+        #   heliocentric spherical, but just the parts I need for the
+        #   determinant of the jacobian
+        x1 = x[i+1,0] + Rsun
+        x2 = x[i+1,1]
+        x3 = x[i+1,2]
+        d = sqrt(x1**2 + x2**2 + x3**2)
+        BB = 1.5707963267948966 - acos(x3/d)
+        cosb = cos(BB)
+        # print(log(fabs(d**4*cosb)))
+        # continue
+
+        jac = log(fabs(d**4*cosb))
 
         # project into new frame (dot product)
         x1 = dx[0]*x1_hat[0] + dx[1]*x1_hat[1] + dx[2]*x1_hat[2]
@@ -216,7 +264,7 @@ cdef inline void ln_likelihood_helper(double sat_mass,
                        (2*log(sigma_v) + vx2**2/sigma_v**2) + \
                        (2*log(sigma_v) + vx3**2/sigma_v**2))
 
-        ln_likelihoods[i] = r_term + v_term + jac[i]
+        ln_likelihoods[i] = r_term + v_term + jac
 
 def back_integration_likelihood(double t1, double t2, double dt,
                                 object potential_params,
@@ -228,13 +276,13 @@ def back_integration_likelihood(double t1, double t2, double dt,
 
     cdef int i, nsteps, nparticles
     nparticles = len(p_gc)
-    nsteps = int(abs((t1-t2)/dt)) # 6000
+    nsteps = int(fabs((t1-t2)/dt)) # 6000
 
     cdef double [:,:] ln_likelihoods = np.empty((nsteps, nparticles)).astype(np.double)
     cdef double [:] dx = np.zeros(3).astype(np.double)
     cdef double [:] dv = np.zeros(3).astype(np.double)
+    cdef double [:,:] v_12 = np.zeros((nparticles+1,3)).astype(np.double)
 
-    cdef double [:] jac = np.zeros(nparticles).astype(np.double)
     cdef double [:] x1_hat = np.empty(3).astype(np.double)
     cdef double [:] x2_hat = np.empty(3).astype(np.double)
     cdef double [:] x3_hat = np.empty(3).astype(np.double)
@@ -272,16 +320,16 @@ def back_integration_likelihood(double t1, double t2, double dt,
     C3 = 2.*sinphi*cosphi*(1./(q1*q1) - 1./(q2*q2))
 
     # prime the accelerations
-    lm10_acceleration(x, acc, nparticles+1,
-                      GM_bulge, c,
-                      GM_disk, a, b,
-                      C1, C2, C3, qz, v_halo, R_halo)
+    leapfrog_init(x, v, v_12, acc, nparticles+1, dt,
+                  GM_bulge, c,
+                  GM_disk, a, b,
+                  C1, C2, C3, qz, v_halo, R_halo)
 
     #all_x,all_v = np.empty((2,nsteps,nparticles+1,ndim))
     #all_x[0] = x
     #all_v[0] = v
     ln_likelihood_helper(m0, x, v, nparticles,
-                         alpha, betas, jac,
+                         alpha, betas,
                          GM_bulge, c,
                          GM_disk, a, b,
                          C1, C2, C3, qz, v_halo, R_halo,
@@ -289,7 +337,7 @@ def back_integration_likelihood(double t1, double t2, double dt,
                          ln_likelihoods[0], dx, dv)
 
     for i in range(1,nsteps):
-        leapfrog_step(x, v, acc, nparticles, dt,
+        leapfrog_step(x, v, v_12, acc, nparticles+1, dt,
                       GM_bulge, c,
                       GM_disk, a, b,
                       C1, C2, C3, qz, v_halo, R_halo)
@@ -303,9 +351,11 @@ def back_integration_likelihood(double t1, double t2, double dt,
         #    return -np.inf
 
         ln_likelihood_helper(m0, x, v, nparticles,
-                             alpha, betas, jac,
+                             alpha, betas,
                              GM_bulge, c,
                              GM_disk, a, b,
                              C1, C2, C3, qz, v_halo, R_halo,
                              x1_hat, x2_hat, x3_hat,
                              ln_likelihoods[i], dx, dv)
+
+    return logsumexp(ln_likelihoods, axis=0)
