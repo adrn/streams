@@ -20,7 +20,7 @@ from scipy.stats import truncnorm
 import h5py
 
 # Project
-from .back_integrate import back_integration_likelihood
+from .new_likelihood import back_integration_likelihood
 from ..coordinates.frame import heliocentric
 from ..coordinates import _hel_to_gc, _gc_to_hel
 from .parameter import ModelParameter
@@ -413,10 +413,10 @@ class StreamModel(object):
 
         # particle tail assignment
         try:
-            beta = param_dict['particles']['beta']
+            betas = param_dict['particles']['beta']
         except KeyError:
-            beta = self.particles.beta.truth
-            if np.any(np.isnan(beta)):
+            betas = self.particles.beta.truth
+            if np.any(np.isnan(betas)):
                 print("True tail assignment was NaN!")
                 sys.exit(1)
 
@@ -524,13 +524,9 @@ class StreamModel(object):
                 return -np.inf
         s_gc = _hel_to_gc(s_hel)
 
-        # TODO: don't create new potential each time, just modify _parameter_dict?
-        potential = self._potential_class(**pparams)
         t1, t2, dt = args[:3]
-        ln_like = back_integration_likelihood(t1, t2, dt,
-                                              potential, p_gc, s_gc,
-                                              logmass, logmdot,
-                                              beta, alpha, tub)
+        ln_like = back_integration_likelihood(t1, t2, dt, pparams, s_gc, p_gc,
+                                              logmass, logmdot, alpha, betas)
 
         return np.sum(ln_like + data_like) + np.squeeze(sat_like)
 
