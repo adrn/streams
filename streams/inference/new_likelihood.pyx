@@ -81,7 +81,7 @@ cdef inline double lm10_tidal_radius(double m, double R,
 
     # Radius of Sgr center relative to galactic center
     cdef double GM_halo, m_enc, dlnM_dlnR, f
-    cdef double G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
+    cdef double G = 4.499753324353494927e-12 # kpc^3 / Myr^2 / M_sun
 
     GM_halo = (2*R*R*R*v_halo*v_halo) / (R*R + R_halo*R_halo)
     m_enc = (GM_disk + GM_bulge + GM_halo) / G
@@ -210,15 +210,11 @@ cdef inline void ln_likelihood_helper(double sat_mass,
                                            C1, C2, C3, qz, v_halo, R_halo)
     cdef double v_disp = sat_V * r_tide / sat_R
 
+    sigma_r = 0.5*r_tide
+    sigma_v = v_disp
+
     # compute instantaneous orbital plane coordinates
     basis(x, v, x1_hat, x2_hat, x3_hat)
-
-    # x = X[ii,0] + Rsun
-    # y = X[ii,1]
-    # z = X[ii,2]
-
-    # # transform from cartesian to spherical
-    # b = 1.5707963267948966 - acos(z/d)
 
     for i in range(nparticles):
         beta = betas[i]
@@ -238,9 +234,6 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         d = sqrt(x1**2 + x2**2 + x3**2)
         BB = 1.5707963267948966 - acos(x3/d)
         cosb = cos(BB)
-        # print(log(fabs(d**4*cosb)))
-        # continue
-
         jac = log(fabs(d**4*cosb))
 
         # project into new frame (dot product)
@@ -251,9 +244,6 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         vx1 = dv[0]*x1_hat[0] + dv[1]*x1_hat[1] + dv[2]*x1_hat[2]
         vx2 = dv[0]*x2_hat[0] + dv[1]*x2_hat[1] + dv[2]*x2_hat[2]
         vx3 = dv[0]*x3_hat[0] + dv[1]*x3_hat[1] + dv[2]*x3_hat[2]
-
-        sigma_r = 0.5*r_tide
-        sigma_v = v_disp
 
         # position likelihood is gaussian at lagrange points
         r_term = -0.5*((2*log(sigma_r) + (x1-alpha*beta*r_tide)**2/sigma_r**2) + \
@@ -287,7 +277,7 @@ def back_integration_likelihood(double t1, double t2, double dt,
     cdef double [:] x2_hat = np.empty(3).astype(np.double)
     cdef double [:] x3_hat = np.empty(3).astype(np.double)
     cdef double [:,:] w, x, v, acc
-    cdef double G = 4.49975332435e-12 # kpc^3 / Myr^2 / M_sun
+    cdef double G = 4.499753324353494927e-12 # kpc^3 / Myr^2 / M_sun
     cdef double q1,q2,qz,phi,v_halo,R_halo,C1,C2,C3,sinphi,cosphi
 
     w = np.vstack((s_gc,p_gc))
@@ -328,7 +318,8 @@ def back_integration_likelihood(double t1, double t2, double dt,
     #all_x,all_v = np.empty((2,nsteps,nparticles+1,ndim))
     #all_x[0] = x
     #all_v[0] = v
-    ln_likelihood_helper(m0, x, v, nparticles,
+    mass = -mdot*t1 + m0
+    ln_likelihood_helper(mass, x, v, nparticles,
                          alpha, betas,
                          GM_bulge, c,
                          GM_disk, a, b,
@@ -350,7 +341,7 @@ def back_integration_likelihood(double t1, double t2, double dt,
         #if mass < 0:
         #    return -np.inf
 
-        ln_likelihood_helper(m0, x, v, nparticles,
+        ln_likelihood_helper(mass, x, v, nparticles,
                              alpha, betas,
                              GM_bulge, c,
                              GM_disk, a, b,
