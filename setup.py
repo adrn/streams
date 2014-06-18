@@ -13,10 +13,13 @@ lm10_acc = Extension("streams.potential._lm10_acceleration",
 pal5_acc = Extension("streams.potential._pal5_acceleration",
                       ["streams/potential/_pal5_acceleration.pyx"],
                      include_dirs=[numpy_incl_path])
-
 gc_hel = Extension("streams.coordinates._gc_hel",
                    ["streams/coordinates/_gc_hel.pyx"],
                     include_dirs=[numpy_incl_path])
+
+new_like = Extension("streams.inference.new_likelihood",
+                      ["streams/inference/new_likelihood.pyx"],
+                     include_dirs=[numpy_incl_path])
 
 setup(
     name="Streams",
@@ -25,5 +28,5 @@ setup(
     author_email="adrn@astro.columbia.edu",
     license="BSD",
     cmdclass = {'build_ext': build_ext},
-    ext_modules=[lm10_acc, pal5_acc, gc_hel]
+    ext_modules=[lm10_acc, pal5_acc, gc_hel, new_like]
 )

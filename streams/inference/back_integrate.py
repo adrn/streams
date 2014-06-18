@@ -93,7 +93,7 @@ def back_integration_likelihood(t1, t2, dt, potential, p_gc, s_gc, logm0, logmdo
 
     # marginalizing over tub, use the full orbits
     p_x_hel = _gc_to_hel(p_orbits.reshape(nparticles*ntimes,6)).reshape(ntimes,nparticles,6)
-    jac = xyz_sph_jac(p_x_hel).reshape(ntimes,nparticles)
+    jac = xyz_sph_jac(p_x_hel).T
 
     s_R = np.sqrt(np.sum(s_orbit[...,:3]**2, axis=-1))
     s_V = np.sqrt(np.sum(s_orbit[...,3:]**2, axis=-1))
