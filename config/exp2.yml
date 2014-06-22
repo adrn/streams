@@ -21,7 +21,7 @@ dt: -1.
 
 potential:
     class_name: LawMajewski2010
-    parameters: [q1, qz, phi, v_halo]
+    parameters: [q1, qz, phi, v_halo, R_halo]
 
 particles:
     parameters: [d, mul, mub, vr]
@@ -33,10 +33,10 @@ satellite:
 
 # emcee
 start_truth: True
-acceptance_threshold: 0.01
+acceptance_threshold: 0.1
 walkers: 256
-burn_in: 2500
-steps: 100000
+burn_in: 10000
+steps: 50000
 output_every: 1000
 a: 1.25
 thin_chain: False

@@ -1,7 +1,7 @@
 # general
 seed: 42
 script: infer_potential.py
-name: exper1_8_r_halo
+name: exper1_8
 
 # plots / output
 plot:
@@ -30,8 +30,8 @@ satellite:
 start_truth: True
 acceptance_threshold: 0.1
 walkers: 128
-burn_in: 2500
-steps: 1000
+burn_in: 10000
+steps: 50000
 output_every: 1000
-a: 2.
+a: 1.7
 thin_chain: False
