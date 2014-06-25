@@ -58,10 +58,14 @@ class LawMajewski2010(CompositePotential):
                             truth=(121.858*u.km/u.s).decompose(usys).value,
                             prior=LogUniformPrior((90.*u.km/u.s).decompose(usys).value,
                                                   (170.*u.km/u.s).decompose(usys).value))
-        params['R_halo'] = ModelParameter(name='R_halo',
-                            truth=(12.*u.kpc).decompose(usys).value,
-                            prior=LogUniformPrior((5.*u.kpc).decompose(usys).value,
-                                                  (40*u.kpc).decompose(usys).value))
+        # params['R_halo'] = ModelParameter(name='R_halo',
+        #                     truth=(12.*u.kpc).decompose(usys).value,
+        #                     prior=LogUniformPrior((5.*u.kpc).decompose(usys).value,
+        #                                           (40*u.kpc).decompose(usys).value))
+        params['log_R_halo'] = ModelParameter(name='log_R_halo',
+                            truth=np.log((12.*u.kpc).decompose(usys).value),
+                            prior=LogUniformPrior(np.log((5.*u.kpc).decompose(usys).value),
+                                                  np.log((25*u.kpc).decompose(usys).value)))
 
         self._parameter_dict = dict()
         self.parameters = dict(params)
@@ -89,161 +93,3 @@ class LawMajewski2010(CompositePotential):
         ####################
         self.units = usys
         self._G = G.decompose(bases=usys).value
-
-    def _acceleration_at(self, r, n_particles, acc):
-        return lm10_acceleration(r, n_particles, acc, **self._parameter_dict)
-
-    def _value_at(self, r, n_particles, pot):
-        return lm10_potential(r, n_particles, pot, **self._parameter_dict)
-
-    def _enclosed_mass(self, R):
-        """ Compute the enclosed mass at the position r. Assumes it's far from
-            the disk and bulge, and is a spherically averaged approximation.
-        """
-
-        #m_halo_enc = self["halo"]._parameters["v_halo"]**2 * R/self._G
-        #m_enc = self["disk"]._parameters["m"] + \
-        #        self["bulge"]._parameters["m"] + \
-        #        m_halo_enc
-
-        # TODO: HACK!!!
-        Rh = self._parameter_dict['R_halo']
-        vh = self._parameter_dict['v_halo']
-        G = self._G
-        m_halo_enc = (2*R**3*vh**2) / (G*(R**2 + Rh**2))
-        m_enc = 1.E11 + 3.4E10 + m_halo_enc
-
-        return m_enc
-
-    def _tidal_radius(self, m, r):
-        """ Compute the tidal radius of a massive particle at the specified
-            position(s). Assumes position and mass are in the same unit
-            system as the potential.
-
-            Parameters
-            ----------
-            m : numeric
-                Mass.
-            r : array_like
-                Position.
-        """
-
-        # Radius of Sgr center relative to galactic center
-        R = np.sqrt(np.sum(r**2., axis=-1))
-        m_enc = self._enclosed_mass(R)
-        Rh = self._parameter_dict['R_halo']
-
-        dlnM_dlnR = (3*Rh**2 + R**2)/(Rh**2 + R**2)
-        f = (1 - dlnM_dlnR/3.)**(-0.3333333333333)
-
-        return R * (m / (3*m_enc))**(0.3333333333333) * f
-
-    def _read_tidal_radius(self, m, r, alpha=1.):
-        """ Compute the tidal radius of a massive particle at the specified
-            position(s). Assumes position and mass are in the same unit
-            system as the potential.
-
-            Parameters
-            ----------
-            m : numeric
-                Mass.
-            r : array_like
-                Position.
-            alpha : numeric
-                1 for prograde, 0 for radial, -1 for retrograde orbits.
-        """
-
-        # Radius of Sgr center relative to galactic center
-        R = np.sqrt(np.sum(r**2., axis=-1))
-
-        gal_vdisp = self._parameter_dict['v_halo']
-        sat_vdisp = 0.01719863232
-
-        peris = np.median(R[argrelmin(R)])
-        apos = np.median(R[argrelmax(R)])
-        L = (2 * apos**2 * peris**2 / (peris**2 - apos**2) * np.log(peris/apos))
-
-        _tmp = np.sqrt(L*sat_vdisp**2/gal_vdisp**2)
-        return _tmp * (-alpha + np.sqrt(alpha**2 + 1 + R**2/L)) / (1 + L/R**2)
-
-    def tidal_radius(self, m, r):
-        """ Compute the tidal radius of a massive particle at the specified
-            position(s).
-
-            Parameters
-            ----------
-            m : astropy.units.Quantity
-                Mass.
-            r : astropy.units.Quantity
-                Position.
-        """
-
-        if not hasattr(r, "decompose") or not hasattr(m, "decompose"):
-            raise TypeError("Position and mass must be Quantity objects.")
-
-        R_tide = self._tidal_radius(r=r.decompose(self.units).value,
-                                    m=m.decompose(self.units).value)
-
-        return R_tide * r.unit
-
-    def _escape_velocity(self, m, r=None, r_tide=None):
-        """ Compute the escape velocity of a satellite in a potential given
-            its tidal radius. Assumes position and mass are in the same unit
-            system as the potential.
-
-            Parameters
-            ----------
-            m : numeric
-                Mass.
-            r : array_like
-                Position.
-            or
-            r_tide : array_like
-                Tidal radius.
-        """
-
-        if r is not None and r_tide is None:
-            r_tide = self._tidal_radius(m, r)
-
-        elif r_tide is not None and r is None:
-            pass
-
-        else:
-            raise ValueError("Must specify just r or r_tide.")
-
-        return np.sqrt(2. * self._G * m / r_tide)
-
-    def escape_velocity(self, m, r=None, r_tide=None):
-        """ Compute the escape velocity of a satellite in a potential given
-            its tidal radius.
-
-            Parameters
-            ----------
-            m : astropy.units.Quantity
-                Mass.
-            r : astropy.units.Quantity
-                Position.
-            or
-            r_tide : astropy.units.Quantity
-                Tidal radius.
-        """
-
-        if not hasattr(m, "decompose"):
-            raise TypeError("Mass must be a Quantity object.")
-
-        if r is not None and r_tide is None:
-            r_tide = self.tidal_radius(m, r)
-
-        elif r_tide is not None and r is None:
-            if not hasattr(r_tide, "decompose"):
-                raise TypeError("r_tide must be a Quantity object.")
-
-        else:
-            raise ValueError("Must specify just r or r_tide.")
-
-        v_esc = self._escape_velocity(m=m.decompose(self.units).value,
-                                      r_tide=r_tide.decompose(self.units).value)
-
-        r_unit = filter(lambda x: x.is_equivalent(u.km), self.units)[0]
-        t_unit = filter(lambda x: x.is_equivalent(u.s), self.units)[0]
-        return v_esc * r_unit/t_unit

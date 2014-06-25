@@ -300,7 +300,7 @@ def back_integration_likelihood(double t1, double t2, double dt,
     q2 = potential_params['q2']
     qz = potential_params['qz']
     phi = potential_params['phi']
-    R_halo = potential_params['R_halo']
+    R_halo = exp(potential_params['log_R_halo'])
     v_halo = potential_params['v_halo']
 
     sinphi = sin(phi)
