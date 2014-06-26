@@ -64,7 +64,7 @@ class LawMajewski2010(CompositePotential):
         #                                           (40*u.kpc).decompose(usys).value))
         params['log_R_halo'] = ModelParameter(name='log_R_halo',
                             truth=np.log((12.*u.kpc).decompose(usys).value),
-                            prior=LogUniformPrior(np.log((5.*u.kpc).decompose(usys).value),
+                            prior=LogUniformPrior(np.log((9.*u.kpc).decompose(usys).value),
                                                   np.log((25*u.kpc).decompose(usys).value)))
 
         self._parameter_dict = dict()
