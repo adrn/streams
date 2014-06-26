@@ -1,5 +1,5 @@
 # encoding: utf-8
-# filename: .pyx
+# cython: profile=True
 
 import numpy as np
 cimport numpy as np
@@ -24,7 +24,7 @@ cdef extern from "math.h":
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef inline void lm10_acceleration(double[:,:] r, double[:,:] acc, int nparticles,
+cdef inline void lm10_acceleration(np.float64_t[:,:] r, np.float64_t[:,:] acc, int nparticles,
                             double GM_bulge, double c,
                             double GM_disk, double a, double b,
                             double C1, double C2, double C3, double qz,
@@ -95,8 +95,8 @@ cdef inline double lm10_tidal_radius(double m, double R,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef inline void leapfrog_init(double[:,:] r, double[:,:] v, double[:,:] v_12,
-                        double[:,:] acc,
+cdef inline void leapfrog_init(np.float64_t[:,:] r, np.float64_t[:,:] v, np.float64_t[:,:] v_12,
+                        np.float64_t[:,:] acc,
                         int nparticles, double dt,
                         double GM_bulge, double c,
                         double GM_disk, double a, double b,
@@ -116,8 +116,8 @@ cdef inline void leapfrog_init(double[:,:] r, double[:,:] v, double[:,:] v_12,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef inline void leapfrog_step(double[:,:] r, double[:,:] v, double[:,:] v_12,
-                        double[:,:] acc,
+cdef inline void leapfrog_step(np.float64_t[:,:] r, np.float64_t[:,:] v, np.float64_t[:,:] v_12,
+                        np.float64_t[:,:] acc,
                         int nparticles, double dt,
                         double GM_bulge, double c,
                         double GM_disk, double a, double b,
@@ -150,15 +150,15 @@ cdef inline void leapfrog_step(double[:,:] r, double[:,:] v, double[:,:] v_12,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef inline double dot(double[:] a, double[:] b):
+cdef inline double dot(np.float64_t[:] a, np.float64_t[:] b):
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
 
 @cython.boundscheck(False)
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef inline double basis(double[:,:] x, double[:,:] v,
-                         double[:] x1_hat, double[:] x2_hat, double[:] x3_hat):
+cdef inline double basis(np.float64_t[:,:] x, np.float64_t[:,:] v,
+                         np.float64_t[:] x1_hat, np.float64_t[:] x2_hat, np.float64_t[:] x3_hat):
 
     cdef double x1_norm, x2_norm, x3_norm
 
@@ -188,30 +188,33 @@ cdef inline double basis(double[:,:] x, double[:,:] v,
 @cython.wraparound(False)
 @cython.nonecheck(False)
 cdef inline void ln_likelihood_helper(double sat_mass,
-                               double[:,:] x, double[:,:] v, int nparticles,
-                               double alpha, double[:] betas,
+                               np.float64_t[:,::1] x, np.float64_t[:,::1] v, int nparticles,
+                               double alpha, np.float64_t[:] betas,
                                double GM_bulge, double c,
                                double GM_disk, double a, double b,
                                double C1, double C2, double C3, double qz,
                                double v_halo, double R_halo,
-                               double[:] x1_hat, double[:] x2_hat, double[:] x3_hat,
-                               double[:] ln_likelihoods, double[:] dx, double[:] dv):
+                               np.float64_t[:] x1_hat, np.float64_t[:] x2_hat, np.float64_t[:] x3_hat,
+                               np.float64_t[:] ln_likelihoods,
+                               np.float64_t[:] dx, np.float64_t[:] dv):
     cdef int i
     cdef double x1,x2,x3,vx1,vx2,vx3
     cdef double beta
-    cdef double sigma_r, sigma_v
+    cdef double ln_sigma_r, ln_sigma_v, sigma_r_sq, sigma_v_sq
 
     cdef double jac, d, BB, cosb, Rsun = 8.
-    cdef double sat_R = sqrt(x[0,0]**2 + x[0,1]**2 + x[0,2]**2)
-    cdef double sat_V = sqrt(v[0,0]**2 + v[0,1]**2 + v[0,2]**2)
+    cdef double sat_R = sqrt(x[0,0]*x[0,0] + x[0,1]*x[0,1] + x[0,2]*x[0,2])
+    cdef double sat_V = sqrt(v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
     cdef double r_tide = lm10_tidal_radius(sat_mass, sat_R,
                                            GM_bulge, c,
                                            GM_disk, a, b,
                                            C1, C2, C3, qz, v_halo, R_halo)
     cdef double v_disp = sat_V * r_tide / sat_R
 
-    sigma_r = 0.5*r_tide
-    sigma_v = v_disp
+    ln_sigma_r = log(0.5*r_tide)
+    sigma_r_sq = 0.25*r_tide*r_tide
+    ln_sigma_v = log(v_disp)
+    sigma_v_sq = v_disp*v_disp
 
     # compute instantaneous orbital plane coordinates
     basis(x, v, x1_hat, x2_hat, x3_hat)
@@ -220,9 +223,12 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         beta = betas[i]
 
         # translate to satellite position
-        for j in range(3):
-            dx[j] = x[i+1,j] - x[0,j]
-            dv[j] = v[i+1,j] - v[0,j]
+        dx[0] = x[i+1,0] - x[0,0]
+        dv[0] = v[i+1,0] - v[0,0]
+        dx[1] = x[i+1,1] - x[0,1]
+        dv[1] = v[i+1,1] - v[0,1]
+        dx[2] = x[i+1,2] - x[0,2]
+        dv[2] = v[i+1,2] - v[0,2]
 
         # hijacking these vars to use for jacobian calc.
         #   this is basically the transformation from GC cartesian to
@@ -231,13 +237,14 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         x1 = x[i+1,0] + Rsun
         x2 = x[i+1,1]
         x3 = x[i+1,2]
-        d = sqrt(x1**2 + x2**2 + x3**2)
+        d = sqrt(x1*x1 + x2*x2 + x3*x3)
         BB = 1.5707963267948966 - acos(x3/d)
         cosb = cos(BB)
         jac = log(fabs(d**4*cosb))
 
         # project into new frame (dot product)
         x1 = dx[0]*x1_hat[0] + dx[1]*x1_hat[1] + dx[2]*x1_hat[2]
+        x1 = x1 - alpha*beta*r_tide
         x2 = dx[0]*x2_hat[0] + dx[1]*x2_hat[1] + dx[2]*x2_hat[2]
         x3 = dx[0]*x3_hat[0] + dx[1]*x3_hat[1] + dx[2]*x3_hat[2]
 
@@ -246,44 +253,44 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         vx3 = dv[0]*x3_hat[0] + dv[1]*x3_hat[1] + dv[2]*x3_hat[2]
 
         # position likelihood is gaussian at lagrange points
-        r_term = -0.5*((2*log(sigma_r) + (x1-alpha*beta*r_tide)**2/sigma_r**2) + \
-                       (2*log(2*sigma_r) + x2**2/(2*sigma_r)**2) + \
-                       (2*log(sigma_r) + x3**2/sigma_r**2))
+        r_term = -0.5*((2*ln_sigma_r + x1*x1/sigma_r_sq) + \
+                       (2*(ln_sigma_r + 0.6931471805599452) + x2*x2/(4*sigma_r_sq)) + \
+                       (2*ln_sigma_r + x3*x3/sigma_r_sq))
 
-        v_term = -0.5*((2*log(sigma_v) + vx1**2/sigma_v**2) + \
-                       (2*log(sigma_v) + vx2**2/sigma_v**2) + \
-                       (2*log(sigma_v) + vx3**2/sigma_v**2))
+        v_term = -0.5*((2*ln_sigma_v + vx1*vx1/sigma_v_sq) + \
+                       (2*ln_sigma_v + vx2*vx2/sigma_v_sq) + \
+                       (2*ln_sigma_v + vx3*vx3/sigma_v_sq))
 
         ln_likelihoods[i] = r_term + v_term + jac
 
 def back_integration_likelihood(double t1, double t2, double dt,
                                 object potential_params,
-                                np.ndarray[double,ndim=2] s_gc,
-                                np.ndarray[double,ndim=2] p_gc,
+                                np.ndarray[np.float64_t,ndim=2] s_gc,
+                                np.ndarray[np.float64_t,ndim=2] p_gc,
                                 double logm0, double logmdot,
-                                double alpha, np.ndarray[double,ndim=1] betas):
+                                double alpha, np.ndarray[np.float64_t,ndim=1] betas):
     """ 0th entry of x,v is the satellite position, velocity """
 
     cdef int i, nsteps, nparticles
     nparticles = len(p_gc)
     nsteps = int(fabs((t1-t2)/dt)) # 6000
 
-    cdef double [:,:] ln_likelihoods = np.empty((nsteps, nparticles)).astype(np.double)
-    cdef double [:] dx = np.zeros(3).astype(np.double)
-    cdef double [:] dv = np.zeros(3).astype(np.double)
-    cdef double [:,:] v_12 = np.zeros((nparticles+1,3)).astype(np.double)
+    cdef np.float64_t [:,::1] ln_likelihoods = np.empty((nsteps, nparticles))
+    cdef np.float64_t [:] dx = np.zeros(3)
+    cdef np.float64_t [:] dv = np.zeros(3)
+    cdef np.float64_t [:,::1] v_12 = np.zeros((nparticles+1,3))
 
-    cdef double [:] x1_hat = np.empty(3).astype(np.double)
-    cdef double [:] x2_hat = np.empty(3).astype(np.double)
-    cdef double [:] x3_hat = np.empty(3).astype(np.double)
-    cdef double [:,:] w, x, v, acc
+    cdef np.float64_t [:] x1_hat = np.empty(3)
+    cdef np.float64_t [:] x2_hat = np.empty(3)
+    cdef np.float64_t [:] x3_hat = np.empty(3)
+    cdef np.float64_t [:,::1] w, x, v, acc
     cdef double G = 4.499753324353494927e-12 # kpc^3 / Myr^2 / M_sun
     cdef double q1,q2,qz,phi,v_halo,R_halo,C1,C2,C3,sinphi,cosphi
 
     w = np.vstack((s_gc,p_gc))
     x = w[:,:3].copy()
     v = w[:,3:].copy()
-    acc = np.empty((nparticles+1,3)).astype(np.double)
+    acc = np.empty((nparticles+1,3))
 
     # mass
     m0 = exp(logm0)
@@ -338,8 +345,6 @@ def back_integration_likelihood(double t1, double t2, double dt,
 
         # mass of the satellite
         mass = -mdot*t1 + m0
-        #if mass < 0:
-        #    return -np.inf
 
         ln_likelihood_helper(mass, x, v, nparticles,
                              alpha, betas,
