@@ -166,8 +166,9 @@ cdef inline double basis(double[:,::1] x, double[:,::1] v,
     cdef double x1_norm, x2_norm, x3_norm
 
     # instantaneous cartesian basis to project into
-    for i in range(3):
-        x1_hat[i] = x[0,i]
+    x1_hat[0] = x[0,0]
+    x1_hat[1] = x[0,1]
+    x1_hat[2] = x[0,2]
 
     x3_hat[0] = x1_hat[1]*v[0,2] - x1_hat[2]*v[0,1]
     x3_hat[1] = x1_hat[2]*v[0,0] - x1_hat[0]*v[0,2]
@@ -251,7 +252,7 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         d = sqrt(x1*x1 + x2*x2 + x3*x3)
         BB = 1.5707963267948966 - acos(x3/d)
         cosb = cos(BB)
-        jac = log(fabs(d**4*cosb))
+        jac = log(fabs(d*d*d*d*cosb))
 
         # project into new frame (dot product)
         x1 = dx[0]*x1_hat[0] + dx[1]*x1_hat[1] + dx[2]*x1_hat[2]
