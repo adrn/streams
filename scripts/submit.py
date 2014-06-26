@@ -30,11 +30,17 @@ job_sh = """#!/bin/sh
 #PBS -o localhost:{astro:s}/pbs_output
 #PBS -e localhost:{astro:s}/pbs_output
 
+cd $STREAMSPATH
+pwd
+
 # print date and time to file
 date
 
 #Command to execute Python program
 mpiexec -n {mpi_threads:d} {astro:s}/{py:s}/bin/python {astro:s}/projects/streams/scripts/{script} -f {astro:s}/projects/streams/config/{config_file} -v --mpi {overwrite} {contin}
+
+{astro:s}/{py:s}/bin/python {astro:s}/projects/streams/scr\
+ipts/check_acor.py -f {astro:s}/projects/streams/config/{config_file}
 
 date
 
