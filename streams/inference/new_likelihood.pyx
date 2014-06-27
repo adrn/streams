@@ -252,7 +252,7 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         d = sqrt(x1*x1 + x2*x2 + x3*x3)
         BB = 1.5707963267948966 - acos(x3/d)
         cosb = cos(BB)
-        jac = log(fabs(d*d*d*d*cosb))
+        jac = -log(fabs(d*d*d*d*cosb))
 
         # project into new frame (dot product)
         x1 = dx[0]*x1_hat[0] + dx[1]*x1_hat[1] + dx[2]*x1_hat[2]
