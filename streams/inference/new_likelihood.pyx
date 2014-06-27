@@ -186,9 +186,9 @@ cdef inline double basis(double[:,::1] x, double[:,::1] v,
     x2_hat[0] = x2_hat[0] / x2_norm
     x3_hat[0] = x3_hat[0] / x3_norm
 
-    x1_hat[1] = x1_hat[2] / x1_norm
-    x2_hat[1] = x2_hat[2] / x2_norm
-    x3_hat[1] = x3_hat[2] / x3_norm
+    x1_hat[1] = x1_hat[1] / x1_norm
+    x2_hat[1] = x2_hat[1] / x2_norm
+    x3_hat[1] = x3_hat[1] / x3_norm
 
     x1_hat[2] = x1_hat[2] / x1_norm
     x2_hat[2] = x2_hat[2] / x2_norm
