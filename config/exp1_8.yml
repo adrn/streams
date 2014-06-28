@@ -1,7 +1,7 @@
 # general
 seed: 42
 script: infer_potential.py
-name: exper1_8
+name: exper1_8_8
 
 # plots / output
 plot:
@@ -11,15 +11,17 @@ plot:
 
 # data
 data_file: data/observed_particles/2.5e8.hdf5
-nparticles: 4
-particle_idx: [3, 3667, 710, 1576]
+# nparticles: 4
+# particle_idx: [3, 3667, 710, 1576]
+nparticles: 8
+particle_idx: [694, 2696, 15, 3649, 3363, 2761, 1070, 2757]
 
 # integration
 dt: -1.
 
 potential:
     class_name: LawMajewski2010
-    parameters: [q1, qz, phi, v_halo, R_halo]
+    parameters: [q1, qz, phi, v_halo, log_R_halo]
 
 particles:
 
@@ -30,8 +32,8 @@ satellite:
 start_truth: True
 acceptance_threshold: 0.1
 walkers: 128
-burn_in: 10000
-steps: 50000
+burn_in: 2500
+steps: 25000
 output_every: 1000
 a: 1.7
 thin_chain: False
