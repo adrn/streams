@@ -14,7 +14,7 @@ data_file: data/observed_particles/2.5e8.hdf5
 # nparticles: 4
 # particle_idx: [3, 3667, 710, 1576]
 nparticles: 8
-particle_idx: [694, 2696, 15, 3649, 3363, 2761, 1070, 2757]
+particle_idx: [1244, 193, 15, 3649, 3363, 2761, 3180, 1027]
 
 # integration
 dt: -1.
