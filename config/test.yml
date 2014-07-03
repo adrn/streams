@@ -19,7 +19,7 @@ dt: -1.
 
 potential:
     class_name: LawMajewski2010
-    parameters: [q1, qz]
+    parameters: [q1, qz, log_R_halo]
 
 particles:
 #    parameters: [d, mul, tub]
