@@ -164,6 +164,7 @@ _unit_transform = defaultdict(lambda: lambda x: x)
 _unit_transform['phi'] = lambda x: (x*u.rad).to(u.degree).value
 _unit_transform["v_halo"] = lambda x: (x*u.kpc/u.Myr).to(u.km/u.s).value
 _unit_transform["R_halo"] = lambda x: (x*u.kpc).to(u.kpc).value
+_unit_transform["log_R_halo"] = lambda x: (np.exp(x)*u.kpc).to(u.kpc).value
 _unit_transform["l"] = lambda x: (x*u.rad).to(u.degree).value
 _unit_transform["b"] = lambda x: (x*u.rad).to(u.degree).value
 _unit_transform["d"] = lambda x: (x*u.kpc).to(u.kpc).value
