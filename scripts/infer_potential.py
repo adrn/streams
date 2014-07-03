@@ -162,7 +162,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
                 .format(nwalkers, nsteps))
         sampler.run_inference(pos, nsteps, path=cache_output_path, first_step=last_step,
                               output_every=output_every,
-                              output_file_fmt = "inference_{:06d}.hdf5")
+                              output_file_fmt = "inference_{:07d}.hdf5")
 
     else:
         print("Unknown state.")
@@ -177,7 +177,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
     plot_ext = plot_config.get("ext", "png")
 
     # glob properly orders the list
-    for filename in glob.glob(os.path.join(cache_output_path,"*.hdf5")):
+    for filename in glob.glob(os.path.join(cache_output_path,"inference_*.hdf5")):
         logger.debug("Reading file {}...".format(filename))
         with h5py.File(filename, "r") as f:
             try:
