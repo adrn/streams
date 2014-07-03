@@ -177,7 +177,7 @@ def main(config_file, mpi=False, threads=None, overwrite=False, continue_sampler
     plot_ext = plot_config.get("ext", "png")
 
     # glob properly orders the list
-    for filename in glob.glob(os.path.join(cache_output_path,"inference_*.hdf5")):
+    for filename in sorted(glob.glob(os.path.join(cache_output_path,"inference_*.hdf5"))):
         logger.debug("Reading file {}...".format(filename))
         with h5py.File(filename, "r") as f:
             try:
