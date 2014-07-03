@@ -557,11 +557,13 @@ def exp1_posterior():
             continue
 
         truth = _unit_transform[p.name](p.truth)
+        print(p.name, truth)
         truths.append(truth)
         bounds.append((0.95*truth, 1.05*truth))
         flatchain[:,ii] = _unit_transform[p.name](_flatchain[:,ii])
 
-    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(8,20),(1.1,2.5)]
+    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(5,30),(1.1,2.5)]
+    #bounds = None
     fig = triangle.corner(flatchain, plot_datapoints=False,
                           truths=truths, extents=bounds, labels=labels)
     fig.savefig(os.path.join(plot_path, "exp1_posterior.{}".format(ext)))
@@ -583,7 +585,8 @@ def exp_posteriors(exp_num):
     # Potential
     this_flatchain = np.zeros((_flatchain.shape[0], len(d["potential"])))
     truths = []
-    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(1.1,2.5)]
+    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(5,30),(1.1,2.5)]
+    # bounds = None
     labels = []
     for ii,pname in enumerate(d["potential"].keys()):
         this_flatchain[:,ii] = _unit_transform[pname](np.squeeze(d["potential"][pname]))
@@ -632,8 +635,8 @@ def exp_posteriors(exp_num):
                     .format(pname,truths[ii],q50[ii],q_p[ii],q_m[ii]))
 
     # HACK
-    bounds = [(31.5,38.5), (-0.1,2.0), (-1.8,-0.5), (-45,-5)]
-    #bounds = None
+    bounds = [(22.,26.), (-8.6, -8.), (1.0,1.5), (-50,-10)]
+    # bounds = None
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, labels=labels, extents=bounds)
     fig.savefig(os.path.join(plot_path, "exp{}_particle.{}".format(exp_num, ext)))
@@ -663,8 +666,8 @@ def exp_posteriors(exp_num):
         labels.append(_label_map[pname])
 
     # HACK
-    #bounds = [(28,33), (-2.1,-1.6), (1.3,1.8), (125,185), bounds[-1]]
-    bounds = [(26,32), (-2.6,-1.5), (1.3,2.0), (120,175), bounds[-1]]
+    bounds = [(29,32.5), (-2.6,-1.5), (1.3,2.0), (120,175), bounds[-1]]
+    # bounds = None
     if len(d["satellite"]) > len(bounds):
         bounds = [(0,10), (-20,5)] + bounds
 
