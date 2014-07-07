@@ -52,6 +52,28 @@ def gaia_spitzer_errors(particles):
 
     return dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
 
+def spitzer_current_data_sat(particles):
+
+    dlb = 100*u.microarcsecond
+    dmu = 0.2*u.mas/u.yr # http://iopscience.iop.org/1538-3881/139/3/839/pdf/aj_139_3_839.pdf
+
+    # angular position error is negligible
+    l = dlb.to(particles["l"].unit)
+    b = dlb.to(particles["b"].unit)
+
+    # proper motion
+    mul = dmu.to(particles["mul"].unit)
+    mub = dmu.to(particles["mub"].unit)
+
+    # distance
+    d = 0.02*particles["d"]
+
+    # radial velocity
+    vr = 5.*u.km/u.s * np.ones_like(particles["vr"].value)
+
+    errs = dict(l=l, b=b, d=d, mul=mul,mub=mub,vr=vr)
+    return errs
+
 def current_data_star(particles):
 
     dlb = 0.1*u.arcsecond
