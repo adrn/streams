@@ -51,7 +51,7 @@ cdef class Potential:
         nparticles = r.shape[0]
         ndim = r.shape[1]
 
-        cdef double [:,::1] acc = np.empty((nparticles,ndim))
+        cdef double [:,::1] acc = np.empty((nparticles,ndim//2))
         self._acceleration(r, acc, nparticles)
         return np.array(acc)
 
@@ -60,6 +60,26 @@ cdef class Potential:
     @cython.wraparound(False)
     @cython.nonecheck(False)
     cdef public void _acceleration(self, double[:,::1] r, double[:,::1] acc, int nparticles):
+        for i in range(nparticles):
+            acc[i,0] = 0.
+            acc[i,1] = 0.
+            acc[i,2] = 0.
+
+    # -------------------------------------------------------------
+    cpdef var_acceleration(self, double[:,::1] w):
+        cdef int nparticles, ndim
+        nparticles = w.shape[0]
+        ndim = w.shape[1]
+
+        cdef double [:,::1] acc = np.empty((nparticles,ndim))
+        self._var_acceleration(w, acc, nparticles)
+        return np.array(acc)
+
+    @cython.boundscheck(False)
+    @cython.cdivision(True)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
+    cdef public void _var_acceleration(self, double[:,::1] w, double[:,::1] acc, int nparticles):
         for i in range(nparticles):
             acc[i,0] = 0.
             acc[i,1] = 0.
@@ -207,6 +227,82 @@ cdef class LM10Potential(Potential):
             acc[i,0] = facd*x + facb*x + fach*(2.*self.C1*x + self.C3*y)
             acc[i,1] = facd*y + facb*y + fach*(2.*self.C2*y + self.C3*x)
             acc[i,2] = facd*z*(1.+self.a/ztmp) + facb*z + 2.*fach*z/self.qz2
+
+    @cython.boundscheck(False) # turn of bounds-checking for entire function
+    @cython.cdivision(True)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
+    cdef public inline void _var_acceleration(self, double[:,::1] w,
+                                              double[:,::1] acc, int nparticles):
+
+        cdef double x, y, z
+        cdef double xx, yy, zz
+        cdef double dx, dy, dz
+        cdef double H, bz, abz, RD, r_2, r, rcr
+
+        for ii in range(nparticles):
+            x = w[ii,0]
+            y = w[ii,1]
+            z = w[ii,2]
+            acc[ii,0] = w[ii,3]
+            acc[ii,1] = w[ii,4]
+            acc[ii,2] = w[ii,5]
+
+            dx = w[ii,6]
+            dy = w[ii,7]
+            dz = w[ii,8]
+            acc[ii,6] = w[ii,9]
+            acc[ii,7] = w[ii,10]
+            acc[ii,8] = w[ii,11]
+
+            xx = x*x
+            yy = y*y
+            zz = z*z
+
+            # some quantities for speed
+            H = self.C1*xx + self.C2*yy + self.C3*x*y + zz/self.qz2 + self.r_halo2
+            bz = sqrt(zz + self.b2)
+            abz = self.a + bz
+            RD = xx + yy + abz*abz
+            r_2 = xx + yy + zz
+            r = sqrt(r_2)
+            rcr = r*(self.c+r)
+
+            # -----------------------------------------
+            # acceleration terms for the regular orbit
+
+            # Bulge
+            fB = self.GM_bulge / (rcr*(r+self.c))
+
+            # Disk
+            fD = self.GM_disk / RD**1.5
+
+            # Halo
+            fH = self.v_halo2 / H
+
+            # acc. is -dPhi/d{xyz}
+            acc[ii,3] = -(fB*x + fD*x + fH*(2.*self.C1*x + self.C3*y))
+            acc[ii,4] = -(fB*y + fD*y + fH*(2.*self.C2*y + self.C3*x))
+            acc[ii,5] = -(fB*z + fD*z*abz/bz + 2*fH*z/self.qz2)
+
+            # -----------------------------------------
+            # acceleration terms for the deviation orbit
+
+            XX = 2*self.C1*fH - self.GM_bulge*xx/(r*rcr**2) + fB - 2*fB*xx/rcr + fD - 3*fD*xx/RD + fH*(-2*self.C1*x - self.C3*y)*(2*self.C1*x + self.C3*y)/H
+
+            XY = self.C3*fH - self.GM_bulge*x*y/(r*rcr**2) - 2*fB*x*y/rcr - 3*fD*x*y/RD + fH*(2*self.C1*x + self.C3*y)*(-2*self.C2*y - self.C3*x)/H
+
+            XZ = -self.GM_bulge*x*z/(r*rcr**2) - 2*fB*x*z/rcr - 3*fD*x*z*(self.a + bz)/(RD*bz) - 2*fH*z*(2*self.C1*x + self.C3*y)/(H*self.qz2)
+
+            YY = 2*self.C2*fH - self.GM_bulge*yy/(r*rcr**2) + fB - 2*fB*yy/rcr + fD - 3*fD*yy/RD + fH*(-2*self.C2*y - self.C3*x)*(2*self.C2*y + self.C3*x)/H
+
+            YZ = -self.GM_bulge*y*z/(r*rcr**2) - 2*fB*y*z/rcr - 3*fD*y*z*(self.a + bz)/(RD*bz) - 2*fH*z*(2*self.C2*y + self.C3*x)/(H*self.qz2)
+
+            ZZ = -self.GM_bulge*zz/(r*rcr**2) + fB - 2*fB*zz/rcr + 2*fH/self.qz2 + fD*(self.a + bz)/bz + fD*zz/bz**2 - fD*zz*(self.a + bz)/bz**3 - 3*fD*zz*(self.a + bz)**2/(RD*bz**2) - 4*fH*zz/(H*self.qz2**2)
+
+            acc[ii,9] = -(XX*dx + XY*dy + XZ*dz)
+            acc[ii,10] = -(XY*dx + YY*dy + YZ*dz)
+            acc[ii,11] = -(XZ*dx + YZ*dy + ZZ*dz)
 
     @cython.boundscheck(False)
     @cython.cdivision(True)
