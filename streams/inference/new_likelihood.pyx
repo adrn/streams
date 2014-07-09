@@ -198,7 +198,7 @@ def back_integration_likelihood(double t1, double t2, double dt,
 
     cdef int i, nsteps, nparticles
     nparticles = len(p_gc)
-    nsteps = int(fabs((t1-t2)/dt)) # 6000
+    nsteps = int(fabs((t1-t2)/dt))
 
     cdef double [:,::1] ln_likelihoods = np.empty((nsteps, nparticles))
     cdef double [::1] dx = np.zeros(3)
