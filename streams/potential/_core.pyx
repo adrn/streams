@@ -45,6 +45,7 @@ cdef class Potential:
         for i in range(nparticles):
             pot[i] = 0.
 
+    # -------------------------------------------------------------
     cpdef acceleration(self, double[:,::1] r):
         cdef int nparticles, ndim
         nparticles = r.shape[0]
@@ -63,6 +64,24 @@ cdef class Potential:
             acc[i,0] = 0.
             acc[i,1] = 0.
             acc[i,2] = 0.
+
+    # -------------------------------------------------------------
+    cpdef tidal_radius(self, double m_sat, double[::1] r):
+        cdef int nparticles
+        nparticles = r.shape[0]
+
+        cdef double [::1] rt = np.empty((nparticles,))
+        for i in range(nparticles):
+            rt[i] = self._tidal_radius(m_sat, r[i])
+
+        return np.array(rt)
+
+    @cython.boundscheck(False)
+    @cython.cdivision(True)
+    @cython.wraparound(False)
+    @cython.nonecheck(False)
+    cdef public double _tidal_radius(self, double m_sat, double r):
+        return 0.
 
 cdef class LM10Potential(Potential):
 
@@ -193,16 +212,16 @@ cdef class LM10Potential(Potential):
     @cython.cdivision(True)
     @cython.wraparound(False)
     @cython.nonecheck(False)
-    cdef inline double tidal_radius(double m_sat, double R):
+    cdef public double _tidal_radius(self, double m_sat, double R):
+        """ This is a very crude estimate of the tidal radius... """
 
         # Radius of Sgr center relative to galactic center
         cdef double GM_halo, m_enc, dlnM_dlnR, f
-        cdef double G = 4.499753324353494927e-12 # kpc^3 / Myr^2 / M_sun
 
-        GM_halo = (2*R*R*R*v_halo*v_halo) / (R*R + R_halo*R_halo)
-        m_enc = (GM_disk + GM_bulge + GM_halo) / G
+        GM_halo = (2*R*R*R*self.v_halo2) / (R*R + self.r_halo2)
+        m_enc = self.M_disk + self.M_bulge + GM_halo / self.G
 
-        dlnM_dlnR = (3*R_halo*R_halo + R*R)/(R_halo*R_halo + R*R)
+        dlnM_dlnR = (3*self.r_halo2 + R*R)/(self.r_halo2 + R*R)
         f = (1 - dlnM_dlnR/3.)
 
-        return R * (m / (3*m_enc*f))**(0.3333333333333)
+        return R * (m_sat / (3*m_enc*f))**(0.3333333333333)
