@@ -9,6 +9,9 @@ from scipy.misc import logsumexp
 import cython
 cimport cython
 
+cimport streams.potential._core as pot
+import streams.potential._core as pot
+
 cdef extern from "math.h":
     double sqrt(double x)
     double atan2(double x, double x)
@@ -23,91 +26,13 @@ cdef extern from "math.h":
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cdef inline void lm10_acceleration(double[:,::1] r, double[:,::1] acc, int nparticles,
-                            double GM_bulge, double c,
-                            double GM_disk, double a, double b,
-                            double C1, double C2, double C3, double qz,
-                            double v_halo, double R_halo):
-
-    cdef:
-        double facb, rb, rb_c
-        double facd, zd, rd2, ztmp
-        double fach
-        double b2, qz2, R_halo2, v_halo2
-        double x, y, z
-        double xx, yy, zz
-
-    b2 = b*b
-    qz2 = qz*qz
-    R_halo2 = R_halo*R_halo
-    v_halo2 = v_halo*v_halo
-
-    for i in range(nparticles):
-        x = r[i,0]
-        y = r[i,1]
-        z = r[i,2]
-
-        xx = x*x
-        yy = y*y
-        zz = z*z
-
-        # Disk
-        ztmp = sqrt(zz + b2)
-        zd = a + ztmp
-        rd2 = xx + yy + zd*zd
-        facd = -GM_disk / (rd2*sqrt(rd2))
-
-        # Bulge
-        rb = sqrt(xx + yy + zz)
-        rb_c = rb + c
-        facb = -GM_bulge / (rb_c*rb_c*rb)
-
-        # Halo
-        fach = -v_halo2 / (C1*xx + C2*yy + C3*x*y + zz/qz2 + R_halo2)
-
-        acc[i,0] = facd*x + facb*x + fach*(2.*C1*x + C3*y)
-        acc[i,1] = facd*y + facb*y + fach*(2.*C2*y + C3*x)
-        acc[i,2] = facd*z*(1.+a/ztmp) + facb*z + 2.*fach*z/qz2
-
-@cython.boundscheck(False)
-@cython.cdivision(True)
-@cython.wraparound(False)
-@cython.nonecheck(False)
-cdef inline double lm10_tidal_radius(double m, double R,
-                              double GM_bulge, double c,
-                              double GM_disk, double a, double b,
-                              double C1, double C2, double C3, double qz,
-                              double v_halo, double R_halo):
-
-    # Radius of Sgr center relative to galactic center
-    cdef double GM_halo, m_enc, dlnM_dlnR, f
-    cdef double G = 4.499753324353494927e-12 # kpc^3 / Myr^2 / M_sun
-
-    GM_halo = (2*R*R*R*v_halo*v_halo) / (R*R + R_halo*R_halo)
-    m_enc = (GM_disk + GM_bulge + GM_halo) / G
-
-    dlnM_dlnR = (3*R_halo*R_halo + R*R)/(R_halo*R_halo + R*R)
-    f = (1 - dlnM_dlnR/3.)
-
-    return R * (m / (3*m_enc*f))**(0.3333333333333)
-
-@cython.boundscheck(False)
-@cython.cdivision(True)
-@cython.wraparound(False)
-@cython.nonecheck(False)
 cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v,
                         double[:,::1] v_12,
                         double[:,::1] acc, # return
                         int nparticles, double dt,
-                        double GM_bulge, double c,
-                        double GM_disk, double a, double b,
-                        double C1, double C2, double C3, double qz,
-                        double v_halo, double R_halo):
+                        pot.Potential potential):
 
-    lm10_acceleration(r, acc, nparticles,
-                      GM_bulge, c,
-                      GM_disk, a, b,
-                      C1, C2, C3, qz, v_halo, R_halo);
+    potential._acceleration(r, acc, nparticles);
 
     for i in range(nparticles):
         for j in range(3):
@@ -121,10 +46,7 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
                         double[:,::1] v_12,
                         double[:,::1] acc,
                         int nparticles, double dt,
-                        double GM_bulge, double c,
-                        double GM_disk, double a, double b,
-                        double C1, double C2, double C3, double qz,
-                        double v_halo, double R_halo):
+                        pot.Potential potential):
     """ Velocities need to be offset from positions by 1/2 step! To
         'prime' the integration, call
 
@@ -138,10 +60,7 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
         for j in range(3):
             r[i,j] = r[i,j] + dt*v_12[i,j]; # incr. pos. by full-step
 
-    lm10_acceleration(r, acc, nparticles,
-                      GM_bulge, c,
-                      GM_disk, a, b,
-                      C1, C2, C3, qz, v_halo, R_halo);
+    potential._acceleration(r, acc, nparticles);
 
     for i in range(nparticles):
         for j in range(3):
@@ -201,10 +120,7 @@ cdef inline double basis(double[:,::1] x, double[:,::1] v,
 cdef inline void ln_likelihood_helper(double sat_mass,
                                double[:,::1] x, double[:,::1] v, int nparticles,
                                double alpha, double[::1] betas,
-                               double GM_bulge, double c,
-                               double GM_disk, double a, double b,
-                               double C1, double C2, double C3, double qz,
-                               double v_halo, double R_halo,
+                               pot.Potential potential,
                                double[::1] x1_hat, double[::1] x2_hat,
                                double[::1] x3_hat,
                                double[:,::1] ln_likelihoods, int ll_idx,
@@ -217,10 +133,7 @@ cdef inline void ln_likelihood_helper(double sat_mass,
     cdef double jac, d, BB, cosb, Rsun = 8.
     cdef double sat_R = sqrt(x[0,0]*x[0,0] + x[0,1]*x[0,1] + x[0,2]*x[0,2])
     cdef double sat_V = sqrt(v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
-    cdef double r_tide = lm10_tidal_radius(sat_mass, sat_R,
-                                           GM_bulge, c,
-                                           GM_disk, a, b,
-                                           C1, C2, C3, qz, v_halo, R_halo)
+    cdef double r_tide = potential._tidal_radius(sat_mass, sat_R)
     cdef double v_disp = sat_V * r_tide / sat_R
 
     ln_sigma_r = log(0.5*r_tide)
@@ -301,54 +214,36 @@ def back_integration_likelihood(double t1, double t2, double dt,
     cdef double G = 4.499753324353494927e-12 # kpc^3 / Myr^2 / M_sun
     cdef double q1,q2,qz,phi,v_halo,R_halo,C1,C2,C3,sinphi,cosphi
     cdef double [::1] betas = _betas
+    cdef pot.Potential potential
 
     # mass
     m0 = exp(logm0)
     mdot = exp(logmdot)
 
     # potential parameters
-    GM_disk = G*1.E11 # M_sun
-    a = 6.5
-    b = 0.26
-    GM_bulge = G*3.4E10 # M_sun
-    c = 0.7
-
-    q1 = potential_params['q1']
-    q2 = potential_params['q2']
-    qz = potential_params['qz']
-    phi = potential_params['phi']
-    R_halo = exp(potential_params['log_R_halo'])
-    v_halo = potential_params['v_halo']
-
-    sinphi = sin(phi)
-    cosphi = cos(phi)
-    C1 = cosphi*cosphi/(q1*q1) + sinphi*sinphi/(q2*q2)
-    C2 = cosphi*cosphi/(q2*q2) + sinphi*sinphi/(q1*q1)
-    C3 = 2.*sinphi*cosphi*(1./(q1*q1) - 1./(q2*q2))
+    potential = pot.LM10Potential(1.E11, 6.5, 0.26,
+                                  3.4E10, 0.7,
+                                  potential_params['q1'],
+                                  potential_params['q2'],
+                                  potential_params['qz'],
+                                  potential_params['phi'],
+                                  potential_params['v_halo'],
+                                  exp(potential_params['log_R_halo']))
     mass = -mdot*t1 + m0
 
     # prime the accelerations
-    leapfrog_init(x, v, v_12, acc, nparticles+1, dt,
-                  GM_bulge, c,
-                  GM_disk, a, b,
-                  C1, C2, C3, qz, v_halo, R_halo)
+    leapfrog_init(x, v, v_12, acc, nparticles+1, dt, potential)
 
     #all_x,all_v = np.empty((2,nsteps,nparticles+1,ndim))
     #all_x[0] = x
     #all_v[0] = v
     ln_likelihood_helper(mass, x, v, nparticles,
-                         alpha, betas,
-                         GM_bulge, c,
-                         GM_disk, a, b,
-                         C1, C2, C3, qz, v_halo, R_halo,
+                         alpha, betas, potential,
                          x1_hat, x2_hat, x3_hat,
                          ln_likelihoods, 0, dx, dv)
 
     for i in range(1,nsteps):
-        leapfrog_step(x, v, v_12, acc, nparticles+1, dt,
-                      GM_bulge, c,
-                      GM_disk, a, b,
-                      C1, C2, C3, qz, v_halo, R_halo)
+        leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
         #all_x[ii] = x
         #all_v[ii] = v
         t1 += dt
@@ -357,10 +252,7 @@ def back_integration_likelihood(double t1, double t2, double dt,
         mass = -mdot*t1 + m0
 
         ln_likelihood_helper(mass, x, v, nparticles,
-                             alpha, betas,
-                             GM_bulge, c,
-                             GM_disk, a, b,
-                             C1, C2, C3, qz, v_halo, R_halo,
+                             alpha, betas, potential,
                              x1_hat, x2_hat, x3_hat,
                              ln_likelihoods, i, dx, dv)
 
