@@ -188,12 +188,12 @@ cdef inline void ln_likelihood_helper(double sat_mass,
 
         ln_likelihoods[ll_idx,i] = r_term + v_term + jac
 
-cpdef back_integration_likelihood(double t1, double t2, double dt,
-                                  pot._Potential potential,
-                                  np.ndarray[double,ndim=2] s_gc,
-                                  np.ndarray[double,ndim=2] p_gc,
-                                  double logm0, double logmdot,
-                                  double alpha, np.ndarray[double,ndim=1] _betas):
+cpdef rewinder_likelihood(double t1, double t2, double dt,
+                          pot._Potential potential,
+                          np.ndarray[double,ndim=2] s_gc,
+                          np.ndarray[double,ndim=2] p_gc,
+                          double logm0, double logmdot,
+                          double alpha, np.ndarray[double,ndim=1] _betas):
     """ 0th entry of x,v is the satellite position, velocity """
 
     cdef int i, nsteps, nparticles, ndim
