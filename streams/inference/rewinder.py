@@ -20,7 +20,8 @@ import h5py
 
 # Project
 from streamteam.inference import EmceeModel
-from streams import heliocentric_names
+from .. import heliocentric_names
+from .rewinder_likelihood import rewinder_likelihood
 
 __all__ = ["Rewinder", "RewinderSampler"]
 
@@ -40,7 +41,7 @@ class Rewinder(EmceeModel):
         # Potential
         for par_name,par in potential.parameters:
             self.add_parameter(par, "potential")
-        self.potential_cls = potential.c_cls
+        self.potential_class = potential.c_cls
 
         # Progenitor
         for par_name,par in progenitor.parameters:
@@ -49,6 +50,7 @@ class Rewinder(EmceeModel):
         # Stars
         for par_name,par in stars.parameters:
             self.add_parameter(par, "stars")
+        self.nstars = len(stars)
 
         self.args = (t1,t2,dt)
 
@@ -155,6 +157,28 @@ class Rewinder(EmceeModel):
 
         return model
 
+    def ln_prior(self, parameters, parameter_values, t1, t2, dt):
+        """ Evaluate the log-prior at the given parameter values, but
+            not for the star positions, which we need in the likelihood
+            function.
+
+            Parameters
+            ----------
+            parameters : dict
+                Dictionary of ModelParameter objects.
+            parameter_values : dict
+                The dictionary of model parameter values.
+            t1,t2,dt : numeric
+                Integration limits.
+        """
+        ln_prior = 0.
+        for group_name in ['potential', 'progenitor']:
+            for param in parameters[group_name].keys():
+                v = value_dict[group_name][param.name]
+                ln_prior += param.prior(v)
+
+        return ln_prior
+
     def ln_likelihood(self, parameters, parameter_values, t1, t2, dt):
         """ Evaluate the log-likelihood at the given parameter values.
 
@@ -164,6 +188,8 @@ class Rewinder(EmceeModel):
                 Dictionary of ModelParameter objects.
             parameter_values : dict
                 The dictionary of model parameter values.
+            t1,t2,dt : numeric
+                Integration limits.
         """
 
         # TODO: need to figure out how to get P(D|X) values into here...
@@ -174,6 +200,7 @@ class Rewinder(EmceeModel):
         ######################################################################
         # potential parameters:
         #
+        pparams = dict()
         for par in parameters['potential']:
             # parameter is free to vary, take value from the dictionary of
             #   variable parameter values
@@ -185,7 +212,8 @@ class Rewinder(EmceeModel):
             else:
                 val = par.frozen
 
-            # TODO: val?
+            pparams[par.name] = val
+        potential = self.potential_class(**pparams)
 
         ######################################################################
         # progenitor parameters:
@@ -229,7 +257,7 @@ class Rewinder(EmceeModel):
             beta = parameters['stars']['beta'].frozen
 
         # star coordinates
-        star_helct = np.empty((nparticles,6)) # TODO: nparticles
+        star_helct = np.empty((self.nstars,6))
         for ii,par_name in enumerate(heliocentric_names):
             if parameters['stars'][par_name].frozen is False:
                 star_helct[:,i] = parameter_values['stars'][par_name]
@@ -238,9 +266,9 @@ class Rewinder(EmceeModel):
         star_galct = _hel_to_gc(star_helct) # TODO: need better way to do this so can specify R_sun and V_circ if I want in the future
 
         # TODO:
-        ln_like = back_integration_likelihood(t1, t2, dt, pparams,
-                                              prog_galct, star_galct,
-                                              logmass, logmdot, alpha, betas)
+        ln_like = rewinder_likelihood(t1, t2, dt, pparams,
+                                      prog_galct, star_galct,
+                                      logmass, logmdot, alpha, betas)
 
         return np.sum(ln_like + data_like) + np.squeeze(sat_like)
 
