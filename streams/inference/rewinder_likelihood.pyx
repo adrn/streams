@@ -9,8 +9,8 @@ from scipy.misc import logsumexp
 import cython
 cimport cython
 
-cimport streams.potential._core as pot
-import streams.potential._core as pot
+cimport streams.potential.basepotential as pot
+import streams.potential.basepotential as pot
 
 cdef extern from "math.h":
     double sqrt(double x)
@@ -30,7 +30,7 @@ cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v,
                         double[:,::1] v_12,
                         double[:,::1] acc, # return
                         int nparticles, double dt,
-                        pot.Potential potential):
+                        pot._Potential potential):
 
     potential._acceleration(r, acc, nparticles);
 
@@ -46,7 +46,7 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
                         double[:,::1] v_12,
                         double[:,::1] acc,
                         int nparticles, double dt,
-                        pot.Potential potential):
+                        pot._Potential potential):
     """ Velocities need to be offset from positions by 1/2 step! To
         'prime' the integration, call
 
@@ -120,7 +120,7 @@ cdef inline double basis(double[:,::1] x, double[:,::1] v,
 cdef inline void ln_likelihood_helper(double sat_mass,
                                double[:,::1] x, double[:,::1] v, int nparticles,
                                double alpha, double[::1] betas,
-                               pot.Potential potential,
+                               pot._Potential potential,
                                double[::1] x1_hat, double[::1] x2_hat,
                                double[::1] x3_hat,
                                double[:,::1] ln_likelihoods, int ll_idx,
@@ -214,7 +214,7 @@ def back_integration_likelihood(double t1, double t2, double dt,
     cdef double G = 4.499753324353494927e-12 # kpc^3 / Myr^2 / M_sun
     cdef double q1,q2,qz,phi,v_halo,R_halo,C1,C2,C3,sinphi,cosphi
     cdef double [::1] betas = _betas
-    cdef pot.Potential potential
+    cdef pot._Potential potential
 
     # mass
     m0 = exp(logm0)
