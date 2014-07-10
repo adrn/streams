@@ -27,8 +27,11 @@ class Potential(object):
     def acceleration(self, xyz):
         return self.c_instance.acceleration(xyz)
 
+    def var_acceleration(self, w):
+        return self.c_instance.var_acceleration(w)
+
     def tidal_radius(self, m_sat, r):
-        return self.c_instance.acceleration(r)
+        return self.c_instance.tidal_radius(r)
 
 # ==============================================================================
 
