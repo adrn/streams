@@ -1,5 +1,5 @@
 
-cdef class Potential:
+cdef class _Potential:
     cpdef evaluate(self, double[:,::1] r)
     cdef public void _evaluate(self, double[:,::1] r, double[::1] pot, int nparticles)
 

@@ -16,7 +16,7 @@ cimport cython
 
 # ==============================================================================
 
-cdef class Potential:
+cdef class _Potential:
 
     cpdef evaluate(self, double[:,::1] r):
         cdef int nparticles, ndim
