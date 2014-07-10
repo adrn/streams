@@ -196,7 +196,7 @@ cpdef back_integration_likelihood(double t1, double t2, double dt,
                                   double alpha, np.ndarray[double,ndim=1] _betas):
     """ 0th entry of x,v is the satellite position, velocity """
 
-    cdef int i, nsteps, nparticles
+    cdef int i, nsteps, nparticles, ndim
     nparticles = len(p_gc)
     nsteps = int(fabs((t1-t2)/dt))
 
@@ -212,6 +212,8 @@ cpdef back_integration_likelihood(double t1, double t2, double dt,
     cdef double [:,::1] v = np.vstack((s_gc[:,3:],p_gc[:,3:]))
     cdef double [:,::1] acc = np.empty((nparticles+1,3))
     cdef double [::1] betas = _betas
+    # cdef double [:,:,::1] all_x = np.empty((nsteps,nparticles+1,3))
+    # cdef double [:,:,::1] all_v = np.empty((nsteps,nparticles+1,3))
 
     # mass
     m0 = exp(logm0)
@@ -221,9 +223,8 @@ cpdef back_integration_likelihood(double t1, double t2, double dt,
     # prime the accelerations
     leapfrog_init(x, v, v_12, acc, nparticles+1, dt, potential)
 
-    #all_x,all_v = np.empty((2,nsteps,nparticles+1,ndim))
-    #all_x[0] = x
-    #all_v[0] = v
+    # all_x[0] = x
+    # all_v[0] = v
     ln_likelihood_helper(mass, x, v, nparticles,
                          alpha, betas, potential,
                          x1_hat, x2_hat, x3_hat,
@@ -231,8 +232,8 @@ cpdef back_integration_likelihood(double t1, double t2, double dt,
 
     for i in range(1,nsteps):
         leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
-        #all_x[ii] = x
-        #all_v[ii] = v
+        # all_x[i] = x
+        # all_v[i] = v
         t1 += dt
 
         # mass of the satellite
@@ -243,4 +244,4 @@ cpdef back_integration_likelihood(double t1, double t2, double dt,
                              x1_hat, x2_hat, x3_hat,
                              ln_likelihoods, i, dx, dv)
 
-    return logsumexp(ln_likelihoods, axis=0)
+    return logsumexp(ln_likelihoods, axis=0)#, np.array(all_x), np.array(all_x)
