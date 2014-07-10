@@ -19,6 +19,10 @@ potential = Extension("streams.potential.basepotential",
                       ["streams/potential/basepotential.pyx"],
                       include_dirs=[numpy_incl_path])
 
+lm10 = Extension("streams.potential.lm10",
+                 ["streams/potential/lm10.pyx"],
+                 include_dirs=[numpy_incl_path])
+
 setup(
     name="Streams",
     version="0.0",
@@ -26,5 +30,5 @@ setup(
     author_email="adrn@astro.columbia.edu",
     license="BSD",
     cmdclass = {'build_ext': build_ext},
-    ext_modules=[gc_hel, new_like, potential]
+    ext_modules=[gc_hel, new_like, potential, lm10]
 )
