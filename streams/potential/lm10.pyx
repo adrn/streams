@@ -18,7 +18,8 @@ import cython
 cimport cython
 
 # Project
-from .basepotential cimport Potential
+from .basepotential cimport _Potential
+from .basepotential import Potential
 from ... import usys
 from ..inference import ModelParameter
 from ..inference import LogUniformPrior
@@ -32,9 +33,6 @@ cdef extern from "math.h":
     double log(double x)
     double fabs(double x)
     double exp(double x)
-
-class Potential(object):
-    pass
 
 class LM10Potential(Potential):
 
