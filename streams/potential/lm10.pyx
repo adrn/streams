@@ -20,9 +20,9 @@ cimport cython
 # Project
 from .basepotential cimport _Potential
 from .basepotential import Potential
-from ... import usys
-from ..inference import ModelParameter
-from ..inference import LogUniformPrior
+from .. import usys
+from ..inference.parameter import ModelParameter
+from ..inference.prior import LogUniformPrior
 
 cdef extern from "math.h":
     double sqrt(double x)
@@ -78,7 +78,7 @@ class LM10Potential(Potential):
     def __init__(self, **kwargs):
         """ """
 
-        parameter_values = dict()
+        parameter_values = OrderedDict()
         for par_name in self.parameters.keys():
             # TODO: warn if kwarg parameter not in self.parameters
 
@@ -90,6 +90,7 @@ class LM10Potential(Potential):
             else:
                 parameter_values[par_name] = self.parameters[par_name].truth
 
+        self.parameter_values = parameter_values
         self.c_class = _LM10Potential
         self.c_instance = _LM10Potential(**parameter_values)
 
