@@ -211,23 +211,11 @@ cpdef back_integration_likelihood(double t1, double t2, double dt,
     cdef double [:,::1] x = np.vstack((s_gc[:,:3],p_gc[:,:3]))
     cdef double [:,::1] v = np.vstack((s_gc[:,3:],p_gc[:,3:]))
     cdef double [:,::1] acc = np.empty((nparticles+1,3))
-    cdef double G = 4.499753324353494927e-12 # kpc^3 / Myr^2 / M_sun
-    cdef double q1,q2,qz,phi,v_halo,R_halo,C1,C2,C3,sinphi,cosphi
     cdef double [::1] betas = _betas
 
     # mass
     m0 = exp(logm0)
     mdot = exp(logmdot)
-
-    # potential parameters
-    # potential = pot.LM10Potential(1.E11, 6.5, 0.26,
-    #                               3.4E10, 0.7,
-    #                               potential_params['q1'],
-    #                               potential_params['q2'],
-    #                               potential_params['qz'],
-    #                               potential_params['phi'],
-    #                               potential_params['v_halo'],
-    #                               exp(potential_params['log_R_halo']))
     mass = -mdot*t1 + m0
 
     # prime the accelerations
