@@ -16,6 +16,11 @@ cimport cython
 
 class Potential(object):
 
+    """ When subclassing, either need to override these methods, or write your own
+        Cython _Potential subclass that implements the required methods. See lm10.pyx
+        for an example.
+    """
+
     def evaluate(self, xyz):
         return self.c_instance.evaluate(xyz)
 
