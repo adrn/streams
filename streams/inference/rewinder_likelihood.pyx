@@ -188,12 +188,12 @@ cdef inline void ln_likelihood_helper(double sat_mass,
 
         ln_likelihoods[ll_idx,i] = r_term + v_term + jac
 
-def back_integration_likelihood(double t1, double t2, double dt,
-                                object potential_params,
-                                np.ndarray[double,ndim=2] s_gc,
-                                np.ndarray[double,ndim=2] p_gc,
-                                double logm0, double logmdot,
-                                double alpha, np.ndarray[double,ndim=1] _betas):
+cpdef back_integration_likelihood(double t1, double t2, double dt,
+                                  pot._Potential potential,
+                                  np.ndarray[double,ndim=2] s_gc,
+                                  np.ndarray[double,ndim=2] p_gc,
+                                  double logm0, double logmdot,
+                                  double alpha, np.ndarray[double,ndim=1] _betas):
     """ 0th entry of x,v is the satellite position, velocity """
 
     cdef int i, nsteps, nparticles
@@ -214,21 +214,20 @@ def back_integration_likelihood(double t1, double t2, double dt,
     cdef double G = 4.499753324353494927e-12 # kpc^3 / Myr^2 / M_sun
     cdef double q1,q2,qz,phi,v_halo,R_halo,C1,C2,C3,sinphi,cosphi
     cdef double [::1] betas = _betas
-    cdef pot._Potential potential
 
     # mass
     m0 = exp(logm0)
     mdot = exp(logmdot)
 
     # potential parameters
-    potential = pot.LM10Potential(1.E11, 6.5, 0.26,
-                                  3.4E10, 0.7,
-                                  potential_params['q1'],
-                                  potential_params['q2'],
-                                  potential_params['qz'],
-                                  potential_params['phi'],
-                                  potential_params['v_halo'],
-                                  exp(potential_params['log_R_halo']))
+    # potential = pot.LM10Potential(1.E11, 6.5, 0.26,
+    #                               3.4E10, 0.7,
+    #                               potential_params['q1'],
+    #                               potential_params['q2'],
+    #                               potential_params['qz'],
+    #                               potential_params['phi'],
+    #                               potential_params['v_halo'],
+    #                               exp(potential_params['log_R_halo']))
     mass = -mdot*t1 + m0
 
     # prime the accelerations

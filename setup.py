@@ -11,8 +11,8 @@ gc_hel = Extension("streams.coordinates._gc_hel",
                    ["streams/coordinates/_gc_hel.pyx"],
                     include_dirs=[numpy_incl_path])
 
-new_like = Extension("streams.inference.new_likelihood",
-                      ["streams/inference/new_likelihood.pyx"],
+rewinder = Extension("streams.inference.rewinder_likelihood",
+                     ["streams/inference/rewinder_likelihood.pyx"],
                      include_dirs=[numpy_incl_path])
 
 potential = Extension("streams.potential.basepotential",
@@ -30,5 +30,5 @@ setup(
     author_email="adrn@astro.columbia.edu",
     license="BSD",
     cmdclass = {'build_ext': build_ext},
-    ext_modules=[gc_hel, new_like, potential, lm10]
+    ext_modules=[gc_hel, rewinder, potential, lm10]
 )
