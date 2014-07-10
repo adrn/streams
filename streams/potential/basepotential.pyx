@@ -14,35 +14,46 @@ np.import_array()
 import cython
 cimport cython
 
+class Potential(object):
+
+    def evaluate(self, xyz):
+        return self.c_instance.evaluate(xyz)
+
+    def acceleration(self, xyz):
+        return self.c_instance.acceleration(xyz)
+
+    def tidal_radius(self, m_sat, r):
+        return self.c_instance.acceleration(r)
+
 # ==============================================================================
 
 cdef class _Potential:
 
-    cpdef evaluate(self, double[:,::1] r):
+    cpdef evaluate(self, double[:,::1] xyz):
         cdef int nparticles, ndim
-        nparticles = r.shape[0]
-        ndim = r.shape[1]
+        nparticles = xyz.shape[0]
+        ndim = xyz.shape[1]
 
         cdef double [::1] pot = np.empty(nparticles)
-        self._evaluate(r, pot, nparticles)
+        self._evaluate(xyz, pot, nparticles)
         return np.array(pot)
 
     @cython.boundscheck(False)
     @cython.cdivision(True)
     @cython.wraparound(False)
     @cython.nonecheck(False)
-    cdef public void _evaluate(self, double[:,::1] r, double[::1] pot, int nparticles):
+    cdef public void _evaluate(self, double[:,::1] xyz, double[::1] pot, int nparticles):
         for i in range(nparticles):
             pot[i] = 0.
 
     # -------------------------------------------------------------
-    cpdef acceleration(self, double[:,::1] r):
+    cpdef acceleration(self, double[:,::1] xyz):
         cdef int nparticles, ndim
-        nparticles = r.shape[0]
-        ndim = r.shape[1]
+        nparticles = xyz.shape[0]
+        ndim = xyz.shape[1]
 
         cdef double [:,::1] acc = np.empty((nparticles,ndim//2))
-        self._acceleration(r, acc, nparticles)
+        self._acceleration(xyz, acc, nparticles)
         return np.array(acc)
 
     @cython.boundscheck(False)
