@@ -6,15 +6,22 @@ from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
+# Standard library
+from collections import OrderedDict
+
 # Third-party
+import astropy.units as u
 import numpy as np
 cimport numpy as np
 np.import_array()
-
 import cython
 cimport cython
 
+# Project
 from .basepotential cimport Potential
+from ... import usys
+from ..inference import ModelParameter
+from ..inference import LogUniformPrior
 
 cdef extern from "math.h":
     double sqrt(double x)
@@ -26,7 +33,69 @@ cdef extern from "math.h":
     double fabs(double x)
     double exp(double x)
 
-cdef class _LM10Potential(Potential):
+class Potential(object):
+    pass
+
+class LM10Potential(Potential):
+
+    # Create parameters for all Halo parameters in the ModelParameter
+    #   (the order of the parameters is the order that they need to be
+    #       fed to the Cython class)
+    parameters = OrderedDict()
+
+    # disk
+    parameters['M_disk'] = ModelParameter("M_disk", truth=1E11,
+                                 prior=LogUniformPrior(5E10,2E11))
+    parameters['a'] = ModelParameter("a", truth=6.5,
+                            prior=LogUniformPrior(5,8))
+    parameters['b'] = ModelParameter("b", truth=0.26,
+                            prior=LogUniformPrior(0.1,0.5))
+
+    # spheroid / bulge
+    parameters['M_bulge'] = ModelParameter("M_bulge", truth=3.4E10,
+                                 prior=LogUniformPrior(1E10,5E10))
+    parameters['c'] = ModelParameter("c", truth=0.7,
+                            prior=LogUniformPrior(0.5,1.))
+
+    # halo
+    parameters['q1'] = ModelParameter("q1", truth=1.38,
+                             prior=LogUniformPrior(0.7,1.8))
+    parameters['q2'] = ModelParameter(name='q2', truth=1.,
+                             prior=LogUniformPrior(0.71,1.8))
+    parameters['qz'] = ModelParameter(name='qz', truth=1.36,
+                             prior=LogUniformPrior(0.71,1.8))
+    parameters['phi'] = ModelParameter(name='phi',
+                              truth=(97.*u.deg).decompose(usys).value,
+                              prior=LogUniformPrior((62.*u.deg).decompose(usys).value,
+                                                    (132.*u.deg).decompose(usys).value))
+    parameters['v_halo'] = ModelParameter(name='v_halo',
+                                truth=(121.858*u.km/u.s).decompose(usys).value,
+                                prior=LogUniformPrior((90.*u.km/u.s).decompose(usys).value,
+                                                      (170.*u.km/u.s).decompose(usys).value))
+    parameters['r_halo'] = ModelParameter(name='log_R_halo',
+                                truth=(12.*u.kpc).decompose(usys).value,
+                                prior=LogUniformPrior((9.*u.kpc).decompose(usys).value,
+                                                      (25*u.kpc).decompose(usys).value))
+
+    def __init__(self, **kwargs):
+        """ """
+
+        parameter_values = dict()
+        for par_name in self.parameters.keys():
+            # TODO: warn if kwarg parameter not in self.parameters
+
+            # if provided, set the parameter value to given
+            if kwargs.has_key(par_name):
+                parameter_values[par_name] = kwargs[par_name]
+
+            # otherwise, set to truth
+            else:
+                parameter_values[par_name] = self.parameters[par_name].truth
+
+        self.c_class = _LM10Potential
+        self.c_instance = _LM10Potential(**parameter_values)
+
+cdef class _LM10Potential(_Potential):
 
     # here need to cdef all the attributes
     cdef public double G
