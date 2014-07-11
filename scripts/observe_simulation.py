@@ -140,9 +140,10 @@ def observe_simulation(star_error_model=None, progenitor_error_model=None,
     star_tbl.write(output_file, format="hdf5", path="stars", overwrite=overwrite)
     prog_tbl.write(output_file, format="hdf5", path="progenitor", append=True)
 
-    with h5py.File(output_file, "a") as f:
-        f["t1"] = snap_data.meta['time']
-        f["t2"] = 0.
+    integ_tbl = at.Table(np.array([[np.nan]]))
+    integ_tbl.meta['t1'] = snap_data.meta['time']
+    integ_tbl.meta['t2'] = 0.
+    integ_tbl.write(output_file, format="hdf5", path="integration", append=True)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
