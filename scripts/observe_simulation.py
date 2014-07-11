@@ -4,8 +4,7 @@
 
     Example call:
 
-python scripts/observe_simulation.py --output="data/observed_simulation/2.5e8.hdf5" \
---path="data/simulation/sgr_nfw/M2.5e+08" --snapfile=SNAP113
+python scripts/observe_simulation.py --output="data/observed_simulation/2.5e8.hdf5" --path="data/simulation/sgr_nfw/M2.5e+08" --snapfile=SNAP113 -v -o --seed=42
 
 """
 
@@ -137,8 +136,10 @@ def observe_simulation(star_error_model=None, progenitor_error_model=None,
                              "{}.{}".format(fname, 'png')))
 
     # write tables to output_file
-    star_tbl.write(output_file, format="hdf5", path="stars", overwrite=overwrite)
-    prog_tbl.write(output_file, format="hdf5", path="progenitor", append=True)
+    observed_star_tbl.write(output_file, format="hdf5", path="stars", overwrite=overwrite)
+    observed_prog_tbl.write(output_file, format="hdf5", path="progenitor", append=True)
+    star_tbl.write(output_file, format="hdf5", path="true_stars", append=True)
+    prog_tbl.write(output_file, format="hdf5", path="true_progenitor", append=True)
 
     integ_tbl = at.Table(np.array([[np.nan]]))
     integ_tbl.meta['t1'] = snap_data.meta['time']
