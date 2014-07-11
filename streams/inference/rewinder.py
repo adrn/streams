@@ -61,127 +61,6 @@ class Rewinder(EmceeModel):
 
         self.args = (t1,t2,dt)
 
-    @classmethod
-    def from_config(cls, config):
-        """ Construct a StreamModel from a configuration dictionary.
-            Typically comes from a YAML file via `streams.io.read_config`.
-
-            Parameters
-            ----------
-            config : dict
-        """
-
-        if not isinstance(config, dict):
-            from ..io import read_config
-            config = read_config(config)
-
-        seed = config.get('seed', np.random.randint(100000))
-        logger.debug("Using seed: {}".format(seed))
-        np.random.seed(seed)
-        random.seed(seed)
-
-        nlead = config.get('nlead', 0)
-        ntrail = config.get('ntrail', 0)
-        nstars = nlead + ntrail
-
-        # more complicated selections
-        star_idx = config.get('star_idx', None)
-        expr = config.get('expr', None)
-
-        if star_idx is not None and nstars is not 0 and len(star_idx) != 0:
-            raise ValueError("Number of stars does not match length of"
-                             "star index specification.")
-
-        # load progenitor and star data
-        logger.debug("Reading data from:\n\t{}".format(config['data_file']))
-
-        progenitor = at.Table.read(config['data_file'], path='progenitor')
-        true_progenitor = at.Table.read(config['data_file'], path='true_progenitor')
-        progenitor_err = at.Table.read(config['data_file'], path='error_progenitor')
-
-        stars = at.Table.read(config['data_file'], path='stars')
-        true_stars = at.Table.read(config['data_file'], path='true_stars')
-        stars_err = at.Table.read(config['data_file'], path='error_stars')
-
-        # progenitor parameter container
-        # TODO: handle missing dimensions
-        prog_ko = KinematicObject(hel=dict([(k,progenitor[k].data) for k in heliocentric_names]),
-                          errors=dict([(k,progenitor_err[k].data) for k in heliocentric_names]),
-                          truths=dict([(k,true_progenitor[k].data) for k in heliocentric_names]))
-
-        prog_ko.parameters['m0'] = ModelParameter('m0', truth=float(progenitor['m0']),
-                                                  prior=LogPrior()) # TODO: logspace?
-        true_mdot = np.log(3.2*10**(np.floor(np.log10(float(progenitor['m0'])))-4))# THIS IS A HACK FOR 2.5e8!
-        prog_ko.parameters['mdot'] = ModelParameter('mdot', truth=true_mdot,
-                                                    prior=LogPrior()) # TODO: logspace?
-        prog_ko.parameters['alpha'] = ModelParameter('alpha', shape=(1,),
-                                                     prior=LogUniformPrior(1., 2.))
-
-        # deal with extra star selection crap
-        if star_idx is None:
-            if nstars is 0:
-                raise ValueError("If not specifying indexes, must specicy number"
-                                 "of stars (nstars)")
-
-            if expr is not None:
-                expr_idx = numexpr.evaluate(expr, stars)
-            else:
-                expr_idx = np.ones(len(stars)).astype(bool)
-
-            # leading tail stars
-            lead_stars, = np.where((stars["tail"] == -1.) & expr_idx)
-            np.random.shuffle(lead_stars)
-            lead_stars = lead_stars[:nlead]
-
-            # trailing tail stars
-            trail_stars, = np.where((stars["tail"] == 1.) & expr_idx)
-            np.random.shuffle(trail_stars)
-            trail_stars = trail_stars[:ntrail]
-
-            star_idx = np.append(lead_stars, trail_stars)
-
-        stars = stars[star_idx]
-        true_stars = true_stars[star_idx]
-        stars_err = stars_err[star_idx]
-        # TODO: handle missing dimensions
-        logger.info("Running with {} stars.".format(len(stars)))
-        logger.debug("Using stars: {}".format(list(star_idx)))
-
-        star_ko = KinematicObject(hel=dict([(k,stars[k].data) for k in heliocentric_names]),
-                                errors=dict([(k,stars_err[k].data) for k in heliocentric_names]),
-                                truths=dict([(k,true_stars[k].data) for k in heliocentric_names]))
-        star_ko.parameters['tail'] = ModelParameter('tail', truth=stars['tail'])
-
-        # integration stuff
-        integration = at.Table.read(config['data_file'], path='integration')
-        t1 = config.get("t1", integration.meta['t1'])
-        t2 = config.get("t2", integration.meta['t2'])
-        dt = config.get("dt", -1.)
-        logger.debug("Integration from {} to {}, ∆t={} Myr".format(t1,t2,dt))
-
-        # get the potential object specified from the potential subpackage
-        from .. import potential as sp
-        Potential = getattr(sp, config["potential"]["class_name"])
-        potential = Potential()
-        logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
-
-        for par in prog_ko.parameters.values():
-            if par.name not in config["progenitor"]["parameters"]:
-                par.freeze("truth")
-
-        for par in star_ko.parameters.values():
-            if par.name not in config["stars"]["parameters"]:
-                par.freeze("truth")
-
-        for par in potential.parameters.values():
-            if par.name not in config["potential"]["parameters"]:
-                par.freeze("truth")
-
-        # Initialize the model
-        model = cls(potential, prog_ko, star_ko, t1, t2, dt)
-
-        return model
-
     def ln_prior(self, parameters, parameter_values, t1, t2, dt):
         """ Evaluate the log-prior at the given parameter values, but
             not for the star positions, which we need in the likelihood
@@ -296,6 +175,130 @@ class Rewinder(EmceeModel):
                                       logmass, logmdot, alpha, betas)
 
         return np.sum(ln_like + data_like) + np.squeeze(sat_like)
+
+    @classmethod
+    def from_config(cls, config):
+        """ Construct a StreamModel from a configuration dictionary.
+            Typically comes from a YAML file via `streams.io.read_config`.
+
+            Parameters
+            ----------
+            config : dict
+        """
+
+        if not isinstance(config, dict):
+            from ..io import read_config
+            config = read_config(config)
+
+        seed = config.get('seed', np.random.randint(100000))
+        logger.debug("Using seed: {}".format(seed))
+        np.random.seed(seed)
+        random.seed(seed)
+
+        nlead = config.get('nlead', 0)
+        ntrail = config.get('ntrail', 0)
+        nstars = nlead + ntrail
+
+        # more complicated selections
+        star_idx = config.get('star_idx', None)
+        expr = config.get('expr', None)
+
+        if star_idx is not None and nstars is not 0 and len(star_idx) != 0:
+            raise ValueError("Number of stars does not match length of"
+                             "star index specification.")
+
+        # load progenitor and star data
+        logger.debug("Reading data from:\n\t{}".format(config['data_file']))
+
+        progenitor = at.Table.read(config['data_file'], path='progenitor')
+        true_progenitor = at.Table.read(config['data_file'], path='true_progenitor')
+        progenitor_err = at.Table.read(config['data_file'], path='error_progenitor')
+
+        stars = at.Table.read(config['data_file'], path='stars')
+        true_stars = at.Table.read(config['data_file'], path='true_stars')
+        stars_err = at.Table.read(config['data_file'], path='error_stars')
+
+        # progenitor parameter container
+        # TODO: handle missing dimensions
+        prog_ko = KinematicObject(hel=dict([(k,progenitor[k].data) for k in heliocentric_names]),
+                          errors=dict([(k,progenitor_err[k].data) for k in heliocentric_names]),
+                          truths=dict([(k,true_progenitor[k].data) for k in heliocentric_names]))
+
+        prog_ko.parameters['m0'] = ModelParameter('m0', truth=float(progenitor['m0']),
+                                                  prior=LogPrior()) # TODO: logspace?
+        true_mdot = np.log(3.2*10**(np.floor(np.log10(float(progenitor['m0'])))-4))# THIS IS A HACK FOR 2.5e8!
+        prog_ko.parameters['mdot'] = ModelParameter('mdot', truth=true_mdot,
+                                                    prior=LogPrior()) # TODO: logspace?
+        prog_ko.parameters['alpha'] = ModelParameter('alpha', shape=(1,),
+                                                     prior=LogUniformPrior(1., 2.))
+
+        # deal with extra star selection crap
+        if star_idx is None:
+            if nstars is 0:
+                raise ValueError("If not specifying indexes, must specicy number"
+                                 "of stars (nstars)")
+
+            if expr is not None:
+                expr_idx = numexpr.evaluate(expr, stars)
+            else:
+                expr_idx = np.ones(len(stars)).astype(bool)
+
+            # leading tail stars
+            lead_stars, = np.where((stars["tail"] == -1.) & expr_idx)
+            np.random.shuffle(lead_stars)
+            lead_stars = lead_stars[:nlead]
+
+            # trailing tail stars
+            trail_stars, = np.where((stars["tail"] == 1.) & expr_idx)
+            np.random.shuffle(trail_stars)
+            trail_stars = trail_stars[:ntrail]
+
+            star_idx = np.append(lead_stars, trail_stars)
+
+        stars = stars[star_idx]
+        true_stars = true_stars[star_idx]
+        stars_err = stars_err[star_idx]
+        # TODO: handle missing dimensions
+        logger.info("Running with {} stars.".format(len(stars)))
+        logger.debug("Using stars: {}".format(list(star_idx)))
+
+        star_ko = KinematicObject(hel=dict([(k,stars[k].data) for k in heliocentric_names]),
+                                errors=dict([(k,stars_err[k].data) for k in heliocentric_names]),
+                                truths=dict([(k,true_stars[k].data) for k in heliocentric_names]))
+        star_ko.parameters['tail'] = ModelParameter('tail', truth=stars['tail'])
+
+        # integration stuff
+        integration = at.Table.read(config['data_file'], path='integration')
+        t1 = config.get("t1", integration.meta['t1'])
+        t2 = config.get("t2", integration.meta['t2'])
+        dt = config.get("dt", -1.)
+        logger.debug("Integration from {} to {}, ∆t={} Myr".format(t1,t2,dt))
+
+        # get the potential object specified from the potential subpackage
+        from .. import potential as sp
+        Potential = getattr(sp, config["potential"]["class_name"])
+        potential = Potential()
+        logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
+
+        for par in prog_ko.parameters.values():
+            if par.name not in config["progenitor"]["parameters"]:
+                if config["progenitor"].get("fixed_truth",False):
+                    par.freeze("truth")
+
+        for par in potential.parameters.values():
+            if par.name not in config["potential"]["parameters"]:
+                par.freeze("truth")
+
+        # Initialize the model
+        model = cls(potential, prog_ko, star_ko, t1, t2, dt)
+
+        return model
+
+    def _walk(self):
+        for tup in super(Rewinder,self)._walk():
+            if tup[0] == 'stars':
+                continue
+            yield tup
 
 
 # TODO: check here down
