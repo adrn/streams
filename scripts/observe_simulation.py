@@ -44,10 +44,14 @@ def energy(xv):
 
 def observe_table(tbl, error_model):
     new_tbl = tbl.copy()
+    err_tbl = tbl.copy()
+    err_tbl.meta = {}
+
     errors = error_model(tbl)
     for name in heliocentric_names:
         new_tbl[name] = np.random.normal(tbl[name], errors[name])
-    return new_tbl
+        err_tbl[name] = errors[name]
+    return new_tbl, err_tbl
 
 def observe_simulation(star_error_model=None, progenitor_error_model=None,
                        selection_expr=None, output_file=None, overwrite=False,
@@ -107,8 +111,8 @@ def observe_simulation(star_error_model=None, progenitor_error_model=None,
     star_tbl.add_column(at.Column(tail, name="tail")) # add tail
 
     # observe the data
-    observed_star_tbl = observe_table(star_tbl, star_error_model)
-    observed_prog_tbl = observe_table(prog_tbl, progenitor_error_model)
+    observed_star_tbl,star_err_tbl = observe_table(star_tbl, star_error_model)
+    observed_prog_tbl,prog_err_tbl = observe_table(prog_tbl, progenitor_error_model)
 
     # make a plot of true and observed positions
     obs_hel = np.vstack([observed_star_tbl[n] for n in heliocentric_names]).T
@@ -138,6 +142,8 @@ def observe_simulation(star_error_model=None, progenitor_error_model=None,
     # write tables to output_file
     observed_star_tbl.write(output_file, format="hdf5", path="stars", overwrite=overwrite)
     observed_prog_tbl.write(output_file, format="hdf5", path="progenitor", append=True)
+    star_err_tbl.write(output_file, format="hdf5", path="error_stars", append=True)
+    prog_err_tbl.write(output_file, format="hdf5", path="error_progenitor", append=True)
     star_tbl.write(output_file, format="hdf5", path="true_stars", append=True)
     prog_tbl.write(output_file, format="hdf5", path="true_progenitor", append=True)
 
