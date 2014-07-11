@@ -18,11 +18,11 @@ import cython
 cimport cython
 
 # Project
+from streamteam.inference.parameter import ModelParameter
+from streamteam.inference.prior import LogUniformPrior
 from .basepotential cimport _Potential
 from .basepotential import Potential
 from .. import usys
-from ..inference.parameter import ModelParameter
-from ..inference.prior import LogUniformPrior
 
 cdef extern from "math.h":
     double sqrt(double x)
