@@ -70,7 +70,7 @@ class LM10Potential(Potential):
                                 truth=(121.858*u.km/u.s).decompose(usys).value,
                                 prior=LogUniformPrior((90.*u.km/u.s).decompose(usys).value,
                                                       (170.*u.km/u.s).decompose(usys).value))
-    parameters['r_halo'] = ModelParameter(name='log_R_halo',
+    parameters['r_halo'] = ModelParameter(name='r_halo',
                                 truth=(12.*u.kpc).decompose(usys).value,
                                 prior=LogUniformPrior((9.*u.kpc).decompose(usys).value,
                                                       (25*u.kpc).decompose(usys).value))
