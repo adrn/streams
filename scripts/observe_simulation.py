@@ -1,6 +1,13 @@
 # coding: utf-8
 
-""" Observe particles from a given simulation """
+""" Observe particles from a given simulation.
+
+    Example call:
+
+python scripts/observe_simulation.py --output="data/observed_simulation/2.5e8.hdf5" \
+--path="data/simulation/sgr_nfw/M2.5e+08" --snapfile=SNAP113
+
+"""
 
 from __future__ import division, print_function
 
@@ -8,46 +15,45 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os, sys
-import copy
 import logging
+import copy
 import random
 
 # Third-party
 import astropy.units as u
-from astropy.utils.console import color_print
-import emcee
+from astropy import log as logger
+import astropy.table as at
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-np.seterr(all="ignore")
-import scipy
-scipy.seterr(all="ignore")
-import yaml
+import numexpr
 
 # Project
-from streams import usys
-from streams.coordinates.frame import heliocentric, galactocentric
-from streams.dynamics import ObservedParticle
-import streams.io as s_io
-from streams.observation.gaia import gaia_spitzer_errors, current_data_star, current_data_sat
-from streams.potential.lm10 import LawMajewski2010
-from streams.util import _parse_quantity
-from streams.integrate import LeapfrogIntegrator
+from streamteam.io import SCFReader
+from streams import usys, heliocentric_names, galactocentric_names
+from streams.coordinates import _gc_to_hel, _hel_to_gc
+from streams.observation.errormodels import *
+from streams.potential import LM10Potential
 
-# Create logger
-logger = logging.getLogger(__name__)
+def energy(xv):
+    x = xv[:,:3].copy()
+    v = xv[:,3:].copy()
+    potential = LM10Potential()
+    Epot = potential.evaluate(x)
+    Ekin = 0.5*np.sum(v**2, axis=-1)
+    return Epot + Ekin
 
-def observe_simulation(class_name, particle_error_model=None, satellite_error_model=None,
+def observe_table(tbl, error_model):
+    new_tbl = tbl.copy()
+    errors = error_model(tbl)
+    for name in heliocentric_names:
+        new_tbl[name] = np.random.normal(tbl[name], errors[name])
+    return new_tbl
+
+def observe_simulation(star_error_model=None, progenitor_error_model=None,
                        selection_expr=None, output_file=None, overwrite=False,
-                       seed=None, class_kwargs=dict()):
-    """ Observe simulation data and write the output to a standard HDF5 format.
-
-        TODO: handle missing dimensions
-
-        Parameters
-        ----------
-
-    """
+                       seed=None, simulation_path=None, snapfile=None):
+    """ Observe simulation data and write the output to an HDF5 file """
 
     if os.path.exists(output_file) and overwrite:
         os.remove(output_file)
@@ -64,109 +70,79 @@ def observe_simulation(class_name, particle_error_model=None, satellite_error_mo
     np.random.seed(seed)
     random.seed(seed)
 
-    try:
-        Simulation = getattr(s_io, class_name)
-    except AttributeError:
-        raise ValueError("Simulation class '{}' not found!".format(class_name))
+    scf = SCFReader(simulation_path)
+    snap_data = scf.read_snap(snapfile, units=usys)
 
-    # instantiate the specified simulation class with any additional keyword
-    #   arguments, e.g., mass from SgrSimulation
-    simulation = Simulation(**class_kwargs)
+    # select out particles that meet these cuts
+    idx = numexpr.evaluate("(tub!=0)", snap_data)
+    star_data = snap_data[idx]
+    logger.debug("Read in {} particles".format(len(star_data)))
 
-    # read particles from the simulation class
-    sim_time = simulation.units["time"]
-    sim_leng = simulation.units["length"]
+    # coordinate transform
+    star_gc = np.vstack([star_data[n] for n in galactocentric_names]).T
+    star_hel = _gc_to_hel(star_gc)
 
-    # HACK HACK HACK
-    selection_expr = "(tub!=0) & (tub>{}) & (tub<{}) & (sqrt((x+8)**2 + y**2 + z**2)<{})"\
-                     .format((1800*u.Myr).to(sim_time).value,
-                             (5500*u.Myr).to(sim_time).value,
-                             (40*u.kpc).to(sim_leng).value)
-    particles = simulation.particles(n=5000, expr=selection_expr, tail_bit=True, clean=True)
+    # create table for star data
+    star_tbl = at.Table(star_hel, names=heliocentric_names)
+    star_tbl.add_column(star_data["tub"]) # add tub
 
-    logger.debug("Read in {} particles with expr='{}'"\
-                 .format(particles.nparticles, selection_expr))
+    # select bound particles to median to get satellite position
+    idx = numexpr.evaluate("(tub==0)", snap_data)
+    prog_data = snap_data[idx]
 
-    # read the satellite position
-    satellite = simulation.satellite()
-    logger.debug("Read in present position of satellite...")
+    # coordinate transform
+    prog_gc = np.vstack([prog_data[n] for n in galactocentric_names]).T
+    prog_gc = np.median(prog_gc, axis=0).reshape(1,6)
+    logger.debug("Used {} particles to estimate progenitor position.".format(len(prog_data)))
+    prog_hel = _gc_to_hel(prog_gc)
 
-    satellite = satellite.to_frame(heliocentric)
-    particles = particles.to_frame(heliocentric)
+    # create table for progenitor data
+    prog_tbl = at.Table(prog_hel, names=heliocentric_names)
+    prog_tbl.add_column(at.Column([snap_data["m"].sum()], name="m0")) # add mass
 
-    # observe the particles if necessary
-    if particle_error_model is not None:
-        logger.info("Observing particles with {}".format(particle_error_model))
-        particle_errors = particle_error_model(particles)
-        o_particles = particles.observe(particle_errors)
-    else:
-        logger.info("Not observing particles")
-        o_particles = particles
+    # determine tail assignment for stars by relative energy
+    dE = energy(star_gc) - energy(prog_gc)
+    tail = np.zeros(len(star_tbl))
+    tail[dE > 0.] = -1. # leading tail
+    tail[dE <= 0.] = 1. # trailing
+    star_tbl.add_column(at.Column(tail, name="tail")) # add tail
 
-    # observe the satellite if necessary
-    if satellite_error_model:
-        logger.info("Observing satellite with {}".format(satellite_error_model))
-        satellite_errors = satellite_error_model(satellite)
-        o_satellite = satellite.observe(satellite_errors)
-    else:
-        logger.info("Not observing satellite")
-        o_satellite = satellite
+    # observe the data
+    observed_star_tbl = observe_table(star_tbl, star_error_model)
+    observed_prog_tbl = observe_table(prog_tbl, progenitor_error_model)
 
     # make a plot of true and observed positions
-    true_gc_particles = particles.to_frame(galactocentric)
-    gc_particles = o_particles.to_frame(galactocentric)
-    all_gc_particles = simulation.particles(n=1000, expr="tub!=0")\
-                                 .to_frame(galactocentric)
+    obs_hel = np.vstack([observed_star_tbl[n] for n in heliocentric_names]).T
+    obs_gc = _hel_to_gc(obs_hel)
 
-    fig,axes = plt.subplots(1,2,figsize=(16,8))
-    markersize = 4.
-    axes[0].plot(all_gc_particles["x"].value, all_gc_particles["z"].value,
-                 markersize=markersize, marker='o', linestyle='none', alpha=0.25)
-    axes[0].plot(true_gc_particles["x"].value, true_gc_particles["z"].value,
-                 markersize=markersize, marker='o', linestyle='none', alpha=0.5)
-    axes[0].plot(gc_particles["x"].value, gc_particles["z"].value,
-                 markersize=markersize, marker='o', linestyle='none', alpha=0.5, c='#ca0020')
+    fig,axes = plt.subplots(2,2,figsize=(16,16))
 
-    axes[1].plot(all_gc_particles["vx"].to(u.km/u.s).value,
-                 all_gc_particles["vz"].to(u.km/u.s).value,
-                 markersize=markersize, marker='o', linestyle='none', alpha=0.25)
-    axes[1].plot(true_gc_particles["vx"].to(u.km/u.s).value,
-                 true_gc_particles["vz"].to(u.km/u.s).value,
-                 markersize=markersize, marker='o', linestyle='none', alpha=0.5)
-    axes[1].plot(gc_particles["vx"].to(u.km/u.s).value,
-                 gc_particles["vz"].to(u.km/u.s).value,
-                 markersize=markersize, marker='o', linestyle='none', alpha=0.5, c='#ca0020')
+    mpl = dict(markersize=3., marker=',', linestyle='none', alpha=0.5)
+    axes[0,0].plot(star_gc[:,0], star_gc[:,1], **mpl)
+    axes[0,1].plot(star_gc[:,0], star_gc[:,2], **mpl)
+    axes[0,0].plot(obs_gc[tail==1,0], obs_gc[tail==1,1], c='#ca0020', **mpl)
+    axes[0,1].plot(obs_gc[tail==1,0], obs_gc[tail==1,2], c='#ca0020', **mpl)
+    axes[0,0].plot(obs_gc[tail==-1,0], obs_gc[tail==-1,1], **mpl)
+    axes[0,1].plot(obs_gc[tail==-1,0], obs_gc[tail==-1,2], **mpl)
+
+    axes[1,0].plot(star_gc[:,3], star_gc[:,4], **mpl)
+    axes[1,1].plot(star_gc[:,3], star_gc[:,5], **mpl)
+    axes[1,0].plot(obs_gc[tail==1,3], obs_gc[tail==1,4], c='#ca0020', **mpl)
+    axes[1,1].plot(obs_gc[tail==1,3], obs_gc[tail==1,5], c='#ca0020', **mpl)
+    axes[1,0].plot(obs_gc[tail==-1,3], obs_gc[tail==-1,4], **mpl)
+    axes[1,1].plot(obs_gc[tail==-1,3], obs_gc[tail==-1,5], **mpl)
 
     fname = os.path.splitext(os.path.basename(output_file))[0]
     fig.savefig(os.path.join(os.path.split(output_file)[0],
                              "{}.{}".format(fname, 'png')))
 
-    with h5py.File(output_file, "w") as f:
-        # add particle positions to file
-        grp = f.create_group("particles")
-        grp["data"] = o_particles._repr_X
+    # write tables to output_file
+    star_tbl.write(output_file, format="hdf5", path="stars", overwrite=overwrite)
+    prog_tbl.write(output_file, format="hdf5", path="progenitor", append=True)
 
-        if isinstance(o_particles, ObservedParticle):
-            grp["error"] = o_particles._repr_error_X
-            grp["true_data"] = particles._repr_X
-        grp["coordinate_names"] = o_particles.frame.coord_names
-        grp["units"] = [str(x) for x in o_particles._repr_units]
-        grp["tub"] = o_particles.tub
-        grp["tail_bit"] = o_particles.tail_bit
-
-        grp = f.create_group("satellite")
-        grp["data"] = o_satellite._repr_X
-        if isinstance(o_satellite, ObservedParticle):
-            grp["error"] = o_satellite._repr_error_X
-            grp["true_data"] = satellite._repr_X
-        grp["coordinate_names"] = o_satellite.frame.coord_names
-        grp["units"] = [str(x) for x in o_satellite._repr_units]
-        grp["m0"] = o_satellite.m0
-        grp["mdot"] = o_satellite.mdot
-
-        grp = f.create_group("simulation")
-        grp["t1"] = simulation.t1
-        grp["t2"] = simulation.t2
+    with h5py.File(output_file, "a") as f:
+        f["t1"] = snap_data.meta['time']
+        f["t2"] = 0.
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -180,10 +156,8 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--overwrite", dest="overwrite", default=False, action="store_true",
                         help="Overwrite any existing data.")
 
-    parser.add_argument("-f", "--file", dest="output_file", required=True,
+    parser.add_argument("--output", dest="output_file", required=True,
                         help="Name of the file to store the data.")
-    parser.add_argument("--class_name", dest="class_name", required=True,
-                        help="Name of the simulation data class, e.g. SgrSimulation")
     parser.add_argument("--expr", dest="expr", default=None, type=str,
                         help="Selection expression (for numexpr) for simulation particles.")
     parser.add_argument("--N", dest="N", default=None, type=int,
@@ -199,43 +173,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
     elif args.quiet:
-        logging.basicConfig(level=logging.ERROR)
+        logger.setLevel(logging.ERROR)
     else:
-        logging.basicConfig(level=logging.INFO)
+        logger.setLevel(logging.INFO)
 
-    """
-        e.g.:
-
-python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---file=/Users/adrian/Projects/streams/data/observed_particles/2.5e6.hdf5 \
---seed=42 --path="sgr_nfw/M2.5e+06" --snapfile="SNAP113" --overwrite
-
-python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---file=/Users/adrian/projects/streams/data/observed_particles/2.5e7.hdf5 \
---seed=42 --path="sgr_nfw/M2.5e+07" --snapfile="SNAP113" --overwrite
-
-python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---file=/Users/adrian/projects/streams/data/observed_particles/2.5e8.hdf5 \
---seed=42 --path="sgr_nfw/M2.5e+08" --snapfile="SNAP113" --overwrite
-
-python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---file=/Users/adrian/projects/streams/data/observed_particles/2.5e9.hdf5 \
---seed=42 --path="sgr_nfw/M2.5e+09" --snapfile="SNAP113" --overwrite
-
-OR
-
-python scripts/observe_simulation.py -v --class_name=SgrSimulation --expr='tub!=0' \
---file=/Users/adrian/projects/streams/data/observed_particles/2.5e8_exp4.hdf5 \
---seed=42 --path="sgr_nfw/M2.5e+08" --snapfile="SNAP113" --overwrite
-    """
-
-    # TODO: class kwargs
-    # particle_error_model=current_data_star, satellite_error_model=current_data_sat,
-    # particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
-    observe_simulation(args.class_name,
-        particle_error_model=gaia_spitzer_errors, satellite_error_model=gaia_spitzer_errors,
-        selection_expr=args.expr, output_file=args.output_file,
-        overwrite=args.overwrite, seed=args.seed,
-        class_kwargs=dict(path=args.path,snapfile=args.snapfile))
+    observe_simulation(star_error_model=gaia_spitzer_errors,
+                       progenitor_error_model=gaia_spitzer_errors,
+                       output_file=args.output_file,
+                       overwrite=args.overwrite, seed=args.seed,
+                       simulation_path=args.path, snapfile=args.snapfile)
