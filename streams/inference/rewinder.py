@@ -22,10 +22,11 @@ import h5py
 import numexpr
 
 # Project
-from streamteam.inference import EmceeModel
+from streamteam.inference import EmceeModel, ModelParameter, LogUniformPrior, LogPrior
 from .. import heliocentric_names
 from ..util import streamspath
 from .rewinder_likelihood import rewinder_likelihood
+from .kinematicobject import KinematicObject
 
 __all__ = ["Rewinder", "RewinderSampler"]
 
@@ -42,17 +43,19 @@ class Rewinder(EmceeModel):
             stars :
         """
 
+        super(Rewinder, self).__init__(lambda x: None)
+
         # Potential
-        for par_name,par in potential.parameters:
+        for par in potential.parameters.values():
             self.add_parameter(par, "potential")
-        self.potential_class = potential.c_cls
+        self.potential_class = potential.c_class
 
         # Progenitor
-        for par_name,par in progenitor.parameters:
+        for par in progenitor.parameters.values():
             self.add_parameter(par, "progenitor")
 
         # Stars
-        for par_name,par in stars.parameters:
+        for par in stars.parameters.values():
             self.add_parameter(par, "stars")
         self.nstars = len(stars)
 
@@ -91,9 +94,30 @@ class Rewinder(EmceeModel):
 
         # load progenitor and star data
         logger.debug("Reading data from:\n\t{}".format(config['data_file']))
-        progenitor = at.Table.read(config['data_file'], path='progenitor')
-        stars = at.Table.read(config['data_file'], path='stars')
 
+        progenitor = at.Table.read(config['data_file'], path='progenitor')
+        true_progenitor = at.Table.read(config['data_file'], path='true_progenitor')
+        progenitor_err = at.Table.read(config['data_file'], path='error_progenitor')
+
+        stars = at.Table.read(config['data_file'], path='stars')
+        true_stars = at.Table.read(config['data_file'], path='true_stars')
+        stars_err = at.Table.read(config['data_file'], path='error_stars')
+
+        # progenitor parameter container
+        # TODO: handle missing dimensions
+        prog_ko = KinematicObject(hel=dict([(k,progenitor[k].data) for k in heliocentric_names]),
+                          errors=dict([(k,progenitor_err[k].data) for k in heliocentric_names]),
+                          truths=dict([(k,true_progenitor[k].data) for k in heliocentric_names]))
+
+        prog_ko.parameters['m0'] = ModelParameter('m0', truth=float(progenitor['m0']),
+                                                  prior=LogPrior()) # TODO: logspace?
+        true_mdot = np.log(3.2*10**(np.floor(np.log10(float(progenitor['m0'])))-4))# THIS IS A HACK FOR 2.5e8!
+        prog_ko.parameters['mdot'] = ModelParameter('mdot', truth=true_mdot,
+                                                    prior=LogPrior()) # TODO: logspace?
+        prog_ko.parameters['alpha'] = ModelParameter('alpha', shape=(1,),
+                                                     prior=LogUniformPrior(1., 2.))
+
+        # deal with extra star selection crap
         if star_idx is None:
             if nstars is 0:
                 raise ValueError("If not specifying indexes, must specicy number"
@@ -117,8 +141,16 @@ class Rewinder(EmceeModel):
             star_idx = np.append(lead_stars, trail_stars)
 
         stars = stars[star_idx]
+        true_stars = true_stars[star_idx]
+        stars_err = stars_err[star_idx]
+        # TODO: handle missing dimensions
         logger.info("Running with {} stars.".format(len(stars)))
         logger.debug("Using stars: {}".format(list(star_idx)))
+
+        star_ko = KinematicObject(hel=dict([(k,stars[k].data) for k in heliocentric_names]),
+                                errors=dict([(k,stars_err[k].data) for k in heliocentric_names]),
+                                truths=dict([(k,true_stars[k].data) for k in heliocentric_names]))
+        star_ko.parameters['tail'] = ModelParameter('tail', truth=stars['tail'])
 
         # integration stuff
         integration = at.Table.read(config['data_file'], path='integration')
@@ -132,68 +164,21 @@ class Rewinder(EmceeModel):
         Potential = getattr(sp, config["potential"]["class_name"])
         potential = Potential()
         logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
+
+        for par in prog_ko.parameters.values():
+            if par.name not in config["progenitor"]["parameters"]:
+                par.freeze("truth")
+
+        for par in star_ko.parameters.values():
+            if par.name not in config["stars"]["parameters"]:
+                par.freeze("truth")
+
         for par in potential.parameters.values():
             if par.name not in config["potential"]["parameters"]:
                 par.freeze("truth")
 
-        return
-
-        # TODO: turn stars and progenitor into something that has parameters, but
-        #       also knows about observational errors, etc....
-
         # Initialize the model
-        model = cls(potential, progenitor, stars, t1, t2, dt)
-
-        # Particle parameters
-        if config['particles']['parameters']:
-            logger.debug("Particle properties added as parameters:")
-
-            for ii,name in enumerate(config["particles"]["parameters"]):
-                if name in heliocentric.coord_names:
-                    priors = [LogPrior() for ii in range(nparticles)]
-                    X = ModelParameter(name,
-                                       value=particles[name].decompose(usys).value,
-                                       prior=priors,
-                                       truth=true_particles[name].decompose(usys).value)
-                    model.add_parameter('particles', X)
-                    logger.debug("\t\t{}".format(name))
-                else:
-                    p = getattr(particles,name)
-                    logger.debug("Prior on {}: {}".format(name, p._prior))
-                    model.add_parameter('particles', p)
-
-            missing_dims = config["particles"].get("missing_dims", list())
-            for missing_dim in missing_dims:
-                ix = heliocentric.coord_names.index(missing_dim)
-                model.particles._error_X[:,ix] = np.inf
-
-        # Satellite parameters
-        if config['satellite']['parameters']:
-            logger.debug("Satellite properties added as parameters:")
-            for ii,name in enumerate(config["satellite"]["parameters"]):
-
-                if name in heliocentric.coord_names:
-                    X = ModelParameter(name,
-                                       value=satellite[name].decompose(usys).value,
-                                       prior=LogPrior(),
-                                       truth=true_satellite[name].decompose(usys).value)
-                    model.add_parameter('satellite', X)
-                    logger.debug("\t\t{}".format(name))
-
-                elif name == 'alpha':
-                    p = getattr(satellite,name)
-                    logger.debug("Prior on {}: ".format(name))
-                    model.add_parameter('satellite', p)
-
-                else:
-                    p = getattr(satellite,name)
-                    logger.debug("Prior on {}: {}".format(name, p._prior))
-                    model.add_parameter('satellite', p)
-
-            missing_dims = config["satellite"].get("missing_dims", list())
-            for missing_dim in missing_dims:
-                ix = heliocentric.coord_names.index(missing_dim)
-                model.satellite._error_X[:,ix] = np.inf
+        model = cls(potential, prog_ko, star_ko, t1, t2, dt)
 
         return model
 
@@ -260,10 +245,10 @@ class Rewinder(EmceeModel):
         #
 
         # mass
-        if parameters['progenitor']['mass'].frozen is False:
-            mass = parameter_values['progenitor']['mass']
+        if parameters['progenitor']['m0'].frozen is False:
+            mass = parameter_values['progenitor']['m0']
         else:
-            mass = parameters['progenitor']['mass'].frozen
+            mass = parameters['progenitor']['m0'].frozen
 
         # mass-loss
         if parameters['progenitor']['mdot'].frozen is False:
