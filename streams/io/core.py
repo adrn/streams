@@ -22,12 +22,9 @@ import astropy.coordinates as coord
 import yaml
 
 # Project
-from ..inference import ModelParameter, LogUniformPrior, LogExponentialPrior, LogNormalPrior
-from ..coordinates.frame import heliocentric, galactocentric
-from ..dynamics import Particle, ObservedParticle, Orbit
 from ..util import OrderedDictYAMLLoader
 
-__all__ = ["read_table", "read_hdf5", "read_config"]
+__all__ = ["read_table", "read_config"]
 
 def _check_config_key(config, key, more=""):
     if not config.has_key(key):
@@ -85,15 +82,15 @@ def read_config(filename, default_filename=''):
     _check_config_key(config['potential'], 'class_name', more="to the 'potential' section.")
     config['potential']['parameters'] = config['potential'].get('parameters', [])
 
-    # particles
-    _check_config_key(config, 'particles')
-    config['particles'] = dict() if config['particles'] is None else config['particles']
-    config['particles']['parameters'] = config['particles'].get('parameters', [])
+    # stars
+    _check_config_key(config, 'stars')
+    config['stars'] = dict() if config['stars'] is None else config['stars']
+    config['stars']['parameters'] = config['stars'].get('parameters', [])
 
-    # satellite
-    _check_config_key(config, 'satellite')
-    config['satellite'] = dict() if config['satellite'] is None else config['satellite']
-    config['satellite']['parameters'] = config['satellite'].get('parameters', [])
+    # progenitor
+    _check_config_key(config, 'progenitor')
+    config['progenitor'] = dict() if config['progenitor'] is None else config['progenitor']
+    config['progenitor']['parameters'] = config['progenitor'].get('parameters', [])
 
     return config
 
@@ -110,98 +107,98 @@ def read_table(filename, expr=None, N=None, names=True, **kwargs):
 
     return _table
 
-def read_hdf5(h5file, nparticles=None, particle_idx=None):
-    """ Read particles and satellite from a given HDF5 file. """
+# def read_hdf5(h5file, nparticles=None, particle_idx=None):
+#     """ Read particles and satellite from a given HDF5 file. """
 
-    return_dict = dict()
-    with h5py.File(h5file, "r") as f:
-        try:
-            ptcl = f["particles"]
-            satl = f["satellite"]
-        except KeyError:
-            raise ValueError("Invalid HDF5 file. Missing 'particles' or "
-                             "'satellite' group.")
+#     return_dict = dict()
+#     with h5py.File(h5file, "r") as f:
+#         try:
+#             ptcl = f["particles"]
+#             satl = f["satellite"]
+#         except KeyError:
+#             raise ValueError("Invalid HDF5 file. Missing 'particles' or "
+#                              "'satellite' group.")
 
-        if nparticles is None:
-            nparticles = len(ptcl["data"].value)
+#         if nparticles is None:
+#             nparticles = len(ptcl["data"].value)
 
-        if particle_idx is None:
-            particle_idx = np.arange(0, nparticles, dtype=int)
+#         if particle_idx is None:
+#             particle_idx = np.arange(0, nparticles, dtype=int)
 
-        true_tub = ptcl["tub"].value[particle_idx]
-        true_tail_bit = ptcl["tail_bit"].value[particle_idx]
-        if np.any(np.isnan(true_tail_bit)):
-            raise ValueError("Tail bit NaN!")
+#         true_tub = ptcl["tub"].value[particle_idx]
+#         true_tail_bit = ptcl["tail_bit"].value[particle_idx]
+#         if np.any(np.isnan(true_tail_bit)):
+#             raise ValueError("Tail bit NaN!")
 
-        t1 = float(f["simulation"]["t1"].value)
-        t2 = float(f["simulation"]["t2"].value)
+#         t1 = float(f["simulation"]["t1"].value)
+#         t2 = float(f["simulation"]["t2"].value)
 
-        tub = ModelParameter(name="tub",
-                             truth=true_tub,
-                             prior=LogUniformPrior([t2]*nparticles,[t1]*nparticles))
-        beta = ModelParameter(name="beta",
-                              truth=true_tail_bit,
-                              prior=LogUniformPrior([-2.]*nparticles,[2.]*nparticles))
+#         tub = ModelParameter(name="tub",
+#                              truth=true_tub,
+#                              prior=LogUniformPrior([t2]*nparticles,[t1]*nparticles))
+#         beta = ModelParameter(name="beta",
+#                               truth=true_tail_bit,
+#                               prior=LogUniformPrior([-2.]*nparticles,[2.]*nparticles))
 
-        p_shocked = ModelParameter(name="p_shocked",
-                                   truth=[0.]*nparticles,
-                                   prior=LogUniformPrior([0.]*nparticles,[1.]*nparticles))
+#         p_shocked = ModelParameter(name="p_shocked",
+#                                    truth=[0.]*nparticles,
+#                                    prior=LogUniformPrior([0.]*nparticles,[1.]*nparticles))
 
-        if "error" in ptcl.keys():
-            p = ObservedParticle(ptcl["data"].value[particle_idx].T,
-                                 ptcl["error"].value[particle_idx].T,
-                                 frame=heliocentric,
-                                 units=[u.Unit(x) for x in ptcl["units"]])
+#         if "error" in ptcl.keys():
+#             p = ObservedParticle(ptcl["data"].value[particle_idx].T,
+#                                  ptcl["error"].value[particle_idx].T,
+#                                  frame=heliocentric,
+#                                  units=[u.Unit(x) for x in ptcl["units"]])
 
-            true_p = Particle(ptcl["true_data"].value[particle_idx].T,
-                              frame=heliocentric,
-                              units=[u.Unit(x) for x in ptcl["units"]])
-            true_p.tub = true_tub
-            true_p.beta = true_tail_bit
-            return_dict["true_particles"] = true_p
-        else:
-            p = Particle(ptcl["data"].value.T,
-                         frame=heliocentric,
-                         units=[u.Unit(x) for x in ptcl["units"]])
+#             true_p = Particle(ptcl["true_data"].value[particle_idx].T,
+#                               frame=heliocentric,
+#                               units=[u.Unit(x) for x in ptcl["units"]])
+#             true_p.tub = true_tub
+#             true_p.beta = true_tail_bit
+#             return_dict["true_particles"] = true_p
+#         else:
+#             p = Particle(ptcl["data"].value.T,
+#                          frame=heliocentric,
+#                          units=[u.Unit(x) for x in ptcl["units"]])
 
-        p.tub = tub
-        p.beta = beta
-        p.p_shocked = p_shocked
-        return_dict["particles"] = p
+#         p.tub = tub
+#         p.beta = beta
+#         p.p_shocked = p_shocked
+#         return_dict["particles"] = p
 
-        if "error" in satl.keys():
-            s = ObservedParticle(satl["data"].value.T, satl["error"].value.T,
-                                 frame=heliocentric,
-                                 units=[u.Unit(x) for x in satl["units"]])
-            return_dict["true_satellite"] = Particle(satl["true_data"].value.T,
-                                                     frame=heliocentric,
-                                                     units=[u.Unit(x) for x in satl["units"]])
-            return_dict["true_satellite"].mass = satl["m0"].value
-            return_dict["true_satellite"].logmass = np.log(satl["m0"].value)
+#         if "error" in satl.keys():
+#             s = ObservedParticle(satl["data"].value.T, satl["error"].value.T,
+#                                  frame=heliocentric,
+#                                  units=[u.Unit(x) for x in satl["units"]])
+#             return_dict["true_satellite"] = Particle(satl["true_data"].value.T,
+#                                                      frame=heliocentric,
+#                                                      units=[u.Unit(x) for x in satl["units"]])
+#             return_dict["true_satellite"].mass = satl["m0"].value
+#             return_dict["true_satellite"].logmass = np.log(satl["m0"].value)
 
-        else:
-            s = Particle(satl["data"].value.T,
-                         frame=heliocentric,
-                         units=[u.Unit(x) for x in satl["units"]])
-        s.mass = satl["m0"].value
-        s.logmass = ModelParameter(name="logmass",
-                                   truth=np.log(satl["m0"].value),
-                                   prior=LogUniformPrior(13.85,22.))
+#         else:
+#             s = Particle(satl["data"].value.T,
+#                          frame=heliocentric,
+#                          units=[u.Unit(x) for x in satl["units"]])
+#         s.mass = satl["m0"].value
+#         s.logmass = ModelParameter(name="logmass",
+#                                    truth=np.log(satl["m0"].value),
+#                                    prior=LogUniformPrior(13.85,22.))
 
-        # TODO HACK? Check mass-loss rates...these only valid for Sgr sims
-        s.logmdot = ModelParameter(name="logmdot",
-                                   truth=np.log(3.2*10**(np.floor(np.log10(satl["m0"].value))-4)),
-                                   prior=LogUniformPrior(3.,15.))
+#         # TODO HACK? Check mass-loss rates...these only valid for Sgr sims
+#         s.logmdot = ModelParameter(name="logmdot",
+#                                    truth=np.log(3.2*10**(np.floor(np.log10(satl["m0"].value))-4)),
+#                                    prior=LogUniformPrior(3.,15.))
 
-        # TODO HACK? Check tidal radius offset -- will vary?
-        s.alpha = ModelParameter(name="alpha",
-                                 truth=1.55,
-                                 prior=LogNormalPrior(1.55,0.5))
+#         # TODO HACK? Check tidal radius offset -- will vary?
+#         s.alpha = ModelParameter(name="alpha",
+#                                  truth=1.55,
+#                                  prior=LogNormalPrior(1.55,0.5))
 
-        return_dict["satellite"] = s
+#         return_dict["satellite"] = s
 
-        if "simulation" in f.keys():
-            return_dict["t1"] = t1
-            return_dict["t2"] = t2
+#         if "simulation" in f.keys():
+#             return_dict["t1"] = t1
+#             return_dict["t2"] = t2
 
-    return return_dict
+#     return return_dict
