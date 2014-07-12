@@ -192,7 +192,7 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
                           pot._Potential potential,
                           np.ndarray[double,ndim=2] s_gc,
                           np.ndarray[double,ndim=2] p_gc,
-                          double logm0, double logmdot,
+                          double m0, double mdot,
                           double alpha, np.ndarray[double,ndim=1] _betas):
     """ 0th entry of x,v is the satellite position, velocity """
 
@@ -216,8 +216,8 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     # cdef double [:,:,::1] all_v = np.empty((nsteps,nparticles+1,3))
 
     # mass
-    m0 = exp(logm0)
-    mdot = exp(logmdot)
+    # m0 = exp(logm0)
+    # mdot = exp(logmdot)
     mass = -mdot*t1 + m0
 
     # prime the accelerations
@@ -244,4 +244,5 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
                              x1_hat, x2_hat, x3_hat,
                              ln_likelihoods, i, dx, dv)
 
-    return logsumexp(ln_likelihoods, axis=0)#, np.array(all_x), np.array(all_x)
+    return np.array(ln_likelihoods)
+    # logsumexp(ln_likelihoods, axis=0)#, np.array(all_x), np.array(all_x)
