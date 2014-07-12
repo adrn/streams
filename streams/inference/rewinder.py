@@ -20,6 +20,8 @@ import numpy as np
 import astropy.units as u
 import h5py
 import numexpr
+from scipy.stats import norm
+from scipy.misc import logsumexp
 
 # Project
 from streamteam.inference import EmceeModel, ModelParameter, LogUniformPrior, LogPrior
@@ -31,9 +33,13 @@ from ..coordinates import _hel_to_gc
 
 __all__ = ["Rewinder", "RewinderSampler"]
 
+def log_normal(x, mu, sigma):
+    X = x - mu
+    return -0.5*(np.log(2*np.pi) + 2*np.log(sigma) + (X/sigma)**2)
+
 class Rewinder(EmceeModel):
 
-    def __init__(self, potential, progenitor, stars, t1, t2, dt=-1.):
+    def __init__(self, potential, progenitor, stars, t1, t2, dt=-1., K=10):
         """ Model for tidal streams that uses backwards integration to Rewind
             the positions of stars.
 
@@ -42,6 +48,10 @@ class Rewinder(EmceeModel):
             potential : Potential object
             progenitor :
             stars :
+            t1,t2,dt : float
+                Integration parameters.
+            K : int
+                Number of samples to draw for importance sampling.
         """
 
         self.parameters = OrderedDict()
@@ -55,13 +65,41 @@ class Rewinder(EmceeModel):
         for par in progenitor.parameters.values():
             self.add_parameter(par, "progenitor")
         self.progenitor = progenitor
+        self.prog_hel = progenitor.values
+        self.prog_err = progenitor.errors
 
         # Stars
         for par in stars.parameters.values():
+            par.frozen = True
             self.add_parameter(par, "stars")
+
         self.stars = stars
         self.nstars = len(stars)
 
+        # draw samples for each star
+        self.K = K
+        self.nsamples = K*self.nstars
+
+        stars_samples_hel = np.zeros((self.nstars,self.K,6))
+        self.stars_samples_lnprob = np.zeros((self.nstars,self.K))
+        k = 0
+        for n in range(self.nstars):
+            stars_samples_hel[n] = np.random.normal(self.stars.values[n],
+                                                    self.stars.errors[n],
+                                                    size=(self.K,6))
+
+            # only works for non-covariant case!
+            self.stars_samples_lnprob[n] = log_normal(stars_samples_hel[n],
+                                                      self.stars.values[n],
+                                                      self.stars.errors[n]).sum(axis=1)
+
+        self.stars_samples_lnprob = self.stars_samples_lnprob[np.newaxis]
+        self.stars_samples_gal = _hel_to_gc(stars_samples_hel.reshape(self.nsamples,6))
+
+        # set the tail assignments TODO: this is teh sux
+        self.stars_tail = self.stars.parameters['tail'].truth
+
+        # integration
         self.args = (t1,t2,dt)
 
     def ln_prior(self, parameters, parameter_values, t1, t2, dt):
@@ -144,37 +182,27 @@ class Rewinder(EmceeModel):
             alpha = parameters['progenitor']['alpha'].frozen
 
         # satellite coordinates
-        prog_helct = np.empty((1,6))
+        prog_hel = np.empty((1,6))
         for i,par_name in enumerate(heliocentric_names):
             if parameters['progenitor'][par_name].frozen is False:
-                prog_helct[:,i] = parameter_values['progenitor'][par_name]
+                prog_hel[:,i] = parameter_values['progenitor'][par_name]
             else:
-                prog_helct[:,i] = parameters['progenitor'][par_name].frozen
-        prog_galct = _hel_to_gc(prog_helct) # TODO: need better way to do this so can specify R_sun and V_circ if I want in the future
+                prog_hel[:,i] = parameters['progenitor'][par_name].frozen
 
-        ######################################################################
-        # star parameters:
-        #
+        prog_gal = _hel_to_gc(prog_hel) # TODO: need better way to do this so can specify R_sun and V_circ if I want in the future
 
-        # tail assignment TODO: can't handle leaving this free???
-        tail = parameters['stars']['tail'].frozen
+        ln_like = rewinder_likelihood(t1, t2, dt, potential,
+                                      prog_gal, self.stars_samples_gal,
+                                      mass, mdot, alpha, self.stars_tail)
 
-        # star coordinates
-        star_helct = np.empty((self.nstars,6))
-        for ii,par_name in enumerate(heliocentric_names):
-            self.
-            if parameters['stars'][par_name].frozen is False:
-                star_helct[:,i] = parameter_values['stars'][par_name]
-            else:
-                star_helct[:,i] = parameters['stars'][par_name].frozen
-        star_galct = _hel_to_gc(star_helct) # TODO: need better way to do this so can specify R_sun and V_circ if I want in the future
+        l = ln_like.reshape(ln_like.shape[0],self.nstars,self.K) - self.stars_samples_lnprob
+        l = logsumexp(logsumexp(l,axis=2), axis=0)
 
-        # TODO:
-        ln_like = rewinder_likelihood(t1, t2, dt, pparams,
-                                      prog_galct, star_galct,
-                                      logmass, logmdot, alpha, betas)
+        return l.sum() + log_normal(prog_hel, self.prog_hel, self.prog_err).sum()
 
-        return np.sum(ln_like + data_like) + np.squeeze(sat_like)
+    # ========================================================================
+    # ========================================================================
+    # ========================================================================
 
     @classmethod
     def from_config(cls, config):
@@ -289,8 +317,10 @@ class Rewinder(EmceeModel):
             if par.name not in config["potential"]["parameters"]:
                 par.freeze("truth")
 
+        logger.info("Drawing {} samples from each prior...".format(config["K"]))
+
         # Initialize the model
-        model = cls(potential, prog_ko, star_ko, t1, t2, dt)
+        model = cls(potential, prog_ko, star_ko, t1, t2, dt, K=config["K"])
 
         return model
 
