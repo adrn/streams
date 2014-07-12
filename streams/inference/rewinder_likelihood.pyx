@@ -4,8 +4,6 @@ import numpy as np
 cimport numpy as np
 np.import_array()
 
-from scipy.misc import logsumexp
-
 import cython
 cimport cython
 
