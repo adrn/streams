@@ -25,24 +25,42 @@ __all__ = ['KinematicObject']
 # class ObservedQuantity(ModelParameter):
 #     def __init__(self, value, uncertainty, parameter=None):
 
+class ObservedQuantity(object):
+
+    def __init__(self, value, error, truth=None):
+        self.value = value
+        self.error = error
+        self.truth = truth
+
 class KinematicObject(object):
 
     def __init__(self, hel, errors, truths=dict()):
         """ """
 
         pars = OrderedDict()
+        qs = OrderedDict()
 
         # TODO: still need to be able to define mappings for parameters...
         for name in heliocentric_names:
             pars[name] = ModelParameter(name, truth=truths.get(name,None))
+            qs[name] = ObservedQuantity(hel[name], errors[name],
+                                        truths.get(name,None))
         self.parameters = pars
+        self.quantities = qs
 
-        self.values = OrderedDict()
-        self.errors = OrderedDict()
-        for par_name in self.parameters.keys():
-            self.values[par_name] = hel[par_name]
-            self.errors[par_name] = errors[par_name]
-            self.n = len(hel[par_name])
+        self.n = len(self.quantities[name].value)
 
     def __len__(self):
         return self.n
+
+    @property
+    def values(self):
+        return np.vstack([self.quantities[n].value for n in heliocentric_names]).T.copy()
+
+    @property
+    def errors(self):
+        return np.vstack([self.quantities[n].error for n in heliocentric_names]).T.copy()
+
+    @property
+    def truths(self):
+        return np.vstack([self.quantities[n].truth for n in heliocentric_names]).T.copy()
