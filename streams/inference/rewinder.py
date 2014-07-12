@@ -136,11 +136,6 @@ class Rewinder(EmceeModel):
                 Integration limits.
         """
 
-        # TODO: need to figure out how to get P(D|X) values into here...
-        #   - Maybe write custom ln_prior function that does all priors
-        #       except the phase-space coords, then in the likelihood
-        #       loop over the priors and get probs from there?
-
         ######################################################################
         # potential parameters:
         #
