@@ -22,3 +22,8 @@ logger.setLevel(logging.DEBUG)
 
 def test_config():
     rw = Rewinder.from_config("/Users/adrian/projects/streams/config/test.yml")
+    for p in rw._walk():
+        print(p)
+
+    p0 = rw.sample_priors(24)[0]
+    print(rw(p0))

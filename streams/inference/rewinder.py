@@ -27,6 +27,7 @@ from .. import heliocentric_names
 from ..util import streamspath
 from .rewinder_likelihood import rewinder_likelihood
 from .kinematicobject import KinematicObject
+from ..coordinates import _hel_to_gc
 
 __all__ = ["Rewinder", "RewinderSampler"]
 
@@ -43,7 +44,7 @@ class Rewinder(EmceeModel):
             stars :
         """
 
-        super(Rewinder, self).__init__(lambda x: None)
+        self.parameters = OrderedDict()
 
         # Potential
         for par in potential.parameters.values():
@@ -53,10 +54,12 @@ class Rewinder(EmceeModel):
         # Progenitor
         for par in progenitor.parameters.values():
             self.add_parameter(par, "progenitor")
+        self.progenitor = progenitor
 
         # Stars
         for par in stars.parameters.values():
             self.add_parameter(par, "stars")
+        self.stars = stars
         self.nstars = len(stars)
 
         self.args = (t1,t2,dt)
@@ -76,10 +79,9 @@ class Rewinder(EmceeModel):
                 Integration limits.
         """
         ln_prior = 0.
-        for group_name in ['potential', 'progenitor']:
-            for param in parameters[group_name].keys():
-                v = value_dict[group_name][param.name]
-                ln_prior += param.prior(v)
+        for group_name,param_name,param in self._walk():
+            v = parameter_values[group_name][param.name]
+            ln_prior += param.prior(v)
 
         return ln_prior
 
@@ -105,7 +107,7 @@ class Rewinder(EmceeModel):
         # potential parameters:
         #
         pparams = dict()
-        for par in parameters['potential']:
+        for par in parameters['potential'].values():
             # parameter is free to vary, take value from the dictionary of
             #   variable parameter values
             if par.frozen is False:
@@ -143,7 +145,7 @@ class Rewinder(EmceeModel):
 
         # satellite coordinates
         prog_helct = np.empty((1,6))
-        for ii,par_name in enumerate(heliocentric_names):
+        for i,par_name in enumerate(heliocentric_names):
             if parameters['progenitor'][par_name].frozen is False:
                 prog_helct[:,i] = parameter_values['progenitor'][par_name]
             else:
@@ -154,15 +156,13 @@ class Rewinder(EmceeModel):
         # star parameters:
         #
 
-        # tail assignment
-        if parameters['stars']['beta'].frozen is False:
-            beta = parameter_values['stars']['beta']
-        else:
-            beta = parameters['stars']['beta'].frozen
+        # tail assignment TODO: can't handle leaving this free???
+        tail = parameters['stars']['tail'].frozen
 
         # star coordinates
         star_helct = np.empty((self.nstars,6))
         for ii,par_name in enumerate(heliocentric_names):
+            self.
             if parameters['stars'][par_name].frozen is False:
                 star_helct[:,i] = parameter_values['stars'][par_name]
             else:
