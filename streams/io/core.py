@@ -24,7 +24,7 @@ import yaml
 # Project
 from ..util import OrderedDictYAMLLoader
 
-__all__ = ["read_table", "read_config"]
+__all__ = ["read_config"]
 
 def _check_config_key(config, key, more=""):
     if not config.has_key(key):
