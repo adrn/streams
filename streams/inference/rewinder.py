@@ -79,7 +79,6 @@ class Rewinder(EmceeModel):
 
         stars_samples_hel = np.zeros((self.nstars,self.K,6))
         self.stars_samples_lnprob = np.zeros((self.nstars,self.K))
-        k = 0
         for n in range(self.nstars):
             stars_samples_hel[n] = np.random.normal(self.stars.values[n],
                                                     self.stars.errors[n],
@@ -181,7 +180,10 @@ class Rewinder(EmceeModel):
             else:
                 prog_hel[:,i] = parameters['progenitor'][par_name].frozen
 
-        prog_gal = _hel_to_gc(prog_hel) # TODO: need better way to do this so can specify R_sun and V_circ if I want in the future
+        # TODO: need better way to do this so can specify R_sun and V_circ if I want in the future
+        prog_gal = _hel_to_gc(prog_hel)
+        # TODO: only compute for unfrozen params?
+        # log_normal(prog_hel, self.prog_hel, self.prog_err).sum()
 
         ln_like = rewinder_likelihood(t1, t2, dt, potential,
                                       prog_gal, self.stars_samples_gal,
@@ -190,7 +192,7 @@ class Rewinder(EmceeModel):
         l = ln_like.reshape(ln_like.shape[0],self.nstars,self.K) - self.stars_samples_lnprob
         l = logsumexp(logsumexp(l,axis=2), axis=0)
 
-        return l.sum() + log_normal(prog_hel, self.prog_hel, self.prog_err).sum()
+        return l.sum()
 
     # ========================================================================
     # ========================================================================
