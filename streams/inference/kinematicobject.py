@@ -18,36 +18,39 @@ import astropy.units as u
 # Project
 from .. import heliocentric_names
 from streamteam.inference import ModelParameter
+from .util import log_normal
 
-__all__ = ['KinematicObject']
+__all__ = ['ObservedQuantity', 'KinematicObject']
 
-# TODO: or could do something like this?
-# class ObservedQuantity(ModelParameter):
-#     def __init__(self, value, uncertainty, parameter=None):
+class ObservedQuantity(ModelParameter):
 
-class ObservedQuantity(object):
-
-    def __init__(self, value, error, truth=None):
+    def __init__(self, name, value, error, truth=None, prior=None):
+        """ Represents an observed quantity, e.g., distance. """
         self.value = value
         self.error = error
-        self.truth = truth
+        super(ObservedQuantity,self).__init__(name, truth, prior, value.shape)
+
+    def ln_likelihood(self, value):
+        """ """
+        return log_normal(value, self.value, self.error)
+
+    def __str__(self):
+        return "<ObservedQuantity '{}'>".format(self.name)
+
 
 class KinematicObject(object):
 
-    def __init__(self, hel, errors, truths=dict()):
+    def __init__(self, coords, errors, truths=dict()):
         """ """
 
-        pars = OrderedDict()
         qs = OrderedDict()
 
         # TODO: still need to be able to define mappings for parameters...
         for name in heliocentric_names:
-            pars[name] = ModelParameter(name, truth=truths.get(name,None))
-            qs[name] = ObservedQuantity(hel[name], errors[name],
-                                        truths.get(name,None))
-        self.parameters = pars
-        self.quantities = qs
+            qs[name] = ObservedQuantity(name, hel[name], errors[name],
+                                        truth=truths.get(name,None))
 
+        self.quantities = qs
         self.n = len(self.quantities[name].value)
 
     def __len__(self):
