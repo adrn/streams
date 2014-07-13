@@ -27,15 +27,12 @@ from scipy.misc import logsumexp
 from streamteam.inference import EmceeModel, ModelParameter, LogUniformPrior, LogPrior
 from .. import heliocentric_names
 from ..util import streamspath
+from ..coordinates import _hel_to_gc
 from .rewinder_likelihood import rewinder_likelihood
 from .kinematicobject import KinematicObject
-from ..coordinates import _hel_to_gc
+from .util import log_normal
 
 __all__ = ["Rewinder", "RewinderSampler"]
-
-def log_normal(x, mu, sigma):
-    X = x - mu
-    return -0.5*(np.log(2*np.pi) + 2*np.log(sigma) + (X/sigma)**2)
 
 class Rewinder(EmceeModel):
 
