@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+import sys
+
 import numpy as np
 cimport numpy as np
 np.import_array()
@@ -188,14 +190,14 @@ cdef inline void ln_likelihood_helper(double sat_mass,
 
 cpdef rewinder_likelihood(double t1, double t2, double dt,
                           pot._Potential potential,
-                          np.ndarray[double,ndim=2] s_gc,
-                          np.ndarray[double,ndim=2] p_gc,
+                          np.ndarray[double,ndim=2] prog_gal,
+                          np.ndarray[double,ndim=2] star_gal,
                           double m0, double mdot,
                           double alpha, np.ndarray[double,ndim=1] _betas):
     """ 0th entry of x,v is the satellite position, velocity """
 
     cdef int i, nsteps, nparticles, ndim
-    nparticles = len(p_gc)
+    nparticles = len(star_gal)
     nsteps = int(fabs((t1-t2)/dt))
 
     cdef double [:,::1] ln_likelihoods = np.empty((nsteps, nparticles))
@@ -206,8 +208,8 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     cdef double [::1] x1_hat = np.empty(3)
     cdef double [::1] x2_hat = np.empty(3)
     cdef double [::1] x3_hat = np.empty(3)
-    cdef double [:,::1] x = np.vstack((s_gc[:,:3],p_gc[:,:3]))
-    cdef double [:,::1] v = np.vstack((s_gc[:,3:],p_gc[:,3:]))
+    cdef double [:,::1] x = np.vstack((prog_gal[:,:3],star_gal[:,:3]))
+    cdef double [:,::1] v = np.vstack((prog_gal[:,3:],star_gal[:,3:]))
     cdef double [:,::1] acc = np.empty((nparticles+1,3))
     cdef double [::1] betas = _betas
     # cdef double [:,:,::1] all_x = np.empty((nsteps,nparticles+1,3))
