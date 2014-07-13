@@ -78,22 +78,16 @@ class Rewinder(EmceeModel):
         self.nsamples = K*self.nstars
 
         stars_samples_hel = np.zeros((self.nstars,self.K,6))
-        self.stars_samples_lnprob = np.zeros((self.nstars,self.K))
         for n in range(self.nstars):
             stars_samples_hel[n] = np.random.normal(self.stars.values[n],
                                                     self.stars.errors[n],
                                                     size=(self.K,6))
 
-            # only works for non-covariant case!
-            self.stars_samples_lnprob[n] = log_normal(stars_samples_hel[n],
-                                                      self.stars.values[n],
-                                                      self.stars.errors[n]).sum(axis=1)
-
-        self.stars_samples_lnprob = self.stars_samples_lnprob[np.newaxis]
         self.stars_samples_gal = _hel_to_gc(stars_samples_hel.reshape(self.nsamples,6))
 
         # set the tail assignments TODO: this is teh sux
-        self.stars_tail = self.stars.parameters['tail'].truth
+        tail = np.array(self.stars.parameters['tail'].truth)
+        self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1).ravel()
 
         # integration
         self.args = (t1,t2,dt)
@@ -187,9 +181,9 @@ class Rewinder(EmceeModel):
 
         ln_like = rewinder_likelihood(t1, t2, dt, potential,
                                       prog_gal, self.stars_samples_gal,
-                                      mass, mdot, alpha, self.stars_tail)
+                                      mass, mdot, alpha, self.stars_samples_tail)
 
-        l = ln_like.reshape(ln_like.shape[0],self.nstars,self.K) - self.stars_samples_lnprob
+        l = ln_like.reshape(ln_like.shape[0],self.nstars,self.K)
         l = logsumexp(logsumexp(l,axis=2), axis=0)
 
         return l.sum()
@@ -242,9 +236,11 @@ class Rewinder(EmceeModel):
 
         # progenitor parameter container
         # TODO: handle missing dimensions
-        prog_ko = KinematicObject(hel=dict([(k,progenitor[k].data) for k in heliocentric_names]),
+        prog_ko = KinematicObject(
+                          coords=dict([(k,progenitor[k].data) for k in heliocentric_names]),
                           errors=dict([(k,progenitor_err[k].data) for k in heliocentric_names]),
-                          truths=dict([(k,true_progenitor[k].data) for k in heliocentric_names]))
+                          truths=dict([(k,true_progenitor[k].data) for k in heliocentric_names])
+                    )
 
         prog_ko.parameters['m0'] = ModelParameter('m0', truth=float(progenitor['m0']),
                                                   prior=LogPrior()) # TODO: logspace?
@@ -284,9 +280,11 @@ class Rewinder(EmceeModel):
         logger.info("Running with {} stars.".format(len(stars)))
         logger.debug("Using stars: {}".format(list(star_idx)))
 
-        star_ko = KinematicObject(hel=dict([(k,stars[k].data) for k in heliocentric_names]),
+        star_ko = KinematicObject(
+                                coords=dict([(k,stars[k].data) for k in heliocentric_names]),
                                 errors=dict([(k,stars_err[k].data) for k in heliocentric_names]),
-                                truths=dict([(k,true_stars[k].data) for k in heliocentric_names]))
+                                truths=dict([(k,true_stars[k].data) for k in heliocentric_names])
+                            )
         star_ko.parameters['tail'] = ModelParameter('tail', truth=stars['tail'])
 
         # integration stuff
