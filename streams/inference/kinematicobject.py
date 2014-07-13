@@ -43,27 +43,27 @@ class KinematicObject(object):
     def __init__(self, coords, errors, truths=dict()):
         """ """
 
-        qs = OrderedDict()
+        ps = OrderedDict()
 
         # TODO: still need to be able to define mappings for parameters...
         for name in heliocentric_names:
-            qs[name] = ObservedQuantity(name, hel[name], errors[name],
+            ps[name] = ObservedQuantity(name, coords[name], errors[name],
                                         truth=truths.get(name,None))
 
-        self.quantities = qs
-        self.n = len(self.quantities[name].value)
+        self.parameters = ps
+        self.n = len(self.parameters[name].value)
 
     def __len__(self):
         return self.n
 
     @property
     def values(self):
-        return np.vstack([self.quantities[n].value for n in heliocentric_names]).T.copy()
+        return np.vstack([self.parameters[n].value for n in heliocentric_names]).T.copy()
 
     @property
     def errors(self):
-        return np.vstack([self.quantities[n].error for n in heliocentric_names]).T.copy()
+        return np.vstack([self.parameters[n].error for n in heliocentric_names]).T.copy()
 
     @property
     def truths(self):
-        return np.vstack([self.quantities[n].truth for n in heliocentric_names]).T.copy()
+        return np.vstack([self.parameters[n].truth for n in heliocentric_names]).T.copy()
