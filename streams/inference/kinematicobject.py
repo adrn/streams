@@ -37,7 +37,6 @@ class ObservedQuantity(ModelParameter):
     def __str__(self):
         return "<ObservedQuantity '{}'>".format(self.name)
 
-
 class KinematicObject(object):
 
     def __init__(self, coords, errors, truths=dict()):
@@ -67,3 +66,19 @@ class KinematicObject(object):
     @property
     def truths(self):
         return np.vstack([self.parameters[n].truth for n in heliocentric_names]).T.copy()
+
+    def ln_prior(self, coords):
+        """ TODO: """
+        coords = np.atleast_2d(coords)
+        l,b,d,mul,mub,vr = coords.T
+
+        # HACK: distance range 1-200 kpc
+        gamma = 1 / np.log(200./1.)
+
+        ln_p_lb = np.log(np.cos(b) / (4*np.pi))
+        ln_p_d = np.log(gamma) - np.log(d)
+        ln_p_mul = log_normal(mul, 0., 0.306814 / d) # 300 km/s
+        ln_p_mub = log_normal(mub, 0., 0.306814 / d) # 300 km/s
+        ln_p_vr = log_normal(vr, 0., 0.306814) # 300 km/s
+
+        return ln_p_lb + ln_p_d + ln_p_mul + ln_p_mub + ln_p_vr
