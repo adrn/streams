@@ -52,20 +52,12 @@ class KinematicObject(object):
         self.parameters = ps
         self.n = len(self.parameters[name].value)
 
+        self.data = np.vstack([ps[n].value for n in heliocentric_names]).T.copy()
+        self.errors = np.vstack([ps[n].error for n in heliocentric_names]).T.copy()
+        self.truths = np.vstack([ps[n].truth for n in heliocentric_names]).T.copy()
+
     def __len__(self):
         return self.n
-
-    @property
-    def values(self):
-        return np.vstack([self.parameters[n].value for n in heliocentric_names]).T.copy()
-
-    @property
-    def errors(self):
-        return np.vstack([self.parameters[n].error for n in heliocentric_names]).T.copy()
-
-    @property
-    def truths(self):
-        return np.vstack([self.parameters[n].truth for n in heliocentric_names]).T.copy()
 
     def ln_prior(self, coords):
         """ TODO: """
