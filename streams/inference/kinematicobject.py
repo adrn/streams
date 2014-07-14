@@ -50,11 +50,11 @@ class KinematicObject(object):
                                         truth=truths.get(name,None))
 
         self.parameters = ps
-        self.n = len(self.parameters[name].value)
 
         self.data = np.vstack([ps[n].value for n in heliocentric_names]).T.copy()
         self.errors = np.vstack([ps[n].error for n in heliocentric_names]).T.copy()
         self.truths = np.vstack([ps[n].truth for n in heliocentric_names]).T.copy()
+        self.n = len(self.data)
 
     def __len__(self):
         return self.n
