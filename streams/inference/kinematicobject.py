@@ -39,14 +39,14 @@ class ObservedQuantity(ModelParameter):
 
 class KinematicObject(object):
 
-    def __init__(self, coords, errors, truths=dict()):
+    def __init__(self, data, errors, truths=dict()):
         """ """
 
         ps = OrderedDict()
 
         # TODO: still need to be able to define mappings for parameters...
         for name in heliocentric_names:
-            ps[name] = ObservedQuantity(name, coords[name], errors[name],
+            ps[name] = ObservedQuantity(name, data[name], errors[name],
                                         truth=truths.get(name,None))
 
         self.parameters = ps
