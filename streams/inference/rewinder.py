@@ -62,8 +62,6 @@ class Rewinder(EmceeModel):
         for par in progenitor.parameters.values():
             self.add_parameter(par, "progenitor")
         self.progenitor = progenitor
-        self.prog_hel = progenitor.values
-        self.prog_err = progenitor.errors
 
         # Stars
         for par in stars.parameters.values():
@@ -76,13 +74,11 @@ class Rewinder(EmceeModel):
         # draw samples for each star
         self.K = K
         self.nsamples = K*self.nstars
+        stars_samples_hel = np.random.normal(self.stars.data[:,np.newaxis],
+                                             self.stars.errors[:,np.newaxis],
+                                             size=(self.nstars,self.K,6))
 
-        stars_samples_hel = np.zeros((self.nstars,self.K,6))
-        for n in range(self.nstars):
-            stars_samples_hel[n] = np.random.normal(self.stars.values[n],
-                                                    self.stars.errors[n],
-                                                    size=(self.K,6))
-
+        self.stars_samples_lnprob = self.stars.ln_prior(stars_samples_hel).T[np.newaxis]
         self.stars_samples_gal = _hel_to_gc(stars_samples_hel.reshape(self.nsamples,6))
 
         # set the tail assignments TODO: this is teh sux
@@ -177,14 +173,14 @@ class Rewinder(EmceeModel):
         # TODO: need better way to do this so can specify R_sun and V_circ if I want in the future
         prog_gal = _hel_to_gc(prog_hel)
         # TODO: only compute for unfrozen params?
-        # log_normal(prog_hel, self.prog_hel, self.prog_err).sum()
+        # log_normal(prog_hel, self.progenitor.data, self.progenitor.errors).sum()
 
         ln_like = rewinder_likelihood(t1, t2, dt, potential,
                                       prog_gal, self.stars_samples_gal,
                                       mass, mdot, alpha, self.stars_samples_tail)
 
-        l = ln_like.reshape(ln_like.shape[0],self.nstars,self.K)
-        l = logsumexp(logsumexp(l,axis=2), axis=0)
+        l = ln_like.reshape(ln_like.shape[0],self.nstars,self.K) - self.stars_samples_lnprob
+        l = logsumexp(logsumexp(l - np.log(self.K),axis=2), axis=0)
 
         return l.sum()
 
@@ -237,7 +233,7 @@ class Rewinder(EmceeModel):
         # progenitor parameter container
         # TODO: handle missing dimensions
         prog_ko = KinematicObject(
-                          coords=dict([(k,progenitor[k].data) for k in heliocentric_names]),
+                          data=dict([(k,progenitor[k].data) for k in heliocentric_names]),
                           errors=dict([(k,progenitor_err[k].data) for k in heliocentric_names]),
                           truths=dict([(k,true_progenitor[k].data) for k in heliocentric_names])
                     )
@@ -281,7 +277,7 @@ class Rewinder(EmceeModel):
         logger.debug("Using stars: {}".format(list(star_idx)))
 
         star_ko = KinematicObject(
-                                coords=dict([(k,stars[k].data) for k in heliocentric_names]),
+                                data=dict([(k,stars[k].data) for k in heliocentric_names]),
                                 errors=dict([(k,stars_err[k].data) for k in heliocentric_names]),
                                 truths=dict([(k,true_stars[k].data) for k in heliocentric_names])
                             )
