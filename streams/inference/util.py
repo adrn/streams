@@ -13,9 +13,6 @@ import os, sys
 import numpy as np
 import astropy.units as u
 
-# Project
-from ..integrate import LeapfrogIntegrator
-
 __all__ = ["log_normal"]
 
 def log_normal(x, mu, sigma):
