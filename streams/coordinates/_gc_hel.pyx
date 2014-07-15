@@ -106,33 +106,3 @@ def _hel_to_gc(np.ndarray[double, ndim=2] O not None):
         X[ii,5] = vz
 
     return np.array(X)
-
-
-def _xyz_sph_jac(np.ndarray[double, ndim=2] hel not None):
-    """ Assumes Galactic units: kpc, Myr, radian, M_sun """
-
-    cdef int nparticles = hel.shape[0]
-    cdef double Rsun = 8.
-    cdef double[:] dtmnt = np.empty(nparticles)
-
-    cdef double l,b,d,mul,mub,vr
-    for ii in range(nparticles):
-        l = hel[ii,0]
-        b = hel[ii,1]
-        d = hel[ii,2]
-        mul = hel[ii,3]
-        mub = hel[ii,4]
-        vr = hel[ii,5]
-
-        cosl = cos(l)
-        sinl = sin(l)
-        cosb = cos(b)
-        sinb = sin(b)
-
-        dtmnt[ii] = d*d*cosb*(Rsun*Rsun*cosb + Rsun*d*sinb*sinb*cosl - \
-                              2*Rsun*d*cosl + d*d*sinb**4*cosb - \
-                              d*d*cosb**5 + 2*d*d*cosb**3)
-
-        dtmnt[ii] = log(abs(dtmnt[ii]))
-
-    return np.array(dtmnt)
