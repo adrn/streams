@@ -18,7 +18,7 @@ cdef extern from "math.h":
     double log(double x)
     double abs(double x)
 
-def _gc_to_hel(np.ndarray[double, ndim=2] X,
+def gal_to_hel(np.ndarray[double, ndim=2] X,
                double Rsun=8.,
                double Vcirc=(220*0.0010227121650537077)): # km/s to kpc/Myr
     """ Assumes Galactic units: kpc, Myr, radian, M_sun """
@@ -62,7 +62,7 @@ def _gc_to_hel(np.ndarray[double, ndim=2] X,
 
     return np.array(O)
 
-def _hel_to_gc(np.ndarray[double, ndim=2] O,
+def hel_to_gal(np.ndarray[double, ndim=2] O,
                double Rsun=8.,
                double Vcirc=(220*0.0010227121650537077)): # km/s to kpc/Myr
     """ Assumes Galactic units: kpc, Myr, radian, M_sun """
