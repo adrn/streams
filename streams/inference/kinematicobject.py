@@ -64,11 +64,9 @@ class KinematicObject(object):
         coords = np.atleast_2d(coords)
         l,b,d,mul,mub,vr = coords.T
 
-        # HACK: distance range 1-200 kpc
-        gamma = 1 / np.log(200./1.)
-
         ln_p_lb = np.log(np.cos(b) / (4*np.pi))
-        ln_p_d = np.log(gamma) - np.log(d)
+        # HACK: distance range 1-200 kpc
+        ln_p_d = np.log((1 / np.log(200./1.))) - np.log(d)
         ln_p_mul = log_normal(mul, 0., 0.306814 / d) # 300 km/s
         ln_p_mub = log_normal(mub, 0., 0.306814 / d) # 300 km/s
         ln_p_vr = log_normal(vr, 0., 0.306814) # 300 km/s
