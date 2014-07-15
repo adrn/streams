@@ -30,7 +30,7 @@ import numexpr
 # Project
 from streamteam.io import SCFReader
 from streams import usys, heliocentric_names, galactocentric_names
-from streams.coordinates import _gc_to_hel, _hel_to_gc
+from streams.coordinates import hel_to_gal
 from streams.observation.errormodels import *
 from streams.potential import LM10Potential
 
@@ -116,7 +116,7 @@ def observe_simulation(star_error_model=None, progenitor_error_model=None,
 
     # make a plot of true and observed positions
     obs_hel = np.vstack([observed_star_tbl[n] for n in heliocentric_names]).T
-    obs_gc = _hel_to_gc(obs_hel)
+    obs_gc = hel_to_gal(obs_hel)
 
     fig,axes = plt.subplots(2,2,figsize=(16,16))
 
