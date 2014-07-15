@@ -1,5 +1,4 @@
 # encoding: utf-8
-# filename: _lm10_acceleration.pyx
 
 from __future__ import division
 
@@ -19,12 +18,12 @@ cdef extern from "math.h":
     double log(double x)
     double abs(double x)
 
-def _gc_to_hel(np.ndarray[double, ndim=2] X not None):
+def _gc_to_hel(np.ndarray[double, ndim=2] X,
+               double Rsun=8.,
+               double Vcirc=(220*0.0010227121650537077)): # km/s to kpc/Myr
     """ Assumes Galactic units: kpc, Myr, radian, M_sun """
 
     cdef int nparticles = X.shape[0]
-    cdef double Rsun = 8.
-    cdef double Vcirc = 0.224996676312
     cdef double[:,:] O = np.empty((nparticles, 6))
 
     cdef double x, y, z, vx, vy, vz, d_xy
@@ -63,12 +62,12 @@ def _gc_to_hel(np.ndarray[double, ndim=2] X not None):
 
     return np.array(O)
 
-def _hel_to_gc(np.ndarray[double, ndim=2] O not None):
+def _hel_to_gc(np.ndarray[double, ndim=2] O,
+               double Rsun=8.,
+               double Vcirc=(220*0.0010227121650537077)): # km/s to kpc/Myr
     """ Assumes Galactic units: kpc, Myr, radian, M_sun """
 
     cdef int nparticles = O.shape[0]
-    cdef double Rsun = 8.
-    cdef double Vcirc = 0.224996676312
     cdef double[:,:] X = np.empty((nparticles, 6))
 
     cdef double l,b,d,mul,mub,vr
