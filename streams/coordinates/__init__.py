@@ -1,1 +1,1 @@
-from _gc_hel import _hel_to_gc, _gc_to_hel
+from gal_hel import hel_to_gal, gal_to_hel
