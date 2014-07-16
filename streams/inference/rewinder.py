@@ -318,7 +318,6 @@ class Rewinder(EmceeModel):
                 continue
             yield tup
 
-
 # TODO: check here down
 
 class RewinderSampler(EnsembleSampler):
