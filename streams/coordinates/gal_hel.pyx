@@ -41,14 +41,15 @@ def gal_to_hel(np.ndarray[double, ndim=2] X,
 
         # transform from cartesian to spherical
         d = sqrt(x**2 + y**2 + z**2)
+        d_xy = sqrt(x**2 + y**2)
         l = atan2(y, x)
-        b = 1.5707963267948966 - acos(z/d)
+        # b = 1.5707963267948966 - acos(z/d)
+        b = atan2(z, d_xy)
 
         if l < 0:
             l = l+twopi
 
         # transform cartesian velocity to spherical
-        d_xy = sqrt(x**2 + y**2)
         vr = (vx*x + vy*y + vz*z) / d # kpc/Myr
         mul = -(vx*y - x*vy) / d_xy**2 # rad / Myr
         mub = -(z*(x*vx + y*vy) - d_xy**2*vz) / (d**2 * d_xy) # rad / Myr
