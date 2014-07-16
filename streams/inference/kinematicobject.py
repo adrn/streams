@@ -59,10 +59,10 @@ class KinematicObject(object):
     def __len__(self):
         return self.n
 
-    def ln_prior(self, coords):
+    def ln_prior(self, data):
         """ TODO: """
-        coords = np.atleast_2d(coords)
-        l,b,d,mul,mub,vr = coords.T
+        data = np.atleast_2d(data)
+        l,b,d,mul,mub,vr = data.T
 
         ln_p_lb = np.log(np.cos(b) / (4*np.pi))
         # HACK: distance range 1-200 kpc
