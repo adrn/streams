@@ -103,9 +103,62 @@ class Rewinder(EmceeModel):
                 Integration limits.
         """
         ln_prior = 0.
-        for group_name,param_name,param in self._walk():
-            v = parameter_values[group_name][param.name]
-            ln_prior += param.prior(v)
+
+        for param in parameters['potential'].values():
+            if param.frozen is False:
+                v = parameter_values['potential'][param.name]
+                ln_prior += param.prior(v)
+
+        if parameters['progenitor']['l'].frozen is False:
+            # this is actually the data likelihood
+            ln_prior += log_normal(parameter_values['progenitor']['l'],
+                                   self.progenitor.data[:,0],
+                                   self.progenitor.errors[:,0])
+
+        if parameters['progenitor']['b'].frozen is False:
+            # uniform angles over the sky
+            ln_prior += np.log(np.cos(b) / (4*np.pi))
+
+            # this is actually the data likelihood
+            ln_prior += log_normal(parameter_values['progenitor']['b'],
+                                   self.progenitor.data[:,1],
+                                   self.progenitor.errors[:,1])
+
+        if parameters['progenitor']['d'].frozen is False:
+            # distance prior from 1 kpc to 200 kpc
+            d = parameter_values['d']
+            ln_prior += np.log((1 / np.log(200./1.))) - np.log(d)
+
+            # this is actually the data likelihood
+            ln_prior += log_normal(parameter_values['progenitor']['d'],
+                                   self.progenitor.data[:,2],
+                                   self.progenitor.errors[:,2])
+        else:
+            d = parameters['progenitor']['d'].frozen
+
+        if parameters['progenitor']['mul'].frozen is False:
+            ln_prior += log_normal(mul, 0., 0.306814 / d) # 300 km/s
+
+            # this is actually the data likelihood
+            ln_prior += log_normal(parameter_values['progenitor']['mul'],
+                                   self.progenitor.data[:,3],
+                                   self.progenitor.errors[:,3])
+
+        if parameters['progenitor']['mub'].frozen is False:
+            ln_prior += log_normal(mub, 0., 0.306814 / d) # 300 km/s
+
+            # this is actually the data likelihood
+            ln_prior += log_normal(parameter_values['progenitor']['mub'],
+                                   self.progenitor.data[:,4],
+                                   self.progenitor.errors[:,4])
+
+        if parameters['progenitor']['vr'].frozen is False:
+            ln_prior += log_normal(vr, 0., 0.306814) # 300 km/s
+
+            # this is actually the data likelihood
+            ln_prior += log_normal(parameter_values['progenitor']['vr'],
+                                   self.progenitor.data[:,5],
+                                   self.progenitor.errors[:,5])
 
         return ln_prior
 
