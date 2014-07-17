@@ -1,5 +1,5 @@
 # encoding: utf-8
-
+# cython: boundscheck=False
 import sys
 
 import numpy as np
@@ -22,7 +22,6 @@ cdef extern from "math.h":
     double fabs(double x)
     double exp(double x)
 
-@cython.boundscheck(False)
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
@@ -38,7 +37,6 @@ cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v,
         for j in range(3):
             v_12[i,j] = v[i,j] + 0.5*dt*acc[i,j]
 
-@cython.boundscheck(False)
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
@@ -67,14 +65,12 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
             v[i,j] = v[i,j] + dt*acc[i,j]; # incr. synced vel. by full-step
             v_12[i,j] = v_12[i,j] + dt*acc[i,j]; # incr. leapfrog vel. by full-step
 
-@cython.boundscheck(False)
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 cdef inline double dot(double[::1] a, double[::1] b):
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
 
-@cython.boundscheck(False)
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
@@ -113,7 +109,6 @@ cdef inline double basis(double[:,::1] x, double[:,::1] v,
     x2_hat[2] = x2_hat[2] / x2_norm
     x3_hat[2] = x3_hat[2] / x3_norm
 
-@cython.boundscheck(False)
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
