@@ -30,7 +30,7 @@ import numexpr
 # Project
 from streamteam.io import SCFReader
 from streams import usys, heliocentric_names, galactocentric_names
-from streams.coordinates import hel_to_gal
+from streams.coordinates import hel_to_gal, gal_to_hel
 from streams.observation.errormodels import *
 from streams.potential import LM10Potential
 
@@ -83,7 +83,7 @@ def observe_simulation(star_error_model=None, progenitor_error_model=None,
 
     # coordinate transform
     star_gc = np.vstack([star_data[n] for n in galactocentric_names]).T
-    star_hel = _gc_to_hel(star_gc)
+    star_hel = gal_to_hel(star_gc)
 
     # create table for star data
     star_tbl = at.Table(star_hel, names=heliocentric_names)
@@ -97,7 +97,7 @@ def observe_simulation(star_error_model=None, progenitor_error_model=None,
     prog_gc = np.vstack([prog_data[n] for n in galactocentric_names]).T
     prog_gc = np.median(prog_gc, axis=0).reshape(1,6)
     logger.debug("Used {} particles to estimate progenitor position.".format(len(prog_data)))
-    prog_hel = _gc_to_hel(prog_gc)
+    prog_hel = gal_to_hel(prog_gc)
 
     # create table for progenitor data
     prog_tbl = at.Table(prog_hel, names=heliocentric_names)
@@ -106,8 +106,10 @@ def observe_simulation(star_error_model=None, progenitor_error_model=None,
     # determine tail assignment for stars by relative energy
     dE = energy(star_gc) - energy(prog_gc)
     tail = np.zeros(len(star_tbl))
-    tail[dE > 0.] = -1. # leading tail
-    tail[dE <= 0.] = 1. # trailing
+    lead = dE <= 0.
+    trail = dE > 0.
+    tail[lead] = -1. # leading tail
+    tail[trail] = 1. # trailing
     star_tbl.add_column(at.Column(tail, name="tail")) # add tail
 
     # observe the data
@@ -120,20 +122,21 @@ def observe_simulation(star_error_model=None, progenitor_error_model=None,
 
     fig,axes = plt.subplots(2,2,figsize=(16,16))
 
-    mpl = dict(markersize=3., marker=',', linestyle='none', alpha=0.5)
+    mpl = dict(markersize=3., marker='o', linestyle='none', alpha=0.5)
     axes[0,0].plot(star_gc[:,0], star_gc[:,1], **mpl)
     axes[0,1].plot(star_gc[:,0], star_gc[:,2], **mpl)
-    axes[0,0].plot(obs_gc[tail==1,0], obs_gc[tail==1,1], c='#ca0020', **mpl)
-    axes[0,1].plot(obs_gc[tail==1,0], obs_gc[tail==1,2], c='#ca0020', **mpl)
-    axes[0,0].plot(obs_gc[tail==-1,0], obs_gc[tail==-1,1], **mpl)
-    axes[0,1].plot(obs_gc[tail==-1,0], obs_gc[tail==-1,2], **mpl)
+    axes[0,0].plot(obs_gc[trail,0], obs_gc[trail,1], label='trailing', c='#ca0020', **mpl)
+    axes[0,1].plot(obs_gc[trail,0], obs_gc[trail,2], c='#ca0020', **mpl)
+    axes[0,0].plot(obs_gc[lead,0], obs_gc[lead,1], label='leading', **mpl)
+    axes[0,1].plot(obs_gc[lead,0], obs_gc[lead,2], **mpl)
+    axes[0,0].legend()
 
     axes[1,0].plot(star_gc[:,3], star_gc[:,4], **mpl)
     axes[1,1].plot(star_gc[:,3], star_gc[:,5], **mpl)
-    axes[1,0].plot(obs_gc[tail==1,3], obs_gc[tail==1,4], c='#ca0020', **mpl)
-    axes[1,1].plot(obs_gc[tail==1,3], obs_gc[tail==1,5], c='#ca0020', **mpl)
-    axes[1,0].plot(obs_gc[tail==-1,3], obs_gc[tail==-1,4], **mpl)
-    axes[1,1].plot(obs_gc[tail==-1,3], obs_gc[tail==-1,5], **mpl)
+    axes[1,0].plot(obs_gc[trail,3], obs_gc[trail,4], c='#ca0020', **mpl)
+    axes[1,1].plot(obs_gc[trail,3], obs_gc[trail,5], c='#ca0020', **mpl)
+    axes[1,0].plot(obs_gc[lead,3], obs_gc[lead,4], **mpl)
+    axes[1,1].plot(obs_gc[lead,3], obs_gc[lead,5], **mpl)
 
     fname = os.path.splitext(os.path.basename(output_file))[0]
     fig.savefig(os.path.join(os.path.split(output_file)[0],
