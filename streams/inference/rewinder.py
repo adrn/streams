@@ -27,7 +27,7 @@ from scipy.misc import logsumexp
 from streamteam.inference import EmceeModel, ModelParameter, LogUniformPrior, LogPrior
 from .. import heliocentric_names
 from ..util import streamspath
-from ..coordinates import _hel_to_gc
+from ..coordinates import hel_to_gal
 from .rewinder_likelihood import rewinder_likelihood
 from .kinematicobject import KinematicObject
 from .util import log_normal
@@ -74,16 +74,28 @@ class Rewinder(EmceeModel):
         # draw samples for each star
         self.K = K
         self.nsamples = K*self.nstars
+        # HACK --------------------
+        # stars_samples_hel = np.random.normal(self.stars.data[:,np.newaxis],
+        #                                      self.stars.errors[:,np.newaxis],
+        #                                      size=(self.nstars,self.K,6))
+        # self.stars.errors[:,np.newaxis],
         stars_samples_hel = np.random.normal(self.stars.data[:,np.newaxis],
                                              self.stars.errors[:,np.newaxis],
                                              size=(self.nstars,self.K,6))
-
+        # HACK:
         self.stars_samples_lnprob = self.stars.ln_prior(stars_samples_hel).T[np.newaxis]
-        self.stars_samples_gal = _hel_to_gc(stars_samples_hel.reshape(self.nsamples,6))
+        # self.stars_samples_lnprob = 0.
 
-        # set the tail assignments TODO: this is teh sux
+        # HACK:
+        self.stars_samples_gal = hel_to_gal(stars_samples_hel.reshape(self.nsamples,6))
+        #self.stars_samples_gal = hel_to_gal(self.stars.truths)
+        # ---------------------------------
+
+        # set the tail assignments TODO: this is teh sux?
+        # HACK
         tail = np.array(self.stars.parameters['tail'].truth)
-        self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1).ravel()
+        self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1)\
+                                    .reshape(self.nsamples)
 
         # integration
         self.args = (t1,t2,dt)
@@ -199,9 +211,9 @@ class Rewinder(EmceeModel):
 
         # mass
         if parameters['progenitor']['m0'].frozen is False:
-            mass = parameter_values['progenitor']['m0']
+            m0 = parameter_values['progenitor']['m0']
         else:
-            mass = parameters['progenitor']['m0'].frozen
+            m0 = parameters['progenitor']['m0'].frozen
 
         # mass-loss
         if parameters['progenitor']['mdot'].frozen is False:
@@ -223,17 +235,56 @@ class Rewinder(EmceeModel):
             else:
                 prog_hel[:,i] = parameters['progenitor'][par_name].frozen
 
+        # HACK
+        m0 = 2.5e8
+        mdot = 3.2*10**(np.floor(np.log10(float(m0)))-4)
+        alpha = 1.2
+        prog_hel = self.progenitor.truths
+
         # TODO: need better way to do this so can specify R_sun and V_circ if I want in the future
-        prog_gal = _hel_to_gc(prog_hel)
-        # TODO: only compute for unfrozen params?
-        # log_normal(prog_hel, self.progenitor.data, self.progenitor.errors).sum()
+        prog_gal = hel_to_gal(prog_hel)
+
+        # HACK
+        # stars_gal = hel_to_gal(self.stars.truths)
+        # ln_like = rewinder_likelihood(t1, t2, dt, potential,
+        #                               prog_gal, stars_gal,
+        #                               m0, mdot, alpha, -self.stars_samples_tail)
+        # l = logsumexp(ln_like, axis=0)
 
         ln_like = rewinder_likelihood(t1, t2, dt, potential,
                                       prog_gal, self.stars_samples_gal,
-                                      mass, mdot, alpha, self.stars_samples_tail)
+                                      m0, mdot, alpha, self.stars_samples_tail)
+        ln_like = ln_like.reshape(ln_like.shape[0],self.nstars,self.K)
 
-        l = ln_like.reshape(ln_like.shape[0],self.nstars,self.K) - self.stars_samples_lnprob
-        l = logsumexp(logsumexp(l - np.log(self.K),axis=2), axis=0)
+        marg = logsumexp(ln_like, axis=0) + np.log(abs(dt))
+        ln_q_jk = marg - self.stars_samples_lnprob
+        n_eff = np.exp(2*logsumexp(ln_q_jk, axis=-1) - logsumexp(2*ln_q_jk, axis=-1))
+        print(n_eff)
+
+        return logsumexp(ln_q_jk - np.log(self.K), axis=-1).sum()
+
+        # ln_q_jk = ln_like - self.stars_samples_lnprob
+        # n_eff = np.exp(2*logsumexp(ln_q_jk, axis=2) - logsumexp(2*ln_q_jk, axis=2))
+
+        # import matplotlib.pyplot as plt
+        # for n in range(self.nstars):
+        #     fig,axes = plt.subplots(2,1,sharex=True)
+        #     fig.suptitle(r"Star {}".format(n), fontsize=24)
+        #     t = np.linspace(self.args[0], self.args[1], len(n_eff[:,n]))
+        #     axes[0].plot(t, n_eff[:,n], marker=None)
+        #     axes[0].axvline(self.stars.parameters['tub'].truth.value[n],
+        #                     linestyle='dashed', c='g', alpha=0.6)
+        #     axes[0].set_ylabel(r"$N_{\rm eff}$")
+        #     axes[0].set_xlim(0.,self.args[0])
+        #     axes[0].set_ylim(0.,self.K)
+        #     axes[1].plot(t, ln_q_jk[:,n], marker=None, alpha=0.1)
+        #     axes[1].axvline(self.stars.parameters['tub'].truth.value[n],
+        #                     linestyle='dashed', c='g', alpha=0.6)
+        #     axes[1].set_ylabel(r"$\ln q_k(\tau)$")
+        #     axes[-1].set_xlabel(r"Release time, $\tau$")
+        #     fig.savefig("/Users/adrian/Downloads/star_{}.png".format(n))
+
+        # sys.exit(0)
 
         return l.sum()
 
@@ -334,7 +385,8 @@ class Rewinder(EmceeModel):
                                 errors=dict([(k,stars_err[k].data) for k in heliocentric_names]),
                                 truths=dict([(k,true_stars[k].data) for k in heliocentric_names])
                             )
-        star_ko.parameters['tail'] = ModelParameter('tail', truth=stars['tail'])
+        star_ko.parameters['tail'] = ModelParameter('tail', truth=stars['tail'].data)
+        star_ko.parameters['tub'] = ModelParameter('tub', truth=stars['tub'].data)
 
         # integration stuff
         integration = at.Table.read(config['data_file'], path='integration')
@@ -351,8 +403,7 @@ class Rewinder(EmceeModel):
 
         for par in prog_ko.parameters.values():
             if par.name not in config["progenitor"]["parameters"]:
-                if config["progenitor"].get("fixed_truth",False):
-                    par.freeze("truth")
+                par.freeze("truth")
 
         for par in potential.parameters.values():
             if par.name not in config["potential"]["parameters"]:
