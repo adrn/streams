@@ -9,7 +9,7 @@ numpy_incl_path = os.path.join(numpy_base_path, "core", "include")
 
 gal_hel = Extension("streams.coordinates.gal_hel",
                     ["streams/coordinates/gal_hel.pyx"],
-                     include_dirs=[numpy_incl_path])
+                    include_dirs=[numpy_incl_path])
 
 rewinder = Extension("streams.inference.rewinder_likelihood",
                      ["streams/inference/rewinder_likelihood.pyx"],
