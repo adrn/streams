@@ -26,15 +26,15 @@ def test_config():
     for p in rw._walk():
         print(p)
 
-    p0 = rw.sample_priors(24)[0]
-    print(rw(np.array([1.36, 1.5])))
+    p0 = rw.sample_p0(1000)
+    print(rw(p0[0]))
 
     vals = np.linspace(1.26, 1.46, 25)
     #vals = np.linspace(1., 1.72, 7)
     ll = []
     for val in vals:
         try:
-            ll.append(rw(np.array([val,1.6])))
+            ll.append(rw(np.array([1.38,val,0.12462565900,1.55])))
         except ValueError:
             ll.append(np.nan)
     ll = np.array(ll)
