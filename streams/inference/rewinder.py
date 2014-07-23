@@ -74,26 +74,21 @@ class Rewinder(EmceeModel):
         # draw samples for each star
         self.K = K
         self.nsamples = K*self.nstars
-        # HACK --------------------
-        # stars_samples_hel = np.random.normal(self.stars.data[:,np.newaxis],
-        #                                      self.stars.errors[:,np.newaxis],
-        #                                      size=(self.nstars,self.K,6))
-        # self.stars.errors[:,np.newaxis],
+
+        # TODO: if any errors np.inf, sample from prior instead
         stars_samples_hel = np.random.normal(self.stars.data[:,np.newaxis],
                                              self.stars.errors[:,np.newaxis],
                                              size=(self.nstars,self.K,6))
-        # HACK:
+
+        # compute prior probabilities for the samples
         self.stars_samples_lnprob = self.stars.ln_prior(stars_samples_hel).T[np.newaxis]
-        # self.stars_samples_lnprob = 0.
 
-        # HACK:
+        # transform to galactocentric
         self.stars_samples_gal = hel_to_gal(stars_samples_hel.reshape(self.nsamples,6))
-        #self.stars_samples_gal = hel_to_gal(self.stars.truths)
-        # ---------------------------------
 
-        # set the tail assignments TODO: this is teh sux?
-        # HACK
-        tail = np.array(self.stars.parameters['tail'].truth)
+        # set the tail assignments
+        # HACK: tail assignments always frozen?
+        tail = np.array(self.stars.parameters['tail'].frozen)
         self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1)\
                                     .reshape(self.nsamples)
 
