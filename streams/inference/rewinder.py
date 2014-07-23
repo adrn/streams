@@ -243,7 +243,7 @@ class Rewinder(EmceeModel):
 
         marg = logsumexp(ln_like, axis=0) + np.log(abs(dt))
         ln_q_jk = marg - self.stars_samples_lnprob
-        print("weights", np.exp(ln_q_jk))
+        # print("weights", np.exp(ln_q_jk))
         n_eff = np.exp(2*logsumexp(ln_q_jk, axis=-1) - logsumexp(2*ln_q_jk, axis=-1))
         print(n_eff)
 
