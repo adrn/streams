@@ -230,22 +230,10 @@ class Rewinder(EmceeModel):
             else:
                 prog_hel[:,i] = parameters['progenitor'][par_name].frozen
 
-        # HACK
-        m0 = 2.5e8
-        mdot = 3.2*10**(np.floor(np.log10(float(m0)))-4)
-        alpha = 1.2
-        prog_hel = self.progenitor.truths
-
-        # TODO: need better way to do this so can specify R_sun and V_circ if I want in the future
+        # TODO: need to specify R_sun and V_circ as parameters?
         prog_gal = hel_to_gal(prog_hel)
 
-        # HACK
-        # stars_gal = hel_to_gal(self.stars.truths)
-        # ln_like = rewinder_likelihood(t1, t2, dt, potential,
-        #                               prog_gal, stars_gal,
-        #                               m0, mdot, alpha, -self.stars_samples_tail)
-        # l = logsumexp(ln_like, axis=0)
-
+        # compute back-integration likelihood for all samples
         ln_like = rewinder_likelihood(t1, t2, dt, potential,
                                       prog_gal, self.stars_samples_gal,
                                       m0, mdot, alpha, self.stars_samples_tail)
@@ -339,11 +327,12 @@ class Rewinder(EmceeModel):
         progenitor = Progenitor(data=progenitor_data,
                                 errors=progenitor_err,
                                 truths=true_progenitor)
-        progenitor.parameters['m0'] = ModelParameter('m0', truth=float(progenitor['m0']),
+        progenitor.parameters['m0'] = ModelParameter('m0',
+                                                     truth=float(progenitor_data['m0']),
                                                      prior=LogPrior()) # TODO: logspace?
 
         # HACK: THIS IS A HACK FOR SGR SIMS!
-        true_mdot = np.log(3.2*10**(np.floor(np.log10(float(progenitor['m0'])))-4))
+        true_mdot = np.log(3.2*10**(np.floor(np.log10(float(progenitor_data['m0'])))-4))
         progenitor.parameters['mdot'] = ModelParameter('mdot', truth=true_mdot, prior=LogPrior())
 
         progenitor.parameters['alpha'] = ModelParameter('alpha', shape=(1,),
@@ -372,7 +361,7 @@ class Rewinder(EmceeModel):
 
             star_idx = np.append(lead_stars, trail_stars)
 
-        stars_data = stars[star_idx]
+        stars_data = stars_data[star_idx]
         true_stars = true_stars[star_idx]
         stars_err = stars_err[star_idx]
 
@@ -380,8 +369,8 @@ class Rewinder(EmceeModel):
         logger.debug("Using stars: {}".format(list(star_idx)))
 
         stars = Stars(data=stars_data, errors=stars_err, truths=true_stars)
-        star_ko.parameters['tail'] = ModelParameter('tail', truth=stars['tail'].data)
-        star_ko.parameters['tub'] = ModelParameter('tub', truth=stars['tub'].data)
+        stars.parameters['tail'] = ModelParameter('tail', truth=stars_data['tail'].data)
+        stars.parameters['tub'] = ModelParameter('tub', truth=stars_data['tub'].data)
 
         # integration stuff
         integration = at.Table.read(config['data_file'], path='integration')
