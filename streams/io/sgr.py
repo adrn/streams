@@ -50,13 +50,13 @@ class SgrSimulation(object):
         self.path = path
 
         self.reader = SCFReader(self.path)
-        self.particle_table = self.reader.read_snap(snapfile, units=_usys)
+        self.particle_table = self.reader.read_snap(snapfile, units=usys)
         self.units = _usys
 
         # get mass column from table
         m = np.array(self.particle_table['m'])*self.particle_table['m'].unit
         self.mass = np.sum(m)
-        self.t1 = self.particle_table.meta["timestep"]
+        self.t1 = self.particle_table.meta["time"]
         self.t2 = 0.
 
     def particles(self, n=None, expr=None, tail_bit=False, clean=False):
