@@ -141,30 +141,31 @@ class Rewinder(EmceeModel):
             ln_prior += log_normal(parameter_values['progenitor']['d'],
                                    self.progenitor.data[:,2],
                                    self.progenitor.errors[:,2])
-        else:
-            d = parameters['progenitor']['d'].frozen
 
         if parameters['progenitor']['mul'].frozen is False:
+            mul = parameter_values['progenitor']['mul']
             ln_prior += log_normal(mul, 0., 0.306814 / d) # 300 km/s
 
             # this is actually the data likelihood
-            ln_prior += log_normal(parameter_values['progenitor']['mul'],
+            ln_prior += log_normal(mul,
                                    self.progenitor.data[:,3],
                                    self.progenitor.errors[:,3])
 
         if parameters['progenitor']['mub'].frozen is False:
+            mub = parameter_values['progenitor']['mub']
             ln_prior += log_normal(mub, 0., 0.306814 / d) # 300 km/s
 
             # this is actually the data likelihood
-            ln_prior += log_normal(parameter_values['progenitor']['mub'],
+            ln_prior += log_normal(mub,
                                    self.progenitor.data[:,4],
                                    self.progenitor.errors[:,4])
 
         if parameters['progenitor']['vr'].frozen is False:
+            vr = parameter_values['progenitor']['vr']
             ln_prior += log_normal(vr, 0., 0.306814) # 300 km/s
 
             # this is actually the data likelihood
-            ln_prior += log_normal(parameter_values['progenitor']['vr'],
+            ln_prior += log_normal(vr,
                                    self.progenitor.data[:,5],
                                    self.progenitor.errors[:,5])
 
@@ -242,6 +243,7 @@ class Rewinder(EmceeModel):
 
         marg = logsumexp(ln_like, axis=0) + np.log(abs(dt))
         ln_q_jk = marg - self.stars_samples_lnprob
+        print("weights", np.exp(ln_q_jk))
         n_eff = np.exp(2*logsumexp(ln_q_jk, axis=-1) - logsumexp(2*ln_q_jk, axis=-1))
         print(n_eff)
 
