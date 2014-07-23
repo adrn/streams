@@ -468,8 +468,8 @@ def trace_plots():
         acor = f["acor"].value
 
     labels = ["$q_1$", "$q_z$", r"$\phi$", "$v_h$", "$r_h$", r"$\alpha$"]
-    bounds = [(1.2,1.6),(1.2,1.6),(85,115),(111,131),(8,20),(0.5,2.5)]
-    ticks = [(1.35,1.4,1.45),(1.3,1.35,1.4),(90,100,110),(120,125,130),(10,15,20),(1.,1.5,2.)]
+    bounds = [(1.2,1.5),(1.2,1.5),(80,110),(111,131),(5,20),(0.5,2.5)]
+    ticks = [(1.25,1.35,1.45),(1.25,1.35,1.45),(85,95,105),(115,120,125),(7,12,17),(1.,1.5,2.)]
 
     # plot individual walkers
     fig,axes = plt.subplots(6,1,figsize=(8.5,11),sharex=True)
@@ -502,7 +502,7 @@ def trace_plots():
                          fontsize=18,
                          transform=axes[k].transAxes)
 
-            elif pname == "R_halo":
+            elif pname == "log_R_halo":
                 axes[k].text(1.07, 0.475, "kpc",
                          horizontalalignment='left',
                          fontsize=18,
@@ -527,6 +527,8 @@ def trace_plots():
     fig.subplots_adjust(hspace=0.04, left=0.14, right=0.86)
     fig.savefig(os.path.join(plot_path, "mcmc_trace.{}".format(ext)))
 
+potential_bounds = [(0.7,2.),(0.7,2.),(50,150),(100,200),(8,40),(1.1,2.5)]
+potential_labels = ["$q_1$", "$q_z$", r"$\phi$ [deg]", "$v_h$ [km/s]", "$r_h$ [kpc]", r"$\alpha$"]
 def exp1_posterior():
     cfg_filename = os.path.join(streamspath, "config", "exp1_8.yml")
     config = read_config(cfg_filename)
@@ -545,7 +547,6 @@ def exp1_posterior():
 
     params = OrderedDict(model.parameters['potential'].items() + \
                          model.parameters['satellite'].items())
-    labels = ["$q_1$", "$q_z$", r"$\phi$ [deg]", "$v_h$ [km/s]", "$r_h$ [kpc]", r"$\alpha$"]
 
     truths = []
     bounds = []
@@ -562,13 +563,17 @@ def exp1_posterior():
         bounds.append((0.95*truth, 1.05*truth))
         flatchain[:,ii] = _unit_transform[p.name](_flatchain[:,ii])
 
-    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(5,30),(1.1,2.5)]
+    # bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(5,30),(1.1,2.5)]
     #bounds = None
     fig = triangle.corner(flatchain, plot_datapoints=False,
-                          truths=truths, extents=bounds, labels=labels)
+                          truths=truths, extents=potential_bounds, labels=potential_labels)
+    fig.subplots_adjust(wspace=0.13, hspace=0.13)
     fig.savefig(os.path.join(plot_path, "exp1_posterior.{}".format(ext)))
 
 def exp_posteriors(exp_num):
+    matplotlib.rc('xtick', labelsize=16)
+    matplotlib.rc('ytick', labelsize=16)
+
     cfg_filename = os.path.join(streamspath, "config", "exp{}.yml".format(exp_num))
     config = read_config(cfg_filename)
     model = StreamModel.from_config(config)
@@ -585,8 +590,6 @@ def exp_posteriors(exp_num):
     # Potential
     this_flatchain = np.zeros((_flatchain.shape[0], len(d["potential"])))
     truths = []
-    bounds = [(0.7,2.),(0.7,2.),(52,142),(100,200),(5,30),(1.1,2.5)]
-    # bounds = None
     labels = []
     for ii,pname in enumerate(d["potential"].keys()):
         this_flatchain[:,ii] = _unit_transform[pname](np.squeeze(d["potential"][pname]))
@@ -603,7 +606,8 @@ def exp_posteriors(exp_num):
                     .format(pname,truths[ii],q50[ii],q_p[ii],q_m[ii]))
 
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
-                          truths=truths, extents=bounds, labels=labels)
+                          truths=truths, extents=potential_bounds, labels=potential_labels)
+    fig.subplots_adjust(wspace=0.13, hspace=0.13)
     fig.savefig(os.path.join(plot_path, "exp{}_potential.{}".format(exp_num, ext)))
 
     # Particle
@@ -635,10 +639,12 @@ def exp_posteriors(exp_num):
                     .format(pname,truths[ii],q50[ii],q_p[ii],q_m[ii]))
 
     # HACK
-    bounds = [(22.,26.), (-8.6, -8.), (1.0,1.5), (-50,-10)]
+    bounds = [(20.,29.), (-9.5, -7.), (0.,2.), (-55,-5)]
+    # OLD: bounds = [(22.,26.), (-8.6, -8.), (1.0,1.5), (-50,-10)]
     # bounds = None
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, labels=labels, extents=bounds)
+    fig.subplots_adjust(wspace=0.13, hspace=0.13)
     fig.savefig(os.path.join(plot_path, "exp{}_particle.{}".format(exp_num, ext)))
 
     # Satellite
@@ -666,7 +672,7 @@ def exp_posteriors(exp_num):
         labels.append(_label_map[pname])
 
     # HACK
-    bounds = [(29,32.5), (-2.6,-1.5), (1.3,2.0), (120,175), bounds[-1]]
+    bounds = [(28.5,33.), (-2.6,-1.5), (1.3,2.0), (120,175), bounds[-1]]
     # bounds = None
     if len(d["satellite"]) > len(bounds):
         bounds = [(0,10), (-20,5)] + bounds
@@ -674,6 +680,7 @@ def exp_posteriors(exp_num):
     #bounds = None
     fig = triangle.corner(this_flatchain, plot_datapoints=False,
                           truths=truths, labels=labels, extents=bounds)
+    fig.subplots_adjust(wspace=0.13, hspace=0.13)
     fig.savefig(os.path.join(plot_path, "exp{}_satellite.{}".format(exp_num, ext)))
 
 def exp2_posteriors():
