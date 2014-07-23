@@ -29,7 +29,7 @@ from .. import heliocentric_names
 from ..util import streamspath
 from ..coordinates import hel_to_gal
 from .rewinder_likelihood import rewinder_likelihood
-from .kinematicobject import KinematicObject
+from .kinematicobject import Stars, Progenitor
 from .util import log_normal
 
 __all__ = ["Rewinder", "RewinderSampler"]
@@ -42,9 +42,9 @@ class Rewinder(EmceeModel):
 
             Parameters
             ----------
-            potential : Potential object
-            progenitor :
-            stars :
+            potential : streams.Potential
+            progenitor : streams.Progenitor
+            stars : streams.Stars
             t1,t2,dt : float
                 Integration parameters.
             K : int
@@ -326,65 +326,65 @@ class Rewinder(EmceeModel):
         # load progenitor and star data
         logger.debug("Reading data from:\n\t{}".format(config['data_file']))
 
-        progenitor = at.Table.read(config['data_file'], path='progenitor')
-        true_progenitor = at.Table.read(config['data_file'], path='true_progenitor')
+        progenitor_data = at.Table.read(config['data_file'], path='progenitor')
+        try:
+            true_progenitor = at.Table.read(config['data_file'], path='true_progenitor')
+        except:
+            true_progenitor = None
         progenitor_err = at.Table.read(config['data_file'], path='error_progenitor')
 
-        stars = at.Table.read(config['data_file'], path='stars')
-        true_stars = at.Table.read(config['data_file'], path='true_stars')
+        stars_data = at.Table.read(config['data_file'], path='stars')
+        try:
+            true_stars = at.Table.read(config['data_file'], path='true_stars')
+        except:
+            true_stars = None
         stars_err = at.Table.read(config['data_file'], path='error_stars')
 
-        # progenitor parameter container
-        # TODO: handle missing dimensions
-        prog_ko = KinematicObject(
-                          data=dict([(k,progenitor[k].data) for k in heliocentric_names]),
-                          errors=dict([(k,progenitor_err[k].data) for k in heliocentric_names]),
-                          truths=dict([(k,true_progenitor[k].data) for k in heliocentric_names])
-                    )
+        # progenitor object
+        progenitor = Progenitor(data=progenitor_data,
+                                errors=progenitor_err,
+                                truths=true_progenitor)
+        progenitor.parameters['m0'] = ModelParameter('m0', truth=float(progenitor['m0']),
+                                                     prior=LogPrior()) # TODO: logspace?
 
-        prog_ko.parameters['m0'] = ModelParameter('m0', truth=float(progenitor['m0']),
-                                                  prior=LogPrior()) # TODO: logspace?
-        true_mdot = np.log(3.2*10**(np.floor(np.log10(float(progenitor['m0'])))-4))# THIS IS A HACK FOR 2.5e8!
-        prog_ko.parameters['mdot'] = ModelParameter('mdot', truth=true_mdot,
-                                                    prior=LogPrior()) # TODO: logspace?
-        prog_ko.parameters['alpha'] = ModelParameter('alpha', shape=(1,),
-                                                     prior=LogUniformPrior(1., 2.))
+        # HACK: THIS IS A HACK FOR SGR SIMS!
+        true_mdot = np.log(3.2*10**(np.floor(np.log10(float(progenitor['m0'])))-4))
+        progenitor.parameters['mdot'] = ModelParameter('mdot', truth=true_mdot, prior=LogPrior())
+
+        progenitor.parameters['alpha'] = ModelParameter('alpha', shape=(1,),
+                                                        prior=LogUniformPrior(1., 2.))
 
         # deal with extra star selection crap
         if star_idx is None:
             if nstars is 0:
-                raise ValueError("If not specifying indexes, must specicy number"
+                raise ValueError("If not specifying indexes, must specify number"
                                  "of stars (nstars)")
 
             if expr is not None:
-                expr_idx = numexpr.evaluate(expr, stars)
+                expr_idx = numexpr.evaluate(expr, stars_data)
             else:
-                expr_idx = np.ones(len(stars)).astype(bool)
+                expr_idx = np.ones(len(stars_data)).astype(bool)
 
             # leading tail stars
-            lead_stars, = np.where((stars["tail"] == -1.) & expr_idx)
+            lead_stars, = np.where((stars_data["tail"] == -1.) & expr_idx)
             np.random.shuffle(lead_stars)
             lead_stars = lead_stars[:nlead]
 
             # trailing tail stars
-            trail_stars, = np.where((stars["tail"] == 1.) & expr_idx)
+            trail_stars, = np.where((stars_data["tail"] == 1.) & expr_idx)
             np.random.shuffle(trail_stars)
             trail_stars = trail_stars[:ntrail]
 
             star_idx = np.append(lead_stars, trail_stars)
 
-        stars = stars[star_idx]
+        stars_data = stars[star_idx]
         true_stars = true_stars[star_idx]
         stars_err = stars_err[star_idx]
-        # TODO: handle missing dimensions
-        logger.info("Running with {} stars.".format(len(stars)))
+
+        logger.info("Running with {} stars.".format(len(stars_data)))
         logger.debug("Using stars: {}".format(list(star_idx)))
 
-        star_ko = KinematicObject(
-                                data=dict([(k,stars[k].data) for k in heliocentric_names]),
-                                errors=dict([(k,stars_err[k].data) for k in heliocentric_names]),
-                                truths=dict([(k,true_stars[k].data) for k in heliocentric_names])
-                            )
+        stars = Stars(data=stars_data, errors=stars_err, truths=true_stars)
         star_ko.parameters['tail'] = ModelParameter('tail', truth=stars['tail'].data)
         star_ko.parameters['tub'] = ModelParameter('tub', truth=stars['tub'].data)
 
@@ -401,7 +401,7 @@ class Rewinder(EmceeModel):
         potential = Potential()
         logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
 
-        for par in prog_ko.parameters.values():
+        for par in progenitor.parameters.values():
             if par.name not in config["progenitor"]["parameters"]:
                 par.freeze("truth")
 
@@ -412,7 +412,7 @@ class Rewinder(EmceeModel):
         logger.info("Drawing {} samples from each prior...".format(config["K"]))
 
         # Initialize the model
-        model = cls(potential, prog_ko, star_ko, t1, t2, dt, K=config["K"])
+        model = cls(potential, progenitor, stars, t1, t2, dt, K=config["K"])
 
         return model
 
