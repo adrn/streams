@@ -29,7 +29,7 @@ from .. import heliocentric_names
 from ..util import streamspath
 from ..coordinates import hel_to_gal
 from .rewinder_likelihood import rewinder_likelihood
-from .kinematicobject import Stars, Progenitor
+from .starsprogenitor import Stars, Progenitor
 from .util import log_normal
 
 __all__ = ["Rewinder", "RewinderSampler"]
@@ -65,7 +65,8 @@ class Rewinder(EmceeModel):
 
         # Stars
         for par in stars.parameters.values():
-            par.frozen = True
+            if par.frozen is False:
+                par.frozen = True
             self.add_parameter(par, "stars")
 
         self.stars = stars
@@ -81,7 +82,7 @@ class Rewinder(EmceeModel):
                                              size=(self.nstars,self.K,6))
 
         # compute prior probabilities for the samples
-        self.stars_samples_lnprob = self.stars.ln_prior(stars_samples_hel).T[np.newaxis]
+        self.stars_samples_lnprob = sum(self.stars.ln_prior(stars_samples_hel)).T[np.newaxis]
 
         # transform to galactocentric
         self.stars_samples_gal = hel_to_gal(stars_samples_hel.reshape(self.nsamples,6))
@@ -370,6 +371,7 @@ class Rewinder(EmceeModel):
 
         stars = Stars(data=stars_data, errors=stars_err, truths=true_stars)
         stars.parameters['tail'] = ModelParameter('tail', truth=stars_data['tail'].data)
+        stars.parameters['tail'].frozen = stars.parameters['tail'].truth
         stars.parameters['tub'] = ModelParameter('tub', truth=stars_data['tub'].data)
 
         # integration stuff
