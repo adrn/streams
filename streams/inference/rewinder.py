@@ -134,7 +134,7 @@ class Rewinder(EmceeModel):
 
         if parameters['progenitor']['d'].frozen is False:
             # distance prior from 1 kpc to 200 kpc
-            d = parameter_values['d']
+            d = parameter_values['progenitor']['d']
             ln_prior += np.log((1 / np.log(200./1.))) - np.log(d)
 
             # this is actually the data likelihood
@@ -271,6 +271,33 @@ class Rewinder(EmceeModel):
         # sys.exit(0)
 
         return l.sum()
+
+    def sample_p0(self, n=None):
+        """ """
+
+        p0 = np.zeros((n, self.nparameters))
+        ix1 = 0
+        for group_name,param_name,param in self._walk():
+            if group_name == 'progenitor' and param_name in heliocentric_names:
+                if param.size == 1:
+                    size = (n,)
+                else:
+                    size = (n,)+self.progenitor.parameters[param_name].shape
+                samples = np.random.normal(self.progenitor.parameters[param_name].value,
+                                           self.progenitor.parameters[param_name].error,
+                                           size=size)
+            else:
+                samples = param.prior.sample(n=n)
+
+            if param.size == 1:
+                p0[:,ix1] = samples
+            else:
+                p0[:,ix1:ix1+param.size] = samples
+
+            ix1 += param.size
+
+        return p0
+
 
     # ========================================================================
     # ========================================================================
