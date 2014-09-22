@@ -1,5 +1,9 @@
 # encoding: utf-8
 
+""" Fast transformation from heliocentric (Galactic) coordinates to
+    galacocentric cartesian coordinates.
+"""
+
 from __future__ import division
 
 import sys
