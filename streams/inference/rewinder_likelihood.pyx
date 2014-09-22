@@ -26,10 +26,10 @@ cdef extern from "math.h":
 @cython.wraparound(False)
 @cython.nonecheck(False)
 cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v,
-                        double[:,::1] v_12,
-                        double[:,::1] acc, # return
-                        int nparticles, double dt,
-                        pot._Potential potential):
+                               double[:,::1] v_12,
+                               double[:,::1] acc,  # return
+                               int nparticles, double dt,
+                               pot._Potential potential):
 
     potential._acceleration(r, acc, nparticles);
 
@@ -41,10 +41,10 @@ cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v,
 @cython.wraparound(False)
 @cython.nonecheck(False)
 cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
-                        double[:,::1] v_12,
-                        double[:,::1] acc,
-                        int nparticles, double dt,
-                        pot._Potential potential):
+                               double[:,::1] v_12,
+                               double[:,::1] acc,
+                               int nparticles, double dt,
+                               pot._Potential potential):
     """ Velocities need to be offset from positions by 1/2 step! To
         'prime' the integration, call
 
@@ -56,14 +56,14 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
 
     for i in range(nparticles):
         for j in range(3):
-            r[i,j] = r[i,j] + dt*v_12[i,j]; # incr. pos. by full-step
+            r[i,j] = r[i,j] + dt*v_12[i,j];  # incr. pos. by full-step
 
     potential._acceleration(r, acc, nparticles);
 
     for i in range(nparticles):
         for j in range(3):
             v[i,j] = v[i,j] + dt*acc[i,j]; # incr. synced vel. by full-step
-            v_12[i,j] = v_12[i,j] + dt*acc[i,j]; # incr. leapfrog vel. by full-step
+            v_12[i,j] = v_12[i,j] + dt*acc[i,j];  # incr. leapfrog vel. by full-step
 
 @cython.cdivision(True)
 @cython.wraparound(False)
@@ -113,13 +113,13 @@ cdef inline double basis(double[:,::1] x, double[:,::1] v,
 @cython.wraparound(False)
 @cython.nonecheck(False)
 cdef inline void ln_likelihood_helper(double sat_mass,
-                               double[:,::1] x, double[:,::1] v, int nparticles,
-                               double alpha, double[::1] betas,
-                               pot._Potential potential,
-                               double[::1] x1_hat, double[::1] x2_hat,
-                               double[::1] x3_hat,
-                               double[:,::1] ln_likelihoods, int ll_idx,
-                               double[::1] dx, double[::1] dv):
+                                      double[:,::1] x, double[:,::1] v, int nparticles,
+                                      double alpha, double[::1] betas,
+                                      pot._Potential potential,
+                                      double[::1] x1_hat, double[::1] x2_hat,
+                                      double[::1] x3_hat,
+                                      double[:,::1] ln_likelihoods, int ll_idx,
+                                      double[::1] dx, double[::1] dv):
     cdef int i
     cdef double x1,x2,x3,vx1,vx2,vx3
     cdef double beta
@@ -173,12 +173,12 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         vx3 = dv[0]*x3_hat[0] + dv[1]*x3_hat[1] + dv[2]*x3_hat[2]
 
         # position likelihood is gaussian at lagrange points
-        r_term = -0.5*((2*ln_sigma_r + x1*x1/sigma_r_sq) + \
-                       (2*(ln_sigma_r + 0.6931471805599452) + x2*x2/(4*sigma_r_sq)) + \
+        r_term = -0.5*((2*ln_sigma_r + x1*x1/sigma_r_sq) +
+                       (2*(ln_sigma_r + 0.6931471805599452) + x2*x2/(4*sigma_r_sq)) +
                        (2*ln_sigma_r + x3*x3/sigma_r_sq))
 
-        v_term = -0.5*((2*ln_sigma_v + vx1*vx1/sigma_v_sq) + \
-                       (2*ln_sigma_v + vx2*vx2/sigma_v_sq) + \
+        v_term = -0.5*((2*ln_sigma_v + vx1*vx1/sigma_v_sq) +
+                       (2*ln_sigma_v + vx2*vx2/sigma_v_sq) +
                        (2*ln_sigma_v + vx3*vx3/sigma_v_sq))
 
         ln_likelihoods[ll_idx,i] = r_term + v_term + jac
