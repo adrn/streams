@@ -27,16 +27,19 @@ def test_config():
         print(p)
 
     p0 = rw.sample_p0(1000)
-    print(rw(p0[0]))
+    p = p0[15]
+    print(p)
+    # print(rw(p))
 
-    vals = np.linspace(1.26, 1.46, 25)
+    vals = np.linspace(1.28, 1.48, 25)
     #vals = np.linspace(1., 1.72, 7)
     ll = []
     for val in vals:
         try:
-            ll.append(rw(np.array([1.38,val,0.12462565900,1.55])))
+            ll.append(rw(np.array([val] + list(p[1:]))))
         except ValueError:
             ll.append(np.nan)
+
     ll = np.array(ll)
 
     fig,axes = plt.subplots(2,1)
