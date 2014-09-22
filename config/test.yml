@@ -9,29 +9,36 @@ plot:
     posterior: True
     ext: png
 
+K: 1000
+
 # data
-data_file: data/observed_particles/2.5e8.hdf5
-nparticles: 2
-particle_idx: [637, 508]
+data_file: data/observed_simulation/2.5e8.hdf5
+# nlead: 4
+# ntrail: 4
+# expr: "(tub > 1800) & (tub < 5500) & (d < 40)"
+star_idx: [1084, 30418, 29467, 15733, 23613, 10333, 68481, 184]
+# star_idx: [1084, 30418, 29467, 15733, 48961, 53964, 43864, 41614, 23613, 10333, 68481, 184, 932, 16417, 42214, 23800]
 
 # integration
 dt: -1.
 
 potential:
-    class_name: LawMajewski2010
-    parameters: [q1, qz, log_R_halo]
+    class_name: LM10Potential
+    parameters: [qz]
 
-particles:
-#    parameters: [d, mul, tub]
+progenitor:
+    #parameters: [d, mul, mub, vr, alpha]
+    parameters: [alpha]
 
-satellite:
-#    parameters: [d, mul, mub, vr, alpha]
+stars:
+    # missing_dims: []
+    # fixed_truth: False
 
 # emcee
 start_truth: True
 acceptance_threshold: 0.01
-walkers: 8
+walkers: 32
 burn_in: 0
-steps: 20
-output_every: 10
+steps: 100
+output_every: 100
 thin_chain: False

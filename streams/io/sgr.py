@@ -27,7 +27,7 @@ from .. import usys
 from ..dynamics import Particle, Orbit
 from ..util import streamspath
 from ..coordinates.frame import galactocentric
-from ..potential.lm10 import LawMajewski2010
+from ..potential.lm10 import LM10Potential
 from ..inference.util import guess_tail_bit, particles_x1x2x3
 
 __all__ = ["SgrSimulation"]

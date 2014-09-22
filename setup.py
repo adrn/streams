@@ -7,19 +7,21 @@ import os, numpy
 numpy_base_path = os.path.split(numpy.__file__)[0]
 numpy_incl_path = os.path.join(numpy_base_path, "core", "include")
 
-lm10_acc = Extension("streams.potential._lm10_acceleration",
-                      ["streams/potential/_lm10_acceleration.pyx"],
-                     include_dirs=[numpy_incl_path])
-pal5_acc = Extension("streams.potential._pal5_acceleration",
-                      ["streams/potential/_pal5_acceleration.pyx"],
-                     include_dirs=[numpy_incl_path])
-gc_hel = Extension("streams.coordinates._gc_hel",
-                   ["streams/coordinates/_gc_hel.pyx"],
+gal_hel = Extension("streams.coordinates.gal_hel",
+                    ["streams/coordinates/gal_hel.pyx"],
                     include_dirs=[numpy_incl_path])
 
-new_like = Extension("streams.inference.new_likelihood",
-                      ["streams/inference/new_likelihood.pyx"],
+rewinder = Extension("streams.inference.rewinder_likelihood",
+                     ["streams/inference/rewinder_likelihood.pyx"],
                      include_dirs=[numpy_incl_path])
+
+potential = Extension("streams.potential.basepotential",
+                      ["streams/potential/basepotential.pyx"],
+                      include_dirs=[numpy_incl_path])
+
+lm10 = Extension("streams.potential.lm10",
+                 ["streams/potential/lm10.pyx"],
+                 include_dirs=[numpy_incl_path])
 
 setup(
     name="Streams",
@@ -28,5 +30,5 @@ setup(
     author_email="adrn@astro.columbia.edu",
     license="BSD",
     cmdclass = {'build_ext': build_ext},
-    ext_modules=[lm10_acc, pal5_acc, gc_hel, new_like]
+    ext_modules=[gal_hel, rewinder, potential, lm10]
 )

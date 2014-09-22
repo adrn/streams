@@ -1,6 +1,6 @@
 # coding: utf-8
 
-""" Utilities.. """
+""" Utilities for simulations. """
 
 from __future__ import division, print_function
 
@@ -11,10 +11,13 @@ import os, sys
 
 # Third-party
 import numpy as np
+from astropy import log as logger
 import astropy.units as u
 
-__all__ = ["log_normal"]
+# Project
+# ...
 
-def log_normal(x, mu, sigma):
-    X = x - mu
-    return -0.5*(np.log(2*np.pi) + 2*np.log(sigma) + (X/sigma)**2)
+__all__ = ['']
+
+def identify_tail(potential, ...):
+    pass
