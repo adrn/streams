@@ -7,7 +7,7 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
-import os, sys
+import os
 from collections import OrderedDict
 import time
 import random
@@ -15,18 +15,15 @@ import random
 # Third-party
 from astropy import log as logger
 import astropy.table as at
-from emcee import EnsembleSampler, PTSampler
+from emcee import EnsembleSampler
 import numpy as np
-import astropy.units as u
 import h5py
 import numexpr
-from scipy.stats import norm
 from scipy.misc import logsumexp
 
 # Project
 from streamteam.inference import EmceeModel, ModelParameter, LogUniformPrior, LogPrior
 from .. import heliocentric_names
-from ..util import streamspath
 from ..coordinates import hel_to_gal
 from .rewinder_likelihood import rewinder_likelihood
 from .starsprogenitor import Stars, Progenitor
@@ -42,7 +39,7 @@ class Rewinder(EmceeModel):
 
             Parameters
             ----------
-            potential : streams.Potential
+            potential : streamteam.Potential
             progenitor : streams.Progenitor
             stars : streams.Stars
             t1,t2,dt : float
