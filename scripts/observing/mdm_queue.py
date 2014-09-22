@@ -21,60 +21,46 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Project
-from streams.coordinates import sex_to_dec
-from streams.observation.time import gmst_to_utc, lmst_to_gmst
-from streams.observation.rrlyrae import time_to_phase, phase_to_time
-from streams.observation.triand import all_stars, triand_stars, standards
-from streams.util import project_root
+from streamteam.observation import sex_to_dec, gmst_to_utc, lmst_to_gmst
+from streamteam.observation.rrlyrae import time_to_phase, phase_to_time
 
-matplotlib.rc('xtick', labelsize=12, direction='in')
-matplotlib.rc('ytick', labelsize=12, direction='in')
+#########################################################################
+# Set these
 
-# CHANGE THIS
-observing_path = "/Users/adrian/Documents/GraduateSchool/Observing"
-output_path = os.path.join(observing_path, "2013-10_MDM")
+# - the target list must contain, at least, columns 'name' for the star name,
+#       'ra' and 'dec' for sky coordinates, 'period' for the period in days,
+#       'hjd0' for the HJD (MJD) of the peak of the pulsation, and
+#       'Vmag' for the V-band magnitude
+target_list_filename = "/Users/adrian/projects/streams/data/observing/triand.txt"
+
+# path to write files and plots to
+output_path = ""
+
+#
+#########################################################################
+
 kitt_peak_longitude = (111. + 35/60. + 40.9/3600)*u.deg
-
-def tcs_list(decimal=False):
-    """ Given the table of stars, ouput a list to be fed in to the TCS """
+def tcs_list(stars):
+    """ Given a table of stars, ouput a list to be fed in to the TCS """
 
     names = []
     ras = []
     decs = []
     epoch = []
-    for ii,star in enumerate(triand_stars):
-        names.append("TriAndRRL{0}".format(ii+1))
+    for ii,star in enumerate(stars):
+        names.append(star['name'])
+        ra = coord.Longitude(star['ra']*u.deg)
+        dec = coord.Latitude(star['dec']*u.deg)
 
-        ra = coord.RA(star['ra']*u.deg)
-        dec = coord.Dec(star['dec']*u.deg)
-
-        if decimal:
-            ras.append(ra.degree)
-            decs.append(dec.degree)
-        else:
-            ras.append(ra.to_string(unit=u.hour, sep=' ', pad=True, precision=1))
-            decs.append(dec.to_string(unit=u.deg, sep=' ', alwayssign=True, precision=1))
-        epoch.append(2000.0)
-
-    for ii,star in enumerate(standards):
-        names.append(star['name'].replace(' ', '_'))
-        ra = coord.RA(star['ra']*u.deg)
-        dec = coord.Dec(star['dec']*u.deg)
-
-        if decimal:
-            ras.append(ra.degree)
-            decs.append(dec.degree)
-        else:
-            ras.append(ra.to_string(unit=u.hour, sep=' ', pad=True, precision=1))
-            decs.append(dec.to_string(unit=u.deg, sep=' ', alwayssign=True, precision=1))
+        ras.append(ra.to_string(unit=u.hour, sep=' ', pad=True, precision=1))
+        decs.append(dec.to_string(unit=u.deg, sep=' ', alwayssign=True, precision=1))
         epoch.append(2000.0)
 
     t = Table()
     t.add_column(Column(names, name='name'))
     t.add_column(Column(ras, name='ra'))
     t.add_column(Column(decs, name='dec'))
-    if not decimal:
-        t.add_column(Column(epoch, name='epoch'))
+    t.add_column(Column(epoch, name='epoch'))
 
     return t
 
@@ -90,25 +76,28 @@ def source_meridian_window(ra, utc_day, buffer_time=2.*u.hour):
             The day to compute the window on.
     """
 
-    hour_angles = [-buffer_time.hour,buffer_time.hour]*u.hourangle
+    hour_angles = [-buffer_time.to(u.hour).value,buffer_time.to(u.hour).value]*u.hourangle
 
     jds = []
     for ha in hour_angles:
-        lst = day.datetime + timedelta(hours=(ha + ra).hourangle)
+        lst = day.datetime + timedelta(hours=(ha + ra).to(u.hourangle).value)
         gmst = lmst_to_gmst(lst.time(), kitt_peak_longitude)
         utc = gmst_to_utc(gmst, utc_day)
         jds.append(utc.jd)
 
     return Time(jds, scale='utc', format='jd')
 
-def open_finder_charts():
-    for ii,star in enumerate(triand_stars):
-        url = "http://ptf.caltech.edu/cgi-bin/ptf/variable/fc.cgi?name=TriAndRRL{0}&ra={ra}&dec={dec}&bigwidth=300.000000&bigspan=19.000000&zoomwidth=150.000000&zoomspan=8.000000"
-        print(url.format(ii+1, ra=star['ra'], dec=star['dec']))
-        os.system("open '{0}'".format(url.format(ii+1, ra=star['ra'], dec=star['dec'])))
+# def open_finder_charts(stars):
+#     for ii,star in enumerate(stars):
+#         url = "http://ptf.caltech.edu/cgi-bin/ptf/variable/fc.cgi?name={1}{0}&ra={ra}&dec={dec}&bigwidth=300.000000&bigspan=19.000000&zoomwidth=150.000000&zoomspan=8.000000"
+#         print(url.format(ii+1, star_name_prefix, ra=star['ra'], dec=star['dec']))
+#         os.system("open '{0}'".format(url.format(ii+1, ra=star['ra'], dec=star['dec'])))
+
+# read the target list
+stars = ascii.read(target_list_filename)
 
 # output list of all targets to be added to the TCS
-tcs = tcs_list(False)
+tcs = tcs_list(stars)
 fn = os.path.join(output_path, "tcs_list.txt")
 ascii.write(tcs, fn, Writer=ascii.Basic)
 with open(fn, 'r') as f:
@@ -116,13 +105,6 @@ with open(fn, 'r') as f:
 
 with open(fn, 'w') as f:
     f.write(d)
-
-tcs = tcs_list(True)
-fn = "iobserve_list.txt"
-ascii.write(tcs, os.path.join(output_path, fn), Writer=ascii.Basic)
-
-# read the stars that are done
-done_stars = ascii.read(os.path.join(observing_path, "done_rrlyrae.txt"))
 
 # Create a queue for the given day
 queue = []
@@ -134,11 +116,7 @@ phase_plot_path = os.path.join(output_path, str(day.datetime.date()))
 if not os.path.exists(phase_plot_path):
     os.mkdir(phase_plot_path)
 
-for star in all_stars:
-
-    if star["name"] in done_stars["name"]:
-        print("Star {0} already done!".format(star["name"]))
-        continue
+for star in stars:
 
     # For each star, figure out its observability window, e.g., the times
     #   that it is at -2 hr from meridian and +2 hr from meridian
@@ -155,7 +133,7 @@ for star in all_stars:
 
     obs_window = Time([jd1, jd2], format='jd', scale='utc')
     period = star['period']*u.day
-    t0 = Time(star['rhjd0'], scale='utc', format='mjd')
+    t0 = Time(star['hjd0'], scale='utc', format='mjd')
 
     # Now we want to see if at what time the phase of the pulsation is around
     #   0.4 and 0.7
@@ -166,7 +144,7 @@ for star in all_stars:
 
     # Here instead we'll look at the possible times we can observe
     step = 1.*u.minute
-    jds = Time(np.arange(jd1, jd2, step.day), format='jd', scale='utc')
+    jds = Time(np.arange(jd1, jd2, step.to(u.day).value), format='jd', scale='utc')
 
     ut_hours = np.array([sex_to_dec((jd.datetime.hour,jd.datetime.minute,jd.datetime.second)) for jd in jds])
     phases = time_to_phase(jds, period=period, t0=t0)
@@ -197,7 +175,7 @@ for star in all_stars:
                       'time' : first_obs_time.datetime.time().strftime("'%H:%M:%S'"),
                       'phase' : phase_at_first,
                       'info' : "pre-mean",
-                      'vmag' : star['magAvg']})
+                      'vmag' : star['Vmag']})
 
     if np.any(idx2):
         first_obs_time = jds[idx2][0]
@@ -206,7 +184,7 @@ for star in all_stars:
                       'time' : first_obs_time.datetime.time().strftime("'%H:%M:%S'"),
                       'phase' : phase_at_first,
                       'info' : "post-mean",
-                      'vmag' : star['magAvg']})
+                      'vmag' : star['Vmag']})
 
 queue = Table(queue)
 queue = queue['name','time','vmag','phase','info']
