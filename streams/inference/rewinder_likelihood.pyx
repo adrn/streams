@@ -9,8 +9,8 @@ np.import_array()
 import cython
 cimport cython
 
-cimport streams.potential.basepotential as pot
-import streams.potential.basepotential as pot
+cimport streamteam.potential.cpotential as pot
+import streamteam.potential.cpotential as pot
 
 cdef extern from "math.h":
     double sqrt(double x)
@@ -29,7 +29,7 @@ cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v,
                                double[:,::1] v_12,
                                double[:,::1] acc,  # return
                                int nparticles, double dt,
-                               pot._Potential potential):
+                               pot._CPotential potential):
 
     potential._acceleration(r, acc, nparticles);
 
@@ -44,7 +44,7 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
                                double[:,::1] v_12,
                                double[:,::1] acc,
                                int nparticles, double dt,
-                               pot._Potential potential):
+                               pot._CPotential potential):
     """ Velocities need to be offset from positions by 1/2 step! To
         'prime' the integration, call
 
@@ -115,7 +115,7 @@ cdef inline double basis(double[:,::1] x, double[:,::1] v,
 cdef inline void ln_likelihood_helper(double sat_mass,
                                       double[:,::1] x, double[:,::1] v, int nparticles,
                                       double alpha, double[::1] betas,
-                                      pot._Potential potential,
+                                      pot._CPotential potential,
                                       double[::1] x1_hat, double[::1] x2_hat,
                                       double[::1] x3_hat,
                                       double[:,::1] ln_likelihoods, int ll_idx,
@@ -184,7 +184,7 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         ln_likelihoods[ll_idx,i] = r_term + v_term + jac
 
 cpdef rewinder_likelihood(double t1, double t2, double dt,
-                          pot._Potential potential,
+                          pot.CPotential potential,
                           np.ndarray[double,ndim=2] prog_gal,
                           np.ndarray[double,ndim=2] star_gal,
                           double m0, double mdot,
@@ -216,17 +216,17 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     mass = -mdot*t1 + m0
 
     # prime the accelerations
-    leapfrog_init(x, v, v_12, acc, nparticles+1, dt, potential)
+    leapfrog_init(x, v, v_12, acc, nparticles+1, dt, potential.c_instance)
 
     # all_x[0] = x
     # all_v[0] = v
     ln_likelihood_helper(mass, x, v, nparticles,
-                         alpha, betas, potential,
+                         alpha, betas, potential.c_instance,
                          x1_hat, x2_hat, x3_hat,
                          ln_likelihoods, 0, dx, dv)
 
     for i in range(1,nsteps):
-        leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
+        leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential.c_instance)
         # all_x[i] = x
         # all_v[i] = v
         t1 += dt
@@ -235,7 +235,7 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
         mass = -mdot*t1 + m0
 
         ln_likelihood_helper(mass, x, v, nparticles,
-                             alpha, betas, potential,
+                             alpha, betas, potential.c_instance,
                              x1_hat, x2_hat, x3_hat,
                              ln_likelihoods, i, dx, dv)
 
