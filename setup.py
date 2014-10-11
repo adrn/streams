@@ -15,13 +15,13 @@ rewinder = Extension("streams.inference.rewinder_likelihood",
                      ["streams/inference/rewinder_likelihood.pyx"],
                      include_dirs=[numpy_incl_path])
 
-potential = Extension("streams.potential.basepotential",
-                      ["streams/potential/basepotential.pyx"],
-                      include_dirs=[numpy_incl_path])
+# potential = Extension("streams.potential.basepotential",
+#                       ["streams/potential/basepotential.pyx"],
+#                       include_dirs=[numpy_incl_path])
 
-lm10 = Extension("streams.potential.lm10",
-                 ["streams/potential/lm10.pyx"],
-                 include_dirs=[numpy_incl_path])
+# lm10 = Extension("streams.potential.lm10",
+#                  ["streams/potential/lm10.pyx"],
+#                  include_dirs=[numpy_incl_path])
 
 setup(
     name="Streams",
@@ -30,5 +30,5 @@ setup(
     author_email="adrn@astro.columbia.edu",
     license="BSD",
     cmdclass = {'build_ext': build_ext},
-    ext_modules=[gal_hel, rewinder, potential, lm10]
+    ext_modules=[gal_hel, rewinder]
 )
