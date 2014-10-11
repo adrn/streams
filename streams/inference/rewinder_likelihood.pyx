@@ -31,11 +31,11 @@ cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v,
                                int nparticles, double dt,
                                pot._CPotential potential):
 
-    potential._acceleration(r, acc, nparticles);
+    potential._gradient(r, acc, nparticles);
 
     for i in range(nparticles):
         for j in range(3):
-            v_12[i,j] = v[i,j] + 0.5*dt*acc[i,j]
+            v_12[i,j] = v[i,j] - 0.5*dt*acc[i,j]
 
 @cython.cdivision(True)
 @cython.wraparound(False)
@@ -58,12 +58,12 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
         for j in range(3):
             r[i,j] = r[i,j] + dt*v_12[i,j];  # incr. pos. by full-step
 
-    potential._acceleration(r, acc, nparticles);
+    potential._gradient(r, acc, nparticles);
 
     for i in range(nparticles):
         for j in range(3):
-            v[i,j] = v[i,j] + dt*acc[i,j]; # incr. synced vel. by full-step
-            v_12[i,j] = v_12[i,j] + dt*acc[i,j];  # incr. leapfrog vel. by full-step
+            v[i,j] = v[i,j] - dt*acc[i,j]; # incr. synced vel. by full-step
+            v_12[i,j] = v_12[i,j] - dt*acc[i,j];  # incr. leapfrog vel. by full-step
 
 @cython.cdivision(True)
 @cython.wraparound(False)
