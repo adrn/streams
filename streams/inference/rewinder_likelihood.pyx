@@ -128,7 +128,11 @@ cdef inline void ln_likelihood_helper(double sat_mass,
     cdef double jac, d, BB, cosb, Rsun = 8.
     cdef double sat_R = sqrt(x[0,0]*x[0,0] + x[0,1]*x[0,1] + x[0,2]*x[0,2])
     cdef double sat_V = sqrt(v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
-    cdef double r_tide = potential._tidal_radius(sat_mass, sat_R)
+
+    # HACK THIS STUFF SUXXXXXXXX
+    cdef double [::1] _r_tide = np.empty((1,))
+    potential._tidal_radius(sat_mass, np.array([x[0]]), _r_tide, 1)
+    cdef double r_tide = _r_tide[0]
     cdef double v_disp = sat_V * r_tide / sat_R
 
     ln_sigma_r = log(0.5*r_tide)
@@ -173,18 +177,18 @@ cdef inline void ln_likelihood_helper(double sat_mass,
         vx3 = dv[0]*x3_hat[0] + dv[1]*x3_hat[1] + dv[2]*x3_hat[2]
 
         # position likelihood is gaussian at lagrange points
-        r_term = -0.5*((2*ln_sigma_r + x1*x1/sigma_r_sq) +
-                       (2*(ln_sigma_r + 0.6931471805599452) + x2*x2/(4*sigma_r_sq)) +
-                       (2*ln_sigma_r + x3*x3/sigma_r_sq))
+        r_term = (2*ln_sigma_r + x1*x1/sigma_r_sq) + \
+            (2*(ln_sigma_r + 0.6931471805599452) + x2*x2/(4*sigma_r_sq)) + \
+            (2*ln_sigma_r + x3*x3/sigma_r_sq)
 
-        v_term = -0.5*((2*ln_sigma_v + vx1*vx1/sigma_v_sq) +
-                       (2*ln_sigma_v + vx2*vx2/sigma_v_sq) +
-                       (2*ln_sigma_v + vx3*vx3/sigma_v_sq))
+        v_term = (2*ln_sigma_v + vx1*vx1/sigma_v_sq) + \
+            (2*ln_sigma_v + vx2*vx2/sigma_v_sq) + \
+            (2*ln_sigma_v + vx3*vx3/sigma_v_sq)
 
-        ln_likelihoods[ll_idx,i] = r_term + v_term + jac
+        ln_likelihoods[ll_idx,i] = -0.5*(r_term + v_term) + jac
 
 cpdef rewinder_likelihood(double t1, double t2, double dt,
-                          pot.CPotential potential,
+                          pot._CPotential potential,
                           np.ndarray[double,ndim=2] prog_gal,
                           np.ndarray[double,ndim=2] star_gal,
                           double m0, double mdot,
@@ -195,7 +199,7 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     nparticles = len(star_gal)
     nsteps = int(fabs((t1-t2)/dt))
 
-    cdef double [:,::1] ln_likelihoods = np.empty((nsteps, nparticles))
+    cdef double [:,::1] ln_likelihoods = np.zeros((nsteps, nparticles))
     cdef double [::1] dx = np.zeros(3)
     cdef double [::1] dv = np.zeros(3)
     cdef double [:,::1] v_12 = np.zeros((nparticles+1,3))
@@ -207,37 +211,48 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     cdef double [:,::1] v = np.vstack((prog_gal[:,3:],star_gal[:,3:]))
     cdef double [:,::1] acc = np.empty((nparticles+1,3))
     cdef double [::1] betas = _betas
-    # cdef double [:,:,::1] all_x = np.empty((nsteps,nparticles+1,3))
-    # cdef double [:,:,::1] all_v = np.empty((nsteps,nparticles+1,3))
+
+    # -- TURN THESE ON FOR DEBUGGING --
+    cdef double [:,:,::1] all_x = np.empty((nsteps,nparticles+1,3))
+    cdef double [:,:,::1] all_v = np.empty((nsteps,nparticles+1,3))
+    # --
 
     # mass
-    # m0 = exp(logm0)
-    # mdot = exp(logmdot)
     mass = -mdot*t1 + m0
 
     # prime the accelerations
-    leapfrog_init(x, v, v_12, acc, nparticles+1, dt, potential.c_instance)
+    leapfrog_init(x, v, v_12, acc, nparticles+1, dt, potential)
 
-    # all_x[0] = x
-    # all_v[0] = v
+    # -- TURN THESE ON FOR DEBUGGING --
+    all_x[0] = x
+    all_v[0] = v
+    # --
     ln_likelihood_helper(mass, x, v, nparticles,
-                         alpha, betas, potential.c_instance,
+                         alpha, betas, potential,
                          x1_hat, x2_hat, x3_hat,
                          ln_likelihoods, 0, dx, dv)
 
     for i in range(1,nsteps):
-        leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential.c_instance)
-        # all_x[i] = x
-        # all_v[i] = v
+        leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
+
+        # -- TURN THESE ON FOR DEBUGGING --
+        all_x[i] = x
+        all_v[i] = v
+        # --
         t1 += dt
 
         # mass of the satellite
         mass = -mdot*t1 + m0
 
         ln_likelihood_helper(mass, x, v, nparticles,
-                             alpha, betas, potential.c_instance,
+                             alpha, betas, potential,
                              x1_hat, x2_hat, x3_hat,
                              ln_likelihoods, i, dx, dv)
 
-    return np.array(ln_likelihoods)
-    # logsumexp(ln_likelihoods, axis=0)#, np.array(all_x), np.array(all_x)
+    # return np.array(ln_likelihoods)
+    # -- TURN THESE ON FOR DEBUGGING --
+    return np.array(ln_likelihoods), np.array(all_x), np.array(all_v)
+    # --
+
+
+# cdef integrand
