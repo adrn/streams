@@ -34,8 +34,9 @@ cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v,
     potential._gradient(r, acc, nparticles);
 
     for i in range(nparticles):
-        for j in range(3):
-            v_12[i,j] = v[i,j] - 0.5*dt*acc[i,j]
+        v_12[i,0] = v[i,0] - 0.5*dt*acc[i,0]
+        v_12[i,1] = v[i,1] - 0.5*dt*acc[i,1]
+        v_12[i,2] = v[i,2] - 0.5*dt*acc[i,2]
 
 @cython.cdivision(True)
 @cython.wraparound(False)
@@ -76,7 +77,11 @@ cdef inline double dot(double[::1] a, double[::1] b):
 @cython.nonecheck(False)
 cdef inline double basis(double[:,::1] x, double[:,::1] v,
                          double[::1] x1_hat, double[::1] x2_hat,
-                         double[::1] x3_hat):
+                         double[::1] x3_hat, double theta):
+    """
+    Theta is an extra angle to rotate by to account for observed rotation
+    of lagrange points.
+    """
 
     cdef double x1_norm, x2_norm, x3_norm
 
@@ -97,12 +102,12 @@ cdef inline double basis(double[:,::1] x, double[:,::1] v,
     x2_norm = sqrt(dot(x2_hat, x2_hat))
     x3_norm = sqrt(dot(x3_hat, x3_hat))
 
-    x1_hat[0] = x1_hat[0] / x1_norm
-    x2_hat[0] = x2_hat[0] / x2_norm
+    x1_hat[0] = x1_hat[0] / x1_norm * cos(theta)
+    x2_hat[0] = x2_hat[0] / x2_norm * -sin(theta)
     x3_hat[0] = x3_hat[0] / x3_norm
 
-    x1_hat[1] = x1_hat[1] / x1_norm
-    x2_hat[1] = x2_hat[1] / x2_norm
+    x1_hat[1] = x1_hat[1] / x1_norm * sin(theta)
+    x2_hat[1] = x2_hat[1] / x2_norm * cos(theta)
     x3_hat[1] = x3_hat[1] / x3_norm
 
     x1_hat[2] = x1_hat[2] / x1_norm
@@ -117,7 +122,7 @@ cdef inline void ln_likelihood_helper(double sat_mass,
                                       double alpha, double[::1] betas,
                                       pot._CPotential potential,
                                       double[::1] x1_hat, double[::1] x2_hat,
-                                      double[::1] x3_hat,
+                                      double[::1] x3_hat, double theta,
                                       double[:,::1] ln_likelihoods, int ll_idx,
                                       double[::1] dx, double[::1] dv):
     cdef int i
@@ -141,7 +146,7 @@ cdef inline void ln_likelihood_helper(double sat_mass,
     sigma_v_sq = v_disp*v_disp
 
     # compute instantaneous orbital plane coordinates
-    basis(x, v, x1_hat, x2_hat, x3_hat)
+    basis(x, v, x1_hat, x2_hat, x3_hat, theta)
 
     for i in range(nparticles):
         beta = betas[i]
@@ -192,7 +197,8 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
                           np.ndarray[double,ndim=2] prog_gal,
                           np.ndarray[double,ndim=2] star_gal,
                           double m0, double mdot,
-                          double alpha, np.ndarray[double,ndim=1] _betas):
+                          double alpha, np.ndarray[double,ndim=1] _betas,
+                          double theta):
     """ 0th entry of x,v is the satellite position, velocity """
 
     cdef int i, nsteps, nparticles, ndim
@@ -213,8 +219,8 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     cdef double [::1] betas = _betas
 
     # -- TURN THESE ON FOR DEBUGGING --
-    cdef double [:,:,::1] all_x = np.empty((nsteps,nparticles+1,3))
-    cdef double [:,:,::1] all_v = np.empty((nsteps,nparticles+1,3))
+    # cdef double [:,:,::1] all_x = np.empty((nsteps,nparticles+1,3))
+    # cdef double [:,:,::1] all_v = np.empty((nsteps,nparticles+1,3))
     # --
 
     # mass
@@ -224,20 +230,20 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     leapfrog_init(x, v, v_12, acc, nparticles+1, dt, potential)
 
     # -- TURN THESE ON FOR DEBUGGING --
-    all_x[0] = x
-    all_v[0] = v
+    # all_x[0] = x
+    # all_v[0] = v
     # --
     ln_likelihood_helper(mass, x, v, nparticles,
                          alpha, betas, potential,
-                         x1_hat, x2_hat, x3_hat,
+                         x1_hat, x2_hat, x3_hat, theta,
                          ln_likelihoods, 0, dx, dv)
 
     for i in range(1,nsteps):
         leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
 
         # -- TURN THESE ON FOR DEBUGGING --
-        all_x[i] = x
-        all_v[i] = v
+        # all_x[i] = x
+        # all_v[i] = v
         # --
         t1 += dt
 
@@ -246,12 +252,12 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
 
         ln_likelihood_helper(mass, x, v, nparticles,
                              alpha, betas, potential,
-                             x1_hat, x2_hat, x3_hat,
+                             x1_hat, x2_hat, x3_hat, theta,
                              ln_likelihoods, i, dx, dv)
 
-    # return np.array(ln_likelihoods)
+    return np.array(ln_likelihoods)
     # -- TURN THESE ON FOR DEBUGGING --
-    return np.array(ln_likelihoods), np.array(all_x), np.array(all_v)
+    # return np.array(ln_likelihoods), np.array(all_x), np.array(all_v)
     # --
 
 
