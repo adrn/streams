@@ -60,8 +60,7 @@ double test(double (*x)[3], long nparticles) {
 }
 
 void ln_likelihood_helper(double rtide, double vdisp,
-                          double prog_x[], double prog_v[],
-                          double star_x[][3], double star_v[][3], long nparticles,
+                          double x[][3], double v[][3], long nparticles,
                           double x1_hat[], double x2_hat[], double x3_hat[],
                           double dx[], double dv[],
                           double alpha, double betas[],
@@ -86,19 +85,19 @@ void ln_likelihood_helper(double rtide, double vdisp,
     double r_term, v_term;
 
     // Compute basis defined by instantaneous position of progenitor
-    set_basis(prog_x, prog_v, x1_hat, x2_hat, x3_hat);
+    set_basis(x[0], v[0], x1_hat, x2_hat, x3_hat);
 
-    for (i=0; i < nparticles; i++) {
+    for (i=1; i < (nparticles+1); i++) {
         // Translate to be centered on progenitor
         for (k=0; k < 3; k++) {
-            dx[k] = star_x[i][k] - prog_x[k];
-            dv[k] = star_v[i][k] - prog_v[k];
+            dx[k] = x[i][k] - x[0][k];
+            dv[k] = v[i][k] - v[0][k];
         }
 
         // Hijacking these variabless to use for Jacobian calculation
-        x1 = star_x[i][0] + Rsun;
-        R2 = x1*x1 + star_x[i][1]*star_x[i][1] + star_x[i][2]*star_x[i][2];
-        x2 = star_x[i][2]*star_x[i][2]/R2;
+        x1 = x[i][0] + Rsun;
+        R2 = x1*x1 + x[i][1]*x[i][1] + x[i][2]*x[i][2];
+        x2 = x[i][2]*x[i][2]/R2;
         log_jac = log(R2*R2*sqrt(1.-x2));
 
         // // Project into new basis
