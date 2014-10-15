@@ -156,7 +156,8 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     cdef double [::1] dx = np.empty(3)
     cdef double [::1] dv = np.empty(3)
 
-    cdef double [::1] ln_likelihood_tmp = np.zeros(nparticles)
+    cdef double [::1] ln_likelihoods = np.zeros(nparticles, dtype='d')
+    cdef double [::1] ln_likelihood_tmp = np.zeros(nparticles, dtype='d')
     cdef double [:,::1] v_12 = np.zeros((nparticles+1,3))
 
     cdef double [:,::1] x = np.vstack((prog_xv[:,:3],star_xv[:,:3]))
@@ -191,8 +192,10 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
                          alpha, &betas[0],
                          &ln_likelihood_tmp[0])
 
-    for i in range(1,nsteps):
-        # HACK
+    for j in range(nparticles):
+        ln_likelihoods[j] += 0.5*ln_likelihood_tmp[j]
+
+    for i in range(1,nsteps-1):
         leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
 
         # -- TURN THESE ON FOR DEBUGGING --
@@ -211,7 +214,24 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
                              alpha, &betas[0],
                              &ln_likelihood_tmp[0])
 
-    #return np.array(ln_likelihoods)
+        for j in range(nparticles):
+            ln_likelihoods[j] += ln_likelihood_tmp[j]
+
+    leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
+    t1 += dt
+    mass = -mdot*t1 + m0
+    ln_likelihood_helper(rtide, vdisp,
+                         &x[0,0], &v[0,0], nparticles,
+                         &x1[0], &x2[0], &x3[0],
+                         &dx[0], &dv[0],
+                         alpha, &betas[0],
+                         &ln_likelihood_tmp[0])
+
+    for j in range(nparticles):
+        ln_likelihoods[j] += 0.5*ln_likelihood_tmp[j]
+
+    # return dt*np.array(ln_likelihoods)
+
     # -- TURN THESE ON FOR DEBUGGING --
     # return np.array(ln_likelihoods), np.array(all_x), np.array(all_v)
     # --
