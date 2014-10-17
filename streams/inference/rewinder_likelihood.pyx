@@ -15,6 +15,7 @@ import streamteam.potential.cpotential as pot
 
 cdef extern from "math.h":
     double sqrt(double x) nogil
+    double cbrt(double x) nogil
     double acos(double x) nogil
     double sin(double x) nogil
     double cos(double x) nogil
@@ -116,6 +117,7 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     cdef double [:,::1] acc = np.empty((nparticles+1,3))
     cdef double [::1] betas = _betas
     cdef double sintheta, costheta
+    cdef double Menc
 
     # -- TURN THESE ON FOR DEBUGGING --
     # cdef double [:,:,::1] all_x = np.empty((nsteps,nparticles+1,3))
@@ -136,9 +138,9 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     # all_v[0] = v
     # --
 
-    # TODO: estimate mass enclosed instead...get rid of tidal radius
-    rtide = potential._tidal_radius(mass, x[0,0], x[0,1], x[0,2])
-    vdisp = sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])*rtide/sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+    Menc = potential._mass_enclosed(x[0])
+    rtide = cbrt(mass/Menc) * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+    vdisp = cbrt(mass/Menc) * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
     ln_likelihood_helper(rtide, vdisp,
                          &x[0,0], &v[0,0], nparticles,
@@ -165,9 +167,9 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
         # mass of the satellite
         mass = -mdot*t1 + m0
 
-        # TODO: estimate mass enclosed instead...get rid of tidal radius
-        rtide = potential._tidal_radius(mass, x[0,0], x[0,1], x[0,2])
-        vdisp = sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])*rtide/sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+        Menc = potential._mass_enclosed(x[0])
+        rtide = cbrt(mass/Menc) * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+        vdisp = cbrt(mass/Menc) * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
         ln_likelihood_helper(rtide, vdisp,
                              &x[0,0], &v[0,0], nparticles,
@@ -185,9 +187,9 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
     t1 += dt
     mass = -mdot*t1 + m0
-    # TODO: estimate mass enclosed instead...get rid of tidal radius
-    rtide = potential._tidal_radius(mass, x[0,0], x[0,1], x[0,2])
-    vdisp = sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])*rtide/sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+    Menc = potential._mass_enclosed(x[0])
+    rtide = cbrt(mass/Menc) * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+    vdisp = cbrt(mass/Menc) * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
     # -- TURN THESE ON FOR DEBUGGING --
     # all_x[i+1] = x
