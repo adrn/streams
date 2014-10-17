@@ -30,7 +30,7 @@ cdef extern from "rewinder.c":
                               double*, double*, long,
                               double*, double*, double*,
                               double*, double*,
-                              double, double*,
+                              double, double*, double, double,
                               double*)
 
 @cython.cdivision(True)
@@ -85,55 +85,6 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
         v_12[i,1] = v_12[i,1] - dt*acc[i,1]
         v_12[i,2] = v_12[i,2] - dt*acc[i,2]
 
-
-@cython.cdivision(True)
-@cython.wraparound(False)
-@cython.nonecheck(False)
-cpdef _rewinder_likelihood():
-    cdef double [::1] x1 = np.empty(3)
-    cdef double [::1] x2 = np.empty(3)
-    cdef double [::1] x3 = np.empty(3)
-    cdef double [::1] dx = np.empty(3)
-    cdef double [::1] dv = np.empty(3)
-
-    N = 16
-    cdef double [:,::1] x = np.vstack((np.array([1.,0,0]),np.ones((N,3))))
-    cdef double [:,::1] v = np.vstack((np.array([0.,1,0]),-1*np.ones((N,3))))
-    cdef double alpha = 1.
-    cdef double [::1] betas = np.ones(N)
-
-    cdef double [::1] ln_likelihoods = np.empty(N)
-
-    # print(test(&x[0,0], 3))
-
-    # ln_likelihood_helper(1., 1.,
-    #                      &x[0,0], &v[0,0], N,
-    #                      &x1[0], &x2[0], &x3[0],
-    #                      &dx[0], &dv[0],
-    #                      alpha, &betas[0],
-    #                      &ln_likelihoods[0])
-
-    # print(np.array(x1))
-    # print(np.array(x2))
-    # print(np.array(x3))
-
-    import time
-    t1 = time.time()
-    for i in range(1000000):
-        ln_likelihood_helper(1., 1.,
-                             &x[0,0], &v[0,0], N,
-                             &x1[0], &x2[0], &x3[0],
-                             &dx[0], &dv[0],
-                             alpha, &betas[0],
-                             &ln_likelihoods[0])
-    print("{} µs per call".format((time.time()-t1)))
-    print("{} ms per 6000".format((time.time()-t1)/1e6*6000*1000))
-
-    print(np.array(x1))
-    print(np.array(x2))
-    print(np.array(x3))
-
-
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
@@ -164,11 +115,15 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     cdef double [:,::1] v = np.vstack((prog_xv[:,3:],star_xv[:,3:]))
     cdef double [:,::1] acc = np.empty((nparticles+1,3))
     cdef double [::1] betas = _betas
+    cdef double sintheta, costheta
 
     # -- TURN THESE ON FOR DEBUGGING --
     # cdef double [:,:,::1] all_x = np.empty((nsteps,nparticles+1,3))
     # cdef double [:,:,::1] all_v = np.empty((nsteps,nparticles+1,3))
     # --
+
+    sintheta = sin(theta)
+    costheta = cos(theta)
 
     # mass
     mass = -mdot*t1 + m0
@@ -181,20 +136,20 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     # all_v[0] = v
     # --
 
-    # TODO: hack
-    rtide = 1.
-    vdisp = 1.
+    # TODO: estimate mass enclosed instead...get rid of tidal radius
+    rtide = potential._tidal_radius(mass, x[0,0], x[0,1], x[0,2])
+    vdisp = sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])*rtide/sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
 
     ln_likelihood_helper(rtide, vdisp,
                          &x[0,0], &v[0,0], nparticles,
                          &x1[0], &x2[0], &x3[0],
                          &dx[0], &dv[0],
-                         alpha, &betas[0],
+                         alpha, &betas[0], sintheta, costheta,
                          &ln_likelihood_tmp[0])
 
     for j in range(nparticles):
-        if ln_likelihood_tmp[j] < 0:
-            continue
+        # if ln_likelihood_tmp[j] < 0:
+        #     continue
 
         ln_likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
 
@@ -210,22 +165,30 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
         # mass of the satellite
         mass = -mdot*t1 + m0
 
+        # TODO: estimate mass enclosed instead...get rid of tidal radius
+        rtide = potential._tidal_radius(mass, x[0,0], x[0,1], x[0,2])
+        vdisp = sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])*rtide/sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+
         ln_likelihood_helper(rtide, vdisp,
                              &x[0,0], &v[0,0], nparticles,
                              &x1[0], &x2[0], &x3[0],
                              &dx[0], &dv[0],
-                             alpha, &betas[0],
+                             alpha, &betas[0], sintheta, costheta,
                              &ln_likelihood_tmp[0])
 
         for j in range(nparticles):
-            if ln_likelihood_tmp[j] < 0:
-                continue
+            # if ln_likelihood_tmp[j] < 0:
+            #     continue
 
             ln_likelihoods[j] += exp(ln_likelihood_tmp[j])
 
     leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
     t1 += dt
     mass = -mdot*t1 + m0
+    # TODO: estimate mass enclosed instead...get rid of tidal radius
+    rtide = potential._tidal_radius(mass, x[0,0], x[0,1], x[0,2])
+    vdisp = sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])*rtide/sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+
     # -- TURN THESE ON FOR DEBUGGING --
     # all_x[i+1] = x
     # all_v[i+1] = v
@@ -234,17 +197,17 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
                          &x[0,0], &v[0,0], nparticles,
                          &x1[0], &x2[0], &x3[0],
                          &dx[0], &dv[0],
-                         alpha, &betas[0],
+                         alpha, &betas[0], sintheta, costheta,
                          &ln_likelihood_tmp[0])
 
     for j in range(nparticles):
-        if ln_likelihood_tmp[j] < 0:
-            continue
+        # if ln_likelihood_tmp[j] < 0:
+        #     continue
 
         ln_likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
 
     return np.log(fabs(dt)*np.array(ln_likelihoods))
 
     # -- TURN THESE ON FOR DEBUGGING --
-    # return fabs(dt)*np.array(ln_likelihoods), np.array(all_x), np.array(all_v)
+    # return np.log(fabs(dt)*np.array(ln_likelihoods)), np.array(all_x), np.array(all_v)
     # --
