@@ -25,34 +25,7 @@ from ..rewinder_likelihood import rewinder_likelihood
 
 logger.setLevel(logging.DEBUG)
 
-def test_config():
-    rw = Rewinder.from_config("/Users/adrian/projects/streams/config/test.yml")
-    for p in rw._walk():
-        print(p)
-
-    p0 = rw.sample_p0(1000)
-    p = p0[15]
-    print(p)
-    # print(rw(p))
-
-    vals = np.linspace(1.28, 1.48, 25)
-    #vals = np.linspace(1., 1.72, 7)
-    ll = []
-    for val in vals:
-        try:
-            ll.append(rw(np.array([val] + list(p[1:]))))
-        except ValueError:
-            ll.append(np.nan)
-
-    ll = np.array(ll)
-
-    fig,axes = plt.subplots(2,1)
-    axes[0].plot(vals, ll)
-    axes[0].axvline(1.36)
-    axes[1].plot(vals, np.exp(ll-np.max(ll)))
-    axes[1].axvline(1.36)
-    axes[1].set_xlim(0.8,1.9)
-    fig.savefig("/Users/adrian/Downloads/derp_{}.png".format(rw.K))
+this_path = os.path.dirname(__file__)
 
 # -----------------------------------------------------------------------------
 # BELOW HERE IS FOR TIMING
@@ -154,3 +127,101 @@ def test_time():
     t = (time.time() - t1) / float(nrepeat)
 
     print("{} ms per call".format(t*1000.))
+
+def test_build_model():
+    from ..starsprogenitor import Stars, Progenitor
+    from ..rewinder import Rewinder
+    from streamteam.inference import ModelParameter, LogUniformPrior, LogPrior
+
+    # read data from files
+    stardata = np.genfromtxt(os.path.join(this_path, "true_stars.txt"), names=True)
+    progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
+
+    # -----------------------------------------------------------------------------------
+    # Progenitor
+    #
+    prog_hel = np.vstack((progdata["l"],progdata["b"],progdata["d"],
+                          progdata["mul"],progdata["mub"],progdata["vr"])).T.copy()
+    progenitor = Progenitor(data=np.zeros_like(prog_hel),
+                            errors=np.zeros_like(prog_hel),
+                            truths=prog_hel)
+
+    progenitor.parameters['m0'] = ModelParameter('m0',
+                                                 truth=progdata['mass'][0],
+                                                 prior=LogPrior()) # TODO: logspace?
+
+    progenitor.parameters['mdot'] = ModelParameter('mdot', truth=0., prior=LogPrior())
+    progenitor.parameters['mdot'].frozen = 0.
+
+    progenitor.parameters['alpha'] = ModelParameter('alpha', shape=(1,),
+                                                    prior=LogUniformPrior(1., 3.))
+
+    # -----------------------------------------------------------------------------------
+    # Stars
+    #
+    # star_hel = np.vstack((stardata["l"],stardata["b"],stardata["d"],
+    #                       stardata["mul"],stardata["mub"],stardata["vr"])).T.copy()
+    stars = Stars(data=np.zeros_like(star_hel),
+                  errors=np.zeros_like(star_hel),
+                  truths=star_hel)
+
+    stars.parameters['tail'] = ModelParameter('tail', truth=stardata['tail'])
+    stars.parameters['tail'].frozen = stars.parameters['tail'].truth
+
+    stars.parameters['tub'] = ModelParameter('tub', truth=stars_data['tub'])
+
+    model = Rewinder(potential, progenitor, stars, t1, t2, dt, K=config["K"])
+
+    # -----------------------------------------------------------------------------------
+    # Potential
+    #
+    potential = sp.LeeSutoNFWPotential(v_h=ppars['v_h'], r_h=ppars['r_h'],
+                                       a=1., b=1., c=1., units=galactic)
+
+    pparams = []
+    pparams.append(ModelParameter('v_h', truth=0.5, prior=LogUniformPrior(0.3,0.8)))
+    pparams.append(ModelParameter('r_h', truth=20, prior=LogUniformPrior(10,40.)))
+    pparams.append(ModelParameter('a', truth=1., prior=LogPrior()))
+    pparams[-1].fixed = 1.
+    pparams.append(ModelParameter('b', truth=1., prior=LogPrior()))
+    pparams[-1].fixed = 1.
+    pparams.append(ModelParameter('c', truth=1., prior=LogPrior()))
+    pparams[-1].fixed = 1.
+
+
+
+
+
+
+
+
+# -----------------------------------------------------------------------------
+# Old
+# def test_config():
+#     rw = Rewinder.from_config("/Users/adrian/projects/streams/config/test.yml")
+#     for p in rw._walk():
+#         print(p)
+
+#     p0 = rw.sample_p0(1000)
+#     p = p0[15]
+#     print(p)
+#     # print(rw(p))
+
+#     vals = np.linspace(1.28, 1.48, 25)
+#     #vals = np.linspace(1., 1.72, 7)
+#     ll = []
+#     for val in vals:
+#         try:
+#             ll.append(rw(np.array([val] + list(p[1:]))))
+#         except ValueError:
+#             ll.append(np.nan)
+
+#     ll = np.array(ll)
+
+#     fig,axes = plt.subplots(2,1)
+#     axes[0].plot(vals, ll)
+#     axes[0].axvline(1.36)
+#     axes[1].plot(vals, np.exp(ll-np.max(ll)))
+#     axes[1].axvline(1.36)
+#     axes[1].set_xlim(0.8,1.9)
+#     fig.savefig("/Users/adrian/Downloads/derp_{}.png".format(rw.K))
