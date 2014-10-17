@@ -99,8 +99,50 @@ prog = np.array([[ -3.66844266e+01,  -1.51100753e+01,  -7.44185090e-03,
 potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
                                    a=1., b=1., c=1., units=galactic)
 
+def test_call():
+    ll = rewinder_likelihood(6000., 0., -1.,
+                             potential.c_instance,
+                             prog, stars,
+                             2.5E6, 0.,
+                             1., betas, -0.3)
+
+    print(ll)
+
+def test_plot():
+    ll, x,v = rewinder_likelihood(6000., 0., -1.,
+                                  potential.c_instance,
+                                  prog, stars,
+                                  2.5E6, 0.,
+                                  1., betas, -0.3)
+
+    print(ll)
+    plt.plot(x[:,0,0], x[:,0,1], marker=None)
+    plt.show()
+
 def test_time():
-    nrepeat = 1000
+    print("\n\n\n")
+    print("Spherical:")
+    potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
+                                       a=1., b=1., c=1., units=galactic)
+
+    nrepeat = 100
+    t1 = time.time()
+    for i in range(nrepeat):  # ~10 ms per call
+        ll = rewinder_likelihood(6000., 0., -1.,
+                                 potential.c_instance,
+                                 prog, stars,
+                                 2.5E6, 0.,
+                                 1., betas, -0.3)
+
+    t = (time.time() - t1) / float(nrepeat)
+
+    print("{} ms per call".format(t*1000.))
+
+    print("\n\n\n")
+    print("Triaxial, rotated:")
+    potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0, phi=0.2,
+                                       a=1.3, b=1., c=1., units=galactic)
+
     t1 = time.time()
     for i in range(nrepeat):  # ~10 ms per call
         ll = rewinder_likelihood(6000., 0., -1.,
