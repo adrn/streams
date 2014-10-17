@@ -16,7 +16,8 @@ double dot3D(double *a, double *b) {
 }
 
 void set_basis(double progenitor_x[], double progenitor_v[],
-               double x1_hat[], double x2_hat[], double x3_hat[]) {
+               double x1_hat[], double x2_hat[], double x3_hat[],
+               double sintheta, double costheta) {
     /*
         Cartesian basis defined by the orbital plane of the satellite to
         project the orbits of stars into.
@@ -45,6 +46,18 @@ void set_basis(double progenitor_x[], double progenitor_v[],
         x2_hat[i] /= x2_norm;
         x3_hat[i] /= x3_norm;
     }
+
+    if (sintheta != 0.) {
+        // using this as a temp variable
+        x1_norm = x1_hat[0];
+        x1_hat[0] = x1_hat[0]*costheta + x1_hat[1]*sintheta;
+        x1_hat[1] = -x1_norm*sintheta + x1_hat[1]*costheta;
+
+        x2_norm = x2_hat[0];
+        x2_hat[0] = x2_hat[0]*costheta + x2_hat[1]*sintheta;
+        x2_hat[1] = -x2_norm*sintheta + x2_hat[1]*costheta;
+    }
+
 }
 
 double test(double (*x)[3], long nparticles) {
@@ -63,7 +76,7 @@ void ln_likelihood_helper(double rtide, double vdisp,
                           double x[][3], double v[][3], long nparticles,
                           double x1_hat[], double x2_hat[], double x3_hat[],
                           double dx[], double dv[],
-                          double alpha, double betas[],
+                          double alpha, double betas[], double sintheta, double costheta,
                           double ln_likelihoods[]) {
 
     // Define constants for this function
@@ -85,7 +98,7 @@ void ln_likelihood_helper(double rtide, double vdisp,
     double r_term, v_term;
 
     // Compute basis defined by instantaneous position of progenitor
-    set_basis(x[0], v[0], x1_hat, x2_hat, x3_hat);
+    set_basis(x[0], v[0], x1_hat, x2_hat, x3_hat, sintheta, costheta);
 
     for (i=1; i < (nparticles+1); i++) {
         // Translate to be centered on progenitor
@@ -110,7 +123,6 @@ void ln_likelihood_helper(double rtide, double vdisp,
         v3 = dv[0]*x3_hat[0] + dv[1]*x3_hat[1] + dv[2]*x3_hat[2];
 
         // Move to center of Lagrange point
-        // TODO: handle rotation by some angle, theta, in the orbital plane
         x1 -= alpha*betas[i]*rtide;
 
         // Compute likelihoods for position and velocity terms
