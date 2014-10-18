@@ -10,13 +10,14 @@ plot:
 log_level: debug
 
 # data files
-star_data: data/.../stars.txt
-progenitor_data: data/.../progenitor.txt
+star_data: streams/inference/tests/obs_stars.txt
+progenitor_data: streams/inference/tests/true_prog.txt
 nstars: 16 # optional
 
 # integration
-dt: -1.
-nsteps: 6000
+integration:
+    dt: -1.
+    nsteps: 6000
 
 potential:
     class: LM10Potential
@@ -26,7 +27,8 @@ potential:
         v_halo: 0.125
 
 # emcee
-nwalkers: 512
-nburn_in: 5000
-nsteps: 0
-thin_chain: False
+emcee:
+    nwalkers: 32
+    nburn: 5000
+    nsteps: 10000
+    thin_chain: False

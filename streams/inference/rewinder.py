@@ -350,14 +350,14 @@ class Rewinder(EmceeModel):
         logger.info("Using {} stars".format(len(star_data)))
 
         # Read integration stuff
-        dt = float(config.get('dt'))
-        nsteps = int(config.get('nsteps'))
+        dt = float(config['integration'].get('dt'))
+        nintegrate = int(config['integration'].get('nsteps'))
         logger.debug("Will integrate for {} steps, with a timestep of {} Myr"\
-                     .format(nsteps, dt))
-        logger.info("Integration time: {} Myr".format(nsteps*dt))
+                     .format(nintegrate, dt))
+        logger.info("Integration time: {} Myr".format(nintegrate*dt))
 
         # Potential
-        Potential = getattr(sp, config["potential"]["class_name"])
+        Potential = getattr(sp, config["potential"]["class"])
         logger.info("Using potential '{}'...".format(Potential))
 
         return
@@ -448,7 +448,7 @@ class Rewinder(EmceeModel):
         logger.debug("Integration from {} to {}, ∆t={} Myr".format(t1,t2,dt))
 
         # get the potential object specified from the potential subpackage
-        from .. import potential as sp
+        # from .. import potential as sp
         Potential = getattr(sp, config["potential"]["class_name"])
         potential = Potential()
         logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
