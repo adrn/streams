@@ -7,8 +7,9 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
-import os
 from collections import OrderedDict
+import logging
+import os
 import time
 import random
 
@@ -33,7 +34,8 @@ __all__ = ["Rewinder", "RewinderSampler"]
 
 class Rewinder(EmceeModel):
 
-    def __init__(self, potential, progenitor, stars, t1, t2, dt=-1., K=10):
+    def __init__(self, potential, potential_parameters, progenitor, stars,
+                 t1, t2, dt=-1., perfect_data=False, nsamples_init=10000, nsamples=256):
         """ Model for tidal streams that uses backwards integration to Rewind
             the positions of stars.
 
@@ -44,16 +46,22 @@ class Rewinder(EmceeModel):
             stars : streams.Stars
             t1,t2,dt : float
                 Integration parameters.
-            K : int
-                Number of samples to draw for importance sampling.
+            nsamples_init : int
+                Initial number of samples to draw per star for importance sampling.
+            nsamples : int
+                Number of samples to use that match energy criterion.
+
         """
 
         self.parameters = OrderedDict()
 
         # Potential
-        for par in potential.parameters.values():
+        # for par in potential.parameters.values():
+        #     self.add_parameter(par, "potential")
+        # self.potential_class = potential.c_class
+        for par in potential_parameters:
             self.add_parameter(par, "potential")
-        self.potential_class = potential.c_class
+            self.potential_class = potential.__class__
 
         # Progenitor
         for par in progenitor.parameters.values():
@@ -69,26 +77,34 @@ class Rewinder(EmceeModel):
         self.stars = stars
         self.nstars = len(stars)
 
-        # draw samples for each star
-        self.K = K
-        self.nsamples = K*self.nstars
+        self.perfect_data = perfect_data
 
-        # TODO: if any errors np.inf, sample from prior instead
-        stars_samples_hel = np.random.normal(self.stars.data[:,np.newaxis],
-                                             self.stars.errors[:,np.newaxis],
-                                             size=(self.nstars,self.K,6))
+        if not self.perfect_data:
+            raise NotImplementedError()
 
-        # compute prior probabilities for the samples
-        self.stars_samples_lnprob = sum(self.stars.ln_prior(stars_samples_hel)).T[np.newaxis]
+            # draw samples for each star
+            self._nsamples_init = nsamples_init
+            self.nsamples = nsamples
 
-        # transform to galactocentric
-        self.stars_samples_gal = hel_to_gal(stars_samples_hel.reshape(self.nsamples,6))
+            # TODO: if any errors np.inf, sample from prior instead
+            # ignore uncertainties in l,b
+            stars_samples_hel = np.zeros((self.nstars, self._nsamples_init, 6))
+            stars_samples_hel[...,:2] = self.stars.data[...,:2]
+            stars_samples_hel[...,2:] = np.random.normal(self.stars.data[:,np.newaxis,2:],
+                                                         self.stars.errors[:,np.newaxis,2:],
+                                                         size=(self.nstars,self._nsamples_init,4))
 
-        # set the tail assignments
-        # HACK: tail assignments always frozen?
-        tail = np.array(self.stars.parameters['tail'].frozen)
-        self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1)\
-                                    .reshape(self.nsamples)
+            # compute prior probabilities for the samples
+            self.stars_samples_lnprob = sum(self.stars.ln_prior(stars_samples_hel)).T[np.newaxis]
+
+            # transform to galactocentric
+            self.stars_samples_gal = hel_to_gal(stars_samples_hel.reshape(self.nsamples,6))
+
+            # set the tail assignments
+            # HACK: tail assignments always frozen?
+            tail = np.array(self.stars.parameters['tail'].frozen)
+            self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1)\
+                                        .reshape(self.nsamples)
 
         # integration
         self.args = (t1,t2,dt)
@@ -221,6 +237,12 @@ class Rewinder(EmceeModel):
         else:
             alpha = parameters['progenitor']['alpha'].frozen
 
+        # rotation of Lagrange points in orbital plane
+        if parameters['progenitor']['theta'].frozen is False:
+            theta = parameter_values['progenitor']['theta']
+        else:
+            theta = parameters['progenitor']['theta'].frozen
+
         # satellite coordinates
         prog_hel = np.empty((1,6))
         for i,par_name in enumerate(heliocentric_names):
@@ -232,44 +254,32 @@ class Rewinder(EmceeModel):
         # TODO: need to specify R_sun and V_circ as parameters?
         prog_gal = hel_to_gal(prog_hel)
 
-        # compute back-integration likelihood for all samples
-        ln_like = rewinder_likelihood(t1, t2, dt, potential,
-                                      prog_gal, self.stars_samples_gal,
-                                      m0, mdot, alpha, self.stars_samples_tail)
-        ln_like = ln_like.reshape(ln_like.shape[0],self.nstars,self.K)
+        if self.perfect_data:
+            stars_gal = hel_to_gal(self.stars.data)
+            beta = np.array(self.stars.parameters['tail'].frozen)
 
-        marg = logsumexp(ln_like, axis=0) + np.log(abs(dt))
-        ln_q_jk = marg - self.stars_samples_lnprob
-        # print("weights", np.exp(ln_q_jk))
-        n_eff = np.exp(2*logsumexp(ln_q_jk, axis=-1) - logsumexp(2*ln_q_jk, axis=-1))
-        print(n_eff)
+            # Assume there is no uncertainty in the positions of the stars!
+            ln_like = rewinder_likelihood(t1, t2, dt, potential,
+                                          prog_gal, stars_gal,
+                                          m0, mdot, alpha, beta, theta)
 
-        return logsumexp(ln_q_jk - np.log(self.K), axis=-1).sum()
+            likelihood = ln_like.sum()
 
-        # ln_q_jk = ln_like - self.stars_samples_lnprob
-        # n_eff = np.exp(2*logsumexp(ln_q_jk, axis=2) - logsumexp(2*ln_q_jk, axis=2))
+        else:
+            raise NotImplementedError()
 
-        # import matplotlib.pyplot as plt
-        # for n in range(self.nstars):
-        #     fig,axes = plt.subplots(2,1,sharex=True)
-        #     fig.suptitle(r"Star {}".format(n), fontsize=24)
-        #     t = np.linspace(self.args[0], self.args[1], len(n_eff[:,n]))
-        #     axes[0].plot(t, n_eff[:,n], marker=None)
-        #     axes[0].axvline(self.stars.parameters['tub'].truth.value[n],
-        #                     linestyle='dashed', c='g', alpha=0.6)
-        #     axes[0].set_ylabel(r"$N_{\rm eff}$")
-        #     axes[0].set_xlim(0.,self.args[0])
-        #     axes[0].set_ylim(0.,self.K)
-        #     axes[1].plot(t, ln_q_jk[:,n], marker=None, alpha=0.1)
-        #     axes[1].axvline(self.stars.parameters['tub'].truth.value[n],
-        #                     linestyle='dashed', c='g', alpha=0.6)
-        #     axes[1].set_ylabel(r"$\ln q_k(\tau)$")
-        #     axes[-1].set_xlabel(r"Release time, $\tau$")
-        #     fig.savefig("/Users/adrian/Downloads/star_{}.png".format(n))
+            # Thin the samples of stars so that they lie within some sensible range of
+            #   energies relative to the progenitor
+            prog_E = potential.energy(prog_gal[:,:3], prog_gal[:,3:])
+            samples_E = potential.energy(self.stars_samples_gal[:,:3], self.stars_samples_gal[:,3:])
 
-        # sys.exit(0)
+            # compute back-integration likelihood for all samples
+            ln_like = rewinder_likelihood(t1, t2, dt, potential,
+                                          prog_gal, self.stars_samples_gal,
+                                          m0, mdot, alpha, self.stars_samples_tail)
+            ln_like = ln_like.reshape(ln_like.shape[0],self.nstars,self.K)
 
-        return l.sum()
+        return likelihood
 
     def sample_p0(self, n=None):
         """ """
@@ -298,9 +308,7 @@ class Rewinder(EmceeModel):
         return p0
 
 
-    # ========================================================================
-    # ========================================================================
-    # ========================================================================
+    # -----------------------------------------------------------------------------------
 
     @classmethod
     def from_config(cls, config):
@@ -316,14 +324,23 @@ class Rewinder(EmceeModel):
             from ..io import read_config
             config = read_config(config)
 
+        # Set the log level based on config file - default is debug
+        log_level = config.get('log_level', "DEBUG")
+        logger.setLevel(getattr(logging, log_level.upper()))
+
+        # Use a seed for random number generators
         seed = config.get('seed', np.random.randint(100000))
         logger.debug("Using seed: {}".format(seed))
         np.random.seed(seed)
         random.seed(seed)
 
-        nlead = config.get('nlead', 0)
-        ntrail = config.get('ntrail', 0)
-        nstars = nlead + ntrail
+        # Read star data from specified file
+        star_data = np.genfromtxt(config.get('stars_file'), names=True)
+
+
+
+
+
 
         # more complicated selections
         star_idx = config.get('star_idx', None)
@@ -445,8 +462,8 @@ class RewinderSampler(EnsembleSampler):
             nwalkers = model.nparameters*2 + 2
         self.nwalkers = nwalkers
 
-        super(StreamModelSampler, self).__init__(self.nwalkers, model.nparameters, model,
-                                                 pool=pool, a=a)
+        super(RewinderSampler, self).__init__(self.nwalkers, model.nparameters, model,
+                                              pool=pool, a=a)
 
     def write(self, filename, ii=None):
         if ii is None:
