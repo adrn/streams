@@ -23,11 +23,11 @@ import numexpr
 from scipy.misc import logsumexp
 
 # Project
+import streamteam.potential as sp
 from streamteam.inference import EmceeModel, ModelParameter, LogUniformPrior, LogPrior
 from .. import heliocentric_names
 from ..coordinates import hel_to_gal
 from .rewinder_likelihood import rewinder_likelihood
-from .starsprogenitor import Stars, Progenitor
 from .util import log_normal
 
 __all__ = ["Rewinder", "RewinderSampler"]
@@ -335,9 +335,32 @@ class Rewinder(EmceeModel):
         random.seed(seed)
 
         # Read star data from specified file
-        star_data = np.genfromtxt(config.get('stars_file'), names=True)
+        star_data = np.genfromtxt(config.get('star_data'), names=True)
+        prog_data = np.genfromtxt(config.get('progenitor_data'), names=True)
 
+        # If limiting the number of stars
+        # TODO: allow selecting on some expression
+        try:
+            nstars = int(config.get('nstars'))
+        except TypeError:
+            nstars = None
 
+        if nstars is not None:
+            star_data = star_data[:nstars]
+        logger.info("Using {} stars".format(len(star_data)))
+
+        # Read integration stuff
+        dt = float(config.get('dt'))
+        nsteps = int(config.get('nsteps'))
+        logger.debug("Will integrate for {} steps, with a timestep of {} Myr"\
+                     .format(nsteps, dt))
+        logger.info("Integration time: {} Myr".format(nsteps*dt))
+
+        # Potential
+        Potential = getattr(sp, config["potential"]["class_name"])
+        logger.info("Using potential '{}'...".format(Potential))
+
+        return
 
 
 
