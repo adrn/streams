@@ -1,44 +1,32 @@
 # general
 seed: 42
-script: infer_potential.py
-name: test
+name: orphan
 
 # plots / output
 plot:
     mcmc_diagnostics: True
     posterior: True
     ext: png
+log_level: debug
 
-K: 1000
-
-# data
-data_file: data/observed_simulation/2.5e8.hdf5
-# nlead: 4
-# ntrail: 4
-# expr: "(tub > 1800) & (tub < 5500) & (d < 40)"
-star_idx: [1084, 30418, 29467, 15733, 23613, 10333, 68481, 184]
-# star_idx: [1084, 30418, 29467, 15733, 48961, 53964, 43864, 41614, 23613, 10333, 68481, 184, 932, 16417, 42214, 23800]
+# data files
+star_data: data/.../stars.txt
+progenitor_data: data/.../progenitor.txt
+nstars: 16 # optional
 
 # integration
 dt: -1.
+nsteps: 6000
 
 potential:
-    class_name: LM10Potential
-    parameters: [qz]
-
-progenitor:
-    #parameters: [d, mul, mub, vr, alpha]
-    parameters: [alpha]
-
-stars:
-    # missing_dims: []
-    # fixed_truth: False
+    class: LM10Potential
+    parameters: [q1, qz]
+    fix:
+        q2: 1
+        v_halo: 0.125
 
 # emcee
-start_truth: True
-acceptance_threshold: 0.01
-walkers: 32
-burn_in: 0
-steps: 100
-output_every: 100
+nwalkers: 512
+nburn_in: 5000
+nsteps: 0
 thin_chain: False
