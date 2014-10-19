@@ -22,7 +22,7 @@ integration:
 potential:
     class: LM10Potential
     parameters: [q1, qz]
-    fix:
+    fixed:
         q2: 1
         v_halo: 0.125
 
