@@ -18,24 +18,23 @@ from astropy import log as logger
 import astropy.table as at
 from emcee import EnsembleSampler
 import numpy as np
-import h5py
 import numexpr
 from scipy.misc import logsumexp
-
-# Project
 import streamteam.potential as sp
 from streamteam.inference import EmceeModel, ModelParameter, LogUniformPrior, LogPrior
+
+# Project
 from .. import heliocentric_names
 from ..coordinates import hel_to_gal
 from .rewinder_likelihood import rewinder_likelihood
-from .util import log_normal
+from .starsprogenitor import Stars, Progenitor
 
 __all__ = ["Rewinder", "RewinderSampler"]
 
 class Rewinder(EmceeModel):
 
-    def __init__(self, potential, potential_parameters, progenitor, stars,
-                 t1, t2, dt=-1., perfect_data=False, nsamples_init=10000, nsamples=256):
+    def __init__(self, Potential, progenitor, stars,
+                 dt=-1., perfect_data=False, nsamples_init=10000, nsamples=256):
         """ Model for tidal streams that uses backwards integration to Rewind
             the positions of stars.
 
@@ -349,6 +348,21 @@ class Rewinder(EmceeModel):
             star_data = star_data[:nstars]
         logger.info("Using {} stars".format(len(star_data)))
 
+        # Turn star and progenitor tables into 6D arrays with proper structure
+        stars = np.vstack([star_data[name] for name in heliocentric_names])
+        try:
+            stars_err = np.vstack([star_data["err_{}".format(name)] for name in heliocentric_names])
+        except ValueError:
+            logger.warning("Star data uncertainty columns misnamed or don't exist.")
+            stars_err = None
+
+        prog = np.vstack([prog_data[name] for name in heliocentric_names])
+        try:
+            prog_err = np.vstack([prog_data["err_{}".format(name)] for name in heliocentric_names])
+        except ValueError:
+            logger.warning("Progenitor data uncertainty columns misnamed or don't exist.")
+            prog_err = None
+
         # Read integration stuff
         dt = float(config['integration'].get('dt'))
         nintegrate = int(config['integration'].get('nsteps'))
@@ -360,111 +374,13 @@ class Rewinder(EmceeModel):
         Potential = getattr(sp, config["potential"]["class"])
         logger.info("Using potential '{}'...".format(Potential))
 
-        return
-
-
-
-
-        # more complicated selections
-        star_idx = config.get('star_idx', None)
-        expr = config.get('expr', None)
-
-        if star_idx is not None and nstars is not 0 and len(star_idx) != 0:
-            raise ValueError("Number of stars does not match length of"
-                             "star index specification.")
-
-        # load progenitor and star data
-        logger.debug("Reading data from:\n\t{}".format(config['data_file']))
-
-        progenitor_data = at.Table.read(config['data_file'], path='progenitor')
-        try:
-            true_progenitor = at.Table.read(config['data_file'], path='true_progenitor')
-        except:
-            true_progenitor = None
-        progenitor_err = at.Table.read(config['data_file'], path='error_progenitor')
-
-        stars_data = at.Table.read(config['data_file'], path='stars')
-        try:
-            true_stars = at.Table.read(config['data_file'], path='true_stars')
-        except:
-            true_stars = None
-        stars_err = at.Table.read(config['data_file'], path='error_stars')
-
-        # progenitor object
-        progenitor = Progenitor(data=progenitor_data,
-                                errors=progenitor_err,
-                                truths=true_progenitor)
-        progenitor.parameters['m0'] = ModelParameter('m0',
-                                                     truth=float(progenitor_data['m0']),
-                                                     prior=LogPrior()) # TODO: logspace?
-
-        # HACK: THIS IS A HACK FOR SGR SIMS!
-        true_mdot = np.log(3.2*10**(np.floor(np.log10(float(progenitor_data['m0'])))-4))
-        progenitor.parameters['mdot'] = ModelParameter('mdot', truth=true_mdot, prior=LogPrior())
-
-        progenitor.parameters['alpha'] = ModelParameter('alpha', shape=(1,),
-                                                        prior=LogUniformPrior(1., 2.))
-
-        # deal with extra star selection crap
-        if star_idx is None:
-            if nstars is 0:
-                raise ValueError("If not specifying indexes, must specify number"
-                                 "of stars (nstars)")
-
-            if expr is not None:
-                expr_idx = numexpr.evaluate(expr, stars_data)
-            else:
-                expr_idx = np.ones(len(stars_data)).astype(bool)
-
-            # leading tail stars
-            lead_stars, = np.where((stars_data["tail"] == -1.) & expr_idx)
-            np.random.shuffle(lead_stars)
-            lead_stars = lead_stars[:nlead]
-
-            # trailing tail stars
-            trail_stars, = np.where((stars_data["tail"] == 1.) & expr_idx)
-            np.random.shuffle(trail_stars)
-            trail_stars = trail_stars[:ntrail]
-
-            star_idx = np.append(lead_stars, trail_stars)
-
-        stars_data = stars_data[star_idx]
-        true_stars = true_stars[star_idx]
-        stars_err = stars_err[star_idx]
-
-        logger.info("Running with {} stars.".format(len(stars_data)))
-        logger.debug("Using stars: {}".format(list(star_idx)))
-
-        stars = Stars(data=stars_data, errors=stars_err, truths=true_stars)
-        stars.parameters['tail'] = ModelParameter('tail', truth=stars_data['tail'].data)
-        stars.parameters['tail'].frozen = stars.parameters['tail'].truth
-        stars.parameters['tub'] = ModelParameter('tub', truth=stars_data['tub'].data)
-
-        # integration stuff
-        integration = at.Table.read(config['data_file'], path='integration')
-        t1 = config.get("t1", integration.meta['t1'])
-        t2 = config.get("t2", integration.meta['t2'])
-        dt = config.get("dt", -1.)
-        logger.debug("Integration from {} to {}, ∆t={} Myr".format(t1,t2,dt))
-
-        # get the potential object specified from the potential subpackage
-        # from .. import potential as sp
-        Potential = getattr(sp, config["potential"]["class_name"])
-        potential = Potential()
-        logger.info("Using potential '{}'...".format(config["potential"]["class_name"]))
-
-        for par in progenitor.parameters.values():
-            if par.name not in config["progenitor"]["parameters"]:
-                par.freeze("truth")
-
-        for par in potential.parameters.values():
-            if par.name not in config["potential"]["parameters"]:
-                par.freeze("truth")
-
-        logger.info("Drawing {} samples from each prior...".format(config["K"]))
-
         # Initialize the model
-        model = cls(potential, progenitor, stars, t1, t2, dt, K=config["K"])
+        model = cls(Potential,
+                    progenitor=(prog, prog_err),
+                    stars=(stars, stars_err),
+                    dt=dt, nsteps=nintegrate)
+
+        # TODO: alpha, theta
 
         return model
 
