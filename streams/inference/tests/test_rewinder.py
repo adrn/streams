@@ -136,6 +136,8 @@ def test_from_config():
     path = os.path.abspath(os.path.join(this_path, "../../../config/test.yml"))
     rw = Rewinder.from_config(path)
 
+    rw([0.5, 20., 2.5E6, 0., 1.2, -0.3])
+
     vhs = np.linspace(0.3,0.7,55)
     lls = np.zeros_like(vhs)
     for i,vh in enumerate(vhs):
@@ -157,7 +159,6 @@ def test_from_config():
     axes[0].plot(rhs, lls, marker='o')
     axes[1].plot(rhs, np.exp(lls - lls.max()), marker='o')
     fig.savefig(os.path.join(plot_path, "vary_rh.png"))
-
 
 def test_build_model():
     from ..starsprogenitor import Stars, Progenitor

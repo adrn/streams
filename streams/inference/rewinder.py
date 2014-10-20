@@ -120,6 +120,20 @@ class Rewinder(EmceeModel):
                 Dictionary of ModelParameter objects.
         """
         ln_p = 0.
+
+        # potential prior
+        ln_p += self.rewinder_potential.ln_prior(**parameter_values['potential'])
+
+        # progenitor
+        for name,par in parameters.get('progenitor',dict()).items():
+            if par.frozen is False:
+                ln_p += par.prior.logpdf(parameter_values['progenitor'][name])
+
+        # hyper-parameters
+        for name,par in parameters.get('hyper',dict()).items():
+            if par.frozen is False:
+                ln_p += par.prior.logpdf(parameter_values['hyper'][name])
+
         return ln_p
 
     def ln_likelihood(self, parameters, parameter_values, dt, nsteps):
