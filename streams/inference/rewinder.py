@@ -135,18 +135,20 @@ class Rewinder(EmceeModel):
                 Integration limits.
         """
 
-        ######################################################################
+        print(parameters)
+        print(parameter_values)
+
+        #################################################################################
         # potential parameters:
         #
-        print(self.rewinder_potential.Potential)
         potential = self.rewinder_potential.obj(**parameter_values['potential'])
 
-        print(potential.value([[10.,0,0]]))
-        return
-
-        ######################################################################
+        #################################################################################
         # progenitor parameters:
         #
+
+        print(parameter_values['progenitor']['m0'])
+        print(parameter_values['progenitor']['mdot'])
 
         # mass
         if parameters['progenitor']['m0'].frozen is False:
@@ -160,42 +162,50 @@ class Rewinder(EmceeModel):
         else:
             mdot = parameters['progenitor']['mdot'].frozen
 
-        # position of effective tidal radius
-        if parameters['progenitor']['alpha'].frozen is False:
+        #################################################################################
+        # Hyper parameters:
+        #
+
+        # scale of position of effective tidal radius
+        if parameters['hyper']['alpha'].frozen is False:
             alpha = parameter_values['progenitor']['alpha']
         else:
             alpha = parameters['progenitor']['alpha'].frozen
 
         # rotation of Lagrange points in orbital plane
-        if parameters['progenitor']['theta'].frozen is False:
+        if parameters['hyper']['theta'].frozen is False:
             theta = parameter_values['progenitor']['theta']
         else:
             theta = parameters['progenitor']['theta'].frozen
 
+        # -------------------------------------------------------------------------------
         # satellite coordinates
-        prog_hel = np.empty((1,6))
-        for i,par_name in enumerate(heliocentric_names):
-            if parameters['progenitor'][par_name].frozen is False:
-                prog_hel[:,i] = parameter_values['progenitor'][par_name]
-            else:
-                prog_hel[:,i] = parameters['progenitor'][par_name].frozen
+        #
 
-        # TODO: need to specify R_sun and V_circ as parameters?
-        prog_gal = hel_to_gal(prog_hel)
-
+        # TODO: assume perfect knowledge of stars, but missing dims for progenitor!
         if self.perfect_data:
+            # need to specify R_sun and V_circ as parameters
+            prog_gal = hel_to_gal(self.progenitor.data)
             stars_gal = hel_to_gal(self.stars.data)
-            beta = np.array(self.stars.parameters['tail'].frozen)
+            tail = np.array(self.stars.parameters['tail'])
 
             # Assume there is no uncertainty in the positions of the stars!
             ln_like = rewinder_likelihood(t1, t2, dt, potential,
                                           prog_gal, stars_gal,
-                                          m0, mdot, alpha, beta, theta)
+                                          m0, mdot, alpha, tail, theta)
 
             likelihood = ln_like.sum()
 
         else:
             raise NotImplementedError()
+
+            # TODO: need to handle progenitor position as parameters
+            prog_hel = np.empty((1,6))
+            for i,par_name in enumerate(heliocentric_names):
+                if parameters['progenitor'][par_name].frozen is False:
+                    prog_hel[:,i] = parameter_values['progenitor'][par_name]
+                else:
+                    prog_hel[:,i] = parameters['progenitor'][par_name].frozen
 
             # Thin the samples of stars so that they lie within some sensible range of
             #   energies relative to the progenitor
@@ -286,7 +296,8 @@ class Rewinder(EmceeModel):
             logger.warning("Star data uncertainty columns misnamed or don't exist.")
             stars_err = None
 
-        stars = StreamComponent(stars_obs, err=stars_err, tail=star_data['tail'])
+        stars = StreamComponent(stars_obs, err=stars_err,
+                                parameters=OrderedDict([('tail',star_data['tail'])]))
 
         # -------------------------------------------------------------------------------
         prog_obs = np.vstack([prog_data[name] for name in heliocentric_names])
@@ -328,7 +339,8 @@ class Rewinder(EmceeModel):
         mdot = ModelParameter(name="mdot", shape=(1,), prior=prior)
         mdot.fixed = mass_loss
 
-        prog = StreamComponent(prog_obs, err=prog_err, m0=m0, mdot=mdot)
+        prog = StreamComponent(prog_obs, err=prog_err,
+                               parameters=OrderedDict([('m0',m0), ('mdot',mdot)]))
 
         # -------------------------------------------------------------------------------
 

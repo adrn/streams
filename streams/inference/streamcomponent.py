@@ -18,12 +18,12 @@ __all__ = ['StreamComponent', 'RewinderPotential']
 
 class StreamComponent(object):
 
-    def __init__(self, data, err=None, **kwargs):
+    def __init__(self, data, err=None, parameters=dict()):
         """ TODO """
 
         self.data = data
         self.err = err
-        self.parameters = kwargs
+        self.parameters = parameters
         self._dist = norm(self.data, self.err)
 
     def ln_data_prob(self, x):

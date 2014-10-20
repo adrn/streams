@@ -129,8 +129,11 @@ def test_time():
     print("{} ms per call".format(t*1000.))
 
 def test_from_config():
-  path = os.path.abspath(os.path.join(this_path, "../../../config/test.yml"))
-  rw = Rewinder.from_config(path)
+    path = os.path.abspath(os.path.join(this_path, "../../../config/test.yml"))
+    rw = Rewinder.from_config(path)
+
+    print(rw([0.5, 20, 2.5E6, 0., 2., -0.3]))
+
 
 def test_build_model():
     from ..starsprogenitor import Stars, Progenitor
