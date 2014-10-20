@@ -9,18 +9,15 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 from collections import OrderedDict
 import logging
-import os
 import sys
-import time
 import random
 
 # Third-party
 from astropy import log as logger
-from emcee import EnsembleSampler
 import numpy as np
 import numexpr
 import streamteam.potential as sp
-from streamteam.inference import EmceeModel, ModelParameter
+from streamteam.inference import ModelParameter
 from streamteam.inference.prior import *
 
 # Project
@@ -390,7 +387,7 @@ class Rewinder(object):
         # Read integration stuff
         dt = float(config['integration'].get('dt'))
         nintegrate = int(config['integration'].get('nsteps'))
-        logger.debug("Will integrate for {} steps, with a timestep of {} Myr"\
+        logger.debug("Will integrate for {} steps, with a timestep of {} Myr"
                      .format(nintegrate, dt))
         logger.info("Integration time: {} Myr".format(nintegrate*dt))
 

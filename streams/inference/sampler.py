@@ -7,17 +7,18 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
-import os, sys
+import os
+import sys
+import time
 
 # Third-party
+from emcee import EnsembleSampler
 import numpy as np
 from astropy import log as logger
-import astropy.units as u
-
-# Project
-
 
 __all__ = ['RewinderSampler']
+
+# TODO: banish h5py
 
 class RewinderSampler(EnsembleSampler):
 
@@ -56,8 +57,8 @@ class RewinderSampler(EnsembleSampler):
         if output_every is None:
             output_every = nsteps
 
-        logger.info("Running {} walkers for {} steps..."\
-                .format(self.nwalkers, nsteps))
+        logger.info("Running {} walkers for {} steps..."
+                    .format(self.nwalkers, nsteps))
 
         time0 = time.time()
         ii = first_step
@@ -80,4 +81,3 @@ class RewinderSampler(EnsembleSampler):
 
         t = time.time() - time0
         logger.debug("Spent {} seconds on main sampling...".format(t))
-
