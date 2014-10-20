@@ -33,52 +33,39 @@ logger.setLevel(logging.DEBUG)
 
 __all__ = ["Rewinder", "RewinderSampler"]
 
-class Rewinder(EmceeModel):
+class Rewinder(object):
 
-    def __init__(self, Potential, progenitor, stars,
-                 dt=-1., perfect_data=False, nsamples_init=10000, nsamples=256):
+    def __init__(self, rewinder_potential, progenitor, stars, dt, nsteps, **kwargs):
         """ Model for tidal streams that uses backwards integration to Rewind
             the positions of stars.
 
             Parameters
             ----------
-            potential : streamteam.Potential
+            rewinder_potential : streams.RewinderPotential
             progenitor : streams.Progenitor
             stars : streams.Stars
-            t1,t2,dt : float
+            dt, nsteps : float
                 Integration parameters.
-            nsamples_init : int
-                Initial number of samples to draw per star for importance sampling.
-            nsamples : int
-                Number of samples to use that match energy criterion.
+
+            Other Parameters
+            ----------------
+            kwargs
+                Any other keyword arguments passed in are assumed to be additional
+                parameters for the model.
 
         """
 
-        self.parameters = OrderedDict()
-
-        # Potential
-        # for par in potential.parameters.values():
-        #     self.add_parameter(par, "potential")
-        # self.potential_class = potential.c_class
-        for par in potential_parameters:
-            self.add_parameter(par, "potential")
-            self.potential_class = potential.__class__
-
-        # Progenitor
-        for par in progenitor.parameters.values():
-            self.add_parameter(par, "progenitor")
+        self.rewinder_potential = rewinder_potential
         self.progenitor = progenitor
-
-        # Stars
-        for par in stars.parameters.values():
-            if par.frozen is False:
-                par.frozen = True
-            self.add_parameter(par, "stars")
-
         self.stars = stars
-        self.nstars = len(stars)
+        self.nstars = len(stars.data)
 
-        self.perfect_data = perfect_data
+        self.parameters = OrderedDict(**kwargs)
+
+        if self.stars.err is None and self.progenitor.err is None:
+            self.perfect_data = True
+        else:
+            self.perfect_data = False
 
         if not self.perfect_data:
             raise NotImplementedError()
@@ -108,7 +95,8 @@ class Rewinder(EmceeModel):
                                         .reshape(self.nsamples)
 
         # integration
-        self.args = (t1,t2,dt)
+        self.dt = dt
+        self.nsteps = nsteps
 
     def ln_prior(self, parameters, parameter_values, t1, t2, dt):
         """ Evaluate the log-prior at the given parameter values, but
@@ -437,83 +425,11 @@ class Rewinder(EmceeModel):
 
         # -------------------------------------------------------------------------------
 
-        sys.exit(0)
         # Initialize the model
-        model = cls(potential=potential,
+        model = cls(rewinder_potential=potential,
                     progenitor=prog, stars=stars,
-                    dt=dt, nsteps=nintegrate)
+                    dt=dt, nsteps=nintegrate, **hyperpars)
 
-        # TODO: alpha, theta
+        sys.exit(0)
 
         return model
-
-    def _walk(self):
-        for tup in super(Rewinder,self)._walk():
-            if tup[0] == 'stars':
-                continue
-            yield tup
-
-# TODO: check here down
-
-class RewinderSampler(EnsembleSampler):
-
-    def __init__(self, model, nwalkers=None, pool=None, a=2.):
-        """ """
-
-        if nwalkers is None:
-            nwalkers = model.nparameters*2 + 2
-        self.nwalkers = nwalkers
-
-        super(RewinderSampler, self).__init__(self.nwalkers, model.nparameters, model,
-                                              pool=pool, a=a)
-
-    def write(self, filename, ii=None):
-        if ii is None:
-            ii = self.chain.shape[1]
-
-        # write the sampler data to an HDF5 file
-        logger.info("Writing sampler data to '{}'...".format(filename))
-        with h5py.File(filename, "w") as f:
-            f["last_step"] = ii
-            f["chain"] = self.chain
-            f["lnprobability"] = self.lnprobability
-            f["acceptance_fraction"] = self.acceptance_fraction
-            try:
-                f["acor"] = self.acor
-            except:
-                logger.warn("Failed to compute autocorrelation time.")
-                f["acor"] = []
-
-    def run_inference(self, pos, nsteps, path, output_every=None,
-                      output_file_fmt="inference_{:06d}.hdf5", first_step=0):
-        """ Custom run MCMC that caches the sampler every specified number
-            of steps.
-        """
-        if output_every is None:
-            output_every = nsteps
-
-        logger.info("Running {} walkers for {} steps..."\
-                .format(self.nwalkers, nsteps))
-
-        time0 = time.time()
-        ii = first_step
-        for outer_loop in range(nsteps // output_every):
-            self.reset()
-            for results in self.sample(pos, iterations=output_every):
-                ii += 1
-
-            self.write(os.path.join(path,output_file_fmt.format(ii)), ii=ii)
-            pos = results[0]
-
-        # the remainder
-        remainder = nsteps % output_every
-        if remainder > 0:
-            self.reset()
-            for results in self.sample(pos, iterations=remainder):
-                ii += 1
-
-            self.write(os.path.join(path,output_file_fmt.format(ii)), ii=ii)
-
-        t = time.time() - time0
-        logger.debug("Spent {} seconds on main sampling...".format(t))
-
