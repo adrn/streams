@@ -20,7 +20,8 @@ from emcee import EnsembleSampler
 import numpy as np
 import numexpr
 import streamteam.potential as sp
-from streamteam.inference import EmceeModel, ModelParameter, LogarithmicPrior
+from streamteam.inference import EmceeModel, ModelParameter
+from streamteam.inference.prior import *
 
 # Project
 from .. import heliocentric_names
@@ -412,16 +413,31 @@ class Rewinder(EmceeModel):
         logger.info("Using potential '{}'...".format(Potential))
 
         # potential parameters to vary
-        # TODO: priors on varied potential parameters??
-        pars = config["potential"].get("parameters", list())
+        vary_pars = config["potential"].get("parameters", list())
+        for k,v in vary_pars.items():
+            vary_pars[k] = eval(v)
 
         # get fixed parameters
         fixed_pars = config["potential"].get("fixed", dict())
 
-        potential = RewinderPotential(Potential, fixed_pars=fixed_pars)
+        potential = RewinderPotential(Potential, priors=vary_pars, fixed_pars=fixed_pars)
 
         # -------------------------------------------------------------------------------
 
+        # Hyper-parameters
+        hyperpars = config.get('hyperparameters', dict())
+        for name,v in hyperpars.items():
+            logger.debug("Adding hyper-parameter: {}".format(name))
+            try:
+                hyperpars[k] = float(v)
+                logger.debug("--- {} = {}".format(name,hyperpars[k]))
+            except ValueError:
+                hyperpars[k] = eval(v)
+                logger.debug("--- prior passed in for {}: {}".format(name,hyperpars[k]))
+
+        # -------------------------------------------------------------------------------
+
+        sys.exit(0)
         # Initialize the model
         model = cls(potential=potential,
                     progenitor=prog, stars=stars,
