@@ -89,7 +89,7 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cpdef rewinder_likelihood(double t1, double t2, double dt,
+cpdef rewinder_likelihood(double dt, int nsteps,
                           pot._CPotential potential,
                           np.ndarray[double,ndim=2] prog_xv,
                           np.ndarray[double,ndim=2] star_xv,
@@ -97,9 +97,9 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
                           double alpha, np.ndarray[double,ndim=1] _betas,
                           double theta):
 
-    cdef unsigned int i, nsteps, nparticles, ndim
+    cdef unsigned int i, nparticles, ndim
+    cdef double t1
     nparticles = len(star_xv)
-    nsteps = int(fabs((t1-t2)/dt))
 
     # Containers
     cdef double [::1] x1 = np.empty(3)
@@ -107,6 +107,8 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     cdef double [::1] x3 = np.empty(3)
     cdef double [::1] dx = np.empty(3)
     cdef double [::1] dv = np.empty(3)
+    cdef double [::1] menc_tmp = np.empty(3)
+    cdef double [:,::1] menc_epsilon = np.empty((1,3))
 
     cdef double [::1] ln_likelihoods = np.zeros(nparticles, dtype='d')
     cdef double [::1] ln_likelihood_tmp = np.zeros(nparticles, dtype='d')
@@ -128,6 +130,7 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     costheta = cos(theta)
 
     # mass
+    t1 = fabs(dt*nsteps)
     mass = -mdot*t1 + m0
 
     # prime the accelerations
@@ -138,7 +141,7 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     # all_v[0] = v
     # --
 
-    Menc = potential._mass_enclosed(x[0])
+    Menc = potential._mass_enclosed(x[0], menc_epsilon, menc_tmp)
     rtide = cbrt(mass/Menc) * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
     vdisp = cbrt(mass/Menc) * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
@@ -167,7 +170,7 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
         # mass of the satellite
         mass = -mdot*t1 + m0
 
-        Menc = potential._mass_enclosed(x[0])
+        Menc = potential._mass_enclosed(x[0], menc_epsilon, menc_tmp)
         rtide = cbrt(mass/Menc) * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
         vdisp = cbrt(mass/Menc) * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
@@ -187,7 +190,7 @@ cpdef rewinder_likelihood(double t1, double t2, double dt,
     leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
     t1 += dt
     mass = -mdot*t1 + m0
-    Menc = potential._mass_enclosed(x[0])
+    Menc = potential._mass_enclosed(x[0], menc_epsilon, menc_tmp)
     rtide = cbrt(mass/Menc) * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
     vdisp = cbrt(mass/Menc) * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
