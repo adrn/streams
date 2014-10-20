@@ -10,13 +10,14 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 import numpy as np
 from astropy import log as logger
 from scipy.stats import norm
+from streamteam.units import galactic
 
-__all__ = ['StreamComponent']
+__all__ = ['StreamComponent', 'RewinderPotential']
 
 class StreamComponent(object):
 
     def __init__(self, data, err=None, **kwargs):
-        """ """
+        """ TODO """
 
         self.data = data
         self.err = err
@@ -42,3 +43,20 @@ class StreamComponent(object):
         # ln_p_vr = log_normal(vr, 0., 0.306814)  # 300 km/s
 
         # return ln_p_l, ln_p_b, ln_p_d, ln_p_mul, ln_p_mub, ln_p_vr
+
+
+class RewinderPotential(object):
+
+    def __init__(self, Potential, fixed_pars=dict()): # vary_pars=dict(),
+        """ TODO """
+
+        self.Potential = Potential
+        self.fixed_pars = fixed_pars
+
+    def obj(self, **kwargs):
+        """ Given kwargs for the potential parameters being varied, return
+            a potential object with the given parameters plus any other
+            fixed parameters.
+        """
+        pars = dict(kwargs.items() + self.fixed_pars.items())
+        return self.Potential(*pars, units=galactic)
