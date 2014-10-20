@@ -27,6 +27,10 @@ logger.setLevel(logging.DEBUG)
 
 this_path = os.path.dirname(__file__)
 
+plot_path = "plots/tests/inference"
+if not os.path.exists(plot_path):
+    os.makedirs(plot_path)
+
 # -----------------------------------------------------------------------------
 # BELOW HERE IS FOR TIMING
 #
@@ -101,7 +105,7 @@ def test_time():
     nrepeat = 100
     t1 = time.time()
     for i in range(nrepeat):  # ~10 ms per call
-        ll = rewinder_likelihood(6000., 0., -1.,
+        ll = rewinder_likelihood(-1., 6000,
                                  potential.c_instance,
                                  prog, stars,
                                  2.5E6, 0.,
@@ -118,7 +122,7 @@ def test_time():
 
     t1 = time.time()
     for i in range(nrepeat):  # ~10 ms per call
-        ll = rewinder_likelihood(6000., 0., -1.,
+        ll = rewinder_likelihood(-1., 6000,
                                  potential.c_instance,
                                  prog, stars,
                                  2.5E6, 0.,
@@ -132,7 +136,27 @@ def test_from_config():
     path = os.path.abspath(os.path.join(this_path, "../../../config/test.yml"))
     rw = Rewinder.from_config(path)
 
-    print(rw([0.5, 20, 2.5E6, 0., 2., -0.3]))
+    vhs = np.linspace(0.3,0.7,55)
+    lls = np.zeros_like(vhs)
+    for i,vh in enumerate(vhs):
+        lls[i] = rw([vh, 20, 2.5E6, 0., 1.2, -0.3])
+
+    fig,axes = plt.subplots(1,2,figsize=(10,5))
+    axes[0].plot(vhs, lls, marker='o')
+    axes[1].plot(vhs, np.exp(lls - lls.max()), marker='o')
+    fig.savefig(os.path.join(plot_path, "vary_vh.png"))
+
+    # --------------------------------------------------------------
+
+    rhs = np.linspace(10.,40.,55)
+    lls = np.zeros_like(rhs)
+    for i,rh in enumerate(rhs):
+        lls[i] = rw([0.5, rh, 2.5E6, 0., 1.2, -0.3])
+
+    fig,axes = plt.subplots(1,2,figsize=(10,5))
+    axes[0].plot(rhs, lls, marker='o')
+    axes[1].plot(rhs, np.exp(lls - lls.max()), marker='o')
+    fig.savefig(os.path.join(plot_path, "vary_rh.png"))
 
 
 def test_build_model():
