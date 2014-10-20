@@ -32,7 +32,7 @@ __all__ = ["Rewinder", "RewinderSampler"]
 
 class Rewinder(EmceeModel):
 
-    def __init__(self, rewinder_potential, progenitor, stars, dt, nsteps, **kwargs):
+    def __init__(self, rewinder_potential, progenitor, stars, dt, nsteps, extra_parameters):
         """ Model for tidal streams that uses backwards integration to Rewind
             the positions of stars.
 
@@ -66,7 +66,7 @@ class Rewinder(EmceeModel):
             logger.debug("Adding parameter {}".format(name))
             self.add_parameter(p, group='progenitor')
 
-        for name,p in kwargs.items():
+        for name,p in extra_parameters.items():
             logger.debug("Adding parameter {}".format(name))
             self.add_parameter(p, group='hyper')
 
@@ -135,9 +135,6 @@ class Rewinder(EmceeModel):
                 Integration limits.
         """
 
-        print(parameters)
-        print(parameter_values)
-
         #################################################################################
         # potential parameters:
         #
@@ -182,16 +179,16 @@ class Rewinder(EmceeModel):
         # TODO: assume perfect knowledge of stars, but missing dims for progenitor!
         if self.perfect_data:
             # need to specify R_sun and V_circ as parameters
-            print(self.progenitor.data.shape, self.stars.data.shape)
-            sys.exit(0)
             prog_gal = hel_to_gal(self.progenitor.data)
             stars_gal = hel_to_gal(self.stars.data)
             tail = np.array(self.stars.parameters['tail'])
 
             # Assume there is no uncertainty in the positions of the stars!
-            ln_like = rewinder_likelihood(t1, t2, dt, potential,
+            ln_like = rewinder_likelihood(self.dt, self.nsteps,
+                                          potential.c_instance,
                                           prog_gal, stars_gal,
-                                          m0, mdot, alpha, tail, theta)
+                                          m0, mdot,
+                                          alpha, tail, theta)
 
             likelihood = ln_like.sum()
 
@@ -324,6 +321,9 @@ class Rewinder(EmceeModel):
 
             prior = LogarithmicPrior(*mass_range)
             m0 = ModelParameter(name="m0", shape=(1,), prior=prior)
+        else:
+            m0 = ModelParameter(name="m0", shape=(1,), prior=BasePrior())
+            m0.fixed = prog_data['mass']
 
         # Progenitor mass-loss
         # TODO: this is too rigid...
@@ -390,6 +390,7 @@ class Rewinder(EmceeModel):
         # Initialize the model
         model = cls(rewinder_potential=potential,
                     progenitor=prog, stars=stars,
-                    dt=dt, nsteps=nintegrate, **hyperpars)
+                    dt=dt, nsteps=nintegrate,
+                    extra_parameters=hyperpars)
 
         return model
