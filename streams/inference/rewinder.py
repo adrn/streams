@@ -147,9 +147,6 @@ class Rewinder(EmceeModel):
         # progenitor parameters:
         #
 
-        print(parameter_values['progenitor']['m0'])
-        print(parameter_values['progenitor']['mdot'])
-
         # mass
         if parameters['progenitor']['m0'].frozen is False:
             m0 = parameter_values['progenitor']['m0']
@@ -168,15 +165,15 @@ class Rewinder(EmceeModel):
 
         # scale of position of effective tidal radius
         if parameters['hyper']['alpha'].frozen is False:
-            alpha = parameter_values['progenitor']['alpha']
+            alpha = parameter_values['hyper']['alpha']
         else:
-            alpha = parameters['progenitor']['alpha'].frozen
+            alpha = parameters['hyper']['alpha'].frozen
 
         # rotation of Lagrange points in orbital plane
         if parameters['hyper']['theta'].frozen is False:
-            theta = parameter_values['progenitor']['theta']
+            theta = parameter_values['hyper']['theta']
         else:
-            theta = parameters['progenitor']['theta'].frozen
+            theta = parameters['hyper']['theta'].frozen
 
         # -------------------------------------------------------------------------------
         # satellite coordinates
