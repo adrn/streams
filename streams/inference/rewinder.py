@@ -26,7 +26,7 @@ from streamteam.inference import EmceeModel, ModelParameter, LogarithmicPrior
 from .. import heliocentric_names
 from ..coordinates import hel_to_gal
 from .rewinder_likelihood import rewinder_likelihood
-from .streamcomponent import StreamComponent
+from .streamcomponent import StreamComponent, RewinderPotential
 
 logger.setLevel(logging.DEBUG)
 
@@ -405,15 +405,26 @@ class Rewinder(EmceeModel):
                      .format(nintegrate, dt))
         logger.info("Integration time: {} Myr".format(nintegrate*dt))
 
+        # -------------------------------------------------------------------------------
+
         # Potential
         Potential = getattr(sp, config["potential"]["class"])
         logger.info("Using potential '{}'...".format(Potential))
-        # TODO: other potential stuff
+
+        # potential parameters to vary
+        # TODO: priors on varied potential parameters??
+        pars = config["potential"].get("parameters", list())
+
+        # get fixed parameters
+        fixed_pars = config["potential"].get("fixed", dict())
+
+        potential = RewinderPotential(Potential, fixed_pars=fixed_pars)
+
+        # -------------------------------------------------------------------------------
 
         # Initialize the model
-        model = cls(Potential,
-                    progenitor=(prog, prog_err),
-                    stars=(stars, stars_err),
+        model = cls(potential=potential,
+                    progenitor=prog, stars=stars,
                     dt=dt, nsteps=nintegrate)
 
         # TODO: alpha, theta
