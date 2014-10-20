@@ -28,7 +28,7 @@ from .streamcomponent import StreamComponent, RewinderPotential
 
 logger.setLevel(logging.DEBUG)
 
-__all__ = ["Rewinder", "RewinderSampler"]
+__all__ = ["Rewinder"]
 
 class Rewinder(EmceeModel):
 
@@ -337,7 +337,7 @@ class Rewinder(EmceeModel):
             m0 = ModelParameter(name="m0", shape=(1,), prior=prior)
         else:
             m0 = ModelParameter(name="m0", shape=(1,), prior=BasePrior())
-            m0.fixed = prog_data['mass']
+            m0.frozen = prog_data['mass']
 
         # Progenitor mass-loss
         # TODO: this is too rigid...
@@ -350,7 +350,7 @@ class Rewinder(EmceeModel):
         # TODO: prior
         prior = BasePrior()
         mdot = ModelParameter(name="mdot", shape=(1,), prior=prior)
-        mdot.fixed = mass_loss
+        mdot.frozen = mass_loss
 
         prog = StreamComponent(prog_obs, err=prog_err,
                                parameters=OrderedDict([('m0',m0), ('mdot',mdot)]))
