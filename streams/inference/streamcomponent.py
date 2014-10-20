@@ -66,7 +66,7 @@ class RewinderPotential(object):
             fixed parameters.
         """
         pars = dict(kwargs.items() + self.fixed_pars.items())
-        return self.Potential(*pars, units=galactic)
+        return self.Potential(units=galactic, **pars)
 
     def ln_prior(self, **kwargs):
         """ Evaluate the value of the log-prior over the potential parameters. """
