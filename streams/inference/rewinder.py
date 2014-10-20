@@ -17,7 +17,7 @@ from astropy import log as logger
 import numpy as np
 import numexpr
 import streamteam.potential as sp
-from streamteam.inference import ModelParameter
+from streamteam.inference import EmceeModel, ModelParameter
 from streamteam.inference.prior import *
 
 # Project
@@ -30,7 +30,7 @@ logger.setLevel(logging.DEBUG)
 
 __all__ = ["Rewinder", "RewinderSampler"]
 
-class Rewinder(object):
+class Rewinder(EmceeModel):
 
     def __init__(self, rewinder_potential, progenitor, stars, dt, nsteps, **kwargs):
         """ Model for tidal streams that uses backwards integration to Rewind
@@ -51,13 +51,28 @@ class Rewinder(object):
                 parameters for the model.
 
         """
+        self.parameters = OrderedDict()
 
         self.rewinder_potential = rewinder_potential
         self.progenitor = progenitor
         self.stars = stars
         self.nstars = len(stars.data)
 
-        self.parameters = OrderedDict(**kwargs)
+        for name,p in self.rewinder_potential.parameters.items():
+            logger.debug("Adding parameter {}".format(name))
+            self.add_parameter(p, group='potential')
+
+        for name,p in self.progenitor.parameters.items():
+            logger.debug("Adding parameter {}".format(name))
+            self.add_parameter(p, group='progenitor')
+
+        for name,p in kwargs.items():
+            logger.debug("Adding parameter {}".format(name))
+            self.add_parameter(p, group='hyper')
+
+        return
+        # self.parameters =
+        # self.parameters = **kwargs
 
         if self.stars.err is None and self.progenitor.err is None:
             self.perfect_data = True
@@ -104,71 +119,9 @@ class Rewinder(object):
             ----------
             parameters : dict
                 Dictionary of ModelParameter objects.
-            parameter_values : dict
-                The dictionary of model parameter values.
-            t1,t2,dt : numeric
-                Integration limits.
         """
-        ln_prior = 0.
-
-        for param in parameters['potential'].values():
-            if param.frozen is False:
-                v = parameter_values['potential'][param.name]
-                ln_prior += param.prior(v)
-
-        if parameters['progenitor']['l'].frozen is False:
-            # this is actually the data likelihood
-            ln_prior += log_normal(parameter_values['progenitor']['l'],
-                                   self.progenitor.data[:,0],
-                                   self.progenitor.errors[:,0])
-
-        if parameters['progenitor']['b'].frozen is False:
-            # uniform angles over the sky
-            ln_prior += np.log(np.cos(b) / (4*np.pi))
-
-            # this is actually the data likelihood
-            ln_prior += log_normal(parameter_values['progenitor']['b'],
-                                   self.progenitor.data[:,1],
-                                   self.progenitor.errors[:,1])
-
-        if parameters['progenitor']['d'].frozen is False:
-            # distance prior from 1 kpc to 200 kpc
-            d = parameter_values['progenitor']['d']
-            ln_prior += np.log((1 / np.log(200./1.))) - np.log(d)
-
-            # this is actually the data likelihood
-            ln_prior += log_normal(parameter_values['progenitor']['d'],
-                                   self.progenitor.data[:,2],
-                                   self.progenitor.errors[:,2])
-
-        if parameters['progenitor']['mul'].frozen is False:
-            mul = parameter_values['progenitor']['mul']
-            ln_prior += log_normal(mul, 0., 0.306814 / d) # 300 km/s
-
-            # this is actually the data likelihood
-            ln_prior += log_normal(mul,
-                                   self.progenitor.data[:,3],
-                                   self.progenitor.errors[:,3])
-
-        if parameters['progenitor']['mub'].frozen is False:
-            mub = parameter_values['progenitor']['mub']
-            ln_prior += log_normal(mub, 0., 0.306814 / d) # 300 km/s
-
-            # this is actually the data likelihood
-            ln_prior += log_normal(mub,
-                                   self.progenitor.data[:,4],
-                                   self.progenitor.errors[:,4])
-
-        if parameters['progenitor']['vr'].frozen is False:
-            vr = parameter_values['progenitor']['vr']
-            ln_prior += log_normal(vr, 0., 0.306814) # 300 km/s
-
-            # this is actually the data likelihood
-            ln_prior += log_normal(vr,
-                                   self.progenitor.data[:,5],
-                                   self.progenitor.errors[:,5])
-
-        return ln_prior
+        ln_p = 0.
+        return ln_p
 
     def ln_likelihood(self, parameters, parameter_values, t1, t2, dt):
         """ Evaluate the log-likelihood at the given parameter values.
@@ -375,10 +328,15 @@ class Rewinder(object):
         # Progenitor mass-loss
         # TODO: this is too rigid...
         try:
-            mdot = float(config.get('progenitor').get('mass_loss'))
+            mass_loss = float(config.get('progenitor').get('mass_loss'))
         except:
             logger.warning("Failed to get mass-loss rate from config file! Assuming no mass-loss.")
-            mdot = 0.
+            mass_loss = 0.
+
+        # TODO: prior
+        prior = BasePrior()
+        mdot = ModelParameter(name="mdot", shape=(1,), prior=prior)
+        mdot.fixed = mass_loss
 
         prog = StreamComponent(prog_obs, err=prog_err, m0=m0, mdot=mdot)
 
@@ -398,7 +356,7 @@ class Rewinder(object):
         logger.info("Using potential '{}'...".format(Potential))
 
         # potential parameters to vary
-        vary_pars = config["potential"].get("parameters", list())
+        vary_pars = config["potential"].get("parameters", dict())
         for k,v in vary_pars.items():
             vary_pars[k] = eval(v)
 
@@ -414,11 +372,17 @@ class Rewinder(object):
         for name,v in hyperpars.items():
             logger.debug("Adding hyper-parameter: {}".format(name))
             try:
-                hyperpars[k] = float(v)
-                logger.debug("--- {} = {}".format(name,hyperpars[k]))
+                prior = float(v)
+                logger.debug("--- {} = {}".format(name,prior))
             except ValueError:
-                hyperpars[k] = eval(v)
-                logger.debug("--- prior passed in for {}: {}".format(name,hyperpars[k]))
+                prior = eval(v)
+                logger.debug("--- prior passed in for {}: {}".format(name,prior))
+
+            if isinstance(prior, BasePrior):
+                hyperpars[name] = ModelParameter(name=name, prior=prior)
+            else:
+                hyperpars[name] = ModelParameter(name=name, prior=BasePrior())
+                hyperpars[name].fixed = prior
 
         # -------------------------------------------------------------------------------
 

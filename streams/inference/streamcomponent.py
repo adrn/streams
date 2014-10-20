@@ -6,11 +6,13 @@ from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
+# Standard library
+from collections import OrderedDict
+
 # Third-party
-import numpy as np
-from astropy import log as logger
 from scipy.stats import norm
 from streamteam.units import galactic
+from streamteam.inference import ModelParameter
 
 __all__ = ['StreamComponent', 'RewinderPotential']
 
@@ -53,6 +55,10 @@ class RewinderPotential(object):
         self.Potential = Potential
         self.fixed_pars = fixed_pars
         self.priors = priors
+
+        self.parameters = OrderedDict()
+        for name,prior in priors.items():
+            self.parameters[name] = ModelParameter(name=name, prior=prior)
 
     def obj(self, **kwargs):
         """ Given kwargs for the potential parameters being varied, return
