@@ -70,14 +70,12 @@ class Rewinder(EmceeModel):
             logger.debug("Adding parameter {}".format(name))
             self.add_parameter(p, group='hyper')
 
-        return
-        # self.parameters =
-        # self.parameters = **kwargs
-
         if self.stars.err is None and self.progenitor.err is None:
+            logger.warning("No uncertainties on stars or progenitor -- assuming perfect data.")
             self.perfect_data = True
         else:
             self.perfect_data = False
+            logger.info("Uncertainties found for stars or progenitor")
 
         if not self.perfect_data:
             raise NotImplementedError()
@@ -109,8 +107,9 @@ class Rewinder(EmceeModel):
         # integration
         self.dt = dt
         self.nsteps = nsteps
+        self.args = (self.dt, self.nsteps)
 
-    def ln_prior(self, parameters, parameter_values, t1, t2, dt):
+    def ln_prior(self, parameters, parameter_values, dt, nsteps):
         """ Evaluate the log-prior at the given parameter values, but
             not for the star positions, which we need in the likelihood
             function.
@@ -123,7 +122,7 @@ class Rewinder(EmceeModel):
         ln_p = 0.
         return ln_p
 
-    def ln_likelihood(self, parameters, parameter_values, t1, t2, dt):
+    def ln_likelihood(self, parameters, parameter_values, dt, nsteps):
         """ Evaluate the log-likelihood at the given parameter values.
 
             Parameters
@@ -139,20 +138,11 @@ class Rewinder(EmceeModel):
         ######################################################################
         # potential parameters:
         #
-        pparams = dict()
-        for par in parameters['potential'].values():
-            # parameter is free to vary, take value from the dictionary of
-            #   variable parameter values
-            if par.frozen is False:
-                val = parameter_values['potential'][par.name]
+        print(self.rewinder_potential.Potential)
+        potential = self.rewinder_potential.obj(**parameter_values['potential'])
 
-            # parameter is frozen to some value - take value from what it is
-            #   frozen to
-            else:
-                val = par.frozen
-
-            pparams[par.name] = val
-        potential = self.potential_class(**pparams)
+        print(potential.value([[10.,0,0]]))
+        return
 
         ######################################################################
         # progenitor parameters:
@@ -390,7 +380,5 @@ class Rewinder(EmceeModel):
         model = cls(rewinder_potential=potential,
                     progenitor=prog, stars=stars,
                     dt=dt, nsteps=nintegrate, **hyperpars)
-
-        sys.exit(0)
 
         return model
