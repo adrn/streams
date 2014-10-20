@@ -49,8 +49,8 @@ class RewinderSampler(EnsembleSampler):
                 logger.warn("Failed to compute autocorrelation time.")
                 f["acor"] = []
 
-    def run_inference(self, pos, nsteps, path, output_every=None,
-                      output_file_fmt="inference_{:06d}.hdf5", first_step=0):
+    def run_inference(self, pos, nsteps, output_every=None,
+                      output_file="emcee_snapshot.txt", first_step=0): # path=
         """ Custom run MCMC that caches the sampler every specified number
             of steps.
         """
@@ -67,7 +67,8 @@ class RewinderSampler(EnsembleSampler):
             for results in self.sample(pos, iterations=output_every):
                 ii += 1
 
-            self.write(os.path.join(path,output_file_fmt.format(ii)), ii=ii)
+            # TODO: need to append to file...
+            # self.write(os.path.join(path,output_file_fmt.format(ii)), ii=ii)
             pos = results[0]
 
         # the remainder
@@ -77,7 +78,8 @@ class RewinderSampler(EnsembleSampler):
             for results in self.sample(pos, iterations=remainder):
                 ii += 1
 
-            self.write(os.path.join(path,output_file_fmt.format(ii)), ii=ii)
+            # TODO:
+            # self.write(os.path.join(path,output_file_fmt.format(ii)), ii=ii)
 
         t = time.time() - time0
         logger.debug("Spent {} seconds on main sampling...".format(t))
