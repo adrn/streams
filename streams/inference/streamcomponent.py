@@ -47,11 +47,12 @@ class StreamComponent(object):
 
 class RewinderPotential(object):
 
-    def __init__(self, Potential, fixed_pars=dict()): # vary_pars=dict(),
+    def __init__(self, Potential, priors=dict(), fixed_pars=dict()):
         """ TODO """
 
         self.Potential = Potential
         self.fixed_pars = fixed_pars
+        self.priors = priors
 
     def obj(self, **kwargs):
         """ Given kwargs for the potential parameters being varied, return
@@ -60,3 +61,12 @@ class RewinderPotential(object):
         """
         pars = dict(kwargs.items() + self.fixed_pars.items())
         return self.Potential(*pars, units=galactic)
+
+    def ln_prior(self, **kwargs):
+        """ Evaluate the value of the log-prior over the potential parameters. """
+
+        lp = 0.
+        for k,prior in self.priors.items():
+            lp += prior.logpdf(kwargs[k])
+
+        return lp
