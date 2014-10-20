@@ -110,7 +110,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
     cdef double [::1] menc_tmp = np.empty(3)
     cdef double [:,::1] menc_epsilon = np.empty((1,3))
 
-    cdef double [::1] ln_likelihoods = np.zeros(nparticles, dtype='d')
+    cdef double [::1] likelihoods = np.zeros(nparticles, dtype='d')
     cdef double [::1] ln_likelihood_tmp = np.zeros(nparticles, dtype='d')
     cdef double [:,::1] v_12 = np.zeros((nparticles+1,3))
 
@@ -156,7 +156,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
         # if ln_likelihood_tmp[j] < 0:
         #     continue
 
-        ln_likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
+        likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
 
     for i in range(1,nsteps-1):
         leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
@@ -185,7 +185,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
             # if ln_likelihood_tmp[j] < 0:
             #     continue
 
-            ln_likelihoods[j] += exp(ln_likelihood_tmp[j])
+            likelihoods[j] += exp(ln_likelihood_tmp[j])
 
     leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
     t1 += dt
@@ -209,9 +209,11 @@ cpdef rewinder_likelihood(double dt, int nsteps,
         # if ln_likelihood_tmp[j] < 0:
         #     continue
 
-        ln_likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
+        likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
 
-    return np.log(fabs(dt)*np.array(ln_likelihoods))
+    ln_likelihoods = np.log(fabs(dt)*np.array(likelihoods))
+    ln_likelihoods[~np.isfinite(ln_likelihoods)] = -9999.
+    return ln_likelihoods
 
     # -- TURN THESE ON FOR DEBUGGING --
     # return np.log(fabs(dt)*np.array(ln_likelihoods)), np.array(all_x), np.array(all_v)
