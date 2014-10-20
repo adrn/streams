@@ -10,24 +10,25 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 from collections import OrderedDict
 import logging
 import os
+import sys
 import time
 import random
 
 # Third-party
 from astropy import log as logger
-import astropy.table as at
 from emcee import EnsembleSampler
 import numpy as np
 import numexpr
-from scipy.misc import logsumexp
 import streamteam.potential as sp
-from streamteam.inference import EmceeModel, ModelParameter, LogUniformPrior, LogPrior
+from streamteam.inference import EmceeModel, ModelParameter, LogarithmicPrior
 
 # Project
 from .. import heliocentric_names
 from ..coordinates import hel_to_gal
 from .rewinder_likelihood import rewinder_likelihood
-from .starsprogenitor import Stars, Progenitor
+from .streamcomponent import StreamComponent
+
+logger.setLevel(logging.DEBUG)
 
 __all__ = ["Rewinder", "RewinderSampler"]
 
@@ -349,19 +350,53 @@ class Rewinder(EmceeModel):
         logger.info("Using {} stars".format(len(star_data)))
 
         # Turn star and progenitor tables into 6D arrays with proper structure
-        stars = np.vstack([star_data[name] for name in heliocentric_names])
+        stars_obs = np.vstack([star_data[name] for name in heliocentric_names])
         try:
             stars_err = np.vstack([star_data["err_{}".format(name)] for name in heliocentric_names])
         except ValueError:
             logger.warning("Star data uncertainty columns misnamed or don't exist.")
             stars_err = None
 
-        prog = np.vstack([prog_data[name] for name in heliocentric_names])
+        stars = StreamComponent(stars_obs, err=stars_err, tail=star_data['tail'])
+
+        # -------------------------------------------------------------------------------
+        prog_obs = np.vstack([prog_data[name] for name in heliocentric_names])
         try:
             prog_err = np.vstack([prog_data["err_{}".format(name)] for name in heliocentric_names])
         except ValueError:
             logger.warning("Progenitor data uncertainty columns misnamed or don't exist.")
             prog_err = None
+
+        # Progenitor mass:
+        m0 = np.nan
+        try:
+            m0 = prog_data['mass']
+        except ValueError:
+            logger.info("No progenitor mass measurement in data file. Assuming a mass range "
+                        "has been provided in the config (.yml) file.")
+
+        # no mass provided
+        if np.isnan(m0):
+            try:
+                mass_range = map(float, config.get('progenitor').get('mass_range'))
+            except:
+                logger.error("Failed to get mass range from config file! Aborting...")
+                sys.exit(1)
+
+            prior = LogarithmicPrior(*mass_range)
+            m0 = ModelParameter(name="m0", shape=(1,), prior=prior)
+
+        # Progenitor mass-loss
+        # TODO: this is too rigid...
+        try:
+            mdot = float(config.get('progenitor').get('mass_loss'))
+        except:
+            logger.warning("Failed to get mass-loss rate from config file! Assuming no mass-loss.")
+            mdot = 0.
+
+        prog = StreamComponent(prog_obs, err=prog_err, m0=m0, mdot=mdot)
+
+        # -------------------------------------------------------------------------------
 
         # Read integration stuff
         dt = float(config['integration'].get('dt'))
@@ -373,6 +408,7 @@ class Rewinder(EmceeModel):
         # Potential
         Potential = getattr(sp, config["potential"]["class"])
         logger.info("Using potential '{}'...".format(Potential))
+        # TODO: other potential stuff
 
         # Initialize the model
         model = cls(Potential,
