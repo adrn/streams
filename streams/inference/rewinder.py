@@ -182,6 +182,8 @@ class Rewinder(EmceeModel):
         # TODO: assume perfect knowledge of stars, but missing dims for progenitor!
         if self.perfect_data:
             # need to specify R_sun and V_circ as parameters
+            print(self.progenitor.data.shape, self.stars.data.shape)
+            sys.exit(0)
             prog_gal = hel_to_gal(self.progenitor.data)
             stars_gal = hel_to_gal(self.stars.data)
             tail = np.array(self.stars.parameters['tail'])
@@ -286,9 +288,9 @@ class Rewinder(EmceeModel):
         logger.info("Using {} stars".format(len(star_data)))
 
         # Turn star and progenitor tables into 6D arrays with proper structure
-        stars_obs = np.vstack([star_data[name] for name in heliocentric_names])
+        stars_obs = np.vstack([star_data[name] for name in heliocentric_names]).T.copy()
         try:
-            stars_err = np.vstack([star_data["err_{}".format(name)] for name in heliocentric_names])
+            stars_err = np.vstack([star_data["err_{}".format(name)] for name in heliocentric_names]).T.copy()
         except ValueError:
             logger.warning("Star data uncertainty columns misnamed or don't exist.")
             stars_err = None
@@ -297,9 +299,9 @@ class Rewinder(EmceeModel):
                                 parameters=OrderedDict([('tail',star_data['tail'])]))
 
         # -------------------------------------------------------------------------------
-        prog_obs = np.vstack([prog_data[name] for name in heliocentric_names])
+        prog_obs = np.vstack([prog_data[name] for name in heliocentric_names]).T.copy()
         try:
-            prog_err = np.vstack([prog_data["err_{}".format(name)] for name in heliocentric_names])
+            prog_err = np.vstack([prog_data["err_{}".format(name)] for name in heliocentric_names]).T.copy()
         except ValueError:
             logger.warning("Progenitor data uncertainty columns misnamed or don't exist.")
             prog_err = None
