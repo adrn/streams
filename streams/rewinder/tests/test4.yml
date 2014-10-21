@@ -1,6 +1,6 @@
 # general
 seed: 42
-name: test1
+name: test4
 
 # plots / output
 plot:
@@ -11,7 +11,7 @@ log_level: debug
 
 # data files
 star_data: streams/rewinder/tests/true_stars.txt
-progenitor_data: streams/rewinder/tests/true_prog.txt
+progenitor_data: streams/rewinder/tests/obs_prog.txt
 nstars: 8
 
 # integration
@@ -34,8 +34,8 @@ progenitor:
     mass_loss_rate: 0.
 
 hyperparameters:
-    alpha: 1.25
-    theta: -0.3
+    alpha: UniformPrior(0.5, 3.)
+    theta: UniformPrior(-1.5, 0.)
 
 emcee:
     nwalkers: 64

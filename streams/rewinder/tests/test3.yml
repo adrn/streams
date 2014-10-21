@@ -1,6 +1,6 @@
 # general
 seed: 42
-name: test1
+name: test3
 
 # plots / output
 plot:
@@ -11,7 +11,7 @@ log_level: debug
 
 # data files
 star_data: streams/rewinder/tests/true_stars.txt
-progenitor_data: streams/rewinder/tests/true_prog.txt
+progenitor_data: streams/rewinder/tests/obs_prog.txt
 nstars: 8
 
 # integration
