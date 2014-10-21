@@ -39,12 +39,12 @@ class TestSimple(object):
         progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
 
         self.stars = np.vstack((stardata['x'],stardata['y'],stardata['z'],
-                                stardata['vx'],stardata['vy'],stardata['vz'])).T.copy()
+                                stardata['vx'],stardata['vy'],stardata['vz'])).T.copy()[:16]
 
         self.prog = np.vstack((progdata['x'],progdata['y'],progdata['z'],
                                progdata['vx'],progdata['vy'],progdata['vz'])).T.copy()
 
-        self.betas = stardata['tail'].copy()
+        self.betas = stardata['tail'].copy()[:16]
 
     def test_call(self):
         potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
@@ -53,9 +53,10 @@ class TestSimple(object):
                                  self.prog, self.stars,
                                  2.5E6, 0.,
                                  1., self.betas, -0.3)
-        print(ll.shape)
+        # print(ll.shape)
 
     def test_time(self):
+        tmp = np.zeros((6000,64))
         print("Spherical:")
         potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
                                            a=1., b=1., c=1., units=galactic)
@@ -73,10 +74,10 @@ class TestSimple(object):
 
         print("{} ms per call".format(t*1000.))
 
-        print("\n\n\n")
+        print("\n")
         print("Triaxial, rotated:")
         potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0, phi=0.2,
-                                           a=1.3, b=1., c=1., units=galactic)
+                                           a=1.3, b=1., c=0.8, units=galactic)
 
         t1 = time.time()
         for i in range(nrepeat):  # ~10 ms per call
