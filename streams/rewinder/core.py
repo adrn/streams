@@ -320,6 +320,7 @@ class Rewinder(EmceeModel):
                                 parameters=OrderedDict([('tail',star_data['tail'])]))
 
         # -------------------------------------------------------------------------------
+        prog_cfg = config.get('progenitor')
         prog_obs = np.vstack([prog_data[name] for name in heliocentric_names]).T.copy()
         try:
             prog_err = np.vstack([prog_data["err_{}".format(name)] for name in heliocentric_names]).T.copy()
@@ -328,7 +329,11 @@ class Rewinder(EmceeModel):
             prog_err = None
 
         # Progenitor mass:
-        m0 = eval(prog_data['mass'])
+        try:
+            m0 = float(prog_cfg['mass'])
+        except:
+            m0 = eval(prog_cfg['mass'])
+
         if isinstance(m0, BasePrior):
             prior = m0
             m0 = ModelParameter(name="m0", shape=(1,), prior=prior)
@@ -338,7 +343,10 @@ class Rewinder(EmceeModel):
             m0.frozen = frozen
 
         # Progenitor mass-loss:
-        mdot = eval(prog_data['mass_loss_rate'])
+        try:
+            mdot = float(prog_cfg['mass_loss_rate'])
+        except:
+            mdot = eval(prog_cfg['mass_loss_rate'])
         if isinstance(mdot, BasePrior):
             prior = mdot
             mdot = ModelParameter(name="mdot", shape=(1,), prior=prior)
