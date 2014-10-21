@@ -102,7 +102,7 @@ class TestConfig(object):
         sampler.reset()
 
         # restart walkers from best position, burn again
-        new_pos = np.random.normal(best_pos, best_pos*0.02,
+        new_pos = np.random.normal(best_pos, np.fabs(best_pos*0.02),
                                    size=(sampler.nwalkers, p0.shape[1]))
         sampler.run_inference(new_pos, n)
         pos = sampler.chain[:,-1]
@@ -139,7 +139,7 @@ class TestConfig(object):
 
         print("Model value at truth: {}".format(model(truth)))
         for pp in p0:
-            if np.any(np.isnan(model(pp))):
+            if np.any(~np.isfinite(model(pp))):
                 raise ValueError("Model returned -inf for initial position!")
 
         plot_path = os.path.join(output_path, "test1")
@@ -154,17 +154,17 @@ class TestConfig(object):
                 No uncertainties, sample over v_h, r_h, alpha, theta, mass
         """
 
-        path = os.path.abspath(os.path.join(this_path, "test1.yml"))
+        path = os.path.abspath(os.path.join(this_path, "test2.yml"))
         model = Rewinder.from_config(path)
         sampler = RewinderSampler(model, nwalkers=64)
 
-        truth = np.array([0.5, 20., 1.25, -0.3, 2.5E6])
-        p0_sigma = np.array([0.1, 1., 0.1, 0.02, 1E5])
+        truth = np.array([0.5, 20., 2.5E6, 1.25, -0.3])
+        p0_sigma = np.array([0.1, 1., 1E5, 0.1, 0.02])
         p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
 
         print("Model value at truth: {}".format(model(truth)))
         for pp in p0:
-            if np.any(np.isnan(model(pp))):
+            if np.any(~np.isfinite(model(pp))):
                 raise ValueError("Model returned -inf for initial position!")
 
         plot_path = os.path.join(output_path, "test2")
