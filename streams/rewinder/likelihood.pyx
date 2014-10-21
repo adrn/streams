@@ -111,7 +111,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
     cdef double [:,::1] menc_epsilon = np.empty((1,3))
 
     cdef double [::1] likelihoods = np.zeros(nparticles, dtype='d')
-    cdef double [::1] ln_likelihood_tmp = np.zeros(nparticles, dtype='d')
+    cdef double [:,::1] ln_likelihood_tmp = np.zeros((nsteps,nparticles), dtype='d')
     cdef double [:,::1] v_12 = np.zeros((nparticles+1,3))
 
     cdef double [:,::1] x = np.vstack((prog_xv[:,:3],star_xv[:,:3]))
@@ -150,11 +150,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
                          &x1[0], &x2[0], &x3[0],
                          &dx[0], &dv[0],
                          alpha, &betas[0], sintheta, costheta,
-                         &ln_likelihood_tmp[0])
-
-    # TODO: instead, try using logsumexp trick with coefficients -- need to use a 2D array instead
-    for j in range(nparticles):
-        likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
+                         &ln_likelihood_tmp[0,0])
 
     for i in range(1,nsteps-1):
         leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
@@ -177,10 +173,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
                              &x1[0], &x2[0], &x3[0],
                              &dx[0], &dv[0],
                              alpha, &betas[0], sintheta, costheta,
-                             &ln_likelihood_tmp[0])
-
-        for j in range(nparticles):
-            likelihoods[j] += exp(ln_likelihood_tmp[j])
+                             &ln_likelihood_tmp[i,0])
 
     leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
     t1 += dt
@@ -198,14 +191,12 @@ cpdef rewinder_likelihood(double dt, int nsteps,
                          &x1[0], &x2[0], &x3[0],
                          &dx[0], &dv[0],
                          alpha, &betas[0], sintheta, costheta,
-                         &ln_likelihood_tmp[0])
+                         &ln_likelihood_tmp[nsteps-1,0])
 
-    for j in range(nparticles):
-        likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
-
-    ln_likelihoods = np.log(fabs(dt)*np.array(likelihoods))
-    ln_likelihoods[~np.isfinite(ln_likelihoods)] = -9999.
-    return ln_likelihoods
+    # TODO: why am I getting NaNs???
+    return np.array(ln_likelihood_tmp)
+    # ln_likelihoods = logsumexp(ln_likelihood_tmp, axis=0, b=coeffs) + log(fabs(dt))
+    # return ln_likelihoods
 
     # -- TURN THESE ON FOR DEBUGGING --
     # return np.log(fabs(dt)*np.array(ln_likelihoods)), np.array(all_x), np.array(all_v)

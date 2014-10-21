@@ -16,6 +16,7 @@ import random
 from astropy import log as logger
 import numpy as np
 import numexpr
+from scipy.misc import logsumexp
 import streamteam.potential as sp
 from streamteam.inference import EmceeModel, ModelParameter
 from streamteam.inference.prior import *
@@ -23,7 +24,7 @@ from streamteam.inference.prior import *
 # Project
 from .. import heliocentric_names
 from ..coordinates import hel_to_gal
-from .rewinder_likelihood import rewinder_likelihood
+from .likelihood import rewinder_likelihood
 from .streamcomponent import StreamComponent, RewinderPotential
 
 __all__ = ["Rewinder"]
@@ -202,7 +203,18 @@ class Rewinder(EmceeModel):
                                           m0, mdot,
                                           alpha, tail, theta)
 
-            likelihood = ln_like.sum()
+            # TODO: don't create this every step
+            coeffs = np.ones((self.nsteps,1))
+            coeffs[0,0] = 0.5
+            coeffs[self.nsteps-1,0] = 0.5
+            ln_like2 = logsumexp(ln_like, axis=0, b=coeffs) + np.log(np.fabs(dt))
+
+            if np.any(np.isnan(ln_like2)):
+                nan_ix = np.where(np.isnan(ln_like2))[0]
+                print(ln_like[:,nan_ix])
+                return -np.inf
+
+            likelihood = ln_like2.sum()
 
         else:
             raise NotImplementedError()
@@ -395,7 +407,7 @@ class Rewinder(EmceeModel):
                 hyperpars[name] = ModelParameter(name=name, prior=prior)
             else:
                 hyperpars[name] = ModelParameter(name=name, prior=BasePrior())
-                hyperpars[name].fixed = prior
+                hyperpars[name].frozen = prior
 
         # -------------------------------------------------------------------------------
 
