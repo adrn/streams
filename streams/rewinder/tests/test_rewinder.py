@@ -20,7 +20,7 @@ import streamteam.potential as sp
 from streamteam.units import galactic
 
 # Project
-from .. import Rewinder
+from .. import Rewinder, RewinderSampler
 from ..likelihood import rewinder_likelihood
 from ...util import streamspath
 
@@ -91,33 +91,62 @@ class TestSimple(object):
 
         print("{} ms per call".format(t*1000.))
 
-def test_from_config():
-    path = os.path.abspath(os.path.join(this_path, "../../../config/test.yml"))
-    rw = Rewinder.from_config(path)
+class TestConfig(object):
 
-    rw([0.5, 20., 2.5E6, 0., 1.2, -0.3])
+    def do_the_mcmc(self, sampler, p0):
+        # burn in
+        sampler.run_inference(p0, 100)
+        best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
+        sampler.reset()
 
-    vhs = np.linspace(0.3,0.7,55)
-    lls = np.zeros_like(vhs)
-    for i,vh in enumerate(vhs):
-        lls[i] = rw([vh, 20, 2.5E6, 0., 1.2, -0.3])
+        # restart walkers from best position, burn again
+        new_pos = np.random.normal(best_pos, best_pos*0.02,
+                                   size=(sampler.nwalkers, len(truth)))
+        sampler.run_inference(new_pos, 100)
+        pos = sampler.chain[:,-1]
+        sampler.reset()
 
-    fig,axes = plt.subplots(1,2,figsize=(10,5))
-    axes[0].plot(vhs, lls, marker='o')
-    axes[1].plot(vhs, np.exp(lls - lls.max()), marker='o')
-    fig.savefig(os.path.join(plot_path, "vary_vh.png"))
+        # run for inference steps
+        sampler.run_inference(pos, 100)
 
-    # --------------------------------------------------------------
+        return sampler
 
-    rhs = np.linspace(10.,40.,55)
-    lls = np.zeros_like(rhs)
-    for i,rh in enumerate(rhs):
-        lls[i] = rw([0.5, rh, 2.5E6, 0., 1.2, -0.3])
+    def make_plots(self, sampler, p0, path):
+        for i in range(sampler.shape[-1]):
+            plt.clf()
+            for chain in sampler.chain[...,i]:
+                plt.plot(chain, marker=None, drawstyle='steps', alpha=0.2, color='k')
 
-    fig,axes = plt.subplots(1,2,figsize=(10,5))
-    axes[0].plot(rhs, lls, marker='o')
-    axes[1].plot(rhs, np.exp(lls - lls.max()), marker='o')
-    fig.savefig(os.path.join(plot_path, "vary_rh.png"))
+            for pp in p0[:,i]:
+                plt.axhline(pp, alpha=0.2, color='k')
+
+            plt.savefig(os.path.join(path, "param_{}.png".format(i)))
+
+    def test1(self):
+        """ Test 1:
+                No uncertainties, fix alpha, fix theta, only sample over v_h, r_h
+        """
+
+        path = os.path.abspath(os.path.join(this_path, "test1.yml"))
+        model = Rewinder.from_config(path)
+        sampler = RewinderSampler(model, nwalkers=64)
+
+        truth = np.array([0.5, 20.])
+        p0_sigma = np.array([0.1, 1.])
+        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
+
+        print("Model value at truth: {}".format(model(truth)))
+        for pp in p0:
+            if np.any(np.isnan(model(pp))):
+                raise ValueError("Model returned -inf for initial position!")
+
+        plot_path = os.path.join(output_path, "test1")
+        if not os.path.exists(plot_path):
+            os.mkdir(plot_path)
+
+        sampler = self.do_the_mcmc(sampler, p0)
+        self.make_plots(sampler, p0, plot_path)
+
 
 def test_build_model():
     from ..starsprogenitor import Stars, Progenitor
@@ -178,41 +207,3 @@ def test_build_model():
     pparams[-1].fixed = 1.
     pparams.append(ModelParameter('c', truth=1., prior=LogPrior()))
     pparams[-1].fixed = 1.
-
-
-
-
-
-
-
-
-# -----------------------------------------------------------------------------
-# Old
-# def test_config():
-#     rw = Rewinder.from_config("/Users/adrian/projects/streams/config/test.yml")
-#     for p in rw._walk():
-#         print(p)
-
-#     p0 = rw.sample_p0(1000)
-#     p = p0[15]
-#     print(p)
-#     # print(rw(p))
-
-#     vals = np.linspace(1.28, 1.48, 25)
-#     #vals = np.linspace(1., 1.72, 7)
-#     ll = []
-#     for val in vals:
-#         try:
-#             ll.append(rw(np.array([val] + list(p[1:]))))
-#         except ValueError:
-#             ll.append(np.nan)
-
-#     ll = np.array(ll)
-
-#     fig,axes = plt.subplots(2,1)
-#     axes[0].plot(vals, ll)
-#     axes[0].axvline(1.36)
-#     axes[1].plot(vals, np.exp(ll-np.max(ll)))
-#     axes[1].axvline(1.36)
-#     axes[1].set_xlim(0.8,1.9)
-#     fig.savefig("/Users/adrian/Downloads/derp_{}.png".format(rw.K))
