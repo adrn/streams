@@ -24,70 +24,71 @@ from .. import Rewinder
 from ..likelihood import rewinder_likelihood
 from ...util import streamspath
 
-logger.setLevel(logging.DEBUG)
-
 this_path = os.path.dirname(__file__)
 output_path = os.path.join(streamspath, "output/tests/rewinder")
 if not os.path.exists(output_path):
     os.makedirs(output_path)
 
-def test_simple():
-    # read stuff from text file
-    stardata = np.genfromtxt(os.path.join(this_path, "true_stars.txt"), names=True)
-    progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
-    potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
+logger.setLevel(logging.DEBUG)
 
-    stars = np.vstack((stardata['x'],stardata['y'],stardata['z'],
-                       stardata['vx'],stardata['vy'],stardata['vz'])).T.copy()
+class TestSimple(object):
 
-    prog = np.vstack((progdata['x'],progdata['y'],progdata['z'],
-                      progdata['vx'],progdata['vy'],progdata['vz'])).T.copy()
+    def setup(self):
+        # read stuff from text file
+        stardata = np.genfromtxt(os.path.join(this_path, "true_stars.txt"), names=True)
+        progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
 
-    betas = stardata['tail'].copy()
+        self.stars = np.vstack((stardata['x'],stardata['y'],stardata['z'],
+                                stardata['vx'],stardata['vy'],stardata['vz'])).T.copy()
 
-    ll = rewinder_likelihood(-1., 6000.,
-                             potential.c_instance,
-                             prog, stars,
-                             2.5E6, 0.,
-                             1., betas, -0.3)
+        self.prog = np.vstack((progdata['x'],progdata['y'],progdata['z'],
+                               progdata['vx'],progdata['vy'],progdata['vz'])).T.copy()
 
-    print(ll.shape)
+        self.betas = stardata['tail'].copy()
 
-def test_time():
-    print("\n\n\n")
-    print("Spherical:")
-    potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
-                                       a=1., b=1., c=1., units=galactic)
-
-    nrepeat = 100
-    t1 = time.time()
-    for i in range(nrepeat):  # ~10 ms per call
-        ll = rewinder_likelihood(-1., 6000,
+    def test_call(self):
+        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
+        ll = rewinder_likelihood(-1., 6000.,
                                  potential.c_instance,
-                                 prog, stars,
+                                 self.prog, self.stars,
                                  2.5E6, 0.,
-                                 1., betas, -0.3)
+                                 1., self.betas, -0.3)
+        print(ll.shape)
 
-    t = (time.time() - t1) / float(nrepeat)
+    def test_time(self):
+        print("Spherical:")
+        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
+                                           a=1., b=1., c=1., units=galactic)
 
-    print("{} ms per call".format(t*1000.))
+        nrepeat = 100
+        t1 = time.time()
+        for i in range(nrepeat):  # ~10 ms per call
+            ll = rewinder_likelihood(-1., 6000,
+                                     potential.c_instance,
+                                     self.prog, self.stars,
+                                     2.5E6, 0.,
+                                     1., self.betas, -0.3)
 
-    print("\n\n\n")
-    print("Triaxial, rotated:")
-    potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0, phi=0.2,
-                                       a=1.3, b=1., c=1., units=galactic)
+        t = (time.time() - t1) / float(nrepeat)
 
-    t1 = time.time()
-    for i in range(nrepeat):  # ~10 ms per call
-        ll = rewinder_likelihood(-1., 6000,
-                                 potential.c_instance,
-                                 prog, stars,
-                                 2.5E6, 0.,
-                                 1., betas, -0.3)
+        print("{} ms per call".format(t*1000.))
 
-    t = (time.time() - t1) / float(nrepeat)
+        print("\n\n\n")
+        print("Triaxial, rotated:")
+        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0, phi=0.2,
+                                           a=1.3, b=1., c=1., units=galactic)
 
-    print("{} ms per call".format(t*1000.))
+        t1 = time.time()
+        for i in range(nrepeat):  # ~10 ms per call
+            ll = rewinder_likelihood(-1., 6000,
+                                     potential.c_instance,
+                                     self.prog, self.stars,
+                                     2.5E6, 0.,
+                                     1., self.betas, -0.3)
+
+        t = (time.time() - t1) / float(nrepeat)
+
+        print("{} ms per call".format(t*1000.))
 
 def test_from_config():
     path = os.path.abspath(os.path.join(this_path, "../../../config/test.yml"))
