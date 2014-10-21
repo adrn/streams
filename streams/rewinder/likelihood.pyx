@@ -152,10 +152,8 @@ cpdef rewinder_likelihood(double dt, int nsteps,
                          alpha, &betas[0], sintheta, costheta,
                          &ln_likelihood_tmp[0])
 
+    # TODO: instead, try using logsumexp trick with coefficients -- need to use a 2D array instead
     for j in range(nparticles):
-        # if ln_likelihood_tmp[j] < 0:
-        #     continue
-
         likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
 
     for i in range(1,nsteps-1):
@@ -182,9 +180,6 @@ cpdef rewinder_likelihood(double dt, int nsteps,
                              &ln_likelihood_tmp[0])
 
         for j in range(nparticles):
-            # if ln_likelihood_tmp[j] < 0:
-            #     continue
-
             likelihoods[j] += exp(ln_likelihood_tmp[j])
 
     leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential)
@@ -206,9 +201,6 @@ cpdef rewinder_likelihood(double dt, int nsteps,
                          &ln_likelihood_tmp[0])
 
     for j in range(nparticles):
-        # if ln_likelihood_tmp[j] < 0:
-        #     continue
-
         likelihoods[j] += 0.5*exp(ln_likelihood_tmp[j])
 
     ln_likelihoods = np.log(fabs(dt)*np.array(likelihoods))
