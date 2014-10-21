@@ -110,7 +110,6 @@ cpdef rewinder_likelihood(double dt, int nsteps,
     cdef double [::1] menc_tmp = np.empty(3)
     cdef double [:,::1] menc_epsilon = np.empty((1,3))
 
-    cdef double [::1] likelihoods = np.zeros(nparticles, dtype='d')
     cdef double [:,::1] ln_likelihood_tmp = np.zeros((nsteps,nparticles), dtype='d')
     cdef double [:,::1] v_12 = np.zeros((nparticles+1,3))
 
@@ -193,10 +192,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
                          alpha, &betas[0], sintheta, costheta,
                          &ln_likelihood_tmp[nsteps-1,0])
 
-    # TODO: why am I getting NaNs???
     return np.array(ln_likelihood_tmp)
-    # ln_likelihoods = logsumexp(ln_likelihood_tmp, axis=0, b=coeffs) + log(fabs(dt))
-    # return ln_likelihoods
 
     # -- TURN THESE ON FOR DEBUGGING --
     # return np.log(fabs(dt)*np.array(ln_likelihoods)), np.array(all_x), np.array(all_v)
