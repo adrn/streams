@@ -1,6 +1,6 @@
 # general
 seed: 42
-name: orphan
+name: test
 
 # plots / output
 plot:
@@ -13,17 +13,18 @@ log_level: debug
 star_data: streams/inference/tests/true_stars.txt
 progenitor_data: streams/inference/tests/true_prog.txt
 # progenitor_data: streams/inference/tests/no_mass_prog.txt
-nstars: 16 # optional
+nstars: 4 # optional
 
 # integration
 integration:
     dt: -1.
     nsteps: 6000
 
+#        v_h: UniformPrior(0.25, 1.)
 potential:
     class: LeeSutoNFWPotential
     parameters:
-        v_h: UniformPrior(0.25, 1.)
+        v_h: NormalPrior(0.5, 0.1)
         r_h: LogarithmicPrior(5., 30.0)
     fixed:
         a: 1
