@@ -10,9 +10,13 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 from collections import OrderedDict
 
 # Third-party
+import numpy as np
 from scipy.stats import norm
 from streamteam.units import galactic
-from streamteam.inference import ModelParameter
+from streamteam.inference import ModelParameter, NormalPrior
+
+# Project
+from .. import heliocentric_names
 
 __all__ = ['StreamComponent', 'RewinderPotential']
 
@@ -26,26 +30,35 @@ class StreamComponent(object):
         self.parameters = parameters
         self._dist = norm(self.data, self.err)
 
+        nparticles = self.data.shape[0]
+
+        default_priors = np.zeros_like(self.data)
+        default_priors[:,0] = np.zeros(nparticles) - np.log(2*np.pi)
+        default_priors[:,1] = np.log(np.cos(data[:,1])/2)
+
+        # distance range: 1-200 kpc
+        default_priors[:,2] = -np.log(np.log(200.)) - np.log(data[:,2])
+
+        p = NormalPrior(0., 0.306814 / data[:,2])  # 300 km/s at d
+        default_priors[:,3] = p.logpdf(data[:,3])
+        default_priors[:,4] = p.logpdf(data[:,4])
+
+        p = NormalPrior(0., 0.306814)  # 300 km/s
+        default_priors[:,5] = p.logpdf(data[:,5])
+
+        self.default_priors = default_priors
+
     def ln_data_prob(self, x):
         """ Compute the (log-)probability of phase-space positions (in heliocentric
             observed coordinates), given the data and uncertainties.
 
         """
-        return self._dist.logpdf(x).sum(axis=0)
 
-        # l,b,d,mul,mub,vr = data.T
+        lp = self._dist.logpdf(x)
+        for i in range(6):
+            lp[np.isnan(lp),i] = self.default_priors[np.isnan(lp),i]
 
-        # ln_p_l = -np.log(2*np.pi)  # isotropic
-        # ln_p_b = np.log(np.cos(b) / 2.)  # isotropic
-
-        # # distance range 1-200 kpc
-        # ln_p_d = np.log((1 / np.log(200./1.))) - np.log(d)
-        # ln_p_mul = log_normal(mul, 0., 0.306814 / d)  # 300 km/s at d
-        # ln_p_mub = log_normal(mub, 0., 0.306814 / d)  # 300 km/s at d
-        # ln_p_vr = log_normal(vr, 0., 0.306814)  # 300 km/s
-
-        # return ln_p_l, ln_p_b, ln_p_d, ln_p_mul, ln_p_mub, ln_p_vr
-
+        return lp.sum(axis=0)
 
 class RewinderPotential(object):
 
