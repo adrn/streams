@@ -20,8 +20,8 @@ import streamteam.potential as sp
 from streamteam.units import galactic
 
 # Project
-from ..rewinder import Rewinder
-from ..rewinder_likelihood import rewinder_likelihood
+from .. import Rewinder
+from ..likelihood import rewinder_likelihood
 
 logger.setLevel(logging.DEBUG)
 
@@ -77,7 +77,7 @@ potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
                                    a=1., b=1., c=1., units=galactic)
 
 def test_call():
-    ll = rewinder_likelihood(6000., 0., -1.,
+    ll = rewinder_likelihood(-1., 6000.,
                              potential.c_instance,
                              prog, stars,
                              2.5E6, 0.,
@@ -86,7 +86,7 @@ def test_call():
     print(ll)
 
 def test_plot():
-    ll, x,v = rewinder_likelihood(6000., 0., -1.,
+    ll, x,v = rewinder_likelihood(-1., 6000.,
                                   potential.c_instance,
                                   prog, stars,
                                   2.5E6, 0.,
