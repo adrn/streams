@@ -328,39 +328,24 @@ class Rewinder(EmceeModel):
             prog_err = None
 
         # Progenitor mass:
-        m0 = np.nan
-        try:
-            m0 = prog_data['mass']
-        except ValueError:
-            logger.info("No progenitor mass measurement in data file. Assuming a mass range "
-                        "has been provided in the config (.yml) file.")
-
-        # no mass provided
-        if np.isnan(m0):
-            try:
-                mass_range = map(float, config.get('progenitor').get('mass_range'))
-            except:
-                logger.error("Failed to get mass range from config file! Aborting...")
-                sys.exit(1)
-
-            prior = LogarithmicPrior(*mass_range)
+        m0 = eval(prog_data['mass'])
+        if isinstance(m0, BasePrior):
+            prior = m0
             m0 = ModelParameter(name="m0", shape=(1,), prior=prior)
         else:
+            frozen = m0
             m0 = ModelParameter(name="m0", shape=(1,), prior=BasePrior())
-            m0.frozen = prog_data['mass']
+            m0.frozen = frozen
 
-        # Progenitor mass-loss
-        # TODO: this is too rigid...
-        try:
-            mass_loss = float(config.get('progenitor').get('mass_loss'))
-        except:
-            logger.warning("Failed to get mass-loss rate from config file! Assuming no mass-loss.")
-            mass_loss = 0.
-
-        # TODO: prior
-        prior = BasePrior()
-        mdot = ModelParameter(name="mdot", shape=(1,), prior=prior)
-        mdot.frozen = mass_loss
+        # Progenitor mass-loss:
+        mdot = eval(prog_data['mass_loss_rate'])
+        if isinstance(mdot, BasePrior):
+            prior = mdot
+            mdot = ModelParameter(name="mdot", shape=(1,), prior=prior)
+        else:
+            frozen = mdot
+            mdot = ModelParameter(name="mdot", shape=(1,), prior=BasePrior())
+            mdot.frozen = frozen
 
         prog = StreamComponent(prog_obs, err=prog_err,
                                parameters=OrderedDict([('m0',m0), ('mdot',mdot)]))
