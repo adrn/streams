@@ -1,2 +1,2 @@
-from .rewinder import *
+from .core import *
 from .sampler import *
