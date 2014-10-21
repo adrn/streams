@@ -94,31 +94,33 @@ class TestSimple(object):
 class TestConfig(object):
 
     def do_the_mcmc(self, sampler, p0):
+        n = 100
+
         # burn in
-        sampler.run_inference(p0, 100)
+        sampler.run_inference(p0, n)
         best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
         sampler.reset()
 
         # restart walkers from best position, burn again
         new_pos = np.random.normal(best_pos, best_pos*0.02,
                                    size=(sampler.nwalkers, p0.shape[1]))
-        sampler.run_inference(new_pos, 100)
+        sampler.run_inference(new_pos, n)
         pos = sampler.chain[:,-1]
         sampler.reset()
 
         # run for inference steps
-        sampler.run_inference(pos, 100)
+        sampler.run_inference(pos, n)
 
         return sampler
 
     def make_plots(self, sampler, p0, path):
-        for i in range(sampler.shape[-1]):
+        for i in range(sampler.chain.shape[-1]):
             plt.clf()
             for chain in sampler.chain[...,i]:
                 plt.plot(chain, marker=None, drawstyle='steps', alpha=0.2, color='k')
 
             for pp in p0[:,i]:
-                plt.axhline(pp, alpha=0.2, color='k')
+                plt.axhline(pp, alpha=0.2, color='r')
 
             plt.savefig(os.path.join(path, "param_{}.png".format(i)))
 
@@ -141,6 +143,31 @@ class TestConfig(object):
                 raise ValueError("Model returned -inf for initial position!")
 
         plot_path = os.path.join(output_path, "test1")
+        if not os.path.exists(plot_path):
+            os.mkdir(plot_path)
+
+        sampler = self.do_the_mcmc(sampler, p0)
+        self.make_plots(sampler, p0, plot_path)
+
+    def test2(self):
+        """ Test 2:
+                No uncertainties, sample over v_h, r_h, alpha, theta, mass
+        """
+
+        path = os.path.abspath(os.path.join(this_path, "test1.yml"))
+        model = Rewinder.from_config(path)
+        sampler = RewinderSampler(model, nwalkers=64)
+
+        truth = np.array([0.5, 20., 1.25, -0.3, 2.5E6])
+        p0_sigma = np.array([0.1, 1., 0.1, 0.02, 1E5])
+        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
+
+        print("Model value at truth: {}".format(model(truth)))
+        for pp in p0:
+            if np.any(np.isnan(model(pp))):
+                raise ValueError("Model returned -inf for initial position!")
+
+        plot_path = os.path.join(output_path, "test2")
         if not os.path.exists(plot_path):
             os.mkdir(plot_path)
 
