@@ -24,7 +24,7 @@ cdef extern from "math.h":
     double exp(double x) nogil
     double pow(double x, double n) nogil
 
-cdef extern from "rewinder.c":
+cdef extern from "likelihood_help.c":
     void set_basis(double*, double*, double*, double*, double*)
     double test(double*, long)
     void ln_likelihood_helper(double, double,

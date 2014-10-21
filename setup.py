@@ -11,8 +11,8 @@ gal_hel = Extension("streams.coordinates.gal_hel",
                     ["streams/coordinates/gal_hel.pyx"],
                     include_dirs=[numpy_incl_path])
 
-rewinder = Extension("streams.inference.rewinder_likelihood",
-                     ["streams/inference/rewinder_likelihood.pyx"],
+rewinder = Extension("streams.rewinder.likelihood",
+                     ["streams/rewinder/likelihood.pyx"],
                      include_dirs=[numpy_incl_path])
 
 setup(
