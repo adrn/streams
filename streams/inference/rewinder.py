@@ -26,8 +26,6 @@ from ..coordinates import hel_to_gal
 from .rewinder_likelihood import rewinder_likelihood
 from .streamcomponent import StreamComponent, RewinderPotential
 
-logger.setLevel(logging.DEBUG)
-
 __all__ = ["Rewinder"]
 
 class Rewinder(EmceeModel):
