@@ -101,7 +101,7 @@ class TestConfig(object):
 
         # restart walkers from best position, burn again
         new_pos = np.random.normal(best_pos, best_pos*0.02,
-                                   size=(sampler.nwalkers, len(truth)))
+                                   size=(sampler.nwalkers, p0.shape[1]))
         sampler.run_inference(new_pos, 100)
         pos = sampler.chain[:,-1]
         sampler.reset()
