@@ -2,11 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// Won't work if you want to parallelize!
+// TODO: Won't work if you want to parallelize!
 const double Rsun = 8.;
-// double R, latitude, log_jac;
-// double x1, x2, x3, v1, v2, v3;
-// double r_term, v_term;
 
 double dot3D(double *a, double *b) {
     /*
