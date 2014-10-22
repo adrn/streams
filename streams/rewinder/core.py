@@ -142,7 +142,7 @@ class Rewinder(EmceeModel):
             if par.frozen is False and name not in heliocentric_names:
                 ln_p += par.prior.logpdf(parameter_values['progenitor'][name])
 
-        if not self.perfect_data:
+        if not self.perfect_prog:
             x = np.array([[parameter_values['progenitor'][name] for name in heliocentric_names]])
             ln_p += self.progenitor.ln_data_prob(x).sum()
 
