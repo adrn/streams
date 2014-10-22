@@ -152,7 +152,7 @@ class TestConfig(object):
         if not os.path.exists(plot_path):
             os.mkdir(plot_path)
 
-        sampler = self.do_the_mcmc(sampler, p0)
+        sampler = self.do_the_mcmc(sampler, p0, p0_sigma)
         self.make_plots(sampler, p0, truth, plot_path)
 
     def test2(self):
@@ -183,7 +183,7 @@ class TestConfig(object):
         if not os.path.exists(plot_path):
             os.mkdir(plot_path)
 
-        sampler = self.do_the_mcmc(sampler, p0)
+        sampler = self.do_the_mcmc(sampler, p0, p0_sigma)
         self.make_plots(sampler, p0, truth, plot_path)
 
     def test3(self):
@@ -214,5 +214,5 @@ class TestConfig(object):
         if not os.path.exists(plot_path):
             os.mkdir(plot_path)
 
-        sampler = self.do_the_mcmc(sampler, p0)
+        sampler = self.do_the_mcmc(sampler, p0, p0_sigma)
         self.make_plots(sampler, p0, truth, plot_path)
