@@ -193,3 +193,11 @@ class TestConfig(object):
                 sample over v_h, r_h, missing proper motions for progenitor
         """
         self._main_test('test5')
+
+    def test6(self):
+        """ Test 6:
+                Uncertainties in stars, no uncertainties in progenitor,
+                sample over v_h, r_h
+        """
+        self._main_test('test6')
+
