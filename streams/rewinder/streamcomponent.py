@@ -56,7 +56,7 @@ class StreamComponent(object):
 
         lp = self._dist.logpdf(x)
         for i in range(6):
-            lp[np.isnan(lp),i] = self.default_priors[np.isnan(lp),i]
+            lp[np.isnan(lp[:,i]),i] = self.default_priors[np.isnan(lp[:,i]),i]
 
         return lp.sum(axis=0)
 
