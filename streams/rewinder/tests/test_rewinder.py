@@ -114,7 +114,7 @@ class TestConfig(object):
 
         return sampler
 
-    def make_plots(self, sampler, p0, path):
+    def make_plots(self, sampler, p0, truth, path):
         for i in range(sampler.chain.shape[-1]):
             plt.clf()
             for chain in sampler.chain[...,i]:
@@ -123,6 +123,7 @@ class TestConfig(object):
             for pp in p0[:,i]:
                 plt.axhline(pp, alpha=0.2, color='r')
 
+            plt.axhline(truth[i], alpha=0.7, color='g')
             plt.savefig(os.path.join(path, "param_{}.png".format(i)))
 
     def test1(self):
@@ -199,7 +200,7 @@ class TestConfig(object):
             if np.any(~np.isfinite(model(pp))):
                 raise ValueError("Model returned -inf for initial position!")
 
-        plot_path = os.path.join(output_path, "test2")
+        plot_path = os.path.join(output_path, "test3")
         if not os.path.exists(plot_path):
             os.mkdir(plot_path)
 
