@@ -94,8 +94,24 @@ class TestSimple(object):
 
 class TestConfig(object):
 
-    def do_the_mcmc(self, sampler, p0, p0_sigma):
-        n = 100
+    def setup(self):
+        true_progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
+        true_prog_pos = np.array([true_progdata[name] for name in heliocentric_names])
+
+        self.parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
+                                     progenitor=dict(m0=2.5E6, **dict(zip(heliocentric_names,true_prog_pos))),
+                                     hyper=dict(alpha=1.25, theta=-0.3))
+        self.parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=1.),
+                                     progenitor=dict(m0=1E5,l=1E-8,b=1E-8,d=1E-1,mul=1E-4,mub=1E-4,vr=1E-3),
+                                     hyper=dict(alpha=0.1, theta=0.01))
+
+    def do_the_mcmc(self, sampler, p0, p0_sigma, truth):
+        n = 10
+
+        print("Model value at truth: {}".format(sampler.lnprobfn(truth)))
+        for pp in p0:
+            if np.any(~np.isfinite(sampler.lnprobfn(pp))):
+                raise ValueError("Model returned -inf for initial position! {}".format(pp))
 
         # burn in
         sampler.run_inference(p0, n)
@@ -103,7 +119,7 @@ class TestConfig(object):
         sampler.reset()
 
         # restart walkers from best position, burn again
-        new_pos = np.random.normal(best_pos, p0_sigma/4.,
+        new_pos = np.random.normal(best_pos, p0_sigma/2.,
                                    size=(sampler.nwalkers, p0.shape[1]))
         sampler.run_inference(new_pos, n)
         pos = sampler.chain[:,-1]
@@ -114,7 +130,11 @@ class TestConfig(object):
 
         return sampler
 
-    def make_plots(self, sampler, p0, truth, path):
+    def make_plots(self, sampler, p0, truth, test_name):
+        plot_path = os.path.join(output_path, test_name)
+        if not os.path.exists(plot_path):
+            os.mkdir(plot_path)
+
         for i in range(len(truth)):
             print("Plotting param {}".format(i))
             plt.clf()
@@ -125,131 +145,51 @@ class TestConfig(object):
                 plt.axhline(pp, alpha=0.2, color='r')
 
             plt.axhline(truth[i], alpha=0.7, color='g')
-            plt.savefig(os.path.join(path, "param_{}.png".format(i)))
+            plt.savefig(os.path.join(plot_path, "param_{}.png".format(i)))
+
+    # ---------------------------------------------------------------------------------------------
+
+    def _main_test(self, test_name):
+        path = os.path.abspath(os.path.join(this_path, "{}.yml".format(test_name)))
+        model = Rewinder.from_config(path)
+        sampler = RewinderSampler(model, nwalkers=64)
+
+        truth = model.vectorize(self.parameter_values)
+        p0_sigma = model.vectorize(self.parameter_sigmas)
+
+        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
+        sampler = self.do_the_mcmc(sampler, p0, p0_sigma, truth)
+        self.make_plots(sampler, p0, truth, test_name)
 
     def test1(self):
         """ Test 1:
                 No uncertainties, fix alpha, fix theta, only sample over v_h, r_h
         """
-
-        path = os.path.abspath(os.path.join(this_path, "test1.yml"))
-        model = Rewinder.from_config(path)
-        sampler = RewinderSampler(model, nwalkers=64)
-
-        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.))
-        parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=3.))
-        truth = model.vectorize(parameter_values)
-        p0_sigma = model.vectorize(parameter_sigmas)
-
-        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
-
-        print("Model value at truth: {}".format(model(truth)))
-        for pp in p0:
-            if np.any(~np.isfinite(model(pp))):
-                raise ValueError("Model returned -inf for initial position! {}".format(pp))
-
-        plot_path = os.path.join(output_path, "test1")
-        if not os.path.exists(plot_path):
-            os.mkdir(plot_path)
-
-        sampler = self.do_the_mcmc(sampler, p0, p0_sigma)
-        self.make_plots(sampler, p0, truth, plot_path)
+        self._main_test('test1')
 
     def test2(self):
         """ Test 2:
                 No uncertainties, sample over v_h, r_h, alpha, theta, mass
         """
-
-        path = os.path.abspath(os.path.join(this_path, "test2.yml"))
-        model = Rewinder.from_config(path)
-        sampler = RewinderSampler(model, nwalkers=64)
-
-        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
-                                progenitor=dict(m0=2.5E6),
-                                hyper=dict(alpha=1.25, theta=-0.3))
-        parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=3.),
-                                progenitor=dict(m0=1E5),
-                                hyper=dict(alpha=0.1, theta=0.01))
-        truth = model.vectorize(parameter_values)
-        p0_sigma = model.vectorize(parameter_sigmas)
-        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
-
-        print("Model value at truth: {}".format(model(truth)))
-        for pp in p0:
-            if np.any(~np.isfinite(model(pp))):
-                raise ValueError("Model returned -inf for initial position!")
-
-        plot_path = os.path.join(output_path, "test2")
-        if not os.path.exists(plot_path):
-            os.mkdir(plot_path)
-
-        sampler = self.do_the_mcmc(sampler, p0, p0_sigma)
-        self.make_plots(sampler, p0, truth, plot_path)
+        self._main_test('test2')
 
     def test3(self):
         """ Test 3:
                 Uncertainties on progenitor, no uncertainties in stars
                 sample over v_h, r_h
         """
-
-        path = os.path.abspath(os.path.join(this_path, "test3.yml"))
-        model = Rewinder.from_config(path)
-        sampler = RewinderSampler(model, nwalkers=64)
-
-        true_progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
-        true_prog_pos = np.array([true_progdata[name] for name in heliocentric_names])
-
-        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
-                                progenitor=dict(**dict(zip(heliocentric_names,true_prog_pos))))
-        parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=3.),
-                                progenitor=dict(l=1E-8,b=1E-8,d=1E-1,mul=5E-3,mub=5E-3,vr=5E-3))
-        truth = model.vectorize(parameter_values)
-        p0_sigma = model.vectorize(parameter_sigmas)
-        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
-
-        print("Model value at truth: {}".format(model(truth)))
-        for pp in p0:
-            if np.any(~np.isfinite(model(pp))):
-                raise ValueError("Model returned -inf for initial position!")
-
-        plot_path = os.path.join(output_path, "test3")
-        if not os.path.exists(plot_path):
-            os.mkdir(plot_path)
-
-        sampler = self.do_the_mcmc(sampler, p0, p0_sigma)
-        self.make_plots(sampler, p0, truth, plot_path)
+        self._main_test('test3')
 
     def test4(self):
         """ Test 4:
                 Uncertainties on progenitor, no uncertainties in stars
                 sample over v_h, r_h, alpha, theta
         """
+        self._main_test('test4')
 
-        path = os.path.abspath(os.path.join(this_path, "test4.yml"))
-        model = Rewinder.from_config(path)
-        sampler = RewinderSampler(model, nwalkers=64)
-
-        true_progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
-        true_prog_pos = np.array([true_progdata[name] for name in heliocentric_names])
-
-        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
-                                progenitor=dict(**dict(zip(heliocentric_names,true_prog_pos))),
-                                hyper=dict(alpha=1.25, theta=-0.3))
-        parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=3.),
-                                progenitor=dict(l=1E-8,b=1E-8,d=1E-1,mul=5E-3,mub=5E-3,vr=5E-3),
-                                hyper=dict(alpha=0.1, theta=0.01))
-        truth = model.vectorize(parameter_values)
-        p0_sigma = model.vectorize(parameter_sigmas)
-        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
-
-        print("Model value at truth: {}".format(model(truth)))
-        for pp in p0:
-            if np.any(~np.isfinite(model(pp))):
-                raise ValueError("Model returned -inf for initial position!")
-
-        plot_path = os.path.join(output_path, "test4")
-        if not os.path.exists(plot_path):
-            os.mkdir(plot_path)
-
-        sampler = self.do_the_mcmc(sampler, p0, p0_sigma)
-        self.make_plots(sampler, p0, truth, plot_path)
+    def test5(self):
+        """ Test 5:
+                Uncertainties on progenitor, no uncertainties in stars
+                sample over v_h, r_h, missing proper motions for progenitor
+        """
+        self._main_test('test5')
