@@ -114,16 +114,6 @@ void ln_likelihood_helper(double rtide, double vdisp,
         r_term = r_norm - 0.5*(x1*x1 + x2*x2 + x3*x3)/sigma_r_sq;
         v_term = v_norm - 0.5*(v1*v1 + v2*v2 + v3*v3)/sigma_v_sq;
 
-        // if (i == 4) {
-        //     // WTF?? not inf when I print, inf when i don't --> memory issues
-        //     //      wait, no, only *sometimes* is inf...
-        //     //      looks like x1 is the culprit?
-        //     printf("one %f, %f, %f, %f\n", Rsun, alpha, betas[i-1], rtide);
-        //     printf("two %f, %f, %f\n\n", x1, x2, x3);
-        //     // printf("%f, %f, %f, %f, %f\n", r_norm, x1, x2, x3, sigma_r_sq);
-        //     // printf("%f, %f, %f\n", r_term, v_term, log_jac);
-        // }
-
         ln_likelihoods[i-1] = r_term + v_term + log_jac;
 
     }

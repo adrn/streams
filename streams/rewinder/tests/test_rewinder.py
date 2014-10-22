@@ -53,7 +53,8 @@ class TestSimple(object):
                                  potential.c_instance,
                                  self.prog, self.stars,
                                  2.5E6, 0.,
-                                 1.25, self.betas, -0.3)
+                                 1.25, self.betas, -0.3,
+                                 True)
 
         from scipy.misc import logsumexp
         b = np.ones((6000,1))
@@ -74,7 +75,8 @@ class TestSimple(object):
                                      potential.c_instance,
                                      self.prog, self.stars,
                                      2.5E6, 0.,
-                                     1., self.betas, -0.3)
+                                     1., self.betas, -0.3,
+                                     True)
 
         t = (time.time() - t1) / float(nrepeat)
 
@@ -91,7 +93,8 @@ class TestSimple(object):
                                      potential.c_instance,
                                      self.prog, self.stars,
                                      2.5E6, 0.,
-                                     1., self.betas, -0.3)
+                                     1., self.betas, -0.3,
+                                     True)
 
         t = (time.time() - t1) / float(nrepeat)
 

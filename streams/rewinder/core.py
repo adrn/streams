@@ -31,7 +31,8 @@ __all__ = ["Rewinder"]
 
 class Rewinder(EmceeModel):
 
-    def __init__(self, rewinder_potential, progenitor, stars, dt, nsteps, extra_parameters):
+    def __init__(self, rewinder_potential, progenitor, stars, dt, nsteps, extra_parameters,
+                 selfgravity=True):
         """ Model for tidal streams that uses backwards integration to Rewind
             the positions of stars.
 
@@ -56,6 +57,7 @@ class Rewinder(EmceeModel):
         self.progenitor = progenitor
         self.stars = stars
         self.nstars = len(stars.data)
+        self.selfgravity = selfgravity
 
         for name,p in self.rewinder_potential.parameters.items():
             logger.debug("Adding parameter {}".format(name))
@@ -226,7 +228,8 @@ class Rewinder(EmceeModel):
                                           potential.c_instance,
                                           prog_gal, stars_gal,
                                           m0, mdot,
-                                          alpha, tail, theta)
+                                          alpha, tail, theta,
+                                          self.selfgravity)
 
             # TODO: don't create this every step
             coeffs = np.ones((self.nsteps,1))
