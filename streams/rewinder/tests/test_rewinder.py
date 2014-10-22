@@ -135,21 +135,24 @@ class TestConfig(object):
         model = Rewinder.from_config(path)
         sampler = RewinderSampler(model, nwalkers=64)
 
-        truth = np.array([0.5, 20.])
-        p0_sigma = np.array([0.1, 1.])
+        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.))
+        parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=3.))
+        truth = model.vectorize(parameter_values)
+        p0_sigma = model.vectorize(parameter_sigmas)
+
         p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
 
         print("Model value at truth: {}".format(model(truth)))
         for pp in p0:
             if np.any(~np.isfinite(model(pp))):
-                raise ValueError("Model returned -inf for initial position!")
+                raise ValueError("Model returned -inf for initial position! {}".format(pp))
 
         plot_path = os.path.join(output_path, "test1")
         if not os.path.exists(plot_path):
             os.mkdir(plot_path)
 
         sampler = self.do_the_mcmc(sampler, p0)
-        self.make_plots(sampler, p0, plot_path)
+        self.make_plots(sampler, p0, truth, plot_path)
 
     def test2(self):
         """ Test 2:
@@ -160,8 +163,14 @@ class TestConfig(object):
         model = Rewinder.from_config(path)
         sampler = RewinderSampler(model, nwalkers=64)
 
-        truth = np.array([0.5, 20., 2.5E6, 1.25, -0.3])
-        p0_sigma = np.array([0.1, 1., 1E5, 0.1, 0.02])
+        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
+                                progenitor=dict(m0=2.5E6),
+                                hyper=dict(alpha=1.25, theta=-0.3))
+        parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=3.),
+                                progenitor=dict(m0=1E5),
+                                hyper=dict(alpha=0.1, theta=0.01))
+        truth = model.vectorize(parameter_values)
+        p0_sigma = model.vectorize(parameter_sigmas)
         p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
 
         print("Model value at truth: {}".format(model(truth)))
@@ -174,7 +183,7 @@ class TestConfig(object):
             os.mkdir(plot_path)
 
         sampler = self.do_the_mcmc(sampler, p0)
-        self.make_plots(sampler, p0, plot_path)
+        self.make_plots(sampler, p0, truth, plot_path)
 
     def test3(self):
         """ Test 3:
