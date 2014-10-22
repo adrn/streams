@@ -32,6 +32,7 @@ potential:
 progenitor:
     mass: 2.5E6
     mass_loss_rate: 0.
+    include_in_potential: True
 
 hyperparameters:
     alpha: 1.25

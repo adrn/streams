@@ -49,12 +49,17 @@ class TestSimple(object):
 
     def test_call(self):
         potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
-        ll = rewinder_likelihood(-1., 6000.,
+        ll = rewinder_likelihood(-1., 6000,
                                  potential.c_instance,
                                  self.prog, self.stars,
                                  2.5E6, 0.,
-                                 1., self.betas, -0.3)
-        # print(ll.shape)
+                                 1.25, self.betas, -0.3)
+
+        from scipy.misc import logsumexp
+        b = np.ones((6000,1))
+        b[0] = b[-1] = 0.5
+        L = logsumexp(ll, axis=0, b=b).sum()
+        print(L)
 
     def test_time(self):
         tmp = np.zeros((6000,64))

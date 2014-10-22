@@ -108,7 +108,7 @@ void ln_likelihood_helper(double rtide, double vdisp,
         v3 = dv[0]*x3_hat[0] + dv[1]*x3_hat[1] + dv[2]*x3_hat[2];
 
         // Move to center of Lagrange point
-        x1 -= alpha*betas[i-1]*rtide;
+        x1 += alpha*betas[i-1]*rtide;
 
         // Compute likelihoods for position and velocity terms
         r_term = r_norm - 0.5*(x1*x1 + x2*x2 + x3*x3)/sigma_r_sq;

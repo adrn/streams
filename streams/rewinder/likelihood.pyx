@@ -140,6 +140,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
     # all_v[0] = v
     # --
 
+    # compute approximations of tidal radius and velocity dispersion from mass enclosed
     Menc = potential._mass_enclosed(x[0], menc_epsilon, menc_tmp)
     rtide = cbrt(mass/Menc) * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
     vdisp = cbrt(mass/Menc) * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
