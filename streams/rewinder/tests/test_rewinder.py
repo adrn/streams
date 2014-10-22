@@ -94,7 +94,7 @@ class TestSimple(object):
 
 class TestConfig(object):
 
-    def do_the_mcmc(self, sampler, p0):
+    def do_the_mcmc(self, sampler, p0, p0_sigma):
         n = 100
 
         # burn in
@@ -103,7 +103,7 @@ class TestConfig(object):
         sampler.reset()
 
         # restart walkers from best position, burn again
-        new_pos = np.random.normal(best_pos, np.fabs(best_pos*0.02),
+        new_pos = np.random.normal(best_pos, p0_sigma/4.,
                                    size=(sampler.nwalkers, p0.shape[1]))
         sampler.run_inference(new_pos, n)
         pos = sampler.chain[:,-1]
@@ -115,8 +115,6 @@ class TestConfig(object):
         return sampler
 
     def make_plots(self, sampler, p0, truth, path):
-        print(sampler.chain)
-        print(len(truth))
         for i in range(len(truth)):
             print("Plotting param {}".format(i))
             plt.clf()
