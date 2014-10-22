@@ -201,8 +201,10 @@ class TestConfig(object):
 
         parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
                                 progenitor=dict(**dict(zip(heliocentric_names,true_prog_pos))))
+        parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=3.),
+                                progenitor=dict(l=1E-8,b=1E-8,d=1E-1,mul=5E-3,mub=5E-3,vr=5E-3))
         truth = model.vectorize(parameter_values)
-        p0_sigma = np.array([0.1, 1., 1E-8, 1E-8, 0.1, 1E-5, 1E-5, 1E-4])
+        p0_sigma = model.vectorize(parameter_sigmas)
         p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
 
         print("Model value at truth: {}".format(model(truth)))
@@ -211,6 +213,41 @@ class TestConfig(object):
                 raise ValueError("Model returned -inf for initial position!")
 
         plot_path = os.path.join(output_path, "test3")
+        if not os.path.exists(plot_path):
+            os.mkdir(plot_path)
+
+        sampler = self.do_the_mcmc(sampler, p0, p0_sigma)
+        self.make_plots(sampler, p0, truth, plot_path)
+
+    def test4(self):
+        """ Test 4:
+                Uncertainties on progenitor, no uncertainties in stars
+                sample over v_h, r_h, alpha, theta
+        """
+
+        path = os.path.abspath(os.path.join(this_path, "test4.yml"))
+        model = Rewinder.from_config(path)
+        sampler = RewinderSampler(model, nwalkers=64)
+
+        true_progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
+        true_prog_pos = np.array([true_progdata[name] for name in heliocentric_names])
+
+        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
+                                progenitor=dict(**dict(zip(heliocentric_names,true_prog_pos))),
+                                hyper=dict(alpha=1.25, theta=-0.3))
+        parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=3.),
+                                progenitor=dict(l=1E-8,b=1E-8,d=1E-1,mul=5E-3,mub=5E-3,vr=5E-3),
+                                hyper=dict(alpha=0.1, theta=0.01))
+        truth = model.vectorize(parameter_values)
+        p0_sigma = model.vectorize(parameter_sigmas)
+        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
+
+        print("Model value at truth: {}".format(model(truth)))
+        for pp in p0:
+            if np.any(~np.isfinite(model(pp))):
+                raise ValueError("Model returned -inf for initial position!")
+
+        plot_path = os.path.join(output_path, "test4")
         if not os.path.exists(plot_path):
             os.mkdir(plot_path)
 
