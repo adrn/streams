@@ -57,18 +57,6 @@ void set_basis(double progenitor_x[], double progenitor_v[],
 
 }
 
-double test(double (*x)[3], long nparticles) {
-    double summ = 0.;
-
-    for (int i=0; i < nparticles; i++) {
-        for (int j=0; j < 3; j++) {
-            summ += x[i][j];
-        }
-    }
-
-    return summ;
-}
-
 void ln_likelihood_helper(double rtide, double vdisp,
                           double x[][3], double v[][3], long nparticles,
                           double x1_hat[], double x2_hat[], double x3_hat[],
