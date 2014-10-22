@@ -115,6 +115,8 @@ class TestConfig(object):
         return sampler
 
     def make_plots(self, sampler, p0, truth, path):
+        print(sampler.chain)
+        print(len(truth))
         for i in range(len(truth)):
             print("Plotting param {}".format(i))
             plt.clf()
@@ -215,4 +217,4 @@ class TestConfig(object):
             os.mkdir(plot_path)
 
         sampler = self.do_the_mcmc(sampler, p0)
-        self.make_plots(sampler, p0, plot_path)
+        self.make_plots(sampler, p0, truth, plot_path)
