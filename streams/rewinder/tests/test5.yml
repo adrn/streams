@@ -1,0 +1,44 @@
+# general
+seed: 42
+name: test5
+
+# plots / output
+plot:
+    mcmc_diagnostics: True
+    posterior: True
+    ext: png
+log_level: debug
+
+# data files
+star_data: streams/rewinder/tests/true_stars.txt
+progenitor_data: streams/rewinder/tests/obs_prog_no_pm.txt
+nstars: 8
+
+# integration
+integration:
+    dt: -1.
+    nsteps: 6000
+
+potential:
+    class: LeeSutoNFWPotential
+    parameters:
+        v_h: UniformPrior(0.25, 0.75)
+        r_h: LogarithmicPrior(5., 30.0)
+    fixed:
+        a: 1
+        b: 1
+        c: 1
+
+progenitor:
+    mass: 2.5E6
+    mass_loss_rate: 0.
+
+hyperparameters:
+    alpha: 1.25
+    theta: -0.3
+
+emcee:
+    nwalkers: 64
+    nburn: 500
+    nsteps: 1000
+    thin_chain: False
