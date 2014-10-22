@@ -115,7 +115,8 @@ class TestConfig(object):
         return sampler
 
     def make_plots(self, sampler, p0, truth, path):
-        for i in range(sampler.chain.shape[-1]):
+        for i in range(len(truth)):
+            print("Plotting param {}".format(i))
             plt.clf()
             for chain in sampler.chain[...,i]:
                 plt.plot(chain, marker=None, drawstyle='steps', alpha=0.2, color='k')
