@@ -69,39 +69,53 @@ class Rewinder(EmceeModel):
             logger.debug("Adding parameter {}".format(name))
             self.add_parameter(p, group='hyper')
 
-        if self.stars.err is None and self.progenitor.err is None:
-            logger.warning("No uncertainties on stars or progenitor -- assuming perfect data.")
-            self.perfect_data = True
-        else:
-            self.perfect_data = False
-            logger.info("Uncertainties found for stars or progenitor")
+        self.perfect_stars = False
+        if self.stars.err is None:
+            self.perfect_stars = True
+            logger.warning("No uncertainties on stars")
 
-        if not self.perfect_data:
+        self.perfect_prog = False
+        if self.progenitor.err is None:
+            self.perfect_prog = True
+            logger.warning("No uncertainties on progenitor")
+
+        self.perfect_data = self.perfect_stars and self.perfect_prog
+        if self.perfect_data:
+            logger.warning("Perfect data!")
+
+        if not self.perfect_prog:
+            # add progenitor position as parameters
+            for i,name in enumerate(heliocentric_names):
+                logger.debug("Adding progenitor parameter {}".format(name))
+                p = ModelParameter(name=name, prior=BasePrior())
+                self.add_parameter(p, group='progenitor')
+
+        if not self.perfect_stars:
             raise NotImplementedError()
 
-            # draw samples for each star
-            self._nsamples_init = nsamples_init
-            self.nsamples = nsamples
+            # # draw samples for each star
+            # self._nsamples_init = nsamples_init
+            # self.nsamples = nsamples
 
-            # TODO: if any errors np.inf, sample from prior instead
-            # ignore uncertainties in l,b
-            stars_samples_hel = np.zeros((self.nstars, self._nsamples_init, 6))
-            stars_samples_hel[...,:2] = self.stars.data[...,:2]
-            stars_samples_hel[...,2:] = np.random.normal(self.stars.data[:,np.newaxis,2:],
-                                                         self.stars.errors[:,np.newaxis,2:],
-                                                         size=(self.nstars,self._nsamples_init,4))
+            # # TODO: if any errors np.inf, sample from prior instead
+            # # ignore uncertainties in l,b
+            # stars_samples_hel = np.zeros((self.nstars, self._nsamples_init, 6))
+            # stars_samples_hel[...,:2] = self.stars.data[...,:2]
+            # stars_samples_hel[...,2:] = np.random.normal(self.stars.data[:,np.newaxis,2:],
+            #                                              self.stars.errors[:,np.newaxis,2:],
+            #                                              size=(self.nstars,self._nsamples_init,4))
 
-            # compute prior probabilities for the samples
-            self.stars_samples_lnprob = sum(self.stars.ln_prior(stars_samples_hel)).T[np.newaxis]
+            # # compute prior probabilities for the samples
+            # self.stars_samples_lnprob = sum(self.stars.ln_prior(stars_samples_hel)).T[np.newaxis]
 
-            # transform to galactocentric
-            self.stars_samples_gal = hel_to_gal(stars_samples_hel.reshape(self.nsamples,6))
+            # # transform to galactocentric
+            # self.stars_samples_gal = hel_to_gal(stars_samples_hel.reshape(self.nsamples,6))
 
-            # set the tail assignments
-            # HACK: tail assignments always frozen?
-            tail = np.array(self.stars.parameters['tail'].frozen)
-            self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1)\
-                                        .reshape(self.nsamples)
+            # # set the tail assignments
+            # # HACK: tail assignments always frozen?
+            # tail = np.array(self.stars.parameters['tail'].frozen)
+            # self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1)\
+            #                             .reshape(self.nsamples)
 
         # integration
         self.dt = dt
@@ -125,8 +139,12 @@ class Rewinder(EmceeModel):
 
         # progenitor
         for name,par in parameters.get('progenitor',dict()).items():
-            if par.frozen is False:
+            if par.frozen is False and name not in heliocentric_names:
                 ln_p += par.prior.logpdf(parameter_values['progenitor'][name])
+
+        if not self.perfect_data:
+            x = np.array([[parameter_values['progenitor'][name] for name in heliocentric_names]])
+            ln_p += self.progenitor.ln_data_prob(x).sum()
 
         # hyper-parameters
         for name,par in parameters.get('hyper',dict()).items():
@@ -190,9 +208,16 @@ class Rewinder(EmceeModel):
         #
 
         # TODO: assume perfect knowledge of stars, but missing dims for progenitor!
-        if self.perfect_data:
+        if self.perfect_stars:
+
+            if not self.perfect_prog:
+                prog_hel = np.array([[parameter_values['progenitor'][name] for name in heliocentric_names]])
+                prog_gal = hel_to_gal(prog_hel)
+
+            else:
+                prog_gal = hel_to_gal(self.progenitor.data)
+
             # need to specify R_sun and V_circ as parameters
-            prog_gal = hel_to_gal(self.progenitor.data)
             stars_gal = hel_to_gal(self.stars.data)
             tail = np.array(self.stars.parameters['tail'])
 
@@ -219,13 +244,7 @@ class Rewinder(EmceeModel):
         else:
             raise NotImplementedError()
 
-            # TODO: need to handle progenitor position as parameters
-            prog_hel = np.empty((1,6))
-            for i,par_name in enumerate(heliocentric_names):
-                if parameters['progenitor'][par_name].frozen is False:
-                    prog_hel[:,i] = parameter_values['progenitor'][par_name]
-                else:
-                    prog_hel[:,i] = parameters['progenitor'][par_name].frozen
+            # TODO: need to detect and handle stars with uncertainties
 
             # Thin the samples of stars so that they lie within some sensible range of
             #   energies relative to the progenitor
