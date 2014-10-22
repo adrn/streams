@@ -23,6 +23,7 @@ from streamteam.units import galactic
 from .. import Rewinder, RewinderSampler
 from ..likelihood import rewinder_likelihood
 from ...util import streamspath
+from ... import heliocentric_names
 
 this_path = os.path.dirname(__file__)
 output_path = os.path.join(streamspath, "output/tests/rewinder")
@@ -160,6 +161,37 @@ class TestConfig(object):
 
         truth = np.array([0.5, 20., 2.5E6, 1.25, -0.3])
         p0_sigma = np.array([0.1, 1., 1E5, 0.1, 0.02])
+        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
+
+        print("Model value at truth: {}".format(model(truth)))
+        for pp in p0:
+            if np.any(~np.isfinite(model(pp))):
+                raise ValueError("Model returned -inf for initial position!")
+
+        plot_path = os.path.join(output_path, "test2")
+        if not os.path.exists(plot_path):
+            os.mkdir(plot_path)
+
+        sampler = self.do_the_mcmc(sampler, p0)
+        self.make_plots(sampler, p0, plot_path)
+
+    def test3(self):
+        """ Test 3:
+                Uncertainties on progenitor, no uncertainties in stars
+                sample over v_h, r_h
+        """
+
+        path = os.path.abspath(os.path.join(this_path, "test3.yml"))
+        model = Rewinder.from_config(path)
+        sampler = RewinderSampler(model, nwalkers=64)
+
+        true_progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
+        true_prog_pos = np.array([true_progdata[name] for name in heliocentric_names])
+
+        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
+                                progenitor=dict(**dict(zip(heliocentric_names,true_prog_pos))))
+        truth = model.vectorize(parameter_values)
+        p0_sigma = np.array([0.1, 1., 1E-8, 1E-8, 0.1, 1E-5, 1E-5, 1E-4])
         p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
 
         print("Model value at truth: {}".format(model(truth)))
