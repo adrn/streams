@@ -112,7 +112,7 @@ class TestObsSimple(object):
         stardata = np.genfromtxt(os.path.join(this_path, "obs_stars.txt"), names=True)
         progdata = np.genfromtxt(os.path.join(this_path, "obs_prog.txt"), names=True)
 
-        self.nstars = 8
+        self.nstars = 4
         self.stars = np.vstack((stardata['x'],stardata['y'],stardata['z'],
                                 stardata['vx'],stardata['vy'],stardata['vz'])).T.copy()[:self.nstars]
 
@@ -130,16 +130,23 @@ class TestObsSimple(object):
         parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
                                 progenitor=dict(m0=2.5E6, **dict(zip(heliocentric_names,true_prog_pos))))
 
-        vhs = np.linspace(0.3,0.7,55)
-        ls = np.zeros_like(vhs)
-        for i,v_h in enumerate(vhs):
-            pv = parameter_values.copy()
-            pv['potential']['v_h'] = v_h
-            p = self.model.vectorize(parameter_values)
-            ls[i] = self.model(p)
+        for n in [128,256,512,1024,2048,4096]:
+            print("running {}...".format(n))
+            self.model.nsamples = n
+            self.model._ln_likelihood_tmp = np.zeros((self.model.nsteps, self.model.nsamples))  # HACK!!
 
-        plt.plot(vhs, ls)
-        plt.show()
+            vhs = np.linspace(0.45,0.55,25)
+            ls = np.zeros_like(vhs)
+            for i,v_h in enumerate(vhs):
+                pv = parameter_values.copy()
+                pv['potential']['v_h'] = v_h
+                p = self.model.vectorize(parameter_values)
+                ls[i] = self.model(p)
+
+            plt.clf()
+            plt.title("Num. of samples: {}".format(n))
+            plt.plot(vhs, ls)
+            plt.savefig(os.path.join(output_path, "{}.png".format(n)))
 
 class TestConfig(object):
 
