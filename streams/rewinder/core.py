@@ -24,7 +24,7 @@ from streamteam.inference.prior import *
 # Project
 from .. import heliocentric_names
 from ..coordinates import hel_to_gal
-from .likelihood import rewinder_likelihood
+from .likelihood import rewinder_likelihood, compute_dE
 from .streamcomponent import StreamComponent, RewinderPotential
 
 __all__ = ["Rewinder"]
@@ -32,7 +32,7 @@ __all__ = ["Rewinder"]
 class Rewinder(EmceeModel):
 
     def __init__(self, rewinder_potential, progenitor, stars, dt, nsteps, extra_parameters,
-                 selfgravity=True):
+                 selfgravity=True, nsamples=128):
         """ Model for tidal streams that uses backwards integration to Rewind
             the positions of stars.
 
@@ -89,7 +89,8 @@ class Rewinder(EmceeModel):
         self.perfect_data = self.perfect_stars and self.perfect_prog
         if self.perfect_data:
             logger.warning("Perfect data!")
-            self._ln_likelihood_tmp = np.empty((self.nsteps, self.nstars))
+
+        self._ln_likelihood_tmp = np.empty((self.nsteps, self.nstars))
 
         if not self.perfect_prog:
             # add progenitor position as parameters
@@ -98,32 +99,28 @@ class Rewinder(EmceeModel):
                 p = ModelParameter(name=name, prior=BasePrior())
                 self.add_parameter(p, group='progenitor')
 
+        self.nsamples = nsamples
         if not self.perfect_stars:
-            raise NotImplementedError()
+            tot_samples = 10000
 
-            # # draw samples for each star
-            # self._nsamples_init = nsamples_init
-            # self.nsamples = nsamples
+            # draw samples for each star
+            importance_samples_hel = np.zeros((self.nstars,tot_samples,6))
+            importance_samples_hel[...,:2] = self.stars.data[:,np.newaxis,:2]  # copy over l,b
+            importance_samples_hel[...,2:] = np.random.normal(self.stars.data[:,None,2:],
+                                                              self.stars.err[:,None,2:],
+                                                              size=(self.nstars,tot_samples,4))  # TODO: missing data!!
+            importance_samples = hel_to_gal(importance_samples_hel.reshape(self.nstars*tot_samples,6))
 
-            # # TODO: if any errors np.inf, sample from prior instead
-            # # ignore uncertainties in l,b
-            # stars_samples_hel = np.zeros((self.nstars, self._nsamples_init, 6))
-            # stars_samples_hel[...,:2] = self.stars.data[...,:2]
-            # stars_samples_hel[...,2:] = np.random.normal(self.stars.data[:,np.newaxis,2:],
-            #                                              self.stars.errors[:,np.newaxis,2:],
-            #                                              size=(self.nstars,self._nsamples_init,4))
-
-            # # compute prior probabilities for the samples
+            # compute prior probabilities for the samples
             # self.stars_samples_lnprob = sum(self.stars.ln_prior(stars_samples_hel)).T[np.newaxis]
 
-            # # transform to galactocentric
-            # self.stars_samples_gal = hel_to_gal(stars_samples_hel.reshape(self.nsamples,6))
+            # transform to galactocentric
+            self.importance_samples_gal = importance_samples.reshape(self.nstars,tot_samples,6)
 
-            # # set the tail assignments
-            # # HACK: tail assignments always frozen?
-            # tail = np.array(self.stars.parameters['tail'].frozen)
-            # self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1)\
-            #                             .reshape(self.nsamples)
+            # TODO: pre-allocate? set the tail assignments
+            # tail = np.array(self.stars.parameters['tail'])
+
+            self._ln_likelihood_tmp = np.zeros((self.nsteps, self.nsamples))
 
     def ln_prior(self, parameters, parameter_values, dt, nsteps):
         """ Evaluate the log-prior at the given parameter values, but
@@ -209,20 +206,19 @@ class Rewinder(EmceeModel):
         # -------------------------------------------------------------------------------
         # satellite coordinates
         #
+        if not self.perfect_prog:
+            prog_hel = np.array([[parameter_values['progenitor'][name] for name in heliocentric_names]])
+            prog_gal = hel_to_gal(prog_hel)
 
-        # TODO: assume perfect knowledge of stars, but missing dims for progenitor!
+        else:
+            prog_gal = hel_to_gal(self.progenitor.data)
+
+        # tail assignments for each star
+        tail = np.array(self.stars.parameters['tail'])
+
         if self.perfect_stars:
-
-            if not self.perfect_prog:
-                prog_hel = np.array([[parameter_values['progenitor'][name] for name in heliocentric_names]])
-                prog_gal = hel_to_gal(prog_hel)
-
-            else:
-                prog_gal = hel_to_gal(self.progenitor.data)
-
             # need to specify R_sun and V_circ as parameters
             stars_gal = hel_to_gal(self.stars.data)
-            tail = np.array(self.stars.parameters['tail'])
 
             # Assume there is no uncertainty in the positions of the stars!
             ln_like = rewinder_likelihood(self._ln_likelihood_tmp,
@@ -247,20 +243,40 @@ class Rewinder(EmceeModel):
             likelihood = ln_like2.sum()
 
         else:
-            raise NotImplementedError()
+            likelihood = 0.
 
-            # TODO: need to detect and handle stars with uncertainties
+            # expected energy scale for progenitor
+            a = alpha
+            b = 2*alpha
+            _dE = compute_dE(prog_gal, self.dt, self.nsteps, potential.c_instance, m0, mdot)
 
-            # Thin the samples of stars so that they lie within some sensible range of
-            #   energies relative to the progenitor
-            prog_E = potential.energy(prog_gal[:,:3], prog_gal[:,3:])
-            samples_E = potential.energy(self.stars_samples_gal[:,:3], self.stars_samples_gal[:,3:])
+            for k in range(self.nstars):
+                prog_E = potential.energy(prog_gal[:,:3], prog_gal[:,3:])
 
-            # compute back-integration likelihood for all samples
-            ln_like = rewinder_likelihood(t1, t2, dt, potential,
-                                          prog_gal, self.stars_samples_gal,
-                                          m0, mdot, alpha, self.stars_samples_tail)
-            ln_like = ln_like.reshape(ln_like.shape[0],self.nstars,self.K)
+                # compute relative energy for each star
+                star_E = potential.energy(self.importance_samples_gal[k,:,:3],
+                                          self.importance_samples_gal[k,:,3:])
+                star_dE = np.abs(star_E - prog_E)
+
+                # only keep the samples that lie within an energy range
+                Eix = np.where((star_dE[k] > (a*_dE)) & (star_dE[k] < (b*_dE)))[0]
+                good_samples = self.importance_samples_gal[k,Eix][:self.nsamples]
+
+                # Assume there is no uncertainty in the positions of the stars!
+                rewinder_likelihood(self._ln_likelihood_tmp,
+                                    self.dt, self.nsteps,
+                                    potential.c_instance,
+                                    prog_gal, good_samples,
+                                    m0, mdot,
+                                    alpha, np.zeros(self.nsamples) + tail[k], theta,
+                                    self.selfgravity)
+
+                # TODO: don't create this every step
+                # coeffs = np.ones((self.nsteps,1))
+                # coeffs[0,0] = 0.5
+                # coeffs[self.nsteps-1,0] = 0.5
+                ln_like2 = logsumexp(self._ln_likelihood_tmp, axis=0) + np.log(np.fabs(dt))
+                likelihood += logsumexp(ln_like2)
 
         return likelihood
 
