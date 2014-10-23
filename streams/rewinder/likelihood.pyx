@@ -113,28 +113,38 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cpdef progenitor_orbit(np.ndarray[double,ndim=2] w0,
-                       double dt, int nsteps,
-                       pot._CPotential potential):
+cpdef compute_dE(np.ndarray[double,ndim=2] w0,
+                 double dt, int nsteps,
+                 pot._CPotential potential,
+                 double m0, double mdot):
 
+    cdef unsigned int i
+    cdef double E_scale = 0.
     cdef double [:,::1] acc = np.empty((1,3))
-    cdef double [:,:,::1] all_x = np.empty((nsteps,1,3))
-    cdef double [:,:,::1] all_v = np.empty((nsteps,1,3))
     cdef double [:,::1] x = np.array(w0[:,:3])
     cdef double [:,::1] v = np.array(w0[:,3:])
     cdef double [:,::1] v_12 = np.zeros((1,3))
+    cdef double t1
+
+    cdef double [::1] menc_tmp = np.empty(3)
+    cdef double [:,::1] menc_epsilon = np.empty((1,3))
 
     # prime the accelerations
+    t1 = fabs(dt*nsteps)
+    mass = -mdot*t1 + m0
     leapfrog_init(x, v, v_12, acc, 1, dt, potential, 0, 0.)
-    all_x[0] = x
-    all_v[0] = v
+    Menc = potential._mass_enclosed(x[0], menc_epsilon, menc_tmp)
+    E_scale += cbrt(mass/Menc) * (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
 
     for i in range(1,nsteps):
-        leapfrog_step(x, v, v_12, acc, 1, dt, potential, 0, 0.)
-        all_x[i] = x
-        all_v[i] = v
+        t1 += dt
+        mass = -mdot*t1 + m0
 
-    return np.hstack((all_x, all_v))
+        leapfrog_step(x, v, v_12, acc, 1, dt, potential, 0, 0.)
+        Menc = potential._mass_enclosed(x[0], menc_epsilon, menc_tmp)
+        E_scale += cbrt(mass/Menc) * (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
+
+    return E_scale / float(nsteps)
 
 @cython.cdivision(True)
 @cython.wraparound(False)
