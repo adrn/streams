@@ -113,7 +113,33 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cpdef rewinder_likelihood(np.ndarray[double,ndim=2] ln_likelihood,
+cpdef progenitor_orbit(np.ndarray[double,ndim=2] w0,
+                       double dt, int nsteps,
+                       pot._CPotential potential):
+
+    cdef double [:,::1] acc = np.empty((1,3))
+    cdef double [:,:,::1] all_x = np.empty((nsteps,1,3))
+    cdef double [:,:,::1] all_v = np.empty((nsteps,1,3))
+    cdef double [:,::1] x = np.array(w0[:,:3])
+    cdef double [:,::1] v = np.array(w0[:,3:])
+    cdef double [:,::1] v_12 = np.zeros((1,3))
+
+    # prime the accelerations
+    leapfrog_init(x, v, v_12, acc, 1, dt, potential, 0, 0.)
+    all_x[0] = x
+    all_v[0] = v
+
+    for i in range(1,nsteps):
+        leapfrog_step(x, v, v_12, acc, 1, dt, potential, 0, 0.)
+        all_x[i] = x
+        all_v[i] = v
+
+    return np.hstack((all_x, all_v))
+
+@cython.cdivision(True)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+cpdef rewinder_likelihood(np.ndarray[double,ndim=2] _ln_likelihood,
                           double dt, int nsteps,
                           pot._CPotential potential,
                           np.ndarray[double,ndim=2] prog_xv,
@@ -135,7 +161,7 @@ cpdef rewinder_likelihood(np.ndarray[double,ndim=2] ln_likelihood,
     cdef double [::1] menc_tmp = np.empty(3)
     cdef double [:,::1] menc_epsilon = np.empty((1,3))
 
-    # cdef double [:,::1] ln_likelihood_tmp = np.zeros((nsteps,nparticles), dtype='d')
+    cdef double[:,::1] ln_likelihood = _ln_likelihood
     cdef double [:,::1] v_12 = np.zeros((nparticles+1,3))
 
     cdef double [:,::1] x = np.vstack((prog_xv[:,:3],star_xv[:,:3]))
