@@ -104,18 +104,18 @@ class Rewinder(EmceeModel):
             tot_samples = 10000
 
             # draw samples for each star
-            importance_samples_hel = np.zeros((self.nstars,tot_samples,6))
-            importance_samples_hel[...,:2] = self.stars.data[:,np.newaxis,:2]  # copy over l,b
-            importance_samples_hel[...,2:] = np.random.normal(self.stars.data[:,None,2:],
+            impo_samples_hel = np.zeros((self.nstars,tot_samples,6))
+            impo_samples_hel[...,:2] = self.stars.data[:,np.newaxis,:2]  # copy over l,b
+            impo_samples_hel[...,2:] = np.random.normal(self.stars.data[:,None,2:],
                                                               self.stars.err[:,None,2:],
                                                               size=(self.nstars,tot_samples,4))  # TODO: missing data!!
-            importance_samples = hel_to_gal(importance_samples_hel.reshape(self.nstars*tot_samples,6))
+            impo_samples = hel_to_gal(impo_samples_hel.reshape(self.nstars*tot_samples,6))
 
             # compute prior probabilities for the samples
-            # self.stars_samples_lnprob = sum(self.stars.ln_prior(stars_samples_hel)).T[np.newaxis]
+            self.impo_samples_lnprob = self.stars.ln_data_prob(_samples_hel)).T[np.newaxis]
 
             # transform to galactocentric
-            self.importance_samples_gal = importance_samples.reshape(self.nstars,tot_samples,6)
+            self.impo_samples_gal = impo_samples.reshape(self.nstars,tot_samples,6)
 
             # TODO: pre-allocate? set the tail assignments
             # tail = np.array(self.stars.parameters['tail'])
@@ -254,13 +254,13 @@ class Rewinder(EmceeModel):
                 prog_E = potential.energy(prog_gal[:,:3], prog_gal[:,3:])
 
                 # compute relative energy for each star
-                star_E = potential.energy(self.importance_samples_gal[k,:,:3],
-                                          self.importance_samples_gal[k,:,3:])
+                star_E = potential.energy(self.impo_samples_gal[k,:,:3],
+                                          self.impo_samples_gal[k,:,3:])
                 star_dE = np.abs(star_E - prog_E)
 
                 # only keep the samples that lie within an energy range
-                Eix = np.where((star_dE[k] > (a*_dE)) & (star_dE[k] < (b*_dE)))[0]
-                good_samples = self.importance_samples_gal[k,Eix][:self.nsamples]
+                Eix = np.where((star_dE > (a*_dE)) & (star_dE < (b*_dE)))[0]
+                good_samples = self.impo_samples_gal[k,Eix][:self.nsamples]
 
                 # Assume there is no uncertainty in the positions of the stars!
                 rewinder_likelihood(self._ln_likelihood_tmp,
@@ -276,7 +276,8 @@ class Rewinder(EmceeModel):
                 # coeffs[0,0] = 0.5
                 # coeffs[self.nsteps-1,0] = 0.5
                 ln_like2 = logsumexp(self._ln_likelihood_tmp, axis=0) + np.log(np.fabs(dt))
-                likelihood += logsumexp(ln_like2)
+                l = logsumexp(ln_like2) - np.log(self.nsamples)
+                likelihood += l
 
         return likelihood
 
