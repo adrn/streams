@@ -32,15 +32,16 @@ if not os.path.exists(output_path):
 
 logger.setLevel(logging.DEBUG)
 
-class TestSimple(object):
+class TestTrueSimple(object):
 
     def setup(self):
         # read stuff from text file
         stardata = np.genfromtxt(os.path.join(this_path, "true_stars.txt"), names=True)
         progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
 
+        self.nstars = 16
         self.stars = np.vstack((stardata['x'],stardata['y'],stardata['z'],
-                                stardata['vx'],stardata['vy'],stardata['vz'])).T.copy()[:16]
+                                stardata['vx'],stardata['vy'],stardata['vz'])).T.copy()[:self.nstars]
 
         self.prog = np.vstack((progdata['x'],progdata['y'],progdata['z'],
                                progdata['vx'],progdata['vy'],progdata['vz'])).T.copy()
@@ -49,7 +50,7 @@ class TestSimple(object):
 
     def test_call(self):
         potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
-        ll = np.empty((6000,len(self.stars.data)))
+        ll = np.zeros((6000,self.nstars), dtype=float)
         rewinder_likelihood(ll,
                             -1., 6000,
                             potential.c_instance,
@@ -65,7 +66,8 @@ class TestSimple(object):
         print(L)
 
     def test_time(self):
-        tmp = np.zeros((6000,64))
+        ll = np.zeros((6000,self.nstars), dtype=float)
+
         print("Spherical:")
         potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
                                            a=1., b=1., c=1., units=galactic)
@@ -73,12 +75,12 @@ class TestSimple(object):
         nrepeat = 100
         t1 = time.time()
         for i in range(nrepeat):  # ~10 ms per call
-            ll = rewinder_likelihood(-1., 6000,
-                                     potential.c_instance,
-                                     self.prog, self.stars,
-                                     2.5E6, 0.,
-                                     1., self.betas, -0.3,
-                                     True)
+            rewinder_likelihood(ll, -1., 6000,
+                                potential.c_instance,
+                                self.prog, self.stars,
+                                2.5E6, 0.,
+                                1., self.betas, -0.3,
+                                True)
 
         t = (time.time() - t1) / float(nrepeat)
 
@@ -91,16 +93,53 @@ class TestSimple(object):
 
         t1 = time.time()
         for i in range(nrepeat):  # ~10 ms per call
-            ll = rewinder_likelihood(-1., 6000,
-                                     potential.c_instance,
-                                     self.prog, self.stars,
-                                     2.5E6, 0.,
-                                     1., self.betas, -0.3,
-                                     True)
+            rewinder_likelihood(ll, -1., 6000,
+                                potential.c_instance,
+                                self.prog, self.stars,
+                                2.5E6, 0.,
+                                1., self.betas, -0.3,
+                                True)
 
         t = (time.time() - t1) / float(nrepeat)
 
         print("{} ms per call".format(t*1000.))
+
+
+class TestObsSimple(object):
+
+    def setup(self):
+        # read stuff from text file
+        stardata = np.genfromtxt(os.path.join(this_path, "obs_stars.txt"), names=True)
+        progdata = np.genfromtxt(os.path.join(this_path, "obs_prog.txt"), names=True)
+
+        self.nstars = 8
+        self.stars = np.vstack((stardata['x'],stardata['y'],stardata['z'],
+                                stardata['vx'],stardata['vy'],stardata['vz'])).T.copy()[:self.nstars]
+
+        self.prog = np.vstack((progdata['x'],progdata['y'],progdata['z'],
+                               progdata['vx'],progdata['vy'],progdata['vz'])).T.copy()
+
+        self.betas = stardata['tail'].copy()[:self.nstars]
+
+        path = os.path.abspath(os.path.join(this_path, "test6.yml"))
+        self.model = Rewinder.from_config(path)
+
+    def test_call(self):
+        true_progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
+        true_prog_pos = np.array([true_progdata[name] for name in heliocentric_names])
+        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
+                                progenitor=dict(m0=2.5E6, **dict(zip(heliocentric_names,true_prog_pos))))
+
+        vhs = np.linspace(0.3,0.7,55)
+        ls = np.zeros_like(vhs)
+        for i,v_h in enumerate(vhs):
+            pv = parameter_values.copy()
+            pv['potential']['v_h'] = v_h
+            p = self.model.vectorize(parameter_values)
+            ls[i] = self.model(p)
+
+        plt.plot(vhs, ls)
+        plt.show()
 
 class TestConfig(object):
 
