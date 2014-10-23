@@ -51,6 +51,11 @@ class Rewinder(EmceeModel):
                 parameters for the model.
 
         """
+        # integration
+        self.dt = dt
+        self.nsteps = nsteps
+        self.args = (self.dt, self.nsteps)
+
         self.parameters = OrderedDict()
 
         self.rewinder_potential = rewinder_potential
@@ -84,6 +89,7 @@ class Rewinder(EmceeModel):
         self.perfect_data = self.perfect_stars and self.perfect_prog
         if self.perfect_data:
             logger.warning("Perfect data!")
+            self._ln_likelihood_tmp = np.empty((self.nsteps, self.nstars))
 
         if not self.perfect_prog:
             # add progenitor position as parameters
@@ -118,11 +124,6 @@ class Rewinder(EmceeModel):
             # tail = np.array(self.stars.parameters['tail'].frozen)
             # self.stars_samples_tail = np.repeat(tail[:,np.newaxis], self.K, axis=1)\
             #                             .reshape(self.nsamples)
-
-        # integration
-        self.dt = dt
-        self.nsteps = nsteps
-        self.args = (self.dt, self.nsteps)
 
     def ln_prior(self, parameters, parameter_values, dt, nsteps):
         """ Evaluate the log-prior at the given parameter values, but
@@ -224,7 +225,8 @@ class Rewinder(EmceeModel):
             tail = np.array(self.stars.parameters['tail'])
 
             # Assume there is no uncertainty in the positions of the stars!
-            ln_like = rewinder_likelihood(self.dt, self.nsteps,
+            ln_like = rewinder_likelihood(self._ln_likelihood_tmp,
+                                          self.dt, self.nsteps,
                                           potential.c_instance,
                                           prog_gal, stars_gal,
                                           m0, mdot,

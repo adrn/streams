@@ -49,12 +49,14 @@ class TestSimple(object):
 
     def test_call(self):
         potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
-        ll = rewinder_likelihood(-1., 6000,
-                                 potential.c_instance,
-                                 self.prog, self.stars,
-                                 2.5E6, 0.,
-                                 1.25, self.betas, -0.3,
-                                 True)
+        ll = np.empty((6000,len(self.stars.data)))
+        rewinder_likelihood(ll,
+                            -1., 6000,
+                            potential.c_instance,
+                            self.prog, self.stars,
+                            2.5E6, 0.,
+                            1.25, self.betas, -0.3,
+                            True)
 
         from scipy.misc import logsumexp
         b = np.ones((6000,1))

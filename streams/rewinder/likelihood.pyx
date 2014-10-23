@@ -113,7 +113,8 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v,
 @cython.cdivision(True)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cpdef rewinder_likelihood(double dt, int nsteps,
+cpdef rewinder_likelihood(np.ndarray[double,ndim=2] ln_likelihood,
+                          double dt, int nsteps,
                           pot._CPotential potential,
                           np.ndarray[double,ndim=2] prog_xv,
                           np.ndarray[double,ndim=2] star_xv,
@@ -134,7 +135,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
     cdef double [::1] menc_tmp = np.empty(3)
     cdef double [:,::1] menc_epsilon = np.empty((1,3))
 
-    cdef double [:,::1] ln_likelihood_tmp = np.zeros((nsteps,nparticles), dtype='d')
+    # cdef double [:,::1] ln_likelihood_tmp = np.zeros((nsteps,nparticles), dtype='d')
     cdef double [:,::1] v_12 = np.zeros((nparticles+1,3))
 
     cdef double [:,::1] x = np.vstack((prog_xv[:,:3],star_xv[:,:3]))
@@ -176,7 +177,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
                          &x1[0], &x2[0], &x3[0],
                          &dx[0], &dv[0],
                          alpha, &betas[0], sintheta, costheta,
-                         &ln_likelihood_tmp[0,0])
+                         &ln_likelihood[0,0])
 
     for i in range(1,nsteps):
         leapfrog_step(x, v, v_12, acc, nparticles+1, dt, potential, selfgravity, GMprog)
@@ -200,9 +201,7 @@ cpdef rewinder_likelihood(double dt, int nsteps,
                              &x1[0], &x2[0], &x3[0],
                              &dx[0], &dv[0],
                              alpha, &betas[0], sintheta, costheta,
-                             &ln_likelihood_tmp[i,0])
-
-    return np.array(ln_likelihood_tmp)
+                             &ln_likelihood[i,0])
 
     # -- TURN THESE ON FOR DEBUGGING --
     # return np.log(fabs(dt)*np.array(ln_likelihoods)), np.array(all_x), np.array(all_v)
