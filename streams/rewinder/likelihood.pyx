@@ -239,31 +239,30 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
     # all_v[0,:,:] = v
     # --------------  DEBUG  ------------------
 
-    for i in range(1,nsteps):
-        # progenitor
-        leapfrog_step(x, v, v_12, grad, 0, dt, potential)
+    with nogil:
+        for i in range(1,nsteps):
+            # progenitor
+            leapfrog_step(x, v, v_12, grad, 0, dt, potential)
 
-        # mass of the satellite
-        t1 += dt
-        sat_mass = -mdot*t1 + m0
-        GMprog = Gee * sat_mass
+            # mass of the satellite
+            t1 += dt
+            sat_mass = -mdot*t1 + m0
+            GMprog = Gee * sat_mass
 
-        # compute approximations of tidal radius and velocity dispersion from mass enclosed
-        E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0))
-        rtide = E_scale * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
-        vdisp = E_scale * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
+            # compute approximations of tidal radius and velocity dispersion from mass enclosed
+            E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0))
+            rtide = E_scale * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+            vdisp = E_scale * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
-        # define constants
-        r_norm = -log(rtide) - 0.91893853320467267;
-        v_norm = -log(vdisp) - 0.91893853320467267;
-        sigma_r_sq = rtide*rtide;
-        sigma_v_sq = vdisp*vdisp;
-        set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
+            # define constants
+            r_norm = -log(rtide) - 0.91893853320467267;
+            v_norm = -log(vdisp) - 0.91893853320467267;
+            sigma_r_sq = rtide*rtide;
+            sigma_v_sq = vdisp*vdisp;
+            set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
 
-        # loop over stars
-        # with nogil, parallel():
-        with nogil:
-            for k in range(1,nparticles+1):
+            # loop over stars
+            for k in prange(1,nparticles+1):
                 leapfrog_step(x, v, v_12, grad, k, dt, potential)
                 ln_likelihood[i,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
                                                             x, v, x1_hat, x2_hat, x3_hat, dx, dv,
@@ -291,21 +290,26 @@ cpdef compute_dE(np.ndarray[double,ndim=2] w0,
     cdef double [:,::1] v = np.array(w0[:,3:])
     cdef double [:,::1] v_12 = np.zeros((1,3))
     cdef double [:,::1] menc_epsilon = np.empty((1,3))
-    cdef double t1
+    cdef double t1, sat_mass
+    cdef double Gee = potential.G
 
     # prime the accelerations
     t1 = fabs(dt*nsteps)
-    mass = -mdot*t1 + m0
-    leapfrog_init(x, v, v_12, grad, 1, dt, potential)
-    Menc = potential._mass_enclosed(x, menc_epsilon, potential.G, 0)
-    E_scale += cbrt(mass/Menc) * (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
+    sat_mass = -mdot*t1 + m0
+
+    # prime the accelerations (progenitor)
+    leapfrog_init(x, v, v_12, grad, 0, dt, potential)
+
+    # compute approximations of tidal radius and velocity dispersion from mass enclosed
+    E_scale += cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0)) * \
+                (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
 
     for i in range(1,nsteps):
         t1 += dt
-        mass = -mdot*t1 + m0
+        sat_mass = -mdot*t1 + m0
 
-        leapfrog_step(x, v, v_12, grad, 1, dt, potential)
-        Menc = potential._mass_enclosed(x, menc_epsilon, potential.G, 0)
-        E_scale += cbrt(mass/Menc) * (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
+        leapfrog_step(x, v, v_12, grad, 0, dt, potential)
+        E_scale += cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0)) * \
+                        (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
 
     return E_scale / float(nsteps)
