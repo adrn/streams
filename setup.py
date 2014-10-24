@@ -14,7 +14,8 @@ gal_hel = Extension("streams.coordinates.gal_hel",
 rewinder = Extension("streams.rewinder.likelihood",
                      ["streams/rewinder/likelihood.pyx"],
                      include_dirs=[numpy_incl_path],
-                     extra_compile_args=["-std=c99"])
+                     extra_compile_args=["-std=c99", "-fopenmp"],
+                     extra_link_args=['-fopenmp'])
 
 setup(
     name="Streams",
