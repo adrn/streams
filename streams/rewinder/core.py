@@ -112,7 +112,7 @@ class Rewinder(EmceeModel):
             impo_samples = hel_to_gal(impo_samples_hel.reshape(self.nstars*tot_samples,6))
 
             # compute prior probabilities for the samples
-            self.impo_samples_lnprob = self.stars.ln_data_prob(_samples_hel)).T[np.newaxis]
+            self.impo_samples_lnprob = self.stars.ln_data_prob(_samples_hel).T[np.newaxis]
 
             # transform to galactocentric
             self.impo_samples_gal = impo_samples.reshape(self.nstars,tot_samples,6)
