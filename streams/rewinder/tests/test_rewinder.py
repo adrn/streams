@@ -200,7 +200,7 @@ class TestConfig(object):
                                      hyper=dict(alpha=0.1, theta=0.01))
 
     def do_the_mcmc(self, sampler, p0, p0_sigma, truth):
-        n = 10
+        n = 100
 
         print("Model value at truth: {}".format(sampler.lnprobfn(truth)))
         for pp in p0:
