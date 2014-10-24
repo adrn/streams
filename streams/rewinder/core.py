@@ -107,12 +107,13 @@ class Rewinder(EmceeModel):
             impo_samples_hel = np.zeros((self.nstars,tot_samples,6))
             impo_samples_hel[...,:2] = self.stars.data[:,np.newaxis,:2]  # copy over l,b
             impo_samples_hel[...,2:] = np.random.normal(self.stars.data[:,None,2:],
-                                                              self.stars.err[:,None,2:],
-                                                              size=(self.nstars,tot_samples,4))  # TODO: missing data!!
+                                                        self.stars.err[:,None,2:],
+                                                        size=(self.nstars,tot_samples,4)) # TODO: missing data!!??
             impo_samples = hel_to_gal(impo_samples_hel.reshape(self.nstars*tot_samples,6))
 
             # compute prior probabilities for the samples
-            self.impo_samples_lnprob = self.stars.ln_data_prob(_samples_hel).T[np.newaxis]
+            ldp = np.array([self.stars.ln_data_prob(impo_samples_hel[:,i]) for i in range(tot_samples)])
+            self.impo_samples_lnprob = ldp.T
 
             # transform to galactocentric
             self.impo_samples_gal = impo_samples.reshape(self.nstars,tot_samples,6)
@@ -261,6 +262,7 @@ class Rewinder(EmceeModel):
                 # only keep the samples that lie within an energy range
                 Eix = np.where((star_dE > (a*_dE)) & (star_dE < (b*_dE)))[0]
                 good_samples = self.impo_samples_gal[k,Eix][:self.nsamples]
+                good_ln_data_prob = self.impo_samples_lnprob[k,Eix][:self.nsamples]
 
                 # Assume there is no uncertainty in the positions of the stars!
                 rewinder_likelihood(self._ln_likelihood_tmp,
@@ -268,8 +270,8 @@ class Rewinder(EmceeModel):
                                     potential.c_instance,
                                     prog_gal, good_samples,
                                     m0, mdot,
-                                    alpha, np.zeros(self.nsamples) + tail[k], theta,
-                                    self.selfgravity)
+                                    alpha, np.zeros(self.nsamples) + tail[k],
+                                    theta, self.selfgravity)
 
                 # TODO: don't create this every step
                 # coeffs = np.ones((self.nsteps,1))
@@ -277,6 +279,7 @@ class Rewinder(EmceeModel):
                 # coeffs[self.nsteps-1,0] = 0.5
                 ln_like2 = logsumexp(self._ln_likelihood_tmp, axis=0) + np.log(np.fabs(dt))
                 l = logsumexp(ln_like2) - np.log(self.nsamples)
+                # - good_ln_data_prob
                 likelihood += l
 
         return likelihood
