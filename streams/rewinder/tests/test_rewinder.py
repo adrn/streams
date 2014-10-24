@@ -16,6 +16,8 @@ from astropy import log as logger
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
+import streamteam.dynamics as sd
 import streamteam.potential as sp
 from streamteam.units import galactic
 
@@ -46,7 +48,21 @@ class TestTrueSimple(object):
         self.prog = np.vstack((progdata['x'],progdata['y'],progdata['z'],
                                progdata['vx'],progdata['vy'],progdata['vz'])).T.copy()
 
-        self.betas = stardata['tail'].copy()[:16]
+        self.betas = stardata['tail'].copy()[:self.nstars]
+
+    @pytest.mark.skipif(True, reason="derp.")
+    def test_plot(self):
+        # Have to enable debug stuff in Cython file.
+        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
+
+        ll = np.zeros((6000,self.nstars), dtype=float)
+        x,v = rewinder_likelihood(ll, -1., 6000, potential.c_instance,
+                                  self.prog, self.stars, 2.5E6, 0.,
+                                  1.25, self.betas, -0.3, True)
+
+        w = np.vstack((x.T,v.T)).T
+        fig = sd.plot_orbits(w, ix=0, marker=None, alpha=0.5)
+        plt.show()
 
     def test_call(self):
         potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
@@ -104,6 +120,27 @@ class TestTrueSimple(object):
 
         print("{} ms per call".format(t*1000.))
 
+    def test_time_many_stars(self):
+
+        stars = np.repeat(self.stars, 64, axis=0)
+        nstars = len(stars)
+        betas = np.repeat(self.betas, 64)
+
+        ll = np.zeros((6000,nstars), dtype=float)
+
+        print("Spherical:")
+        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
+                                           a=1., b=1., c=1., units=galactic)
+
+        t1 = time.time()
+        rewinder_likelihood(ll, -1., 6000,
+                            potential.c_instance,
+                            self.prog, stars,
+                            2.5E6, 0.,
+                            1., betas, -0.3,
+                            True)
+        t = (time.time() - t1)
+        print("{} sec per call".format(t))
 
 class TestObsSimple(object):
 
@@ -130,7 +167,8 @@ class TestObsSimple(object):
         parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
                                 progenitor=dict(m0=2.5E6, **dict(zip(heliocentric_names,true_prog_pos))))
 
-        for n in [128,256,512,1024,2048,4096]:
+        # for n in [128,256,512,1024,2048,4096]:
+        for n in [512,1024,2048,4096]:
             print("running {}...".format(n))
             self.model.nsamples = n
             self.model._ln_likelihood_tmp = np.zeros((self.model.nsteps, self.model.nsamples))  # HACK!!
