@@ -11,7 +11,7 @@ np.import_array()
 
 import cython
 cimport cython
-# from cython.parallel import prange
+from cython.parallel import prange, parallel
 
 cimport streamteam.potential.cpotential as pot
 import streamteam.potential.cpotential as pot
@@ -80,7 +80,7 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v, double[:,::1] v
 
 cdef void set_basis(double[:,::1] x, double[:,::1] v,
                     double[::1] x1_hat, double[::1] x2_hat, double[::1] x3_hat,
-                    double sintheta, double costheta):
+                    double sintheta, double costheta) nogil:
     """
         Cartesian basis defined by the orbital plane of the satellite to
         project the orbits of stars into.
@@ -125,7 +125,7 @@ cdef double ln_likelihood_helper(double r_norm, double v_norm, double rtide, dou
                                  double[::1] x1_hat, double[::1] x2_hat, double[::1] x3_hat,
                                  double[::1] dx, double[::1] dv,
                                  double alpha, double beta,
-                                 unsigned int k):
+                                 unsigned int k) nogil:
 
     # For Jacobian (spherical -> cartesian)
     cdef double R2, log_jac;
@@ -175,9 +175,9 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
                           np.ndarray[double,ndim=2] star_xv,
                           double m0, double mdot,
                           double alpha, double[::1] betas,
-                          double theta, unsigned int selfgravity=1):
+                          double theta, int selfgravity=1):
 
-    cdef unsigned int i, k, nparticles, ndim
+    cdef int i, k, nparticles, ndim
     cdef double t1
     nparticles = star_xv.shape[0]
 
@@ -195,26 +195,27 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
     cdef double [:,::1] grad = np.empty((nparticles+1,3))
     cdef double sintheta, costheta
     cdef double E_scale, sat_mass
-    cdef double GMprog, r_norm, v_norm, sigma_r_sq, sigma_v_sq
+    cdef double Gee, GMprog, r_norm, v_norm, sigma_r_sq, sigma_v_sq
 
     # --------------  DEBUG  ------------------
     # cdef double [:,:,::1] all_x = np.empty((nsteps,nparticles+1,3))
     # cdef double [:,:,::1] all_v = np.empty((nsteps,nparticles+1,3))
     # --------------  DEBUG  ------------------
 
+    Gee = potential.G
     sintheta = sin(theta)
     costheta = cos(theta)
 
     # mass
     t1 = fabs(dt*nsteps)
     sat_mass = -mdot*t1 + m0
-    GMprog = potential.G * sat_mass
+    GMprog = Gee * sat_mass
 
     # prime the accelerations (progenitor)
     leapfrog_init(x, v, v_12, grad, 0, dt, potential)
 
     # compute approximations of tidal radius and velocity dispersion from mass enclosed
-    E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, potential.G, 0))
+    E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0))
     rtide = E_scale * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
     vdisp = E_scale * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
@@ -226,11 +227,12 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
     set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
 
     # loop over stars
-    for k in range(1,nparticles+1):
-        leapfrog_init(x, v, v_12, grad, k, dt, potential)
-        ln_likelihood[0,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
-                                                    x, v, x1_hat, x2_hat, x3_hat, dx, dv,
-                                                    alpha, betas[k-1], k)
+    with nogil:
+        for k in range(1,nparticles+1):
+            leapfrog_init(x, v, v_12, grad, k, dt, potential)
+            ln_likelihood[0,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
+                                                        x, v, x1_hat, x2_hat, x3_hat, dx, dv,
+                                                        alpha, betas[k-1], k)
 
     # --------------  DEBUG  ------------------
     # all_x[0,:,:] = x
@@ -244,10 +246,10 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
         # mass of the satellite
         t1 += dt
         sat_mass = -mdot*t1 + m0
-        GMprog = potential.G * sat_mass
+        GMprog = Gee * sat_mass
 
         # compute approximations of tidal radius and velocity dispersion from mass enclosed
-        E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, potential.G, 0))
+        E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0))
         rtide = E_scale * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
         vdisp = E_scale * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
@@ -259,11 +261,13 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
         set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
 
         # loop over stars
-        for k in range(1,nparticles+1):
-            leapfrog_step(x, v, v_12, grad, k, dt, potential)
-            ln_likelihood[i,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
-                                                        x, v, x1_hat, x2_hat, x3_hat, dx, dv,
-                                                        alpha, betas[k-1], k)
+        # with nogil, parallel():
+        with nogil:
+            for k in range(1,nparticles+1):
+                leapfrog_step(x, v, v_12, grad, k, dt, potential)
+                ln_likelihood[i,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
+                                                            x, v, x1_hat, x2_hat, x3_hat, dx, dv,
+                                                            alpha, betas[k-1], k)
 
         # --------------  DEBUG  ------------------
         # all_x[i,:,:] = x
