@@ -33,17 +33,17 @@ cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v, double[:,::1] v
                                double[:,::1] grad, unsigned int k, double dt,
                                pot._CPotential potential,
                                double GMprog, int selfgravity) nogil:
-    cdef rel_x, rel_y, rel_z, fac
+    cdef double rel_x, rel_y, rel_z, fac
 
     potential._gradient(r, grad, k);
     if (selfgravity == 1):
         rel_x = r[k,0] - r[0,0]
         rel_y = r[k,1] - r[0,1]
         rel_z = r[k,2] - r[0,2]
-        r_prog = GMprog / pow(rel_x*rel_x + rel_y*rel_y + rel_z*rel_z, 1.5)
-        grad[i,0] += fac * rel_x
-        grad[i,1] += fac * rel_y
-        grad[i,2] += fac * rel_z
+        fac = GMprog / pow(rel_x*rel_x + rel_y*rel_y + rel_z*rel_z, 1.5)
+        grad[k,0] += fac * rel_x
+        grad[k,1] += fac * rel_y
+        grad[k,2] += fac * rel_z
 
     v_12[k,0] = v[k,0] - 0.5*dt*grad[k,0]
     v_12[k,1] = v[k,1] - 0.5*dt*grad[k,1]
@@ -60,7 +60,7 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v, double[:,::1] v
 
         before looping over leapfrog_step!
     """
-    cdef rel_x, rel_y, rel_z, fac
+    cdef double rel_x, rel_y, rel_z, fac
 
     # incr. pos. by full-step
     r[k,0] = r[k,0] + dt*v_12[k,0]
@@ -72,10 +72,10 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v, double[:,::1] v
         rel_x = r[k,0] - r[0,0]
         rel_y = r[k,1] - r[0,1]
         rel_z = r[k,2] - r[0,2]
-        r_prog = GMprog / pow(rel_x*rel_x + rel_y*rel_y + rel_z*rel_z, 1.5)
-        grad[i,0] += fac * rel_x
-        grad[i,1] += fac * rel_y
-        grad[i,2] += fac * rel_z
+        fac = GMprog / pow(rel_x*rel_x + rel_y*rel_y + rel_z*rel_z, 1.5)
+        grad[k,0] += fac * rel_x
+        grad[k,1] += fac * rel_y
+        grad[k,2] += fac * rel_z
 
     # incr. synced vel. by full-step
     v[k,0] = v[k,0] - dt*grad[k,0]
@@ -309,7 +309,7 @@ cpdef compute_dE(np.ndarray[double,ndim=2] w0,
     sat_mass = -mdot*t1 + m0
 
     # prime the accelerations (progenitor)
-    leapfrog_init(x, v, v_12, grad, 0, dt, potential)
+    leapfrog_init(x, v, v_12, grad, 0, dt, potential, 0., 0)
 
     # compute approximations of tidal radius and velocity dispersion from mass enclosed
     E_scale += cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0)) * \
@@ -319,7 +319,7 @@ cpdef compute_dE(np.ndarray[double,ndim=2] w0,
         t1 += dt
         sat_mass = -mdot*t1 + m0
 
-        leapfrog_step(x, v, v_12, grad, 0, dt, potential)
+        leapfrog_step(x, v, v_12, grad, 0, dt, potential, 0., 0)
         E_scale += cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0)) * \
                         (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
 
