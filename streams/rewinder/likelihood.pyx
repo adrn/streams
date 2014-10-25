@@ -128,13 +128,13 @@ cdef double ln_likelihood_helper(double r_norm, double v_norm, double rtide, dou
                                  unsigned int k) nogil:
 
     # For Jacobian (spherical -> cartesian)
-    cdef double R2, log_jac;
+    cdef double R2, log_jac
 
     # Coordinates of stars in instantaneous orbital plane
-    cdef double x1, x2, x3, v1, v2, v3;
+    cdef double x1, x2, x3, v1, v2, v3
 
     # Likelihood terms
-    cdef double r_term, v_term;
+    cdef double r_term, v_term
 
     # Translate to be centered on progenitor
     dx[0] = x[k,0] - x[0,0]
