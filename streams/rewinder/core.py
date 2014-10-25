@@ -222,23 +222,22 @@ class Rewinder(EmceeModel):
             stars_gal = hel_to_gal(self.stars.data)
 
             # Assume there is no uncertainty in the positions of the stars!
-            ln_like = rewinder_likelihood(self._ln_likelihood_tmp,
-                                          self.dt, self.nsteps,
-                                          potential.c_instance,
-                                          prog_gal, stars_gal,
-                                          m0, mdot,
-                                          alpha, tail, theta,
-                                          self.selfgravity)
+            rewinder_likelihood(self._ln_likelihood_tmp,
+                                self.dt, self.nsteps,
+                                potential.c_instance,
+                                prog_gal, stars_gal,
+                                m0, mdot,
+                                alpha, tail, theta,
+                                self.selfgravity)
 
             # TODO: don't create this every step
             coeffs = np.ones((self.nsteps,1))
             coeffs[0,0] = 0.5
             coeffs[self.nsteps-1,0] = 0.5
-            ln_like2 = logsumexp(ln_like, axis=0, b=coeffs) + np.log(np.fabs(dt))
+            ln_like2 = logsumexp(self._ln_likelihood_tmp, axis=0, b=coeffs) + np.log(np.fabs(dt))
 
             if np.any(np.isnan(ln_like2)):
                 nan_ix = np.where(np.isnan(ln_like2))[0]
-                print(ln_like[:,nan_ix])
                 return -np.inf
 
             likelihood = ln_like2.sum()
