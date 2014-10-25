@@ -11,7 +11,7 @@ np.import_array()
 
 import cython
 cimport cython
-from cython.parallel import prange, parallel
+# from cython.parallel import prange, parallel
 
 cimport streamteam.potential.cpotential as pot
 import streamteam.potential.cpotential as pot
@@ -273,7 +273,7 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
             set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
 
             # loop over stars
-            for k in prange(1,nparticles+1):
+            for k in range(1,nparticles+1):
                 leapfrog_step(x, v, v_12, grad, k, dt, potential, GMprog, selfgravity)
                 ln_likelihood[i,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
                                                             x, v, x1_hat, x2_hat, x3_hat, dx, dv,
