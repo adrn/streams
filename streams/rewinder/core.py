@@ -9,6 +9,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 from collections import OrderedDict
 import logging
+import os
 import sys
 import random
 
@@ -337,8 +338,15 @@ class Rewinder(EmceeModel):
         random.seed(seed)
 
         # Read star data from specified file
-        star_data = np.genfromtxt(config.get('star_data'), names=True)
-        prog_data = np.genfromtxt(config.get('progenitor_data'), names=True)
+        star_file = config.get('star_data')
+        if not os.path.exists(star_file):
+            star_file = os.path.join(config['streams_path'], star_file)
+        star_data = np.genfromtxt(star_file, names=True)
+
+        prog_file = config.get('progenitor_data')
+        if not os.path.exists(prog_file):
+            prog_file = os.path.join(config['streams_path'], prog_file)
+        prog_data = np.genfromtxt(prog_file, names=True)
 
         # If limiting the number of stars
         # TODO: allow selecting on some expression
