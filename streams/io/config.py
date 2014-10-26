@@ -42,7 +42,7 @@ def read_config(filename, default_filename=''):
 
     # read and load YAML file
     try:
-        with open(filename) as f:
+        with open(os.path.abspath(filename)) as f:
             config = yaml.load(f.read(), OrderedDictYAMLLoader)
     except:
         config = yaml.load(filename, OrderedDictYAMLLoader)
