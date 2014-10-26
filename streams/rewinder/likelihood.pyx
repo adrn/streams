@@ -189,7 +189,7 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
                           double theta, int selfgravity=1):
 
     cdef int i, k, nparticles, ndim
-    cdef double t1
+    cdef double t1 = 0.
     nparticles = star_xv.shape[0]
 
     # Containers
@@ -218,8 +218,7 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
     costheta = cos(theta)
 
     # mass
-    t1 = fabs(dt*nsteps)
-    sat_mass = -mdot*t1 + m0
+    sat_mass = m0
     GMprog = Gee * sat_mass
 
     # prime the accelerations (progenitor)
