@@ -247,12 +247,12 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
     set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
 
     # loop over stars
-    # with nogil:
-    for k in range(1,nparticles+1):
-        leapfrog_init(x, v, v_12, grad, k, dt, potential, GMprog, selfgravity)
-        ln_likelihood[0,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
-                                                    x, v, x1_hat, x2_hat, x3_hat, dx, dv,
-                                                    alpha, betas[k-1], k)
+    with nogil:
+        for k in range(1,nparticles+1):
+            leapfrog_init(x, v, v_12, grad, k, dt, potential, GMprog, selfgravity)
+            ln_likelihood[0,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
+                                                        x, v, x1_hat, x2_hat, x3_hat, dx, dv,
+                                                        alpha, betas[k-1], k)
 
     # --------------  DEBUG  ------------------
     # all_x[0,:,:] = x
