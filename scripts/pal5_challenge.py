@@ -1,0 +1,112 @@
+# coding: utf-8
+
+""" Gaia Challenge 2 -- Pal 5 Challenge """
+
+from __future__ import division, print_function
+
+__author__ = "adrn <adrn@astro.columbia.edu>"
+
+# Standard library
+import logging
+import os
+import sys
+
+# Third-party
+from astropy import log as logger
+import matplotlib.pyplot as plt
+import numpy as np
+import streamteam.dynamics as sd
+import streamteam.integrate as si
+import streamteam.io as io
+import streamteam.potential as sp
+from streamteam.units import galactic
+from streamteam.util import get_pool
+
+from astropy.constants import G
+Gee = G.decompose(galactic).value
+
+# streams
+from streams.util import streamspath
+from streams.rewinder import Rewinder, RewinderSampler
+import streams.coordinates as stc
+
+global pool
+pool = None
+
+def plot_traces(sampler, p0=None, truths=None):
+    figs = []
+    for i in range(sampler.dim):
+        fig,ax = plt.subplots(1,1,figsize=(10,6))
+        for chain in sampler.chain[...,i]:
+            ax.plot(chain, marker=None, drawstyle='steps', alpha=0.2, color='k')
+
+        if p0 is not None:
+            for pp in p0[:,i]:
+                ax.axhline(pp, alpha=0.2, color='r')
+
+        if truths is not None:
+            ax.axhline(truths[i], alpha=0.7, color='g')
+
+        figs.append(fig)
+
+    return figs
+
+def main(mpi=False):
+    pool = get_pool(mpi=mpi)
+
+    cfg_path = os.path.join(streamspath, "config/pal5_challenge.yml")
+    out_path = os.path.join(streamspath, "output/pal5_challenge")
+
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+
+    model = Rewinder.from_config(cfg_path)
+    sampler = RewinderSampler(model, nwalkers=32, pool=pool)
+
+    true_parameters = dict(potential=dict(m_halo=1.81194E12, Rh=32.26, qz=0.814))
+    parameter_sigmas = dict(potential=dict(m_halo=1E11, Rh=1., qz=0.1))
+
+    truth = model.vectorize(true_parameters)
+    p0_sigma = model.vectorize(parameter_sigmas)
+    p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, sampler.dim))
+
+    pos,prob,state = sampler.run_mcmc(p0, N=500)
+    sampler.reset()
+    pos,prob,state = sampler.run_mcmc(pos, N=1000)
+
+    figs = plot_traces(sampler, p0=None, truths=None)
+    for i,fig in enumerate(figs):
+        fig.savefig(os.path.join(out_path, "{}.png".format(i)))
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(description="")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        dest="verbose", default=False,
+                        help="Be chatty! (default = False)")
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
+                        default=False, help="Be quiet! (default = False)")
+
+    # threading
+    parser.add_argument("--mpi", dest="mpi", default=False, action="store_true",
+                        help="Run with MPI.")
+
+    args = parser.parse_args()
+
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    elif args.quiet:
+        logging.basicConfig(level=logging.ERROR)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    try:
+        main(mpi=args.mpi)
+    except:
+        pool.close() if hasattr(pool, 'close') else None
+        raise
+        sys.exit(1)
+
+    pool.close() if hasattr(pool, 'close') else None
+    sys.exit(0)
