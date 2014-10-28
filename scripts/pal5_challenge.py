@@ -70,13 +70,30 @@ def main(mpi=False):
     p0_sigma = model.vectorize(parameter_sigmas)
     p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, sampler.dim))
 
-    pos,prob,state = sampler.run_mcmc(p0, N=500)
+    # burn in
+    sampler.run_inference(p0, N=100)
+    best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
     sampler.reset()
-    pos,prob,state = sampler.run_mcmc(pos, N=1000)
+    logger.info("Done burning in")
 
-    figs = plot_traces(sampler, p0=None, truths=None)
+    # restart walkers from best position, burn again
+    new_pos = np.random.normal(best_pos, p0_sigma/2.,
+                               size=(sampler.nwalkers, p0.shape[1]))
+    sampler.run_inference(new_pos, N=100)
+    pos = sampler.chain[:,-1]
+    sampler.reset()
+
+    # run for inference steps
+    sampler.run_inference(pos, N=250)
+
+    figs = plot_traces(sampler, p0=None, truths=truth)
     for i,fig in enumerate(figs):
         fig.savefig(os.path.join(out_path, "{}.png".format(i)))
+
+    logger.debug("Acceptance fraction: {}".format(sampler.acceptance_fraction))
+
+    pool.close()
+    sys.exit(0)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
