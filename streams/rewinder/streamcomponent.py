@@ -28,7 +28,6 @@ class StreamComponent(object):
         self.data = data
         self.err = err
         self.parameters = parameters
-        self._dist = norm(self.data, self.err)
 
         nparticles = self.data.shape[0]
 
@@ -53,8 +52,8 @@ class StreamComponent(object):
             observed coordinates), given the data and uncertainties.
 
         """
-
-        lp = self._dist.logpdf(x)
+        _dist = norm(self.data, self.err)
+        lp = _dist.logpdf(x)
         for i in range(6):
             lp[np.isnan(lp[:,i]),i] = self.default_priors[np.isnan(lp[:,i]),i]
 
