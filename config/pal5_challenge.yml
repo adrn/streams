@@ -17,7 +17,7 @@ nstars: 16
 # integration
 integration:
     dt: -1.
-    nsteps: 6000
+    nsteps: 4000
 
 potential:
     class: GC2Pal5Potential
@@ -33,9 +33,9 @@ potential:
         c: 0.7
 
 progenitor:
-    mass: 1.7E4
-    mass_loss_rate: 3.83333
+    mass: 13150.
+    mass_loss_rate: 4.4625
 
 hyperparameters:
-    alpha: 1.25
+    alpha: 1.125
     theta: 0.

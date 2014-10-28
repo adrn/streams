@@ -63,6 +63,8 @@ def main(mpi=False):
     model = Rewinder.from_config(cfg_path)
     sampler = RewinderSampler(model, nwalkers=32, pool=pool)
 
+    model.stars.parameters['tail'] = -model.stars.parameters['tail']
+
     true_parameters = dict(potential=dict(m_halo=1.81194E12, Rh=32.26, qz=0.814))
     parameter_sigmas = dict(potential=dict(m_halo=1E11, Rh=1., qz=0.1))
 
