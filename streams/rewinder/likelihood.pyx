@@ -35,6 +35,11 @@ cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v, double[:,::1] v
                                double GMprog, int selfgravity) nogil:
     cdef double rel_x, rel_y, rel_z, fac
 
+    # zero out the gradient holder (calling _gradient adds to grad)
+    grad[k,0] = 0.
+    grad[k,1] = 0.
+    grad[k,2] = 0.
+
     potential._gradient(r, grad, k);
     if (selfgravity == 1):
         rel_x = r[k,0] - r[0,0]
@@ -66,6 +71,11 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v, double[:,::1] v
     r[k,0] = r[k,0] + dt*v_12[k,0]
     r[k,1] = r[k,1] + dt*v_12[k,1]
     r[k,2] = r[k,2] + dt*v_12[k,2]
+
+    # zero out the gradient holder (calling _gradient adds to grad)
+    grad[k,0] = 0.
+    grad[k,1] = 0.
+    grad[k,2] = 0.
 
     potential._gradient(r, grad, k)
     if (selfgravity == 1):
@@ -203,7 +213,7 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
 
     cdef double [:,::1] x = np.vstack((prog_xv[:,:3],star_xv[:,:3]))
     cdef double [:,::1] v = np.vstack((prog_xv[:,3:],star_xv[:,3:]))
-    cdef double [:,::1] grad = np.empty((nparticles+1,3))
+    cdef double [:,::1] grad = np.zeros((nparticles+1,3))
     cdef double sintheta, costheta
     cdef double E_scale, sat_mass
     cdef double Gee, GMprog, r_norm, v_norm, sigma_r_sq, sigma_v_sq
@@ -237,12 +247,12 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
     set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
 
     # loop over stars
-    with nogil:
-        for k in range(1,nparticles+1):
-            leapfrog_init(x, v, v_12, grad, k, dt, potential, GMprog, selfgravity)
-            ln_likelihood[0,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
-                                                        x, v, x1_hat, x2_hat, x3_hat, dx, dv,
-                                                        alpha, betas[k-1], k)
+    # with nogil:
+    for k in range(1,nparticles+1):
+        leapfrog_init(x, v, v_12, grad, k, dt, potential, GMprog, selfgravity)
+        ln_likelihood[0,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
+                                                    x, v, x1_hat, x2_hat, x3_hat, dx, dv,
+                                                    alpha, betas[k-1], k)
 
     # --------------  DEBUG  ------------------
     # all_x[0,:,:] = x
