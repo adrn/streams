@@ -71,7 +71,7 @@ def main(mpi=False):
     p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, sampler.dim))
 
     # burn in
-    sampler.run_inference(p0, N=100)
+    sampler.run_inference(p0, 100)
     best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
     sampler.reset()
     logger.info("Done burning in")
@@ -79,12 +79,12 @@ def main(mpi=False):
     # restart walkers from best position, burn again
     new_pos = np.random.normal(best_pos, p0_sigma/2.,
                                size=(sampler.nwalkers, p0.shape[1]))
-    sampler.run_inference(new_pos, N=100)
+    sampler.run_inference(new_pos, 100)
     pos = sampler.chain[:,-1]
     sampler.reset()
 
     # run for inference steps
-    sampler.run_inference(pos, N=250)
+    sampler.run_inference(pos, 250)
 
     figs = plot_traces(sampler, p0=None, truths=truth)
     for i,fig in enumerate(figs):
