@@ -12,7 +12,7 @@ log_level: debug
 # data files
 star_data: data/gaia-challenge-2/pal5/true_stars.txt
 progenitor_data: data/gaia-challenge-2/pal5/true_prog.txt
-nstars: 16
+nstars: 8
 
 # integration
 integration:
@@ -22,7 +22,7 @@ integration:
 potential:
     class: GC2Pal5Potential
     parameters:
-        m_halo: LogarithmicPrior(5E11, 5E12)
+        m_halo: LogarithmicPrior(1E11, 5E12)
         Rh: LogarithmicPrior(10., 50.0)
         qz: UniformPrior(0.72, 1.3)
     fixed:
@@ -31,11 +31,16 @@ potential:
         b: 0.26
         m_spher: 34000000000.
         c: 0.7
+        # Rh: 32.26
+        # qz: 0.814
 
 progenitor:
     mass: 13150.
     mass_loss_rate: 4.4625
+    # mass_loss_rate: 0.
 
 hyperparameters:
     alpha: 1.125
-    theta: 0.
+    theta: -0.3
+    # alpha: UniformPrior(0.7, 1.7)
+    # theta: UniformPrior(-3, 3)
