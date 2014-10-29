@@ -62,14 +62,17 @@ def main(mpi=False):
 
     model = Rewinder.from_config(cfg_path)
     sampler = RewinderSampler(model, nwalkers=32, pool=pool)
-
     model.stars.parameters['tail'] = -model.stars.parameters['tail']
 
-    true_parameters = dict(potential=dict(m_halo=1.81194E12, Rh=32.26, qz=0.814))
-    parameter_sigmas = dict(potential=dict(m_halo=1E11, Rh=1., qz=0.1))
+    # true_parameters = dict(potential=dict(m_halo=1.81194E12, Rh=32.26, qz=0.814))
+    # parameter_sigmas = dict(potential=dict(m_halo=1E11, Rh=1., qz=0.1))
+    true_parameters = dict(potential=dict(m_halo=1.81194E12, Rh=32.26, qz=0.814),
+                           hyper=dict(alpha=1.125, theta=-0.3))
+    # parameter_sigmas = dict(potential=dict(m_halo=1E11, Rh=1., qz=0.1))
 
     truth = model.vectorize(true_parameters)
-    p0_sigma = model.vectorize(parameter_sigmas)
+    # p0_sigma = model.vectorize(parameter_sigmas)
+    p0_sigma = np.abs(truth*1E-6)
     p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, sampler.dim))
 
     # burn in
@@ -79,7 +82,7 @@ def main(mpi=False):
     logger.info("Done burning in")
 
     # restart walkers from best position, burn again
-    new_pos = np.random.normal(best_pos, p0_sigma/2.,
+    new_pos = np.random.normal(best_pos, p0_sigma,
                                size=(sampler.nwalkers, p0.shape[1]))
     sampler.run_inference(new_pos, 100)
     pos = sampler.chain[:,-1]
