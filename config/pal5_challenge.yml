@@ -25,10 +25,13 @@ potential:
         m_halo: LogarithmicPrior(1E11, 5E12)
         Rh: LogarithmicPrior(10., 50.0)
         qz: UniformPrior(0.72, 1.3)
+        m_disk: LogarithmicPrior(5E10, 5E11)
+        a: UniformPrior(4,9)
+        b: UniformPrior(0.1,0.5)
     fixed:
-        m_disk: 100000000000.
-        a: 6.5
-        b: 0.26
+        # m_disk: 100000000000.
+        # a: 6.5
+        # b: 0.26
         m_spher: 34000000000.
         c: 0.7
         # Rh: 32.26
