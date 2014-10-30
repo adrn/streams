@@ -21,6 +21,7 @@ import streamteam.io as io
 import streamteam.potential as sp
 from streamteam.units import galactic
 from streamteam.util import get_pool
+import triangle
 
 from astropy.constants import G
 Gee = G.decompose(galactic).value
@@ -61,7 +62,7 @@ def main(mpi=False):
         os.makedirs(out_path)
 
     model = Rewinder.from_config(cfg_path)
-    sampler = RewinderSampler(model, nwalkers=32, pool=pool)
+    sampler = RewinderSampler(model, nwalkers=64, pool=pool)
     model.stars.parameters['tail'] = -model.stars.parameters['tail']
 
     # true_parameters = dict(potential=dict(m_halo=1.81194E12, Rh=32.26, qz=0.814))
@@ -76,7 +77,7 @@ def main(mpi=False):
     p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, sampler.dim))
 
     # burn in
-    sampler.run_inference(p0, 100)
+    sampler.run_inference(p0, 50)
     best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
     sampler.reset()
     logger.info("Done burning in")
@@ -84,18 +85,23 @@ def main(mpi=False):
     # restart walkers from best position, burn again
     new_pos = np.random.normal(best_pos, p0_sigma,
                                size=(sampler.nwalkers, p0.shape[1]))
-    sampler.run_inference(new_pos, 100)
+    sampler.run_inference(new_pos, 500)
     pos = sampler.chain[:,-1]
     sampler.reset()
 
     # run for inference steps
-    sampler.run_inference(pos, 250)
+    sampler.run_inference(pos, 500)
 
     figs = plot_traces(sampler, p0=None, truths=truth)
     for i,fig in enumerate(figs):
         fig.savefig(os.path.join(out_path, "{}.png".format(i)))
 
     logger.debug("Acceptance fraction: {}".format(sampler.acceptance_fraction))
+
+    fig = triangle.corner(sampler.flatchain[:,:3], truths=truth[:3],
+                          extents=[(1.E12,3E12),(20,40),(0.75,0.86)],
+                          labels=[r"$M$ [$M_\odot$]", r"$R_h$ [kpc]", "$q_z$"])
+    fig.savefig(os.path.join(out_path, "corner.png"))
 
     pool.close()
     sys.exit(0)
