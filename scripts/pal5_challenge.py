@@ -66,7 +66,7 @@ def main(mpi=False):
 
     # true_parameters = dict(potential=dict(m_halo=1.81194E12, Rh=32.26, qz=0.814))
     # parameter_sigmas = dict(potential=dict(m_halo=1E11, Rh=1., qz=0.1))
-    true_parameters = dict(potential=dict(m_halo=1.81194E12, Rh=32.26, qz=0.814),
+    true_parameters = dict(potential=dict(m_halo=1.81194E12, Rh=32.26, qz=0.814, m_disk=1E11, a=6.5, b=0.26, m_spher=3.4E10, c=0.7),
                            hyper=dict(alpha=1.125, theta=-0.3))
     # parameter_sigmas = dict(potential=dict(m_halo=1E11, Rh=1., qz=0.1))
 
