@@ -40,7 +40,7 @@ progenitor:
     # mass_loss_rate: 0.
 
 hyperparameters:
-    alpha: 1.125
-    theta: -0.3
-    # alpha: UniformPrior(0.7, 1.7)
-    # theta: UniformPrior(-3, 3)
+    # alpha: 1.125
+    # theta: -0.3
+    alpha: UniformPrior(0.7, 1.7)
+    theta: UniformPrior(-2, 0)
