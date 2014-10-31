@@ -12,7 +12,7 @@ log_level: debug
 # data files
 star_data: data/gaia-challenge-2/hans/true_stars1.txt
 progenitor_data: data/gaia-challenge-2/hans/true_prog1.txt
-nstars: 8
+nstars: 32
 
 # integration
 integration:
@@ -23,7 +23,7 @@ potential:
     class: LeeSutoNFWPotential
     parameters:
         v_h: LogarithmicPrior(0.5, 2.)
-        r_h: LogarithmicPrior(1., 100.)
+        r_h: LogarithmicPrior(5., 20.)
     fixed:
         a: 1.
         b: 1.
