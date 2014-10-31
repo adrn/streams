@@ -327,6 +327,8 @@ class Rewinder(EmceeModel):
             from ..io import read_config
             config = read_config(config)
 
+        self.config = config
+
         # Set the log level based on config file - default is debug
         log_level = config.get('log_level', "DEBUG")
         logger.setLevel(getattr(logging, log_level.upper()))
