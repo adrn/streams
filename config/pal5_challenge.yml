@@ -1,6 +1,6 @@
 # general
 seed: 42
-name: pal5_challenge
+name: pal5_challenge_disk_bulge
 
 # plots / output
 plot:
@@ -12,7 +12,7 @@ log_level: debug
 # data files
 star_data: data/gaia-challenge-2/pal5/true_stars.txt
 progenitor_data: data/gaia-challenge-2/pal5/true_prog.txt
-nstars: 8
+nstars: 16
 
 # integration
 integration:
