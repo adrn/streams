@@ -116,8 +116,8 @@ def main(ix, mpi=False, overwrite=False):
 
     flatchain = np.vstack(chain)
     extents = [(0.8,1.2), (5,30)]
-    fig = triangle.corner(flatchain, truths=truth, 
-                          extents=extents)
+    fig = triangle.corner(flatchain, truths=truth)
+    #                      extents=extents)
     #                      labels=[r"$M$ [$M_\odot$]", r"$R_h$ [kpc]", "$q_z$"])
     fig.savefig(os.path.join(out_path, "corner.png"))
 
