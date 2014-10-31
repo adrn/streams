@@ -120,11 +120,25 @@ def main(ix, mpi=False, overwrite=False, evol=False):
         fig.savefig(os.path.join(out_path, "{}.png".format(i)))
 
     flatchain = np.vstack(chain)
-    extents = [(0.8,1.2), (5,30)]
+    from astropy.constants import G
+    G = G.decompose(galactic).value
+
     fig = triangle.corner(flatchain, truths=truth)
     #                      extents=extents)
     #                      labels=[r"$M$ [$M_\odot$]", r"$R_h$ [kpc]", "$q_z$"])
     fig.savefig(os.path.join(out_path, "corner.png"))
+
+    fig,ax = plt.subplots(1,1,figsize=(10,8))
+    r = np.zeros((200,3))
+    r[:,0] = np.linspace(1., 100., 200)
+    for ix in np.random.randint(len(flatchain), size=100):
+        v_h, r_h = flatchain[ix]
+        pot = model.rewinder_potential.Potential(v_h, r_h, a=1., b=1., c=1., units=galactic)
+        menc = pot.mass_enclosed(r)
+        ax.loglog(menc, marker=None, linestyle='-', alpha=0.2)
+    ax.set_xlabel("log Radius [kpc]")
+    ax.set_ylabel(r"log Mass [$M_\odot$]")
+    fig.savefig(os.path.join(out_path, "mass_enclosed.png"))
 
     pool.close()
     sys.exit(0)
@@ -138,9 +152,9 @@ if __name__ == "__main__":
                         help="Be chatty! (default = False)")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
                         default=False, help="Be quiet! (default = False)")
-    parser.add_argument("-o", "--overwrite", dest="overwrite", default=False, 
+    parser.add_argument("-o", "--overwrite", dest="overwrite", default=False,
                         action="store_true", help="Nukem.")
-    parser.add_argument("-e", "--evol", dest="evol", default=False, 
+    parser.add_argument("-e", "--evol", dest="evol", default=False,
                         action="store_true", help="Evolving instead of static")
 
     # threading
