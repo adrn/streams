@@ -68,7 +68,7 @@ def main(ix, mpi=False):
                                  progenitor=dict(m0=2E9),
                                  hyper=dict(alpha=1.125, theta=0.))
 
-    truth = model.vectorize(true_parameters)
+    truth = model.vectorize(true_parameter_values)
     # p0_sigma = model.vectorize(parameter_sigmas)
     p0_sigma = np.abs(truth*1E-6)
     p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, sampler.dim))
