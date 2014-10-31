@@ -12,12 +12,12 @@ log_level: debug
 # data files
 star_data: data/gaia-challenge-2/hans/true_stars1.txt
 progenitor_data: data/gaia-challenge-2/hans/true_prog1.txt
-nstars: 64
+nstars: 32
 
 # integration
 integration:
     dt: -1.
-    nsteps: 6000
+    nsteps: 8000
 
 potential:
     class: LeeSutoNFWPotential
@@ -30,13 +30,13 @@ potential:
         c: 1.
 
 progenitor:
-    # mass: 2.5E8
+    mass: 2.5E10
     # mass_loss_rate: 2.
-    mass: LogarithmicPrior(2E4, 2E10)
+    # mass: LogarithmicPrior(2E9, 2E11)
     mass_loss_rate: 0.
 
 hyperparameters:
-    alpha: 1.125
-    theta: -0.3
+    alpha: 0.
+    theta: 0.
     # alpha: UniformPrior(0.7, 1.7)
     # theta: UniformPrior(-2, 0)
