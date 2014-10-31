@@ -86,6 +86,8 @@ def main(ix, mpi=False):
     pos = sampler.chain[:,-1]
     sampler.reset()
 
+    logger.info("Done re-burn")
+    
     # run for inference steps
     sampler.run_inference(pos, 500)
 
