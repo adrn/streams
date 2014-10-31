@@ -52,11 +52,16 @@ def plot_traces(chain, p0=None, truths=None):
 
     return figs
 
-def main(ix, mpi=False, overwrite=False):
+def main(ix, mpi=False, overwrite=False, evol=False):
     pool = get_pool(mpi=mpi)
 
-    cfg_path = os.path.join(streamspath, "config/hans_challenge{}.yml".format(ix))
+    if evol:
+        stat_evol = "evol"
+    else:
+        stat_evol = "stat"
 
+    cfg_path = os.path.join(streamspath, "config/hans_challenge{}_{}.yml".format(ix, stat_evol))
+    logger.debug(cfg_path)
     model = Rewinder.from_config(cfg_path)
 
     out_path = os.path.join(streamspath, "output/{}".format(model.config['name']))
@@ -135,6 +140,8 @@ if __name__ == "__main__":
                         default=False, help="Be quiet! (default = False)")
     parser.add_argument("-o", "--overwrite", dest="overwrite", default=False, 
                         action="store_true", help="Nukem.")
+    parser.add_argument("-e", "--evol", dest="evol", default=False, 
+                        action="store_true", help="Evolving instead of static")
 
     # threading
     parser.add_argument("--mpi", dest="mpi", default=False, action="store_true",
@@ -152,7 +159,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
     try:
-        main(args.ix, mpi=args.mpi, overwrite=args.overwrite)
+        main(args.ix, mpi=args.mpi, overwrite=args.overwrite, evol=args.evol)
     except:
         pool.close() if hasattr(pool, 'close') else None
         raise
