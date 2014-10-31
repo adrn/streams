@@ -1,0 +1,42 @@
+# general
+seed: 42
+name: hans_challenge1_stat
+
+# plots / output
+plot:
+    mcmc_diagnostics: True
+    posterior: True
+    ext: png
+log_level: debug
+
+# data files
+star_data: data/gaia-challenge-2/hans/true_stars1stat.txt
+progenitor_data: data/gaia-challenge-2/hans/true_prog1stat.txt
+nstars: 32
+
+# integration
+integration:
+    dt: -1.
+    nsteps: 8000
+
+potential:
+    class: LeeSutoNFWPotential
+    parameters:
+        v_h: LogarithmicPrior(0.5, 2.)
+        r_h: LogarithmicPrior(5., 20.)
+    fixed:
+        a: 1.
+        b: 1.
+        c: 1.
+
+progenitor:
+    mass: 2.5E10
+    # mass_loss_rate: 2.
+    # mass: LogarithmicPrior(2E9, 2E11)
+    mass_loss_rate: 0.
+
+hyperparameters:
+    alpha: 0.
+    theta: 0.
+    # alpha: UniformPrior(0.7, 1.7)
+    # theta: UniformPrior(-2, 0)

@@ -1,6 +1,6 @@
 # general
 seed: 42
-name: hans_challenge1
+name: hans_challenge1_evol
 
 # plots / output
 plot:
@@ -10,8 +10,8 @@ plot:
 log_level: debug
 
 # data files
-star_data: data/gaia-challenge-2/hans/true_stars1.txt
-progenitor_data: data/gaia-challenge-2/hans/true_prog1.txt
+star_data: data/gaia-challenge-2/hans/true_stars1evol.txt
+progenitor_data: data/gaia-challenge-2/hans/true_prog1evol.txt
 nstars: 32
 
 # integration
