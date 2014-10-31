@@ -34,12 +34,12 @@ import streams.coordinates as stc
 global pool
 pool = None
 
-def plot_traces(sampler, p0=None, truths=None):
+def plot_traces(chain, p0=None, truths=None):
     figs = []
-    for i in range(sampler.dim):
+    for i in range(chain.shape[-1]):
         fig,ax = plt.subplots(1,1,figsize=(10,6))
-        for chain in sampler.chain[...,i]:
-            ax.plot(chain, marker=None, drawstyle='steps', alpha=0.2, color='k')
+        for ch in chain[...,i]:
+            ax.plot(ch, marker=None, drawstyle='steps', alpha=0.2, color='k')
 
         if p0 is not None:
             for pp in p0[:,i]:
@@ -52,16 +52,18 @@ def plot_traces(sampler, p0=None, truths=None):
 
     return figs
 
-def main(ix, mpi=False):
+def main(ix, mpi=False, overwrite=False):
     pool = get_pool(mpi=mpi)
 
     cfg_path = os.path.join(streamspath, "config/hans_challenge{}.yml".format(ix))
-    out_path = os.path.join(streamspath, "output/hans_challenge{}".format(ix))
-
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
 
     model = Rewinder.from_config(cfg_path)
+
+    out_path = os.path.join(streamspath, "output/{}".format(model.config['name']))
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+    chain_file = os.path.join(out_path, "chain.npy")
+
     sampler = RewinderSampler(model, nwalkers=64, pool=pool)
 
     true_parameter_values = dict(potential=dict(v_h=1., r_h=12),
@@ -69,36 +71,53 @@ def main(ix, mpi=False):
                                  hyper=dict(alpha=1.125, theta=0.))
 
     truth = model.vectorize(true_parameter_values)
-    # p0_sigma = model.vectorize(parameter_sigmas)
-    p0_sigma = np.abs(truth*1E-6)
-    p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, sampler.dim))
 
-    # burn in
-    sampler.run_inference(p0, 50)
-    best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
-    sampler.reset()
-    logger.info("Done burning in")
+    if overwrite and os.path.exists(chain_file):
+        os.remove(chain_file)
 
-    # restart walkers from best position, burn again
-    new_pos = np.random.normal(best_pos, p0_sigma,
-                               size=(sampler.nwalkers, p0.shape[1]))
-    sampler.run_inference(new_pos, 500)
-    pos = sampler.chain[:,-1]
-    sampler.reset()
+    if not os.path.exists(chain_file):
+        # p0_sigma = model.vectorize(parameter_sigmas)
+        p0_sigma = np.abs(truth*1E-6)
+        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, sampler.dim))
 
-    logger.info("Done re-burn")
-    
-    # run for inference steps
-    sampler.run_inference(pos, 500)
+        # burn in
+        sampler.run_inference(p0, 100)
+        best_pos = sampler.flatchain[sampler.flatlnprobability.argmax()]
 
-    figs = plot_traces(sampler, p0=None, truths=truth)
+        figs = plot_traces(sampler.chain, p0=None, truths=truth)
+        for i,fig in enumerate(figs):
+            fig.savefig(os.path.join(out_path, "burn_{}.png".format(i)))
+
+        sampler.reset()
+        logger.info("Done burning in")
+
+        # restart walkers from best position, burn again
+        new_pos = np.random.normal(best_pos, p0_sigma,
+                                   size=(sampler.nwalkers, p0.shape[1]))
+        sampler.run_inference(new_pos, 500)
+        pos = sampler.chain[:,-1].copy()
+        sampler.reset()
+
+        logger.info("Done re-burn")
+
+        # run for inference steps
+        sampler.run_inference(pos, 500)
+
+        logger.debug("Acceptance fraction: {}".format(sampler.acceptance_fraction))
+
+        chain = sampler.chain
+        np.save(chain_file, chain)
+    else:
+        chain = np.load(chain_file)
+
+    figs = plot_traces(chain, p0=None, truths=truth)
     for i,fig in enumerate(figs):
         fig.savefig(os.path.join(out_path, "{}.png".format(i)))
 
-    logger.debug("Acceptance fraction: {}".format(sampler.acceptance_fraction))
-
-    fig = triangle.corner(sampler.flatchain, truths=truth)
-    #                      extents=[(1.E12,3E12),(20,40),(0.75,0.86)],
+    flatchain = np.vstack(chain)
+    extents = [(0.8,1.2), (5,30)]
+    fig = triangle.corner(flatchain, truths=truth, 
+                          extents=extents)
     #                      labels=[r"$M$ [$M_\odot$]", r"$R_h$ [kpc]", "$q_z$"])
     fig.savefig(os.path.join(out_path, "corner.png"))
 
@@ -114,6 +133,8 @@ if __name__ == "__main__":
                         help="Be chatty! (default = False)")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
                         default=False, help="Be quiet! (default = False)")
+    parser.add_argument("-o", "--overwrite", dest="overwrite", default=False, 
+                        action="store_true", help="Nukem.")
 
     # threading
     parser.add_argument("--mpi", dest="mpi", default=False, action="store_true",
@@ -131,7 +152,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
     try:
-        main(args.ix, mpi=args.mpi)
+        main(args.ix, mpi=args.mpi, overwrite=args.overwrite)
     except:
         pool.close() if hasattr(pool, 'close') else None
         raise
