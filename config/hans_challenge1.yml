@@ -12,7 +12,7 @@ log_level: debug
 # data files
 star_data: data/gaia-challenge-2/hans/true_stars1.txt
 progenitor_data: data/gaia-challenge-2/hans/true_prog1.txt
-nstars: 32
+nstars: 8
 
 # integration
 integration:
