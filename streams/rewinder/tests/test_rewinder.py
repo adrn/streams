@@ -53,7 +53,7 @@ class TestTrueSimple(object):
     @pytest.mark.skipif(True, reason="derp.")
     def test_plot(self):
         # Have to enable debug stuff in Cython file.
-        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
+        potential = sp.LeeSutoTriaxialNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
 
         ll = np.zeros((6000,self.nstars), dtype=float)
         x,v = rewinder_likelihood(ll, -1., 6000, potential.c_instance,
@@ -65,7 +65,7 @@ class TestTrueSimple(object):
         plt.show()
 
     def test_call(self):
-        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
+        potential = sp.LeeSutoTriaxialNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
         ll = np.zeros((6000,self.nstars), dtype=float)
         rewinder_likelihood(ll,
                             -1., 6000,
@@ -85,8 +85,7 @@ class TestTrueSimple(object):
         ll = np.zeros((6000,self.nstars), dtype=float)
 
         print("Spherical:")
-        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
-                                           a=1., b=1., c=1., units=galactic)
+        potential = sp.SphericalNFWPotential(v_h=0.5, r_h=20.0, units=galactic)
 
         nrepeat = 100
         t1 = time.time()
@@ -102,23 +101,23 @@ class TestTrueSimple(object):
 
         print("{} ms per call".format(t*1000.))
 
-        print("\n")
-        print("Triaxial, rotated:")
-        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0, phi=0.2,
-                                           a=1.3, b=1., c=0.8, units=galactic)
+        # print("\n")
+        # print("Triaxial, rotated:")
+        # potential = sp.LeeSutoTriaxialNFWPotential(v_h=0.5, r_h=20.0, phi=0.2,
+        #                                    a=1.3, b=1., c=0.8, units=galactic)
 
-        t1 = time.time()
-        for i in range(nrepeat):  # ~10 ms per call
-            rewinder_likelihood(ll, -1., 6000,
-                                potential.c_instance,
-                                self.prog, self.stars,
-                                2.5E6, 0.,
-                                1., self.betas, -0.3,
-                                True)
+        # t1 = time.time()
+        # for i in range(nrepeat):  # ~10 ms per call
+        #     rewinder_likelihood(ll, -1., 6000,
+        #                         potential.c_instance,
+        #                         self.prog, self.stars,
+        #                         2.5E6, 0.,
+        #                         1., self.betas, -0.3,
+        #                         True)
 
-        t = (time.time() - t1) / float(nrepeat)
+        # t = (time.time() - t1) / float(nrepeat)
 
-        print("{} ms per call".format(t*1000.))
+        # print("{} ms per call".format(t*1000.))
 
     def test_time_many_stars(self):
 
@@ -129,7 +128,7 @@ class TestTrueSimple(object):
         ll = np.zeros((6000,nstars), dtype=float)
 
         print("Spherical:")
-        potential = sp.LeeSutoNFWPotential(v_h=0.5, r_h=20.0,
+        potential = sp.LeeSutoTriaxialNFWPotential(v_h=0.5, r_h=20.0,
                                            a=1., b=1., c=1., units=galactic)
 
         t1 = time.time()
