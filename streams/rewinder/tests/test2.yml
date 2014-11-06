@@ -12,7 +12,7 @@ log_level: debug
 # data files
 star_data: streams/rewinder/tests/true_stars.txt
 progenitor_data: streams/rewinder/tests/true_prog.txt
-nstars: 8
+nstars: 16
 
 # integration
 integration:
@@ -23,11 +23,10 @@ potential:
     class: SphericalNFWPotential
     parameters:
         v_h: UniformPrior(0.25, 0.75)
-    fixed:
-        r_h: 20.
+        r_h: LogarithmicPrior(1., 30.)
 
 progenitor:
-    mass: LogarithmicPrior(5E5, 1E7)
+    mass: NormalPrior(2.5e6, 1E5)
     mass_loss_rate: 0.
 
 hyperparameters:

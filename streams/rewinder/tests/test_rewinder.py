@@ -27,12 +27,13 @@ from ..likelihood import rewinder_likelihood
 from ...util import streamspath
 from ... import heliocentric_names
 
+logger.setLevel(logging.DEBUG)
+
 this_path = os.path.dirname(__file__)
 output_path = os.path.join(streamspath, "output/tests/rewinder")
 if not os.path.exists(output_path):
+    logger.debug("Creating directory {}".format(output_path))
     os.makedirs(output_path)
-
-logger.setLevel(logging.DEBUG)
 
 class TestTrueSimple(object):
 

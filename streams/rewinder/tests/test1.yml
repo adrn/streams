@@ -23,8 +23,7 @@ potential:
     class: SphericalNFWPotential
     parameters:
         v_h: UniformPrior(0.25, 0.75)
-    fixed:
-        r_h: 20.
+        r_h: LogarithmicPrior(1., 30.)
 
 progenitor:
     mass: 2.5E6
