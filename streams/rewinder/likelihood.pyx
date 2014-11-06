@@ -3,6 +3,7 @@
 # cython: cdivision=True
 # cython: nonecheck=False
 # cython: wraparound=False
+# cython: profile=True
 import sys
 
 import numpy as np
@@ -29,35 +30,37 @@ cdef extern from "math.h":
 
 cdef double Rsun = 8.
 
-cdef inline void leapfrog_init(double[:,::1] r, double[:,::1] v, double[:,::1] v_12,
-                               double[:,::1] grad, unsigned int k, double dt,
-                               pot._CPotential potential,
-                               double GMprog, int selfgravity) nogil:
+cdef inline void leapfrog_init(double *r, double *v, double *v_12, double *grad,
+                               double dt, pot._CPotential potential,
+                               double *prog_r, double GMprog, int selfgravity):
     cdef double rel_x, rel_y, rel_z, fac
 
     # zero out the gradient holder (calling _gradient adds to grad)
-    grad[k,0] = 0.
-    grad[k,1] = 0.
-    grad[k,2] = 0.
+    grad[0] = 0.
+    grad[1] = 0.
+    grad[2] = 0.
 
-    potential._gradient(r, grad, k);
+    # compute the gradient of this potential, add to the list of vectors grad
+    potential._gradient(r, grad)
+
     if (selfgravity == 1):
-        rel_x = r[k,0] - r[0,0]
-        rel_y = r[k,1] - r[0,1]
-        rel_z = r[k,2] - r[0,2]
+        # if accounting for self-gravity of the progenitor, assume it's a point mass
+        #   orbiting as a test particle
+        rel_x = r[0] - prog_r[0]
+        rel_y = r[1] - prog_r[1]
+        rel_z = r[2] - prog_r[2]
         fac = GMprog / pow(rel_x*rel_x + rel_y*rel_y + rel_z*rel_z, 1.5)
-        grad[k,0] += fac * rel_x
-        grad[k,1] += fac * rel_y
-        grad[k,2] += fac * rel_z
+        grad[0] += fac*rel_x
+        grad[1] += fac*rel_y
+        grad[2] += fac*rel_z
 
-    v_12[k,0] = v[k,0] - 0.5*dt*grad[k,0]
-    v_12[k,1] = v[k,1] - 0.5*dt*grad[k,1]
-    v_12[k,2] = v[k,2] - 0.5*dt*grad[k,2]
+    v_12[0] = v[0] - 0.5*dt*grad[0]
+    v_12[1] = v[1] - 0.5*dt*grad[1]
+    v_12[2] = v[2] - 0.5*dt*grad[2]
 
-cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v, double[:,::1] v_12,
-                               double[:,::1] grad, unsigned int k, double dt,
-                               pot._CPotential potential,
-                               double GMprog, int selfgravity) nogil:
+cdef inline void leapfrog_step(double *r, double *v, double *v_12, double *grad,
+                               double dt, pot._CPotential potential,
+                               double *prog_r, double GMprog, int selfgravity):
     """ Velocities need to be offset from positions by 1/2 step! To
         'prime' the integration, call
 
@@ -68,40 +71,41 @@ cdef inline void leapfrog_step(double[:,::1] r, double[:,::1] v, double[:,::1] v
     cdef double rel_x, rel_y, rel_z, fac
 
     # incr. pos. by full-step
-    r[k,0] = r[k,0] + dt*v_12[k,0]
-    r[k,1] = r[k,1] + dt*v_12[k,1]
-    r[k,2] = r[k,2] + dt*v_12[k,2]
+    r[0] = r[0] + dt*v_12[0]
+    r[1] = r[1] + dt*v_12[1]
+    r[2] = r[2] + dt*v_12[2]
 
     # zero out the gradient holder (calling _gradient adds to grad)
-    grad[k,0] = 0.
-    grad[k,1] = 0.
-    grad[k,2] = 0.
+    grad[0] = 0.
+    grad[1] = 0.
+    grad[2] = 0.
 
-    potential._gradient(r, grad, k)
+    potential._gradient(r, grad)
+
     if (selfgravity == 1):
-        rel_x = r[k,0] - r[0,0]
-        rel_y = r[k,1] - r[0,1]
-        rel_z = r[k,2] - r[0,2]
+        rel_x = r[0] - prog_r[0]
+        rel_y = r[1] - prog_r[1]
+        rel_z = r[2] - prog_r[2]
         fac = GMprog / pow(rel_x*rel_x + rel_y*rel_y + rel_z*rel_z, 1.5)
-        grad[k,0] += fac * rel_x
-        grad[k,1] += fac * rel_y
-        grad[k,2] += fac * rel_z
+        grad[0] += fac*rel_x
+        grad[1] += fac*rel_y
+        grad[2] += fac*rel_z
 
     # incr. synced vel. by full-step
-    v[k,0] = v[k,0] - dt*grad[k,0]
-    v[k,1] = v[k,1] - dt*grad[k,1]
-    v[k,2] = v[k,2] - dt*grad[k,2]
+    v[0] = v[0] - dt*grad[0]
+    v[1] = v[1] - dt*grad[1]
+    v[2] = v[2] - dt*grad[2]
 
     # incr. leapfrog vel. by full-step
-    v_12[k,0] = v_12[k,0] - dt*grad[k,0]
-    v_12[k,1] = v_12[k,1] - dt*grad[k,1]
-    v_12[k,2] = v_12[k,2] - dt*grad[k,2]
+    v_12[0] = v_12[0] - dt*grad[0]
+    v_12[1] = v_12[1] - dt*grad[1]
+    v_12[2] = v_12[2] - dt*grad[2]
 
 # -------------------------------------------------------------------------------------------------
 
 cdef void set_basis(double[:,::1] x, double[:,::1] v,
                     double[::1] x1_hat, double[::1] x2_hat, double[::1] x3_hat,
-                    double sintheta, double costheta) nogil:
+                    double sintheta, double costheta):
     """
         Cartesian basis defined by the orbital plane of the satellite to
         project the orbits of stars into.
@@ -146,7 +150,7 @@ cdef double ln_likelihood_helper(double r_norm, double v_norm, double rtide, dou
                                  double[::1] x1_hat, double[::1] x2_hat, double[::1] x3_hat,
                                  double[::1] dx, double[::1] dv,
                                  double alpha, double beta,
-                                 unsigned int k) nogil:
+                                 unsigned int k):
 
     # For Jacobian (spherical -> cartesian)
     cdef double R2, log_jac
@@ -190,15 +194,15 @@ cdef double ln_likelihood_helper(double r_norm, double v_norm, double rtide, dou
     return r_term + v_term + log_jac
 
 cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
-                          double dt, int nsteps,
+                          double dt, np.intp_t nsteps,
                           pot._CPotential potential,
                           np.ndarray[double,ndim=2] prog_xv,
                           np.ndarray[double,ndim=2] star_xv,
                           double m0, double mdot,
                           double alpha, double[::1] betas,
-                          double theta, int selfgravity=1):
+                          double theta, np.intp_t selfgravity=1):
 
-    cdef int i, k, nparticles, ndim
+    cdef np.intp_t i, k, nparticles, ndim
     cdef double t1 = 0.
     nparticles = star_xv.shape[0]
 
@@ -231,105 +235,116 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
     sat_mass = m0
     GMprog = Gee * sat_mass
 
-    # prime the accelerations (progenitor)
-    leapfrog_init(x, v, v_12, grad, 0, dt, potential, 0., 0)
+    # prime the progenitor for leapfrogging (set velocity at half-step)
+    leapfrog_init(&x[0,0], &v[0,0], &v_12[0,0], &grad[0,0],
+                  dt, potential,
+                  &x[0,0], 0., 0) # no self gravity for the progenitor orbit
 
-    # compute approximations of tidal radius and velocity dispersion from mass enclosed
-    E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0))
-    rtide = E_scale * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
-    vdisp = E_scale * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
+#     # compute approximations of tidal radius and velocity dispersion from mass enclosed
+#     E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0))
+#     rtide = E_scale * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+#     vdisp = E_scale * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
 
-    # define constants
-    r_norm = -log(rtide) - 0.91893853320467267;
-    v_norm = -log(vdisp) - 0.91893853320467267;
-    sigma_r_sq = rtide*rtide;
-    sigma_v_sq = vdisp*vdisp;
-    set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
+#     # define constants
+#     r_norm = -log(rtide) - 0.91893853320467267;
+#     v_norm = -log(vdisp) - 0.91893853320467267;
+#     sigma_r_sq = rtide*rtide;
+#     sigma_v_sq = vdisp*vdisp;
+#     set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
 
-    # loop over stars
-    with nogil:
+    # loop over stars and prime for leapfrog (set velocity at half-step)
+    # with nogil:
+    for k in range(1,nparticles+1):
+        leapfrog_init(&x[k,0], &v[k,0], &v_12[k,0], &grad[k,0],
+                      dt, potential,
+                      &x[0,0], GMprog, selfgravity)
+#         ln_likelihood[0,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
+#                                                     x, v, x1_hat, x2_hat, x3_hat, dx, dv,
+#                                                     alpha, betas[k-1], k)
+
+#     # --------------  DEBUG  ------------------
+#     # all_x[0,:,:] = x
+#     # all_v[0,:,:] = v
+#     # --------------  DEBUG  ------------------
+
+    # with nogil:
+    for i in range(1,nsteps):
+
+        # progenitor
+        leapfrog_step(&x[0,0], &v[0,0], &v_12[0,0], &grad[0,0],
+                      dt, potential,
+                      &x[0,0], 0., 0) # no self gravity for the progenitor orbit
+
+
+        # mass of the satellite
+        t1 += dt
+        sat_mass = -mdot*t1 + m0
+        GMprog = Gee * sat_mass
+
+#         # compute approximations of tidal radius and velocity dispersion from mass enclosed
+#         E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0))
+#         rtide = E_scale * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
+#         vdisp = E_scale * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
+
+#         # define constants
+#         r_norm = -log(rtide) - 0.91893853320467267;
+#         v_norm = -log(vdisp) - 0.91893853320467267;
+#         sigma_r_sq = rtide*rtide;
+#         sigma_v_sq = vdisp*vdisp;
+#         set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
+
+        # loop over stars
         for k in range(1,nparticles+1):
-            leapfrog_init(x, v, v_12, grad, k, dt, potential, GMprog, selfgravity)
-            ln_likelihood[0,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
-                                                        x, v, x1_hat, x2_hat, x3_hat, dx, dv,
-                                                        alpha, betas[k-1], k)
+            leapfrog_step(&x[k,0], &v[k,0], &v_12[k,0], &grad[k,0],
+                          dt, potential,
+                          &x[0,0], GMprog, selfgravity)
+#             ln_likelihood[i,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
+#                                                         x, v, x1_hat, x2_hat, x3_hat, dx, dv,
+#                                                         alpha, betas[k-1], k)
 
-    # --------------  DEBUG  ------------------
-    # all_x[0,:,:] = x
-    # all_v[0,:,:] = v
-    # --------------  DEBUG  ------------------
+#         # --------------  DEBUG  ------------------
+#         # all_x[i,:,:] = x
+#         # all_v[i,:,:] = v
+#         # --------------  DEBUG  ------------------
 
-    with nogil:
-        for i in range(1,nsteps):
-            # progenitor
-            leapfrog_step(x, v, v_12, grad, 0, dt, potential, 0., 0)
-
-            # mass of the satellite
-            t1 += dt
-            sat_mass = -mdot*t1 + m0
-            GMprog = Gee * sat_mass
-
-            # compute approximations of tidal radius and velocity dispersion from mass enclosed
-            E_scale = cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0))
-            rtide = E_scale * sqrt(x[0,0]*x[0,0]+x[0,1]*x[0,1]+x[0,2]*x[0,2])
-            vdisp = E_scale * sqrt(v[0,0]*v[0,0]+v[0,1]*v[0,1]+v[0,2]*v[0,2])
-
-            # define constants
-            r_norm = -log(rtide) - 0.91893853320467267;
-            v_norm = -log(vdisp) - 0.91893853320467267;
-            sigma_r_sq = rtide*rtide;
-            sigma_v_sq = vdisp*vdisp;
-            set_basis(x, v, x1_hat, x2_hat, x3_hat, sintheta, costheta)
-
-            # loop over stars
-            for k in range(1,nparticles+1):
-                leapfrog_step(x, v, v_12, grad, k, dt, potential, GMprog, selfgravity)
-                ln_likelihood[i,k-1] = ln_likelihood_helper(r_norm, v_norm, rtide, sigma_r_sq, sigma_v_sq,
-                                                            x, v, x1_hat, x2_hat, x3_hat, dx, dv,
-                                                            alpha, betas[k-1], k)
-
-        # --------------  DEBUG  ------------------
-        # all_x[i,:,:] = x
-        # all_v[i,:,:] = v
-        # --------------  DEBUG  ------------------
-
-    # --------------  DEBUG  ------------------
-    # return np.array(all_x), np.array(all_v)
-    # --------------  DEBUG  ------------------
+#     # --------------  DEBUG  ------------------
+#     # return np.array(all_x), np.array(all_v)
+#     # --------------  DEBUG  ------------------
 
 
 cpdef compute_dE(np.ndarray[double,ndim=2] w0,
                  double dt, int nsteps,
                  pot._CPotential potential,
                  double m0, double mdot):
+    pass
 
-    cdef unsigned int i
-    cdef double E_scale = 0.
-    cdef double [:,::1] grad = np.empty((1,3))
-    cdef double [:,::1] x = np.array(w0[:,:3])
-    cdef double [:,::1] v = np.array(w0[:,3:])
-    cdef double [:,::1] v_12 = np.zeros((1,3))
-    cdef double [:,::1] menc_epsilon = np.empty((1,3))
-    cdef double t1, sat_mass
-    cdef double Gee = potential.G
+#     cdef unsigned int i
+#     cdef double E_scale = 0.
+#     cdef double [:,::1] grad = np.empty((1,3))
+#     cdef double [:,::1] x = np.array(w0[:,:3])
+#     cdef double [:,::1] v = np.array(w0[:,3:])
+#     cdef double [:,::1] v_12 = np.zeros((1,3))
+#     cdef double [:,::1] menc_epsilon = np.empty((1,3))
+#     cdef double t1, sat_mass
+#     cdef double Gee = potential.G
 
-    # prime the accelerations
-    t1 = fabs(dt*nsteps)
-    sat_mass = -mdot*t1 + m0
+#     # prime the accelerations
+#     t1 = fabs(dt*nsteps)
+#     sat_mass = -mdot*t1 + m0
 
-    # prime the accelerations (progenitor)
-    leapfrog_init(x, v, v_12, grad, 0, dt, potential, 0., 0)
+#     # prime the accelerations (progenitor)
+#     leapfrog_init(x, v, v_12, grad, 0, dt, potential, 0., 0)
 
-    # compute approximations of tidal radius and velocity dispersion from mass enclosed
-    E_scale += cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0)) * \
-                (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
+#     # compute approximations of tidal radius and velocity dispersion from mass enclosed
+#     E_scale += cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0)) * \
+#                 (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
 
-    for i in range(1,nsteps):
-        t1 += dt
-        sat_mass = -mdot*t1 + m0
+#     for i in range(1,nsteps):
+#         t1 += dt
+#         sat_mass = -mdot*t1 + m0
 
-        leapfrog_step(x, v, v_12, grad, 0, dt, potential, 0., 0)
-        E_scale += cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0)) * \
-                        (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
+#         leapfrog_step(x, v, v_12, grad, 0, dt, potential, 0., 0)
+#         E_scale += cbrt(sat_mass / potential._mass_enclosed(x, menc_epsilon, Gee, 0)) * \
+#                         (v[0,0]*v[0,0] + v[0,1]*v[0,1] + v[0,2]*v[0,2])
 
-    return E_scale / float(nsteps)
+#     return E_scale / float(nsteps)
