@@ -103,8 +103,8 @@ cdef inline void leapfrog_step(double *r, double *v, double *v_12, double *grad,
 
 # -------------------------------------------------------------------------------------------------
 
-cdef void set_basis(double[:,::1] x, double[:,::1] v,
-                    double[::1] x1_hat, double[::1] x2_hat, double[::1] x3_hat,
+cdef void set_basis(double *prog_x, double *prog_v,
+                    double *x1_hat, double *x2_hat, double *x3_hat
                     double sintheta, double costheta):
     """
         Cartesian basis defined by the orbital plane of the satellite to
@@ -114,13 +114,13 @@ cdef void set_basis(double[:,::1] x, double[:,::1] v,
     cdef double x1_norm, x2_norm, x3_norm = 0.
     cdef unsigned int i
 
-    x1_hat[0] = x[0,0]
-    x1_hat[1] = x[0,1]
-    x1_hat[2] = x[0,2]
+    x1_hat[0] = prog_x[0]
+    x1_hat[1] = prog_x[1]
+    x1_hat[2] = prog_x[2]
 
-    x3_hat[0] = x1_hat[1]*v[0,2] - x1_hat[2]*v[0,1]
-    x3_hat[1] = x1_hat[2]*v[0,0] - x1_hat[0]*v[0,2]
-    x3_hat[2] = x1_hat[0]*v[0,1] - x1_hat[1]*v[0,0]
+    x3_hat[0] = x1_hat[1]*prog_v[2] - x1_hat[2]*prog_v[1]
+    x3_hat[1] = x1_hat[2]*prog_v[0] - x1_hat[0]*prog_v[2]
+    x3_hat[2] = x1_hat[0]*prog_v[1] - x1_hat[1]*prog_v[0]
 
     x2_hat[0] = -x1_hat[1]*x3_hat[2] + x1_hat[2]*x3_hat[1]
     x2_hat[1] = -x1_hat[2]*x3_hat[0] + x1_hat[0]*x3_hat[2]
