@@ -66,7 +66,7 @@ class TestTrueSimple(object):
 
     def test_call(self):
         potential = sp.LeeSutoTriaxialNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
-        ll = np.zeros((6000,self.nstars), dtype=float)
+        ll = np.zeros((6000,self.nstars), dtype=float) - 9999.
         rewinder_likelihood(ll,
                             -1., 6000,
                             potential.c_instance,
@@ -84,7 +84,7 @@ class TestTrueSimple(object):
     def test_time(self):
         ll = np.zeros((6000,self.nstars), dtype=float)
 
-        print("Spherical:")
+        print("Spherical w/ {} stars:".format(self.nstars))
         potential = sp.SphericalNFWPotential(v_h=0.5, r_h=20.0, units=galactic)
 
         nrepeat = 100
@@ -119,6 +119,27 @@ class TestTrueSimple(object):
 
         # print("{} ms per call".format(t*1000.))
 
+    #@pytest.mark.skipif(True, reason="derp.")
+    def test_profile(self):
+        # Have to turn on cython profiling for this to work
+        import pstats, cProfile
+
+        ll = np.zeros((6000,self.nstars), dtype=float)
+        potential = sp.SphericalNFWPotential(v_h=0.5, r_h=20.0, units=galactic)
+
+        the_str = """for i in range(100): rewinder_likelihood(ll, -1., 6000,
+                                            potential.c_instance,
+                                            self.prog, self.stars,
+                                            2.5E6, 0.,
+                                            1., self.betas, -0.3,
+                                            True)"""
+
+        cProfile.runctx(the_str, globals(), locals(), "pro.prof")
+
+        s = pstats.Stats("pro.prof")
+        s.strip_dirs().sort_stats("cumulative").print_stats(50)
+        # s.strip_dirs().sort_stats("time").print_stats(10)
+
     def test_time_many_stars(self):
 
         stars = np.repeat(self.stars, 64, axis=0)
@@ -127,7 +148,7 @@ class TestTrueSimple(object):
 
         ll = np.zeros((6000,nstars), dtype=float)
 
-        print("Spherical:")
+        print("Spherical w/ {} stars:".format(nstars))
         potential = sp.LeeSutoTriaxialNFWPotential(v_h=0.5, r_h=20.0,
                                            a=1., b=1., c=1., units=galactic)
 
