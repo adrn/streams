@@ -307,9 +307,9 @@ cpdef rewinder_likelihood(double[:,::1] ln_likelihood,
             # all_v[i,:,:] = v
             # --------------  DEBUG  ------------------
 
-#     # --------------  DEBUG  ------------------
-#     # return np.array(all_x), np.array(all_v)
-#     # --------------  DEBUG  ------------------
+    # --------------  DEBUG  ------------------
+    # return np.array(all_x), np.array(all_v)
+    # --------------  DEBUG  ------------------
 
 
 cpdef compute_dE(np.ndarray[double,ndim=2] w0,
