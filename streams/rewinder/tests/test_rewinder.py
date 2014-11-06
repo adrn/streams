@@ -264,7 +264,7 @@ class TestConfig(object):
 
     # ---------------------------------------------------------------------------------------------
 
-    def _main_test(self, test_name):
+    def _main_test(self, test_name, initialize_far=False):
         path = os.path.abspath(os.path.join(this_path, "{}.yml".format(test_name)))
         model = Rewinder.from_config(path)
         sampler = RewinderSampler(model, nwalkers=64)
@@ -272,7 +272,10 @@ class TestConfig(object):
         truth = model.vectorize(self.parameter_values)
         p0_sigma = model.vectorize(self.parameter_sigmas)
 
-        p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
+        if initialize_far:
+            p0 = np.random.normal(truth + 2*p0_sigma, p0_sigma, size=(sampler.nwalkers, len(truth)))
+        else:
+            p0 = np.random.normal(truth, p0_sigma, size=(sampler.nwalkers, len(truth)))
         sampler = self.do_the_mcmc(sampler, p0, p0_sigma, truth)
         self.make_plots(sampler, p0, truth, test_name)
 
@@ -281,6 +284,12 @@ class TestConfig(object):
                 No uncertainties, fix alpha, fix theta, only sample over v_h, r_h
         """
         self._main_test('test1')
+
+    def test1pt5(self):
+        """ Test 1.5:
+                Same as Test 1 but start from far from truth initial conditions
+        """
+        self._main_test('test1.5', initialize_far=True)
 
     def test2(self):
         """ Test 2:

@@ -20,17 +20,13 @@ integration:
     nsteps: 6000
 
 potential:
-    class: LeeSutoNFWPotential
+    class: SphericalNFWPotential
     parameters:
         v_h: UniformPrior(0.25, 0.75)
         r_h: LogarithmicPrior(5., 30.0)
-    fixed:
-        a: 1
-        b: 1
-        c: 1
 
 progenitor:
-    mass: 2.5E6
+    mass: NormalPrior(2.5e6, 1E5)
     mass_loss_rate: 0.
 
 hyperparameters:
