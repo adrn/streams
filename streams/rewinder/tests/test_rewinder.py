@@ -86,7 +86,7 @@ class TestTrueSimple(object):
         ll = np.zeros((6000,self.nstars), dtype=float)
 
         print("Spherical w/ {} stars:".format(self.nstars))
-        potential = sp.SphericalNFWPotential(v_h=0.5, r_h=20.0, units=galactic)
+        potential = sp.SphericalNFWPotential(v_c=0.5*np.sqrt(np.log(2)-0.5), r_s=20.0, units=galactic)
 
         nrepeat = 100
         t1 = time.time()
@@ -126,7 +126,7 @@ class TestTrueSimple(object):
         import pstats, cProfile
 
         ll = np.zeros((6000,self.nstars), dtype=float)
-        potential = sp.SphericalNFWPotential(v_h=0.5, r_h=20.0, units=galactic)
+        potential = sp.SphericalNFWPotential(v_c=0.5*np.sqrt(np.log(2)-0.5), r_s=20.0, units=galactic)
 
         the_str = """for i in range(100): rewinder_likelihood(ll, -1., 6000,
                                             potential.c_instance,
@@ -185,7 +185,7 @@ class TestObsSimple(object):
     def test_call(self):
         true_progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
         true_prog_pos = np.array([true_progdata[name] for name in heliocentric_names])
-        parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
+        parameter_values = dict(potential=dict(v_c=0.5*np.sqrt(np.log(2)-0.5), r_s=20.),
                                 progenitor=dict(m0=2.5E6, **dict(zip(heliocentric_names,true_prog_pos))))
 
         # for n in [128,256,512,1024,2048,4096]:
@@ -194,17 +194,17 @@ class TestObsSimple(object):
             self.model.nsamples = n
             self.model._ln_likelihood_tmp = np.zeros((self.model.nsteps, self.model.nsamples))  # HACK!!
 
-            vhs = np.linspace(0.45,0.55,25)
-            ls = np.zeros_like(vhs)
-            for i,v_h in enumerate(vhs):
+            vcs = np.linspace(0.45,0.55,25)*np.sqrt(np.log(2)-0.5)
+            ls = np.zeros_like(vcs)
+            for i,v_c in enumerate(vcs):
                 pv = parameter_values.copy()
-                pv['potential']['v_h'] = v_h
+                pv['potential']['v_c'] = v_c
                 p = self.model.vectorize(parameter_values)
                 ls[i] = self.model(p)
 
             plt.clf()
             plt.title("Num. of samples: {}".format(n))
-            plt.plot(vhs, ls)
+            plt.plot(vcs, ls)
             plt.savefig(os.path.join(output_path, "{}.png".format(n)))
 
 class TestConfig(object):
@@ -213,10 +213,10 @@ class TestConfig(object):
         true_progdata = np.genfromtxt(os.path.join(this_path, "true_prog.txt"), names=True)
         true_prog_pos = np.array([true_progdata[name] for name in heliocentric_names])
 
-        self.parameter_values = dict(potential=dict(v_h=0.5, r_h=20.),
+        self.parameter_values = dict(potential=dict(v_c=0.5*np.sqrt(np.log(2.)-0.5), r_s=20.),
                                      progenitor=dict(m0=2.5E6, **dict(zip(heliocentric_names,true_prog_pos))),
                                      hyper=dict(alpha=1.25, theta=-0.3))
-        self.parameter_sigmas = dict(potential=dict(v_h=0.01, r_h=1.),
+        self.parameter_sigmas = dict(potential=dict(v_c=0.01, r_s=1.),
                                      progenitor=dict(m0=1E5,l=1E-8,b=1E-8,d=1E-1,mul=1E-4,mub=1E-4,vr=1E-3),
                                      hyper=dict(alpha=0.1, theta=0.01))
 
@@ -281,7 +281,7 @@ class TestConfig(object):
 
     def test1(self):
         """ Test 1:
-                No uncertainties, fix alpha, fix theta, only sample over v_h, r_h
+                No uncertainties, fix alpha, fix theta, only sample over v_c, r_s
         """
         self._main_test('test1')
 
@@ -293,35 +293,35 @@ class TestConfig(object):
 
     def test2(self):
         """ Test 2:
-                No uncertainties, sample over v_h, r_h, alpha, theta, mass
+                No uncertainties, sample over v_c, r_s, alpha, theta, mass
         """
         self._main_test('test2')
 
     def test3(self):
         """ Test 3:
                 Uncertainties on progenitor, no uncertainties in stars
-                sample over v_h, r_h
+                sample over v_c, r_s
         """
         self._main_test('test3')
 
     def test4(self):
         """ Test 4:
                 Uncertainties on progenitor, no uncertainties in stars
-                sample over v_h, r_h, alpha, theta
+                sample over v_c, r_s, alpha, theta
         """
         self._main_test('test4')
 
     def test5(self):
         """ Test 5:
                 Uncertainties on progenitor, no uncertainties in stars
-                sample over v_h, r_h, missing proper motions for progenitor
+                sample over v_c, r_s, missing proper motions for progenitor
         """
         self._main_test('test5')
 
     def test6(self):
         """ Test 6:
                 Uncertainties in stars, no uncertainties in progenitor,
-                sample over v_h, r_h
+                sample over v_c, r_s
         """
         self._main_test('test6')
 
