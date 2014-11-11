@@ -14,7 +14,7 @@ import numpy as np
 from astropy import log as logger
 import astropy.units as u
 import astropy.coordinates as coord
-import streamteam.coordinates as sc
+import gary.coordinates as sc
 
 # Project
 from ... import usys

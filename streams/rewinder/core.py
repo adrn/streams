@@ -18,9 +18,9 @@ from astropy import log as logger
 import numpy as np
 import numexpr
 from scipy.misc import logsumexp
-import streamteam.potential as sp
-from streamteam.inference import EmceeModel, ModelParameter
-from streamteam.inference.prior import *
+import gary.potential as sp
+from gary.inference import EmceeModel, ModelParameter
+from gary.inference.prior import *
 
 # Project
 from .. import heliocentric_names

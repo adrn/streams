@@ -17,9 +17,9 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-import streamteam.dynamics as sd
-import streamteam.potential as sp
-from streamteam.units import galactic
+import gary.dynamics as sd
+import gary.potential as sp
+from gary.units import galactic
 
 # Project
 from .. import Rewinder, RewinderSampler

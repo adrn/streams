@@ -19,8 +19,8 @@ import astropy.io.ascii as ascii
 from astropy.table import Column
 import astropy.units as u
 from astropy.constants import G
-from streamteam.io import SCFReader
-from streamteam.units import usys as _usys
+from gary.io import SCFReader
+from gary.units import usys as _usys
 
 # Project
 from .. import usys

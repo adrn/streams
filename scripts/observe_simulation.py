@@ -28,7 +28,7 @@ import numpy as np
 import numexpr
 
 # Project
-from streamteam.io import SCFReader
+from gary.io import SCFReader
 from streams import usys, heliocentric_names, galactocentric_names
 from streams.coordinates import hel_to_gal, gal_to_hel
 from streams.observation.errormodels import *

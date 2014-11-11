@@ -12,8 +12,8 @@ from collections import OrderedDict
 # Third-party
 import numpy as np
 from scipy.stats import norm
-from streamteam.units import galactic
-from streamteam.inference import ModelParameter, NormalPrior
+from gary.units import galactic
+from gary.inference import ModelParameter, NormalPrior
 
 # Project
 from .. import heliocentric_names

@@ -16,8 +16,8 @@ import astropy.units as u
 
 # Project
 from .. import usys
-from streamteam.observation import apparent_magnitude
-from streamteam.observation.rrlyrae import M_V, gaia_rv_error, gaia_pm_error
+from gary.observation import apparent_magnitude
+from gary.observation.rrlyrae import M_V, gaia_rv_error, gaia_pm_error
 
 __all__ = ["gaia_spitzer_errors", "current_data_star", "current_data_sat"]
 

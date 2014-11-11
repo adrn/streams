@@ -14,8 +14,8 @@ import cython
 cimport cython
 # from cython.parallel import prange, parallel
 
-cimport streamteam.potential.cpotential as pot
-import streamteam.potential.cpotential as pot
+cimport gary.potential.cpotential as pot
+import gary.potential.cpotential as pot
 
 cdef extern from "math.h":
     double sqrt(double x) nogil
