@@ -252,11 +252,11 @@ class Rewinder(EmceeModel):
             _dE = compute_dE(prog_gal, self.dt, self.nsteps, potential.c_instance, m0, mdot)
 
             for k in range(self.nstars):
-                prog_E = potential.energy(prog_gal[:,:3], prog_gal[:,3:])
+                prog_E = potential.total_energy(prog_gal[:,:3], prog_gal[:,3:])
 
                 # compute relative energy for each star
-                star_E = potential.energy(self.impo_samples_gal[k,:,:3],
-                                          self.impo_samples_gal[k,:,3:])
+                star_E = potential.total_energy(self.impo_samples_gal[k,:,:3],
+                                                self.impo_samples_gal[k,:,3:])
                 star_dE = np.abs(star_E - prog_E)
 
                 # only keep the samples that lie within an energy range
@@ -421,7 +421,10 @@ class Rewinder(EmceeModel):
         # -------------------------------------------------------------------------------
 
         # Potential
-        Potential = getattr(sp, config["potential"]["class"])
+        try:
+            Potential = getattr(sp, config["potential"]["class"])
+        except AttributeError:
+            Potential = eval(config["potential"]["class"])
         logger.info("Using potential '{}'...".format(Potential))
 
         # potential parameters to vary
