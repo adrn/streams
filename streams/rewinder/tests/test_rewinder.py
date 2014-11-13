@@ -24,6 +24,7 @@ from gary.units import galactic
 # Project
 from .. import Rewinder, RewinderSampler
 from ..likelihood import rewinder_likelihood
+from ..py_likelihood import rewinder_likelihood as py_rewinder_likelihood
 from ...util import streamspath
 from ... import heliocentric_names
 
@@ -66,6 +67,7 @@ class TestTrueSimple(object):
         plt.show()
 
     def test_call(self):
+        # potential = sp.SphericalNFWPotential(v_c=0.5*(np.log(2)-0.5), r_s=20., units=galactic)
         potential = sp.LeeSutoTriaxialNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
         ll = np.zeros((6000,self.nstars), dtype=float) - 9999.
         rewinder_likelihood(ll,
@@ -74,7 +76,26 @@ class TestTrueSimple(object):
                             self.prog, self.stars,
                             2.5E6, 0.,
                             1.25, self.betas, -0.3,
-                            True)
+                            False)
+
+        plt.plot(ll[:,0])
+        return
+
+        from scipy.misc import logsumexp
+        b = np.ones((6000,1))
+        b[0] = b[-1] = 0.5
+        L = logsumexp(ll, axis=0, b=b).sum()
+        print(L)
+
+    def test_call_py(self):
+        # potential = sp.SphericalNFWPotential(v_c=0.5*(np.log(2)-0.5), r_s=20., units=galactic)
+        potential = sp.LeeSutoTriaxialNFWPotential(v_h=0.5, r_h=20., a=1., b=1., c=1., units=galactic)
+        ll = py_rewinder_likelihood(-1., 6000, potential, self.prog, self.stars,
+                                    2.5E6, 0., 1.25, self.betas, -0.3, True)
+
+        plt.plot(ll[:,0])
+        plt.show()
+        return
 
         from scipy.misc import logsumexp
         b = np.ones((6000,1))
