@@ -16,7 +16,7 @@ import random
 # Third-party
 from astropy import log as logger
 import numpy as np
-import numexpr
+from scipy.integrate import trapz
 from scipy.misc import logsumexp
 import gary.potential as sp
 from gary.inference import EmceeModel, ModelParameter
@@ -29,6 +29,15 @@ from .likelihood import rewinder_likelihood, compute_dE
 from .streamcomponent import StreamComponent, RewinderPotential
 
 __all__ = ["Rewinder"]
+
+def integrate_tub(ll, dt):
+    nstars = ll.shape[1]
+    ls = np.zeros(nstars)
+    for j in range(nstars):
+        A = ll[:,j].max()
+        scipy_l = np.log(trapz(np.exp(ll[:,j] - A), dx=abs(dt))) + A
+        ls[j] += scipy_l
+    return ls
 
 class Rewinder(EmceeModel):
 
