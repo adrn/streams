@@ -28,7 +28,7 @@ from ..coordinates import hel_to_gal
 from .likelihood import rewinder_likelihood, compute_dE
 from .streamcomponent import StreamComponent, RewinderPotential
 
-__all__ = ["Rewinder"]
+__all__ = ["Rewinder", "integrate_tub"]
 
 def integrate_tub(ll, dt):
     nstars = ll.shape[1]
