@@ -171,7 +171,7 @@ def sample_dat_ish(sampler, p0, nburn=128, nwalk=1024):
 
     # find MAP sample, re-initialize a small ball around here
     pvec = sampler.flatchain[sampler.flatlnprobability.argmax()]
-    pos = np.random.normal(pvec, pvec*0.01, size=p0.shape)
+    pos = np.random.normal(pvec, np.abs(pvec)*0.01, size=p0.shape)
 
     sampler.reset()
     pos,_,_ = sampler.run_mcmc(pos, nburn)
@@ -256,7 +256,8 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         ndim = 3
         nwalkers = 8*ndim
         sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_hernq,
-                                        args=(dt, nsteps, prog_w, data_w, betas), pool=pool)
+                                        args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
+                                        pool=pool)
 
         p0 = np.zeros((nwalkers,ndim))
         p0[:,0] = np.random.normal(1., 0.25, size=nwalkers) # alpha
@@ -276,7 +277,8 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         ndim = 7
         nwalkers = 8*ndim
         sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_bfe,
-                                        args=(dt, nsteps, prog_w, data_w, betas), pool=pool)
+                                        args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
+                                        pool=pool)
 
         p0 = np.zeros((nwalkers,ndim))
         p0[:,0] = np.random.normal(1., 0.25, size=nwalkers) # alpha
