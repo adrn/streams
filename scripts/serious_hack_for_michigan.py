@@ -120,7 +120,9 @@ def ln_posterior_hernq(p, *args):
 
 # ----------------------------------------------------------------------
 def ln_prior_bfe(p):
-    alpha, log_m, c, c1, c2, c3, c4 = p
+    alpha = p[0]
+    log_m = p[1]
+    c = p[2]
 
     lnp = 0.
 
@@ -137,13 +139,15 @@ def ln_prior_bfe(p):
     return lnp
 
 def ln_likelihood_bfe(p, dt, nsteps, prog_w, star_w, betas, sat_mass):
-    alpha, log_m, c, c1, c2, c3, c4 = p
+    alpha = p[0]
+    log_m = p[1]
+    c = p[2]
 
     params = dict()
     params['m'] = np.exp(log_m)
     params['c'] = c
-    params['sin_coeffs'] = np.array([0.]*4)
-    params['cos_coeffs'] = np.array([c1, c2, c3, c4])
+    params['sin_coeffs'] = np.array([0.]*len(p[3:]))
+    params['cos_coeffs'] = np.array(p[3:])
     pot = gp.SphericalBFEPotential(units=galactic, **params)
 
     nstars = star_w.shape[0]
@@ -284,10 +288,12 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         p0[:,0] = np.random.normal(1., 0.25, size=nwalkers) # alpha
         p0[:,1] = np.random.normal(26., 0.15, size=nwalkers) # log_m
         p0[:,2] = np.random.normal(20., 2., size=nwalkers) # c
-        p0[:,3] = np.random.uniform(-0.9, -1.1, size=nwalkers) # c1
-        p0[:,4] = np.random.uniform(-0., -0.1, size=nwalkers) # c2
-        p0[:,5] = np.random.uniform(-0., -0.01, size=nwalkers) # c3
-        p0[:,6] = np.random.uniform(-0., -0.01, size=nwalkers) # c4
+        p0[:,3] = np.random.uniform(0.9, 1.1, size=nwalkers) # c1
+        p0[:,4] = np.random.uniform(0., 0.1, size=nwalkers) # c2
+        p0[:,5] = np.random.uniform(0., 0.05, size=nwalkers) # c3
+        p0[:,6] = np.random.uniform(0., 0.02, size=nwalkers) # c4
+        # p0[:,7] = np.random.uniform(-0., -0.02, size=nwalkers) # c5
+        # p0[:,8] = np.random.uniform(-0., -0.02, size=nwalkers) # c6
 
         sampler = sample_dat_ish(sampler, p0, nburn=nburn, nwalk=nwalk)
         pool.close()
