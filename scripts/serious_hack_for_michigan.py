@@ -169,7 +169,8 @@ def main():
     dt = -0.1
 
     # read in the SCF simulation data
-    s = scf.SCFReader("/Users/adrian/projects/scf/simulations/runs/spherical/")
+
+    s = scf.SCFReader(os.path.join(scfpath, "simulations/runs/spherical/"))
 
     tbl = s.last_snap(units=galactic)
     total_time = tbl.meta['time']
