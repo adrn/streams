@@ -73,7 +73,7 @@ def ln_posterior_nfw(p, *args):
     ll = ln_likelihood_nfw(p, *args)
     if np.any(~np.isfinite(ll)):
         return -np.inf
-    return -(ln_pri + ll)
+    return (ln_pri + ll)
 
 # ----------------------------------------------------------------------
 def ln_prior_hernq(p):
@@ -116,7 +116,7 @@ def ln_posterior_hernq(p, *args):
     ll = ln_likelihood_hernq(p, *args)
     if np.any(~np.isfinite(ll)):
         return -np.inf
-    return -(ln_pri + ll)
+    return (ln_pri + ll)
 
 # ----------------------------------------------------------------------
 def ln_prior_bfe(p):
@@ -146,8 +146,7 @@ def ln_likelihood_bfe(p, dt, nsteps, prog_w, star_w, betas, sat_mass):
     params = dict()
     params['m'] = np.exp(log_m)
     params['c'] = c
-    params['sin_coeffs'] = np.array([0.]*len(p[3:]))
-    params['cos_coeffs'] = np.array(p[3:])
+    params['coeffs'] = np.array(p[3:])
     pot = gp.SphericalBFEPotential(units=galactic, **params)
 
     nstars = star_w.shape[0]
@@ -165,7 +164,7 @@ def ln_posterior_bfe(p, *args):
     ll = ln_likelihood_bfe(p, *args)
     if np.any(~np.isfinite(ll)):
         return -np.inf
-    return -(ln_pri + ll)
+    return (ln_pri + ll)
 
 # =====================================================================================
 
@@ -219,16 +218,18 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
     betas = -2*(dE > 0).astype(int) + 1.
 
     # test true potential
-    # vals = np.linspace(0.195, 0.215, 32)
-    # lls = []
-    # for val in vals:
-    #     p = [1., val, np.log(20.)]
-    #     ll = ln_likelihood_nfw(p, dt, nsteps, prog_w, data_w, betas, true_sat_mass)
-    #     lls.append(ll)
+    vals = np.linspace(0.1, 3.5, 32)
+    lls = []
+    for val in vals:
+        p = [val, true_params['v_c'], np.log(20.)]
+        ll = ln_posterior_nfw(p, dt, nsteps, prog_w, data_w, betas, true_sat_mass)
+        lls.append(ll)
 
-    # plt.figure()
-    # plt.plot(vals, lls)
-    # plt.show()
+    plt.figure()
+    plt.plot(vals, lls)
+    plt.show()
+
+    return
 
     # ----------------------------
     # Emcee
@@ -243,9 +244,9 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
                                         pool=pool)
 
         p0 = np.zeros((nwalkers,ndim))
-        p0[:,0] = np.random.normal(1., 0.25, size=nwalkers) # alpha
+        p0[:,0] = np.random.normal(1., 0.05, size=nwalkers) # alpha
         p0[:,1] = np.random.normal(0.2, 0.02, size=nwalkers) # v_c
-        p0[:,2] = np.random.normal(3., 0.2, size=nwalkers) # log_r_s
+        p0[:,2] = np.random.normal(3., 0.1, size=nwalkers) # log_r_s
 
         sampler = sample_dat_ish(sampler, p0, nburn=nburn, nwalk=nwalk)
         pool.close()
@@ -264,9 +265,9 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
                                         pool=pool)
 
         p0 = np.zeros((nwalkers,ndim))
-        p0[:,0] = np.random.normal(1., 0.25, size=nwalkers) # alpha
+        p0[:,0] = np.random.normal(1., 0.05, size=nwalkers) # alpha
         p0[:,1] = np.random.normal(26., 0.15, size=nwalkers) # log_m
-        p0[:,2] = np.random.normal(20., 2., size=nwalkers) # c
+        p0[:,2] = np.random.normal(20., 0.5, size=nwalkers) # c
 
         sampler = sample_dat_ish(sampler, p0, nburn=nburn, nwalk=nwalk)
         pool.close()
@@ -285,9 +286,9 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
                                         pool=pool)
 
         p0 = np.zeros((nwalkers,ndim))
-        p0[:,0] = np.random.normal(1., 0.25, size=nwalkers) # alpha
+        p0[:,0] = np.random.normal(1., 0.05, size=nwalkers) # alpha
         p0[:,1] = np.random.normal(26., 0.15, size=nwalkers) # log_m
-        p0[:,2] = np.random.normal(20., 2., size=nwalkers) # c
+        p0[:,2] = np.random.normal(20., 0.5, size=nwalkers) # c
         p0[:,3] = np.random.uniform(0.9, 1.1, size=nwalkers) # c1
         p0[:,4] = np.random.uniform(0., 0.1, size=nwalkers) # c2
         p0[:,5] = np.random.uniform(0., 0.05, size=nwalkers) # c3
