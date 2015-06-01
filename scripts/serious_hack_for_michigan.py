@@ -218,18 +218,18 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
     betas = -2*(dE > 0).astype(int) + 1.
 
     # test true potential
-    vals = np.linspace(0.1, 3.5, 32)
-    lls = []
-    for val in vals:
-        p = [val, true_params['v_c'], np.log(20.)]
-        ll = ln_posterior_nfw(p, dt, nsteps, prog_w, data_w, betas, true_sat_mass)
-        lls.append(ll)
+    # vals = np.linspace(0.1, 3.5, 32)
+    # lls = []
+    # for val in vals:
+    #     p = [val, true_params['v_c'], np.log(20.)]
+    #     ll = ln_posterior_nfw(p, dt, nsteps, prog_w, data_w, betas, true_sat_mass)
+    #     lls.append(ll)
 
-    plt.figure()
-    plt.plot(vals, lls)
-    plt.show()
+    # plt.figure()
+    # plt.plot(vals, lls)
+    # plt.show()
 
-    return
+    # return
 
     # ----------------------------
     # Emcee
