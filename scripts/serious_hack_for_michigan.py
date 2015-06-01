@@ -136,6 +136,10 @@ def ln_prior_bfe(p):
     if c < 0.1 or c > 100.:
         return -np.inf
 
+    for cn in p[3:]:
+        if cn < 0.:
+            return -np.inf
+
     return lnp
 
 def ln_likelihood_bfe(p, dt, nsteps, prog_w, star_w, betas, sat_mass):
