@@ -7,9 +7,6 @@ import os
 
 # hack to add project to path so we can import it without installing
 biffpath = os.path.basename(os.path.abspath(__file__))
-if biffpath not in sys.path:
-    sys.path.append(biffpath)
-
 scfpath = os.path.abspath(os.path.join(biffpath, "../../scf/"))
 if scfpath not in sys.path:
     sys.path.append(scfpath)
@@ -24,6 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scf
 import emcee
+import kombine
 import scipy.optimize as so
 
 from streams.rewinder import integrate_tub
@@ -242,10 +240,13 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         # NFW
         print("Firing up sampler for NFW")
         ndim = 3
-        nwalkers = 8*ndim
-        sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_nfw,
-                                        args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
-                                        pool=pool)
+        nwalkers = 128*ndim
+        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_nfw,
+        #                                 args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
+        #                                 pool=pool)
+        sampler = kombine.Sampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_nfw,
+                                  args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
+                                  pool=pool)
 
         p0 = np.zeros((nwalkers,ndim))
         p0[:,0] = np.random.normal(1., 0.05, size=nwalkers) # alpha
@@ -263,10 +264,13 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         # Hernquist
         print("Firing up sampler for Hernquist")
         ndim = 3
-        nwalkers = 8*ndim
-        sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_hernq,
-                                        args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
-                                        pool=pool)
+        nwalkers = 128*ndim
+        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_hernq,
+        #                                 args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
+        #                                 pool=pool)
+        sampler = kombine.Sampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_hernq,
+                                  args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
+                                  pool=pool)
 
         p0 = np.zeros((nwalkers,ndim))
         p0[:,0] = np.random.normal(1., 0.05, size=nwalkers) # alpha
@@ -284,10 +288,13 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         # BFE
         print("Firing up sampler for BFE")
         ndim = 7
-        nwalkers = 8*ndim
-        sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_bfe,
-                                        args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
-                                        pool=pool)
+        nwalkers = 128*ndim
+        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_bfe,
+        #                                 args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
+        #                                 pool=pool)
+        sampler = kombine.Sampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_bfe,
+                                  args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
+                                  pool=pool)
 
         p0 = np.zeros((nwalkers,ndim))
         p0[:,0] = np.random.normal(1., 0.05, size=nwalkers) # alpha
