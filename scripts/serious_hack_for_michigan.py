@@ -171,19 +171,10 @@ def ln_posterior_bfe(p, *args):
 # =====================================================================================
 
 def sample_dat_ish(sampler, p0, nburn=128, nwalk=1024):
-    pos,_,_ = sampler.run_mcmc(p0, nburn)
+    pos,_,_ = sampler.burnin(p0)
     print("Done burning in.")
 
-    # find MAP sample, re-initialize a small ball around here
-    pvec = sampler.flatchain[sampler.flatlnprobability.argmax()]
-    pos = np.random.normal(pvec, np.abs(pvec)*0.01, size=p0.shape)
-
-    sampler.reset()
-    pos,_,_ = sampler.run_mcmc(pos, nburn)
-    print("Second stage burn complete.")
-
-    sampler.reset()
-    pos,_,_ = sampler.run_mcmc(pos, nwalk)
+    pos,_,_ = sampler.run_mcmc(nwalk)
     print("Done final walking.")
 
     return sampler
@@ -241,9 +232,6 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         print("Firing up sampler for NFW")
         ndim = 3
         nwalkers = 128*ndim
-        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_nfw,
-        #                                 args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
-        #                                 pool=pool)
         sampler = kombine.Sampler(nwalkers=nwalkers, ndim=ndim, lnpostfn=ln_posterior_nfw,
                                   args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
                                   pool=pool)
@@ -265,9 +253,6 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         print("Firing up sampler for Hernquist")
         ndim = 3
         nwalkers = 128*ndim
-        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_hernq,
-        #                                 args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
-        #                                 pool=pool)
         sampler = kombine.Sampler(nwalkers=nwalkers, ndim=ndim, lnpostfn=ln_posterior_hernq,
                                   args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
                                   pool=pool)
@@ -289,9 +274,6 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         print("Firing up sampler for BFE")
         ndim = 7
         nwalkers = 128*ndim
-        # sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_bfe,
-        #                                 args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
-        #                                 pool=pool)
         sampler = kombine.Sampler(nwalkers=nwalkers, ndim=ndim, lnpostfn=ln_posterior_bfe,
                                   args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
                                   pool=pool)
