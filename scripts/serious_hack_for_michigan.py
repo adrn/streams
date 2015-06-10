@@ -244,7 +244,7 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         # sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_nfw,
         #                                 args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
         #                                 pool=pool)
-        sampler = kombine.Sampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_nfw,
+        sampler = kombine.Sampler(nwalkers=nwalkers, ndim=ndim, lnpostfn=ln_posterior_nfw,
                                   args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
                                   pool=pool)
 
@@ -268,7 +268,7 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         # sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_hernq,
         #                                 args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
         #                                 pool=pool)
-        sampler = kombine.Sampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_hernq,
+        sampler = kombine.Sampler(nwalkers=nwalkers, ndim=ndim, lnpostfn=ln_posterior_hernq,
                                   args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
                                   pool=pool)
 
@@ -292,7 +292,7 @@ def main(name, nstars, nburn, nwalk, mpi=False, save=False):
         # sampler = emcee.EnsembleSampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_bfe,
         #                                 args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
         #                                 pool=pool)
-        sampler = kombine.Sampler(nwalkers=nwalkers, dim=ndim, lnpostfn=ln_posterior_bfe,
+        sampler = kombine.Sampler(nwalkers=nwalkers, ndim=ndim, lnpostfn=ln_posterior_bfe,
                                   args=(dt, nsteps, prog_w, data_w, betas, true_sat_mass),
                                   pool=pool)
 
